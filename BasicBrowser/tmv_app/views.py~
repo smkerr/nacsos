@@ -115,6 +115,7 @@ def doc_detail(request, doc_id):
         doc.content = get_doc_display(doc)
         doc.save()
      
+    nav_bar = open(TEMPLATE_DIR + 'nav_bar.html', 'r').read()
 
     nav_bar = loader.get_template('tmv_app/nav_bar.html')
     

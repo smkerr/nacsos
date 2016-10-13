@@ -1,5 +1,6 @@
 <html>
 <head>
+{% load static %}
     <script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
     <script language="JavaScript" src="/static/js/jquery.rightClick.js"></script>
     <script type="text/JavaScript"> 
@@ -30,7 +31,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
 <title>{{ topic.title }}</title>
-<link href="/static/css/styling.css" rel="stylesheet" type="text/css">
+<link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
 
 </head>
   <body>
@@ -53,7 +54,7 @@
 <td>words</td></tr>
 {% if terms %}
 	{% for term in terms %}
-	<tr class="list" onclick="window.location.href='/term/{{ term.id }}'" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')"><td id="{{ term.title }}_list">{{ term.title }}</td><tr>
+	<tr class="list" onclick="window.location.href='term/{{ term.id }}'" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')"><td id="{{ term.title }}_list">{{ term.title }}</td><tr>
 	{% endfor %}
 {% endif %}
 <tmv-topic-terms-column>
@@ -67,7 +68,7 @@
 </tr>
 {% if docs %}
 	{% for doc in docs %}
-	<tr class="list"><td id="{{ doc.title }}" onclick="window.location.href='/doc/{{ doc.id }}'">{{ doc.title }}</td><tr>
+	<tr class="list"><td id="{{ doc.title }}" onclick="window.location.href='doc/{{ doc.id }}'">{{ doc.title }}</td><tr>
 	{% endfor %}
 {% endif %}
 </table>

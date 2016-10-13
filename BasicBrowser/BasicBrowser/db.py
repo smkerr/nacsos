@@ -1,5 +1,6 @@
 import django
 import urllib.parse
+import settings
 import os
 
 import math
@@ -10,12 +11,14 @@ import sys
 #sys.path.append('/home/max/software/tmv-py3/BasicBrowser/')
 #sys.path.append('/home/max/Desktop/Django/BasicBrowser')
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "BasicBrowser.settings")
+import tmv_app.models
 
-#settings.configure(default_settings=defaults, DEBUG=True)
-django.setup()
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
-from tmv_app.models import *
+#import settings
+
+#settings.configure(default_settings=settings, DEBUG=True)
+#django.setup()
 
 #sys.path.append("..")
 
@@ -154,7 +157,7 @@ def add_docs(doc_array):
     doc_ids = []
     DB_LOCK.acquire()
     for d in doc_array:
-        doc = Doc(title=urllib.parse.unquote(d[0]), content=urllib.parse.unquote(d[1]))
+        doc = Doc(title=urllib.parse.unquote(d[0]), content="")
         doc.save()
         doc_ids.append(doc.id)
     DB_LOCK.release()

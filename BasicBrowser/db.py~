@@ -154,7 +154,7 @@ def add_docs(doc_array):
     doc_ids = []
     DB_LOCK.acquire()
     for d in doc_array:
-        doc = Doc(title=urllib.parse.unquote(d[0]), content=urllib.parse.unquote(d[1]))
+        doc = Doc(title=urllib.parse.unquote(d[0]), content="")
         doc.save()
         doc_ids.append(doc.id)
     DB_LOCK.release()
