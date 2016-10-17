@@ -32,7 +32,7 @@ def topic_detail(request, topic_id):
     remainder_titles = ''
     
     for tt in topicterms:
-        term = Term.objects.get(pk=tt.term)
+        term = Term.objects.get(gensim_id=tt.term)
         
         terms.append(term)
         if tt.score >= .01:
@@ -60,11 +60,10 @@ def topic_detail(request, topic_id):
 def term_detail(request, term_id):
     update_topic_titles()
     response = ''
+
+    term_template = loader.get_template('tmv_app/term.html')
     
-    template_file = open(TEMPLATE_DIR + 'term.html', 'r')
-    term_template = Template(template_file.read())
-    
-    term = Term.objects.get(id=term_id)
+    term = Term.objects.get(gensim_id=term_id)
     
     topics = {}
     for topic in Topic.objects.all():
@@ -79,7 +78,7 @@ def term_detail(request, term_id):
         for topic in sorted_topics:
             topic_tuples.append((topic, topics[topic], topics[topic]/max_score*100))
     
-    nav_bar = open(TEMPLATE_DIR + 'nav_bar.html', 'r').read()
+    nav_bar = loader.get_template('tmv_app/nav_bar.html')
 
     term_page_context = Context({'nav_bar': nav_bar, 'term': term, 'topic_tuples': topic_tuples})
     
@@ -137,7 +136,7 @@ def topic_list_detail(request):
         temp =[]
         term_count = 5
         for tt in topicterms:
-            temp.append(Term.objects.get(pk=tt.term))
+            temp.append(Term.objects.get(gensim_id=tt.term))
             term_count -= 1
         for i in range(term_count):        
             temp.append(None)
@@ -195,12 +194,13 @@ def topic_presence_detail(request):
 
 
 def stats(request):
-    template_file = open(TEMPLATE_DIR + 'stats.html', 'r')
-    stats_template = Template(template_file.read())
 
-    nav_bar = open(TEMPLATE_DIR + 'nav_bar.html', 'r').read()
+    stats_template = loader.get_template('tmv_app/stats.html')
 
-    stats_page_context = Context({'nav_bar': nav_bar, 'num_docs': Doc.objects.count(), 'num_topics': Topic.objects.count(), 'num_terms': Term.objects.count(), 'start_time': RunStats.objects.get(id=1).start, 'elapsed_time': (datetime.datetime.now() - RunStats.objects.get(id=1).start), 'num_batches': RunStats.objects.get(id=1).batch_count, 'last_update': RunStats.objects.get(id=1).last_update})
+    nav_bar = loader.get_template('tmv_app/nav_bar.html')
+
+    stats_page_context = Context({'nav_bar': nav_bar, 'num_docs': Doc.objects.count(), 'num_topics': Topic.objects.count(), 'num_terms': Term.objects.count(), 'start_time': RunStats.objects.get(id=1).start, 'elapsed_time': RunStats.objects.get(id=1).start, 'num_batches': RunStats.objects.get(id=1).batch_count, 'last_update': RunStats.objects.get(id=1).last_update})
+#stats_page_context = Context({'nav_bar': nav_bar, 'num_docs': Doc.objects.count(), 'num_topics': Topic.objects.count(), 'num_terms': Term.objects.count(), 'start_time': RunStats.objects.get(id=1).start, 'elapsed_time': (datetime.datetime.now() - RunStats.objects.get(id=1).start), 'num_batches': RunStats.objects.get(id=1).batch_count, 'last_update': RunStats.objects.get(id=1).last_update})
 
     return HttpResponse(stats_template.render(stats_page_context))
 
@@ -243,7 +243,8 @@ def update_topic_titles():
             topicterms = TopicTerm.objects.filter(topic=topic.id).order_by('-score')[:3]
             if topicterms.count() < 3:
                 continue
-            new_topic_title = '{' + Term.objects.get(pk=topicterms[0].term).title + ', ' + Term.objects.get(pk=topicterms[1].term).title + ', ' + Term.objects.get(pk=topicterms[2].term).title + '}'
+            new_topic_title = '{' + Term.objects.get(gensim_id=topicterms[0].term).title + ', ' + Term.objects.get(gensim_id=topicterms[1].term).title + ', ' + Term.objects.get(gensim_id=topicterms[2].term).title + '}'
+
             topic.title = new_topic_title
             topic.save()
         stats.topic_titles_current = True

@@ -8,6 +8,7 @@ class Topic(models.Model):
 
 class Term(models.Model):    
     title = models.CharField(max_length=50)
+    gensim_id = models.IntegerField()
 
 class TopicTerm(models.Model):
     topic = models.IntegerField()

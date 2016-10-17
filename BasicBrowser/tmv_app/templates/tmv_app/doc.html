@@ -1,7 +1,8 @@
 <html>
 <head>
+{% load static %}
     <script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
-    <script language="JavaScript" src="/static/js/pie.js"></script>
+    <script language="JavaScript" src="{% static 'tmv_app/js/pie.js' %}"></script>
     <script language="JavaScript" src="/static/js/search.js"></script>
 
 
@@ -32,7 +33,7 @@
     
     <title>{{ doc.title }}</title>
 
-    <link href="/static/css/styling.css" rel="stylesheet" type="text/css">
+<link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
 </head>
 
 <body onLoad="init()">
@@ -58,7 +59,7 @@
                 </tr>
                 {% if topics %}
 			{% for topic in topics %}
-			<tr class="list"><td id="topic_{{ topic.id }}" onmouseover="highlight({{ forloop.counter|add:"-1" }})" onmouseout="unhighlight()" onclick="window.location.href='/topic/{{ topic.id }}'">{{ topic.title }}</td></tr>
+			<tr class="list"><td id="topic_{{ topic.id }}" onmouseover="highlight({{ forloop.counter|add:"-1" }})" onmouseout="unhighlight()" onclick="window.location.href='/tmv_app/topic/{{ topic.id }}'">{{ topic.title }}</td></tr>
 			{% endfor %}
 		{% endif %}
                 </table>

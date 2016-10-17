@@ -6,24 +6,12 @@ import math
 import threading, datetime
 import sys
 
-
-#sys.path.append('/home/max/software/tmv-py3/BasicBrowser/')
-#sys.path.append('/home/max/Desktop/Django/BasicBrowser')
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "BasicBrowser.settings")
 
-#settings.configure(default_settings=defaults, DEBUG=True)
 django.setup()
 
 from tmv_app.models import *
 
-#sys.path.append("..")
-
-#print(dir())
-
-#exit()
-
-#from tmv_app.models import *
 
 class DBManager(threading.Thread):
     def __init__(self):
