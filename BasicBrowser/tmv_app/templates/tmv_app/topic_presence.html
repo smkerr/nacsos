@@ -20,7 +20,7 @@
 <div id="graph"> 
 <table width="100%">
 {% for topic, topic_score, width in topic_tuples %}
-<tr><td><table width="{{ width|floatformat:1 }}%" ><tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" onclick="window.location.href='topic/{{ topic.id }}'">{{ topic.title }}</td></tr></table></td></tr>
+<tr><td><table width="{{ width|floatformat:1 }}%" ><tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" onclick="window.location.href='topic/{{ topic.topic }}'">{{ topic.title }}</td></tr></table></td></tr>
 {% endfor %}
 </table> 
 </div>

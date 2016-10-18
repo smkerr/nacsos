@@ -100,7 +100,7 @@ class DBTask():
 
 
 def add_term(title,gid):
-    term = Term(title=title,gensim_id=gid)
+    term = Term(term=gid,title=title,gensim_id=gid)
     
     term.save()
 
@@ -111,17 +111,18 @@ class TermsTask(DBTask):
         DBTask.__init__(self, "write all terms")
     def db_write(self):
         for i in range(0, len(self.terms)):
-            term = self.terms[i]
+            title = self.terms[i]
             gid = self.ids[i]
-            add_term(term,gid)
+            add_term(title,gid)
 
 def add_terms(terms):
     DBM.add(TermsTask(terms))
 
 
-def add_topic(title):
-    topic = Topic(title=title)
-    topic.save()
+def add_topic(t):
+    title = "Topic " + str(t+1)
+    topicrow = Topic(title=title,topic=t)
+    topicrow.save()
 
 class TopicsTask(DBTask):
     def __init__(self, no_topics):
@@ -129,7 +130,7 @@ class TopicsTask(DBTask):
         DBTask.__init__(self, "write all topics")
     def db_write(self):
         for t in range(self.no_topics):
-            add_topic("Topic " + str(t+1))
+            add_topic(t)
 
 def add_topics(no_topics):
     DBM.add(TopicsTask(no_topics))
@@ -145,18 +146,25 @@ def add_doc(title, content):
 def add_docs(doc_array):
     doc_ids = []
     DB_LOCK.acquire()
-    for d in doc_array:
-        doc = Doc(title=urllib.parse.unquote(d[0]), content=urllib.parse.unquote(d[1]))
+    for d in doc_array:      
+        doc = Doc(title=urllib.parse.unquote(d[0]), content=urllib.parse.unquote(d[1]),doc=d[2],UT=d[3],PY=d[4])
         doc.save()
         doc_ids.append(doc.id)
     DB_LOCK.release()
     return doc_ids
 
+def add_auths(doc_auth_array):
+    DB_LOCK.acquire()
+    for d in doc_auth_array:      
+        docauth = DocAuthors(UT=d[0],author=d[1])
+        docauth.save()
+    DB_LOCK.release()
+
 
 def add_doc_topic(doc_id, topic_id, score, scaled_score):
     if score < 1:
         return
-    dt = DocTopic(doc=doc_id, topic=(topic_id+1), score=score, scaled_score=scaled_score)
+    dt = DocTopic(doc=doc_id, topic=(topic_id), score=score, scaled_score=scaled_score)
     dt.save()
 
 class DocTopicsTask(DBTask):
@@ -170,16 +178,16 @@ class DocTopicsTask(DBTask):
 def add_doc_topics(doc_topic_array):
     DBM.add(DocTopicsTask(doc_topic_array))
 
-
+# deleted plus 1 because now we're working with from 0 gensim_ids
 def clear_topic_terms(topic):
     try:
-        TopicTerm.objects.filter(topic=(topic+1)).delete()
+        TopicTerm.objects.filter(topic=(topic)).delete()
     except:
         return
 
 def add_topic_term(topic, term, score):
     if score >= .005:
-        tt = TopicTerm(topic=(topic+1), term=(term+1), score=score)
+        tt = TopicTerm(topic=(topic), term=(term), score=score)
         tt.save()
 
 class UpdateTopicTermsTask(DBTask):

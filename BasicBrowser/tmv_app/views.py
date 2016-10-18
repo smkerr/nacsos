@@ -13,6 +13,8 @@ TEMPLATE_DIR = sys.path[0] + '/templates/'
 opener = urllib.request.build_opener()
 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 
+nav_bar = loader.get_template('tmv_app/nav_bar.html').render()
+
 def index(request):
     return HttpResponse("Hello, world. You're at the topic browser index.")
 
@@ -22,7 +24,7 @@ def topic_detail(request, topic_id):
     
     topic_template = loader.get_template('tmv_app/topic.html')
     
-    topic = Topic.objects.get(id=topic_id)
+    topic = Topic.objects.get(topic=topic_id)
     topicterms = TopicTerm.objects.filter(topic=topic_id).order_by('-score')
     doctopics = DocTopic.objects.filter(topic=topic_id).order_by('-score')[:50]
     
@@ -32,7 +34,7 @@ def topic_detail(request, topic_id):
     remainder_titles = ''
     
     for tt in topicterms:
-        term = Term.objects.get(gensim_id=tt.term)
+        term = Term.objects.get(term=tt.term)
         
         terms.append(term)
         if tt.score >= .01:
@@ -49,9 +51,7 @@ def topic_detail(request, topic_id):
     
     docs = []
     for dt in doctopics:
-        docs.append(Doc.objects.get(pk=dt.doc))
-
-    nav_bar = loader.get_template('tmv_app/nav_bar.html')
+        docs.append(Doc.objects.get(doc=dt.doc))
     
     topic_page_context = Context({'nav_bar': nav_bar, 'topic': topic, 'terms': terms, 'term_bar': term_bar, 'docs': docs})
     
@@ -77,8 +77,6 @@ def term_detail(request, term_id):
         max_score = max(topics.values())
         for topic in sorted_topics:
             topic_tuples.append((topic, topics[topic], topics[topic]/max_score*100))
-    
-    nav_bar = loader.get_template('tmv_app/nav_bar.html')
 
     term_page_context = Context({'nav_bar': nav_bar, 'term': term, 'topic_tuples': topic_tuples})
     
@@ -90,7 +88,7 @@ def doc_detail(request, doc_id):
     print ( "doc: " + str(doc_id) )
     doc_template = loader.get_template('tmv_app/doc.html')
     
-    doc = Doc.objects.get(id=doc_id)
+    doc = Doc.objects.get(doc=doc_id)
     doctopics = DocTopic.objects.filter(doc=doc_id).order_by('-score')
 
     topics = []
@@ -100,7 +98,7 @@ def doc_detail(request, doc_id):
     dt_thresh_scaled = Settings.objects.get(id=1).doc_topic_scaled_score
     for dt in doctopics:
         if ((not dt_thresh_scaled and dt.score >= dt_threshold) or (dt_thresh_scaled and dt.scaled_score*100 >= dt_threshold)):
-            topic = Topic.objects.get(pk=dt.topic)
+            topic = Topic.objects.get(topic=dt.topic)
             topics.append(topic)
             print ( topic.title )
             if not dt_thresh_scaled:
@@ -113,9 +111,6 @@ def doc_detail(request, doc_id):
     if doc.content == '':
         doc.content = get_doc_display(doc)
         doc.save()
-     
-
-    nav_bar = loader.get_template('tmv_app/nav_bar.html')
     
     doc_page_context = Context({'nav_bar': nav_bar, 'doc': doc, 'topics': topics, 'pie_array': pie_array})
     
@@ -132,17 +127,15 @@ def topic_list_detail(request):
 
     terms = []
     for t in topics:
-        topicterms = TopicTerm.objects.filter(topic=t.id).order_by('-score')[:5]
+        topicterms = TopicTerm.objects.filter(topic=t.topic).order_by('-score')[:5]
         temp =[]
         term_count = 5
         for tt in topicterms:
-            temp.append(Term.objects.get(gensim_id=tt.term))
+            temp.append(Term.objects.get(term=tt.term))
             term_count -= 1
         for i in range(term_count):        
             temp.append(None)
         terms.append(temp)
-    
-    nav_bar = open(TEMPLATE_DIR + 'nav_bar.html', 'r').read()
 
     div_topics = []
     div_terms = []
@@ -169,14 +162,11 @@ def topic_presence_detail(request):
     update_topic_titles()
     response = ''
     
-#    template_file = open(TEMPLATE_DIR + 'topic_presence.html', 'r')
-#    presence_template = Template(template_file.read())
-
     presence_template = loader.get_template('tmv_app/topic_presence.html')
     
     topics = {}
     for topic in Topic.objects.all():
-        score = sum([dt.score for dt in DocTopic.objects.filter(topic=topic.id)])
+        score = sum([dt.score for dt in DocTopic.objects.filter(topic=topic.topic)])
         topics[topic] = score
     
     sorted_topics = sorted(topics.keys(), key=lambda x: -topics[x])
@@ -186,7 +176,6 @@ def topic_presence_detail(request):
         topic_tuples.append((topic, topics[topic], topics[topic]/max_score*100))
     
     #nav_bar = open(TEMPLATE_DIR + 'nav_bar.html', 'r').read()
-    nav_bar = loader.get_template('tmv_app/nav_bar.html')
 
     presence_page_context = Context({'nav_bar': nav_bar, 'topic_tuples': topic_tuples})
     
@@ -213,8 +202,6 @@ def settings(request):
     template_file = open(TEMPLATE_DIR + 'settings.html', 'r')
     settings_template = Template(template_file.read())
    
-    nav_bar = open(TEMPLATE_DIR + 'nav_bar.html', 'r').read()
-   
     settings_page_context = Context({'nav_bar': nav_bar, 'settings': Settings.objects.get(id=1)})
 
     #return HttpResponse(settings_template.render(settings_page_context))
@@ -239,11 +226,12 @@ def apply_settings(request):
 def update_topic_titles():
     stats = RunStats.objects.get(id=1)
     if not stats.topic_titles_current:
+    #if "a" in "ab":
         for topic in Topic.objects.all():
-            topicterms = TopicTerm.objects.filter(topic=topic.id).order_by('-score')[:3]
+            topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')[:3]
             if topicterms.count() < 3:
                 continue
-            new_topic_title = '{' + Term.objects.get(gensim_id=topicterms[0].term).title + ', ' + Term.objects.get(gensim_id=topicterms[1].term).title + ', ' + Term.objects.get(gensim_id=topicterms[2].term).title + '}'
+            new_topic_title = '{' + Term.objects.get(term=topicterms[0].term).title + ', ' + Term.objects.get(gensim_id=topicterms[1].term).title + ', ' + Term.objects.get(gensim_id=topicterms[2].term).title + '}'
 
             topic.title = new_topic_title
             topic.save()

@@ -2,11 +2,13 @@ from django.db import models
 
 class Topic(models.Model):
     title = models.CharField(max_length=50)
+    topic = models.IntegerField()
 
     def __unicode__(self):
         return str(self.title)
 
 class Term(models.Model):    
+    term = models.IntegerField()
     title = models.CharField(max_length=50)
     gensim_id = models.IntegerField()
 
@@ -15,9 +17,17 @@ class TopicTerm(models.Model):
     term = models.IntegerField()
     score = models.FloatField()
 
+class DocAuthors(models.Model):
+    UT = models.CharField(max_length=20)
+    author = models.CharField(max_length=20)
+    
+
 class Doc(models.Model):
     title = models.CharField(max_length=100)
     content = models.TextField()
+    doc = models.IntegerField()
+    UT = models.CharField(max_length=20)
+    PY = models.IntegerField()
     
     def word_count(self):
         return len(str(self.content).split())

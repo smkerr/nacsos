@@ -1,5 +1,6 @@
 <html>
 <head>
+{% load static %}
     <script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
     <script language="JavaScript" src="/static/js/pie.js"></script>
     <script language="JavaScript" src="/static/js/search.js"></script>
@@ -8,7 +9,7 @@
     
     <title>Stats</title>
 
-    <link href="/static/css/styling.css" rel="stylesheet" type="text/css">
+    <link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
 </head>
 
 <body>
