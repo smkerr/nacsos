@@ -1,15 +1,15 @@
 <html>
 <head>
+{% load static %}
     <script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
-    <script language="JavaScript" src="/static/js/pie.js"></script>
-    <script language="JavaScript" src="/static/js/search.js"></script>
+    <script language="JavaScript" src="{% static 'tmv_app/js/pie.js' %}"></script>
+    <script language="JavaScript" src="{% static 'tmv_app/js/search.js' %}"></script>
 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     
     <title>Settings</title>
 
-    <link href="/static/css/styling.css" rel="stylesheet" type="text/css">
-</head>
+    <link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
 
 <body>
 {{ nav_bar|safe }}
@@ -18,7 +18,7 @@
 
     <h1 id="header">
         <table><tr>
-            <td id="title">Wikipedia Online LDA Settings</td>
+            <td id="title">Online LDA Settings</td>
         </tr></table>
 
         <hr noshade>

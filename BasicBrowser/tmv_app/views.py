@@ -14,6 +14,12 @@ opener = urllib.request.build_opener()
 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 
 nav_bar = loader.get_template('tmv_app/nav_bar.html').render()
+global run_id
+
+def find_run_id():
+    settings = Settings.objects.all().first()
+    run_id = settings.run_id
+    return(run_id)
 
 def show_toolbar(request):
     return True
@@ -22,8 +28,9 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 
 def author_detail(request, author_name):
+    run_id = find_run_id()
     response = author_name
-    documents = Doc.objects.filter(docauthors__author=author_name)
+    documents = Doc.objects.filter(docauthors__author=author_name,docauthors__run_id=run_id)
 
     topics = {}
     topics = Topic.objects.all()
@@ -40,7 +47,7 @@ def author_detail(request, author_name):
                     topic.sum = dt['scaled_score']
                     topics.append(topic)
 
-    topics = DocTopic.objects.filter(doc__docauthors__author=author_name, scaled_score__gt=0.01)
+    topics = DocTopic.objects.filter(doc__docauthors__author=author_name, scaled_score__gt=0.01,run_id=run_id)
 
     topics = topics.annotate(total=(Sum('scaled_score')))
 
@@ -70,12 +77,12 @@ def index(request):
 def topic_detail(request, topic_id):    
     #update_topic_titles()
     response = ''
-    
+    run_id = find_run_id()
     topic_template = loader.get_template('tmv_app/topic.html')
     
-    topic = Topic.objects.get(topic=topic_id)
+    topic = Topic.objects.get(topic=topic_id,run_id=run_id)
     #topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')
-    topicterms = Term.objects.filter(topicterm__topic=topic.topic).order_by('-topicterm__score')
+    topicterms = Term.objects.filter(topicterm__topic=topic.topic,run_id=run_id).order_by('-topicterm__score')
     doctopics = Doc.objects.filter(doctopic__topic=topic.topic).order_by('-doctopic__scaled_score')[:50]
     
     terms = []
@@ -123,39 +130,51 @@ def topic_detail(request, topic_id):
 
 def term_detail(request, term_id):
     update_topic_titles()
+    run_id = find_run_id()
     response = ''
 
     term_template = loader.get_template('tmv_app/term.html')
     
-    term = Term.objects.get(gensim_id=term_id)
+    term = Term.objects.get(term=term_id,run_id=run_id)
     
     topics = {}
-    for topic in Topic.objects.all():
-        tt = TopicTerm.objects.filter(topic=topic.topic, term=term_id)
+    for topic in Topic.objects.filter(run_id=run_id):
+        tt = TopicTerm.objects.filter(topic=topic.topic, term=term_id,run_id=run_id)
         if len(tt) > 0:
             topics[topic] = tt[0].score
     
     sorted_topics = sorted(topics.keys(), key=lambda x: -topics[x])
     topic_tuples = []
+
+    
     if len(topics.keys()) > 0:
         max_score = max(topics.values())
         for topic in sorted_topics:
             topic_tuples.append((topic, topics[topic], topics[topic]/max_score*100))
+
+    topics = TopicTerm.objects.filter(term=term_id,run_id=run_id).order_by('-score')
+    if len(topics) > 0:
+        topic_tuples = []
+        max_score = topics[0].score
+        for topic in topics:
+            topic_tuples.append((topic.topic, topic.score, topic.score/max_score*100))
+    
 
     term_page_context = Context({'nav_bar': nav_bar, 'term': term, 'topic_tuples': topic_tuples})
     
     return HttpResponse(term_template.render(term_page_context))
 
 def doc_detail(request, doc_id):
+    run_id = find_run_id()
     update_topic_titles()
     response = ''
     print ( "doc: " + str(doc_id) )
     doc_template = loader.get_template('tmv_app/doc.html')
     
     doc = Doc.objects.get(doc=doc_id)
-    doctopics = DocTopic.objects.filter(doc=doc_id).order_by('-score')
+    doctopics = DocTopic.objects.filter(doc=doc_id,run_id=run_id).order_by('-score')
 
-    doc_authors = DocAuthors.objects.filter(doc__doc=doc_id)
+    doc_authors = DocAuthors.objects.filter(doc__doc=doc_id,run_id=run_id)
 
     topics = []
     pie_array = []
@@ -196,6 +215,7 @@ def doc_detail(request, doc_id):
     return HttpResponse(doc_template.render(doc_page_context))
 
 def topic_list_detail(request):
+    run_id = find_run_id()
     update_topic_titles()
     response = ''
     
@@ -237,23 +257,22 @@ def topic_list_detail(request):
     
     return HttpResponse(list_template.render(list_page_context))
 
+#################################################################
+### Main page!
 def topic_presence_detail(request):
+    run_id = find_run_id()
     update_topic_titles()
     update_topic_scores()
     response = ''
     
     presence_template = loader.get_template('tmv_app/topic_presence.html')
-    
-    topics = {}
-    for topic in Topic.objects.all():
-        topics[topic] = topic.score
-    
-    sorted_topics = sorted(topics.keys(), key=lambda x: -topics[x])
+
+    topics = Topic.objects.filter(run_id=run_id).order_by('-score')
+    max_score = topics[0].score
+
     topic_tuples = []
-    max_score = max(topics.values())
-    for topic in sorted_topics:
-        topic_tuples.append((topic, topics[topic], topics[topic]/max_score*100))
-    
+    for topic in topics:
+        topic_tuples.append((topic, topic.score, topic.score/max_score*100))
 
     presence_page_context = Context({'nav_bar': nav_bar, 'topic_tuples': topic_tuples})
     
@@ -261,6 +280,7 @@ def topic_presence_detail(request):
 
 
 def stats(request):
+    run_id = find_run_id()
 
     stats_template = loader.get_template('tmv_app/stats.html')
 
@@ -268,10 +288,34 @@ def stats(request):
 
     topics_seen = DocTopic.objects.distinct('doc_id').count()
 
-    stats_page_context = Context({'nav_bar': nav_bar, 'num_docs': Doc.objects.count(),'topics_seen': topics_seen, 'num_topics': Topic.objects.count(), 'num_terms': Term.objects.count(), 'start_time': RunStats.objects.get(id=1).start, 'elapsed_time': RunStats.objects.get(id=1).start, 'num_batches': RunStats.objects.get(id=1).batch_count, 'last_update': RunStats.objects.get(id=1).last_update})
+    stats = RunStats.objects.get(run_id=run_id)
+
+    stats_page_context = Context({'nav_bar': nav_bar, 'num_docs': Doc.objects.count(),'topics_seen': topics_seen, 'num_topics': Topic.objects.count(), 'num_terms': Term.objects.count(), 'start_time': stats.start, 'elapsed_time': stats.start, 'num_batches': stats.batch_count, 'last_update': stats.last_update})
 
 
     return HttpResponse(stats_template.render(stats_page_context))
+
+def runs(request):
+    run_id = find_run_id()
+
+    runs_template = loader.get_template('tmv_app/runs.html')
+
+    nav_bar = loader.get_template('tmv_app/nav_bar.html')
+
+    topics_seen = DocTopic.objects.distinct('doc_id').count()
+
+    stats = RunStats.objects.all().order_by('-start')
+
+    for stat in stats:
+        stat_run_id = stat.run_id
+        stat.topics = Topic.objects.filter(run_id=stat_run_id).count()
+        stat.documents = Doc.objects.filter(run_id=stat_run_id).count()
+        stat.terms = Term.objects.filter(run_id=stat_run_id).count()
+
+    runs_page_context = Context({'nav_bar': nav_bar, 'stats':stats, 'run_id':run_id})
+
+
+    return HttpResponse(runs_template.render(runs_page_context))
 
 class SettingsForm(ModelForm):
     class Meta:
@@ -279,13 +323,14 @@ class SettingsForm(ModelForm):
         fields = '__all__'
 
 def settings(request):
-    template_file = open(TEMPLATE_DIR + 'settings.html', 'r')
-    settings_template = Template(template_file.read())
+    run_id = find_run_id()
+
+    settings_template = loader.get_template('tmv_app/settings.html')
    
     settings_page_context = Context({'nav_bar': nav_bar, 'settings': Settings.objects.get(id=1)})
 
-    #return HttpResponse(settings_template.render(settings_page_context))
-    return render_to_response('settings.html', settings_page_context, context_instance=RequestContext(request))
+    return HttpResponse(settings_template.render(settings_page_context))
+    #return render_to_response('settings.html', settings_page_context, context_instance=RequestContext(request))
 
 def apply_settings(request):
     settings = Settings.objects.get(id=1)
@@ -303,26 +348,35 @@ def apply_settings(request):
 
     return HttpResponseRedirect('/topic_list')
 
+def apply_run_filter(request,new_run_id):
+    settings = Settings.objects.get(id=1)
+    settings.run_id = new_run_id
+    settings.save()
+
+    return HttpResponseRedirect('/tmv_app/runs')
+
 def update_topic_titles():
-    stats = RunStats.objects.get(id=1)
-    if not stats.topic_titles_current:
-    #if "a" in "ab":
-        for topic in Topic.objects.all():
+    run_id = find_run_id()
+    stats = RunStats.objects.get(run_id=run_id)
+    #if not stats.topic_titles_current:
+    if "a" in "ab":
+        for topic in Topic.objects.filter(run_id=run_id):
             #topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')[:3]
             topicterms = Term.objects.filter(topicterm__topic=topic.topic).order_by('-topicterm__score')[:3]
             if topicterms.count() < 3:
                 continue
             
             new_topic_title = '{' + topicterms[0].title + ', ' + topicterms[1].title + ', ' + topicterms[2].title + '}'
-            #new_topic_title = '{' + Term.objects.filter(topicterm__term=topicterms[0].term)[0].title + ', ' + Term.objects.filter(topicterm__term=topicterms[1].term)[0].title + ', ' + Term.objects.filter(topicterm__term=topicterms[2].term)[0].title + '}'
 
             topic.title = new_topic_title
             topic.save()
         stats.topic_titles_current = True
         stats.save()
 
+
 def update_topic_scores():
-    stats = RunStats.objects.get(id=1)
+    run_id = find_run_id()
+    stats = RunStats.objects.get(run_id=run_id)
     if not stats.topic_scores_current:
         for topic in Topic.objects.all():
             score = sum([dt.score for dt in DocTopic.objects.filter(topic=topic.topic)])
@@ -332,10 +386,10 @@ def update_topic_scores():
         stats.save()
 
 def update_year_topic_scores():
-
+    run_id = find_run_id()
     stats = RunStats.objects.get(id=1)
-    if "a" in "a":    
-    #if not stats.topic_year_scores_current:
+    #if "a" in "a":    
+    if not stats.topic_year_scores_current:
         yts = DocTopic.objects.all()
         yts = DocTopic.objects.filter(doc__PY__gt=1989)  
 

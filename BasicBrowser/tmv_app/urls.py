@@ -2,7 +2,7 @@ from django.conf.urls import url, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from tmv_app.views import index, topic_detail, term_detail, doc_detail, topic_list_detail, topic_presence_detail, stats, settings, apply_settings, topic_random, doc_random, term_random, author_detail
+from tmv_app.views import index, topic_detail, term_detail, doc_detail, topic_list_detail, topic_presence_detail, stats, settings, apply_settings, topic_random, doc_random, term_random, author_detail, runs, apply_run_filter
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -21,6 +21,8 @@ urlpatterns = [
     url(r'^stats$', stats),
     url(r'^settings$', settings),
     url(r'^settings/apply$', apply_settings),
+    url(r'^runs$', runs),
+    url(r'^runs/apply/(?P<new_run_id>\d+)$', apply_run_filter),
     url(r'^topic/random$', topic_random),
     url(r'^doc/random$', doc_random),
     url(r'^term/random$', term_random)]

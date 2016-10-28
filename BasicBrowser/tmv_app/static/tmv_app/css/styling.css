@@ -698,3 +698,7 @@ circle.other_topic {
 	r: 1;
 }
 
+tr.active_run {
+	background-color: #fbb4ae;
+}
+

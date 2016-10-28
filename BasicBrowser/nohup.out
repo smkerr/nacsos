@@ -1,0 +1,36 @@
+Internal Server Error: /tmv_app/topic_presence
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/django/core/handlers/exception.py", line 39, in inner
+    response = get_response(request)
+  File "/usr/local/lib/python3.4/dist-packages/django/core/handlers/base.py", line 187, in _get_response
+    response = self.process_exception_by_middleware(e, request)
+  File "/usr/local/lib/python3.4/dist-packages/django/core/handlers/base.py", line 185, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/galm/software/tmv/BasicBrowser/tmv_app/views.py", line 275, in topic_presence_detail
+    topic_tuples.append((topic, topic.score, topic.score/max_score*100))
+ZeroDivisionError: float division by zero
+[28/Oct/2016 17:49:19] "GET /tmv_app/topic_presence HTTP/1.1" 500 74834
+[28/Oct/2016 17:49:19] "GET /static/debug_toolbar/js/jquery_pre.js HTTP/1.1" 304 0
+[28/Oct/2016 17:49:19] "GET /static/debug_toolbar/css/toolbar.css HTTP/1.1" 304 0
+[28/Oct/2016 17:49:19] "GET /static/debug_toolbar/js/jquery_post.js HTTP/1.1" 304 0
+[28/Oct/2016 17:49:19] "GET /static/debug_toolbar/js/toolbar.js HTTP/1.1" 304 0
+[28/Oct/2016 17:49:19] "GET /static/debug_toolbar/img/ajax-loader.gif HTTP/1.1" 304 0
+[28/Oct/2016 17:49:19] "GET /static/debug_toolbar/css/print.css HTTP/1.1" 304 0
+Internal Server Error: /tmv_app/topic_presence
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/django/core/handlers/exception.py", line 39, in inner
+    response = get_response(request)
+  File "/usr/local/lib/python3.4/dist-packages/django/core/handlers/base.py", line 187, in _get_response
+    response = self.process_exception_by_middleware(e, request)
+  File "/usr/local/lib/python3.4/dist-packages/django/core/handlers/base.py", line 185, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/galm/software/tmv/BasicBrowser/tmv_app/views.py", line 275, in topic_presence_detail
+    topic_tuples.append((topic, topic.score, topic.score/max_score*100))
+ZeroDivisionError: float division by zero
+[28/Oct/2016 17:49:22] "GET /tmv_app/topic_presence HTTP/1.1" 500 74834
+[28/Oct/2016 17:49:22] "GET /static/debug_toolbar/js/jquery_pre.js HTTP/1.1" 304 0
+[28/Oct/2016 17:49:22] "GET /static/debug_toolbar/js/toolbar.js HTTP/1.1" 304 0
+[28/Oct/2016 17:49:22] "GET /static/debug_toolbar/css/toolbar.css HTTP/1.1" 304 0
+[28/Oct/2016 17:49:22] "GET /static/debug_toolbar/js/jquery_post.js HTTP/1.1" 304 0
+[28/Oct/2016 17:49:22] "GET /static/debug_toolbar/img/ajax-loader.gif HTTP/1.1" 304 0
+[28/Oct/2016 17:49:22] "GET /static/debug_toolbar/css/print.css HTTP/1.1" 304 0
