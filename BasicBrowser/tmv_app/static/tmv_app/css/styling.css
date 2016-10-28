@@ -635,3 +635,66 @@ table#xscale {
 	width: 100%;
 }
 
+
+.t1 {
+	background-color: #fbb4ae;
+}
+
+.t2 {
+	background-color: #b3cde3;
+}
+
+.t3 {
+	background-color: #ccebc5;
+}
+
+.t4 {
+	background-color: #decbe4;
+}
+
+.t5 {
+	background-color: #fed9a6;
+}
+
+.t6 {
+	background-color: #ffffcc;
+}
+
+.t7 {
+	background-color: #e5d8bd;
+}
+
+.t8 {
+	background-color: #fddaec;
+}
+
+.t9 {
+	background-color: #f2f2f2;
+}
+
+path.current_topic {
+	stroke: #fbb4ae;
+	stroke-width: 2
+	z-index: 1;
+}
+
+path.other_topic {
+	stroke: #f2f2f2;
+	z-index: -1;
+	stroke-width: 1;
+}
+
+circle.current_topic {
+	fill: #fbb4ae;
+	stroke-width: 2;
+	r: 2;
+	z-index: 1;
+}
+
+circle.other_topic {
+	fill: #f2f2f2;
+	z-index: -1;
+	stroke-width: 0.5;
+	r: 1;
+}
+

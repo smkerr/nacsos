@@ -2,9 +2,71 @@
 <head>
 {% load static %}
     <script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
     <script language="JavaScript" src="/static/js/jquery.rightClick.js"></script>
-    <script type="text/JavaScript"> 
-    <!--
+    
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<title>{{ topic.title }}</title>
+<link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
+
+</head>
+  <body>
+{{ nav_bar|safe }}
+<div id="top"></div>
+<h1 id="header">
+<table><tr>
+<td id="title">{{ topic.title }}</td>
+</tr></table></span>
+<hr noshade>
+</h1>
+
+<div id="main">
+
+
+<table><tr>
+<td width="100%">
+    <div id="pyGraph" height="600"></div><br>
+</td>
+
+</tr>
+</table>
+<table>
+<tr>
+<td width="30.0%">
+<table class="dark">
+<tr class="title">
+<td>words</td></tr>
+{% if terms %}
+	{% for term in terms %}
+	<tr class="list" onclick="window.location.href='/tmv_app/term/{{ term.term }}'" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')"><td id="{{ term.title }}_list">{{ term.title }}</td><tr>
+	{% endfor %}
+{% endif %}
+<tmv-topic-terms-column>
+</table>
+</td>
+
+<td width="70.0%">
+<table class="light">
+<tr class="title">
+<td>related documents</td>
+</tr>
+{% if docs %}
+	{% for doc in docs %}
+	<tr class="list"><td id="{{ doc.title }}" onclick="window.location.href='/tmv_app/doc/{{ doc.doc }}'">{{ doc.title }}</td><tr>
+	{% endfor %}
+{% endif %}
+</table>
+</td>
+
+</tr></table>
+</div>
+
+<div id="footer">
+<br>
+<hr noshade>
+
+<script type="text/JavaScript"> 
     function highlight(id) {
 	   	var list = document.getElementById(id+'_list');
 	   	var bar = document.getElementById(id+'_bar');
@@ -26,60 +88,136 @@
 			bar.style.backgroundColor='#799FF2';
 		}
     }
-    //-->
+    var data = {{ yts|safe }};
+    var topic = {{ topic.topic|safe }};
+    var topic_title = '{{ topic.title }}';
+    console.log(topic)
+    console.log(topic_title)
+    console.log(data)
+
+    var width = 800
+    var height = 600
+
+    var graph = d3.select("#pyGraph")
+	    .append("svg")
+	    .attr("width", width) 
+	    .attr("height", height);
+
+    graph.append("rect")
+	    .attr("width", width)
+	    .attr("height", height)
+	    .style("fill", "white")
+	    .style("stroke", "black")
+	    .style("stroke-width", 2)
+
+    graph.append("line")
+	    .attr("class", "axis")
+	    .attr("x1", width*0.1)
+	    .attr("x2", width* 0.9)
+	    .attr("y1", height*0.9)
+	    .attr("y2", height*0.9)
+	    .attr("stroke-width", 1)
+	    .attr("stroke", "black");
+
+    graph.append("line")
+	    .attr("class", "axis")
+	    .attr("x1", width*0.1)
+	    .attr("x2", width* 0.1)
+	    .attr("y1", height*0.9)
+	    .attr("y2", height*0.1)
+	    .attr("stroke-width", 1)
+	    .attr("stroke", "black");
+
+    max_score = d3.max(data, function(d) { return d.score/d.count })
+
+    yscale = d3.scale.linear()
+	    .domain([0, max_score])
+	    .range([height*0.9, height*0.1]);
+
+    min_PY = d3.min(data, function(d) { return d.PY })
+    max_PY = d3.max(data, function(d) { return d.PY })
+
+
+    xscale = d3.scale.linear()
+	    .domain([min_PY, max_PY])
+	    .range([width*0.1, width*0.9]);
+
+
+	var line = d3.svg.line()
+		.x(function(d) {
+			return xscale(d.PY);
+		})
+		.y(function(d) {
+			return yscale(d.score/d.count);
+		})
+
+    var topics = d3.nest()
+    .key(function(d) {
+        return d.topic__title;
+    })
+    .sortValues(function(a,b) { return a.PY - b.PY})
+    .entries(data);
+
+    console.log(topics)
+
+
+    var topicClass = function(x) {
+        if (x == topic_title || x == topic){
+            return 'current_topic';
+                } else {
+            return 'other_topic';
+        }
+    }
+
+    div = graph.append("text")   
+	    .attr("text-anchor", "middle")
+		.attr("fill", "black")
+		.attr("font-size", "16px")
+		.attr("x", width/2)
+		.attr("y", 25)
+        .attr("id", "topic")
+		.text(topic_title)
+
+    graph.selectAll("circle")
+		.data(data)
+		.enter()
+		.append("circle")
+		.attr("cx", function(d) { return xscale(d.PY)})
+		.attr("cy", function(d) { return yscale(d.score/d.count)})
+        .attr('class', function(d) {
+            return topicClass(d.topic_id)
+        });
+
+    topics.forEach(function(d) {
+        graph.append('svg:path')
+            .attr('d', line(d.values))
+            .attr('class', function() {
+                return topicClass(d.key)
+            })
+			.on("mouseover", function() {
+                d3.select(this).transition().duration(200)
+                    .style("stroke", "#b3cde3")
+                    .style("stroke-width", 2);
+                d3.select("#topic").transition().duration(200)
+                    .style("fill", "#b3cde3")
+                    .text(d.key);
+            })
+            .on("mouseout", function() {
+                d3.select(this).transition().duration(200)
+                    .style("stroke", "#f2f2f2")
+                    .style("stroke-width", 1);
+                d3.select("#topic").transition().duration(200)
+                    .style("fill", "black")
+                    .text(topic_title);
+            })
+            .attr('fill', 'none');
+    });
+
+    
+
+
+
     </script>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-
-<title>{{ topic.title }}</title>
-<link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
-
-</head>
-  <body>
-{{ nav_bar|safe }}
-<div id="top"></div>
-<h1 id="header">
-<table><tr>
-<td id="title">{{ topic.title }}</td>
-</tr></table></span>
-<hr noshade>
-</h1>
-
-<div id="main">
-<table width="100%" class="high-contrast-table"><tbody><tr>
-</tr></tbody></table>
-<table><tr>
-<td width="30.0%">
-<table class="dark">
-<tr class="title">
-<td>words</td></tr>
-{% if terms %}
-	{% for term in terms %}
-	<tr class="list" onclick="window.location.href='/tmv_app/term/{{ term.id }}'" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')"><td id="{{ term.title }}_list">{{ term.title }}</td><tr>
-	{% endfor %}
-{% endif %}
-<tmv-topic-terms-column>
-</table>
-</td>
-
-<td width="70.0%">
-<table class="light">
-<tr class="title">
-<td>related documents</td>
-</tr>
-{% if docs %}
-	{% for doc in docs %}
-	<tr class="list"><td id="{{ doc.title }}" onclick="window.location.href='/tmv_app/doc/{{ doc.id }}'">{{ doc.title }}</td><tr>
-	{% endfor %}
-{% endif %}
-</table>
-</td>
-
-</tr></table>
-</div>
-
-<div id="footer">
-<br>
-<hr noshade>
 </div>
   </body>
 </html>

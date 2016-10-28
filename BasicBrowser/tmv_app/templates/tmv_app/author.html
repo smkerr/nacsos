@@ -27,9 +27,7 @@
         piec.unhighlight();
     }
     console.log(array)
-    for (t=0;t < array.length;t++) {
-        console.log(t)
-    }
+
     //-->
     </script>
 
@@ -47,7 +45,7 @@
 
     <h1 id="header">
         <table><tr>
-            <td id="title">{{ doc.title }}</td>
+            <td id="title">{{ author }}</td>
         </tr></table>
 
         <hr noshade>
@@ -63,30 +61,24 @@
                 </tr>
                 {% if topics %}
 			{% for topic in topics %}
-			<tr class="list"><td id="topic_{{ topic.topic }}" onmouseover="highlight({{ forloop.counter|add:"-1" }})" onmouseout="unhighlight()" onclick="window.location.href='/tmv_app/topic/{{ topic.topic }}'"><span class="{{ topic.ntopic }}">{{ topic.title }}</span></td></tr>
+			<tr class="list"><td id="topic_{{ topic.topic }}" onmouseover="highlight({{ forloop.counter|add:"-1" }})" onmouseout="unhighlight()" onclick="window.location.href='/tmv_app/topic/{{ topic.topic }}'"><span class="{{ topic.ntopic }}">{{ topic.topic__title }}</span></td></tr>
 			{% endfor %}
 		{% endif %}
                 </table>
             </td>
 
-            <td>
-                <table class="light">
-                <tr class="doc"><td>
-                    <p>
-                       {% for author in doc_authors %}
-                          <a href="/tmv_app/author/{{ author.author }}">{{ author.author }}</a>;
-                       {% endfor %}
-                       {{ doc.PY }}
-                    </p>
-                    <p>
-			            {% for word in words %}
-								<span class="{{ word.topic }}">{{ word.title }}</span>
-							{% endfor %}
-		            </p>
-<!--		            <p><a href="http://en.wikipedia.org/wiki/{{ doc.title }}">Full article&nbsp;&#x25B8;</a></p>-->
-                </td></tr>
-                </table>
-            </td>
+            <td width="70.0%">
+				<table class="light">
+				<tr class="title">
+				<td>Author Publications</td>
+				</tr>
+				{% if docs %}
+					{% for doc in docs %}
+					<tr class="list"><td id="{{ doc.title }}" onclick="window.location.href='/tmv_app/doc/{{ doc.doc }}'">{{ doc.title }}</td><tr>
+					{% endfor %}
+				{% endif %}
+				</table>
+				</td>
         </tr></table>
     </div>
 

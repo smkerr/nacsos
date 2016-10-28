@@ -2,8 +2,8 @@
 <head>
 {% load static %}
     <script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
-    <script language="JavaScript" src="/static/js/pie.js"></script>
-    <script language="JavaScript" src="/static/js/search.js"></script>
+    <script language="JavaScript" src="{% static 'tmv_app/js/pie.js' %}"></script>
+    <script language="JavaScript" src="{% static 'tmv_app/js/search.js' %}"></script>
 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     
@@ -31,7 +31,7 @@
             Model started running at {{ start_time }}, and has run {{ start_time|timesince:last_update }}.
             <br>Last update at {{ last_update }}, or {{ last_update|timesince}} ago.
             <br>{{ num_batches }} Batches Completed
-            <br>{{ num_docs }} Documents
+            <br>{{ topics_seen }} out of {{ num_docs }} Documents seen
             <br>{{ num_topics }} Topics
             <br>{{ num_terms }} Terms
             </td></tr>

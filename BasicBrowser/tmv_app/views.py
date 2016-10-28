@@ -1,7 +1,7 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import Template, Context, RequestContext, loader
 from tmv_app.models import *
-from django.db.models import Q
+from django.db.models import Q, F, Sum, Count, FloatField
 from django.shortcuts import *
 from django.forms import ModelForm
 import random, sys, datetime
@@ -15,18 +15,68 @@ opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 
 nav_bar = loader.get_template('tmv_app/nav_bar.html').render()
 
-def index(request):
-    return HttpResponse("Hello, world. You're at the topic browser index.")
+def show_toolbar(request):
+    return True
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK" : show_toolbar,
+}
 
+def author_detail(request, author_name):
+    response = author_name
+    documents = Doc.objects.filter(docauthors__author=author_name)
+
+    topics = {}
+    topics = Topic.objects.all()
+    topics = []
+
+    for d in documents:
+        doctopics = d.doctopic_set.values()
+        for dt in doctopics:
+            if dt['scaled_score']*100 > 1 :  
+                topic = Topic.objects.get(topic=dt['topic_id'])
+                if topic in topics:
+                    topics[topics.index(topic)].sum += dt['scaled_score']
+                else:
+                    topic.sum = dt['scaled_score']
+                    topics.append(topic)
+
+    topics = DocTopic.objects.filter(doc__docauthors__author=author_name, scaled_score__gt=0.01)
+
+    topics = topics.annotate(total=(Sum('scaled_score')))
+
+    topics = topics.values('topic','topic__title').annotate(
+        tprop=Sum('scaled_score')
+    ).order_by('-tprop')
+
+    pie_array = []
+    for t in topics:
+        pie_array.append([t['tprop'], '/topic/' + str(t['topic']), 'topic_' + str(t['topic'])])
+
+    author_template = loader.get_template('tmv_app/author.html')
+
+    author_page_context = Context({'nav_bar': nav_bar, 'author': author_name, 'docs': documents, 'topics': topics, 'pie_array': pie_array})
+
+    return HttpResponse(author_template.render(author_page_context))
+
+def index(request):
+    ip = request.META['REMOTE_ADDR']
+    return HttpResponse("Hello, " + str(ip) + " You're at the topic browser index.")
+
+
+
+
+###########################################################################
+## Topic View
 def topic_detail(request, topic_id):    
-    update_topic_titles()
+    #update_topic_titles()
     response = ''
     
     topic_template = loader.get_template('tmv_app/topic.html')
     
     topic = Topic.objects.get(topic=topic_id)
-    topicterms = TopicTerm.objects.filter(topic=topic_id).order_by('-score')
-    doctopics = DocTopic.objects.filter(topic=topic_id).order_by('-score')[:50]
+    #topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')
+    topicterms = Term.objects.filter(topicterm__topic=topic.topic).order_by('-topicterm__score')
+    doctopics = Doc.objects.filter(doctopic__topic=topic.topic).order_by('-doctopic__scaled_score')[:50]
     
     terms = []
     term_bar = []
@@ -35,27 +85,41 @@ def topic_detail(request, topic_id):
     
     for tt in topicterms:
         term = Term.objects.get(term=tt.term)
+        score = tt.topicterm_set.all()[0].score
         
         terms.append(term)
-        if tt.score >= .01:
-            term_bar.append((True, term, tt.score * 100))
-            remainder -= tt.score
+        if score >= .01:
+            term_bar.append((True, term, score * 100))
+            remainder -= score
         else:
             if remainder_titles == '':
                 remainder_titles += term.title
             else:
                 remainder_titles += ', ' + term.title
     term_bar.append((False, remainder_titles, remainder*100))
-    
-    topics = []
-    
+       
     docs = []
     for dt in doctopics:
         docs.append(Doc.objects.get(doc=dt.doc))
+
+    #update_year_topic_scores()
+
+    all_docs = []
+
+    yts = TopicYear.objects.all()
+
+    for yt in yts:
+        yt.topic_title = yt.topic.title
+
     
-    topic_page_context = Context({'nav_bar': nav_bar, 'topic': topic, 'terms': terms, 'term_bar': term_bar, 'docs': docs})
+
+    ytarray = list(yts.values('PY','count','score','topic_id','topic__title'))
+  
+    topic_page_context = Context({'nav_bar': nav_bar, 'topic': topic, 'terms': terms, 'term_bar': term_bar, 'docs': docs, 'yts': ytarray, 'all_docs': all_docs})
     
     return HttpResponse(topic_template.render(topic_page_context))
+
+##############################################################
 
 def term_detail(request, term_id):
     update_topic_titles()
@@ -67,7 +131,7 @@ def term_detail(request, term_id):
     
     topics = {}
     for topic in Topic.objects.all():
-        tt = TopicTerm.objects.filter(topic=topic.id, term=term_id)
+        tt = TopicTerm.objects.filter(topic=topic.topic, term=term_id)
         if len(tt) > 0:
             topics[topic] = tt[0].score
     
@@ -91,28 +155,43 @@ def doc_detail(request, doc_id):
     doc = Doc.objects.get(doc=doc_id)
     doctopics = DocTopic.objects.filter(doc=doc_id).order_by('-score')
 
+    doc_authors = DocAuthors.objects.filter(doc__doc=doc_id)
+
     topics = []
     pie_array = []
     dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
     print ( dt_threshold )
     dt_thresh_scaled = Settings.objects.get(id=1).doc_topic_scaled_score
+    topicwords = {}
+    ntopic = 0
     for dt in doctopics:
         if ((not dt_thresh_scaled and dt.score >= dt_threshold) or (dt_thresh_scaled and dt.scaled_score*100 >= dt_threshold)):
-            topic = Topic.objects.get(topic=dt.topic)
+            topic = Topic.objects.get(topic=dt.topic_id)
+            ntopic+=1
+            topic.ntopic = "t"+str(ntopic)
             topics.append(topic)
+            terms = Term.objects.filter(topicterm__topic=topic.topic).order_by('-topicterm__score')[:10]
+            
+            topicwords[ntopic] = []
+            for tt in terms:
+                topicwords[ntopic].append(tt.title)
             print ( topic.title )
             if not dt_thresh_scaled:
-                pie_array.append([dt.score, '/topic/' + str(topic.id), 'topic_' + str(topic.id)])
+                pie_array.append([dt.score, '/topic/' + str(topic.topic), 'topic_' + str(topic.topic)])
             else:
-                pie_array.append([dt.scaled_score, '/topic/' + str(topic.id), 'topic_' + str(topic.id)])
+                pie_array.append([dt.scaled_score, '/topic/' + str(topic.topic), 'topic_' + str(topic.topic)])
         else:
             print ( (dt.score, dt.scaled_score) )
    
-    if doc.content == '':
-        doc.content = get_doc_display(doc)
-        doc.save()
+    words = []
+    for word in doc.content.split():
+        wt = ""
+        for t in range(1,ntopic+1):
+            if word in topicwords[t]:
+                wt = t
+        words.append({'title': word, 'topic':"t"+str(wt)})
     
-    doc_page_context = Context({'nav_bar': nav_bar, 'doc': doc, 'topics': topics, 'pie_array': pie_array})
+    doc_page_context = Context({'nav_bar': nav_bar, 'doc': doc, 'topics': topics, 'pie_array': pie_array,'doc_authors': doc_authors, 'words': words })
     
     return HttpResponse(doc_template.render(doc_page_context))
 
@@ -160,14 +239,14 @@ def topic_list_detail(request):
 
 def topic_presence_detail(request):
     update_topic_titles()
+    update_topic_scores()
     response = ''
     
     presence_template = loader.get_template('tmv_app/topic_presence.html')
     
     topics = {}
     for topic in Topic.objects.all():
-        score = sum([dt.score for dt in DocTopic.objects.filter(topic=topic.topic)])
-        topics[topic] = score
+        topics[topic] = topic.score
     
     sorted_topics = sorted(topics.keys(), key=lambda x: -topics[x])
     topic_tuples = []
@@ -175,7 +254,6 @@ def topic_presence_detail(request):
     for topic in sorted_topics:
         topic_tuples.append((topic, topics[topic], topics[topic]/max_score*100))
     
-    #nav_bar = open(TEMPLATE_DIR + 'nav_bar.html', 'r').read()
 
     presence_page_context = Context({'nav_bar': nav_bar, 'topic_tuples': topic_tuples})
     
@@ -188,8 +266,10 @@ def stats(request):
 
     nav_bar = loader.get_template('tmv_app/nav_bar.html')
 
-    stats_page_context = Context({'nav_bar': nav_bar, 'num_docs': Doc.objects.count(), 'num_topics': Topic.objects.count(), 'num_terms': Term.objects.count(), 'start_time': RunStats.objects.get(id=1).start, 'elapsed_time': RunStats.objects.get(id=1).start, 'num_batches': RunStats.objects.get(id=1).batch_count, 'last_update': RunStats.objects.get(id=1).last_update})
-#stats_page_context = Context({'nav_bar': nav_bar, 'num_docs': Doc.objects.count(), 'num_topics': Topic.objects.count(), 'num_terms': Term.objects.count(), 'start_time': RunStats.objects.get(id=1).start, 'elapsed_time': (datetime.datetime.now() - RunStats.objects.get(id=1).start), 'num_batches': RunStats.objects.get(id=1).batch_count, 'last_update': RunStats.objects.get(id=1).last_update})
+    topics_seen = DocTopic.objects.distinct('doc_id').count()
+
+    stats_page_context = Context({'nav_bar': nav_bar, 'num_docs': Doc.objects.count(),'topics_seen': topics_seen, 'num_topics': Topic.objects.count(), 'num_terms': Term.objects.count(), 'start_time': RunStats.objects.get(id=1).start, 'elapsed_time': RunStats.objects.get(id=1).start, 'num_batches': RunStats.objects.get(id=1).batch_count, 'last_update': RunStats.objects.get(id=1).last_update})
+
 
     return HttpResponse(stats_template.render(stats_page_context))
 
@@ -228,24 +308,73 @@ def update_topic_titles():
     if not stats.topic_titles_current:
     #if "a" in "ab":
         for topic in Topic.objects.all():
-            topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')[:3]
+            #topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')[:3]
+            topicterms = Term.objects.filter(topicterm__topic=topic.topic).order_by('-topicterm__score')[:3]
             if topicterms.count() < 3:
                 continue
-            new_topic_title = '{' + Term.objects.get(term=topicterms[0].term).title + ', ' + Term.objects.get(gensim_id=topicterms[1].term).title + ', ' + Term.objects.get(gensim_id=topicterms[2].term).title + '}'
+            
+            new_topic_title = '{' + topicterms[0].title + ', ' + topicterms[1].title + ', ' + topicterms[2].title + '}'
+            #new_topic_title = '{' + Term.objects.filter(topicterm__term=topicterms[0].term)[0].title + ', ' + Term.objects.filter(topicterm__term=topicterms[1].term)[0].title + ', ' + Term.objects.filter(topicterm__term=topicterms[2].term)[0].title + '}'
 
             topic.title = new_topic_title
             topic.save()
         stats.topic_titles_current = True
         stats.save()
 
+def update_topic_scores():
+    stats = RunStats.objects.get(id=1)
+    if not stats.topic_scores_current:
+        for topic in Topic.objects.all():
+            score = sum([dt.score for dt in DocTopic.objects.filter(topic=topic.topic)])
+            topic.score = score
+            topic.save()
+        stats.topic_scores_current = True
+        stats.save()
+
+def update_year_topic_scores():
+
+    stats = RunStats.objects.get(id=1)
+    if "a" in "a":    
+    #if not stats.topic_year_scores_current:
+        yts = DocTopic.objects.all()
+        yts = DocTopic.objects.filter(doc__PY__gt=1989)  
+
+        yts = yts.values('doc__PY').annotate(
+            yeartotal=Sum('scaled_score')
+        )
+
+        ytts = yts.values().values('topic','topic__title','doc__PY').annotate(
+            score=Sum('scaled_score')
+        )
+
+
+        for ytt in ytts:
+            yttyear = ytt['doc__PY']
+            topic = Topic.objects.get(topic=ytt['topic'])
+            for yt in yts:
+                ytyear = yt['doc__PY']
+                if yttyear==ytyear:
+                    yeartotal = yt['yeartotal']
+            try:
+                topicyear = TopicYear.objects.get(topic=topic,PY=yttyear)
+            except:
+                topicyear = TopicYear(topic=topic,PY=yttyear)
+            topicyear.score = ytt['score']
+            topicyear.count = yeartotal
+            topicyear.save()
+
+        stats.topic_year_scores_current = True
+        stats.save()
+        
+
 def topic_random(request):
-    return HttpResponseRedirect('/topic/' + str(random.randint(1, Topic.objects.count())))
+    return HttpResponseRedirect('/tmv_app/topic/' + str(random.randint(1, Topic.objects.count())))
 
 def doc_random(request):
-    return HttpResponseRedirect('/doc/' + str(random.randint(1, Doc.objects.count())))
+    return HttpResponseRedirect('/tmv_app/doc/' + str(random.randint(1, Doc.objects.count())))
 
 def term_random(request):
-    return HttpResponseRedirect('/term/' + str(random.randint(1, Term.objects.count())))
+    return HttpResponseRedirect('/tmv_app/term/' + str(random.randint(1, Term.objects.count())))
 
 def get_doc_display(doc):
     url = "http://en.wikipedia.org/wiki/" + doc.title
