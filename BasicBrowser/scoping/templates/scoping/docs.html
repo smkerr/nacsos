@@ -16,7 +16,7 @@
 <br>
 
 <!-- Query manager -->
-<h2> Document list ({{query.id}}) </h2>
+<h2> Document list (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) </h2>
 <br>
 
 <p id="field_container">
@@ -39,6 +39,7 @@
             <td>
                 <select class="f_operator">
                     <option value="icontains">CONTAINS</option>
+                    <option value="noticontains">NOT</option>
                     <option>EQUALS</option>
                     <option>IS GREATER THAN</option>
                     <option>IS LESS THAN</option>
@@ -57,6 +58,9 @@
         </tr>
     </table>
 <button id="dofilter">Filter</button>
+</p>
+<p style="text-align:left">
+Save this filter as <input type="text" id="tag_title"> <button onclick="savetag()">Save</button>
 </p>
 
 <p style="text-align:left">Showing documents 1-100 of <span id="doc_count">{{ ndocs }}</span>
@@ -153,23 +157,43 @@ $(".field_name").click(function() {
     update_fields()
 })
 
-/*
-$("button.filter").click(function( event ) {
-    //add field tag to first empty filter field
-    event.stopPropagation();
-    var field = $(this).parent()
-    $(".f_field").each(function(){
-        if ($(this).val()=="") {
-            $(this).val(field.attr('name'))
-            return false;
-        }
-    })
-})
-*/
-
 $("#dofilter").click(function( ) {
     update_fields();
 })
+
+function savetag() {
+    tag_title=$("#tag_title").val()
+    var fields = []
+    $(".f_field").each(function(){
+        fields.push($(this).val())
+    })
+    var operators = []
+    $(".f_operator").each(function(){
+        operators.push($(this).val())
+    })
+    var text = []
+    $(".f_text").each(function(){
+        text.push($(this).val())
+    })
+    var joins = []
+    $(".f_join").each(function(){
+        joins.push($(this).val())
+    })
+    $.ajax({
+        url: '/scoping/sort_docs',
+        data: {
+            'qid': qid,
+            'f_fields': fields,
+            'f_operators': operators,
+            'f_text': text,
+            'f_join': joins,
+            'tag_title': tag_title
+        },
+        success: function(data) {
+            console.log(data)
+        }
+    })
+}
 
 function button_filter(event, element) {
     event.stopPropagation();
@@ -185,7 +209,7 @@ function button_filter(event, element) {
 function join_filter(element) {
     if ($(element).val() != "") {
         table = $("#filtertable")
-        table.append('<tr><td><input class="f_field" type="text"></td><td><select class="f_operator"><option value="icontains">CONTAINS</option><option>EQUALS</option><option>IS GREATER THAN</option><option>IS LESS THAN</option></select></td><td><input type="text" class="f_text"> </td><td><select class="f_join" onchange="join_filter(this)"><option></option><option>AND</option><option>OR</option></select></td></tr>')
+        table.append('<tr><td><input class="f_field" type="text"></td><td><select class="f_operator"><option value="icontains">CONTAINS</option><option value="noticontains">NOT</option><option>EQUALS</option><option>IS GREATER THAN</option><option>IS LESS THAN</option></select></td><td><input type="text" class="f_text"> </td><td><select class="f_join" onchange="join_filter(this)"><option></option><option>AND</option><option>OR</option></select></td></tr>')
     }
 }
 
@@ -227,6 +251,7 @@ function update_fields() {
             var n_docs = data.n_docs
             $("#doc_count").text(n_docs)
             data = data.data
+            console.log(data)
             nfields = Object.keys(data[0]).length
             console.log(data.length)
             $("table.light tr:first").html("")
@@ -242,7 +267,12 @@ function update_fields() {
                 r = Math.floor(i/nfields)
                 c = i % nfields
                 f = active_field_paths[c]
-                $(this).text(data[r][f])
+                if (r+1 > n_docs) {
+                    var text = ""
+                } else {
+                    var text = data[r][f]
+                }
+                $(this).text(text)
             })
             $(".field").data("sortdir","-")
 
