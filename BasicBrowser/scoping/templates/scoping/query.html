@@ -1,0 +1,132 @@
+<html>
+<head>
+{% load static %}
+{% load scoping_extras %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
+<title>Scoping</title>
+<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+
+</head>
+  <body>
+
+<div id="main">
+<div id="graph">
+<h1> Scoping Review Helper</h1>
+<br>
+
+<!-- Query manager -->
+<h2> Query #{{query.id}} Overview</h2>
+<br>
+
+<table class="light" style="width:100%">
+	<tr class="title">
+    {% for f in fields %}
+        <td class="field" name="{{f}}">{{f}} <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td>
+    {% endfor %}
+    <td class="field" name="docs">Documents <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td>
+    </tr>
+	{% for tag in tags %}
+    <tr class="datarow">
+    {% for f in fields %}
+        <td class="data">{{tag|keyvalue:f}}</td>
+    {% endfor %}
+        <td class="data-ndocs">{{tag.docs}}
+	</tr>
+	{% endfor %}
+</table>
+
+<p style="text-align:left">
+{{ untagged }} Documents are not tagged 
+
+<br><hr><br>
+
+<h2> Users </h2>
+<table class="light" style="width:100%">
+    <tr class="title">
+    </tr>
+    {% for u in users %}
+    <tr>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email }}</td>
+        {% if u.onproject %}
+            <td><label class="switch">
+            <input type="checkbox" class="user_active" data-user="{{u.username}}" onchange="activate_user(this)" checked>
+            <div class="slider round"></div>
+            </label></td>
+        {% else %}
+            <td><label class="switch">
+            <input type="checkbox" class="user_active" data-user="{{u.username}}" onchange="activate_user(this)">
+            <div class="slider round"></div>
+            </label></td>
+        {% endif %}
+        
+    </tr>      
+    {% endfor %}
+</table>
+<p style="text-align:left">
+<input type="range" id="sample" min="0.01" value="0.1" max="1" step="0.01" oninput="outputUpdate(value)"/>
+<output for="sample" id="sample_size">0.1</output>
+
+<div id="assignment_box">
+Assign a total of <span id="docUserTotal"></span> documents each to <span id="userTotal"></span> users? <button>Assign</button>
+
+</div>
+</div>
+</div>
+</body>
+
+<script>
+
+var qid = {{ query.id }}
+
+var total_docs = 0
+
+var total_users = 0
+
+$(".user_active").each(function() {
+    if ($(this).is(':checked')) {
+        total_users+=1
+    }
+    console.log($(this))
+})
+
+$(".data-ndocs").each(function(){
+    total_docs += parseInt($(this).text())
+})
+
+updateAssignment()
+
+function outputUpdate(vol) {
+	document.querySelector('#sample_size').value = vol;
+    updateAssignment()
+}
+
+function updateAssignment() {
+    vol = $("#sample").val() 
+    docs_each = Math.ceil(total_docs*vol)
+    $("#docUserTotal").text(docs_each)
+    $("#userTotal").text(total_users)
+}
+
+function activate_user(element) {
+    checked = element.checked
+    user = element.dataset.user
+    console.log(user)
+    $.ajax({
+        url: '/scoping/activate_user',
+        data: {
+            'qid': qid,
+            'user': user,
+            'checked': checked
+        },
+        success: function(data) {
+            total_users+=data
+            updateAssignment()
+        }
+    })
+}
+
+
+</script>
+</html>

@@ -8,6 +8,8 @@ urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^doquery$', views.doquery, name='doquery'),
     url(r'^querying/(?P<qid>[0-9]+)$', views.querying, name='querying'),
+    url(r'^query/(?P<qid>[0-9]+)$', views.query, name='query'),
     url(r'^docs/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
     url(r'^sort_docs$', views.sortdocs, name='sortdocs'),
+    url(r'^activate_user$', views.activate_user, name='activate_user'),
 ]

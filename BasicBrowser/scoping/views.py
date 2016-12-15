@@ -5,6 +5,7 @@ import os, time
 
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.template import loader
 from django.utils import timezone
 from django.urls import reverse
@@ -76,28 +77,64 @@ def querying(request, qid):
     }
     return HttpResponse(template.render(context, request))
 
+def query(request,qid):
+    template = loader.get_template('scoping/query.html')
+    query = Query.objects.get(pk=qid)
+
+    tags = Tag.objects.filter(query=query)
+
+    tags = tags.values()
+
+    for tag in tags:
+        #docs = Doc.objects.filter(tag=tag).count()
+        tag['docs'] = Doc.objects.filter(tag=tag['id']).count()
+  
+    fields = ['id','title','text']
+
+    untagged = Doc.objects.filter(tag__isnull=True).count()
+
+    users = User.objects.all()
+
+    proj_users = users.query
+
+    user_list = []
+    
+    for u in users:
+        if query in u.query_set.all():
+            user_list.append({
+                'username': u.username,
+                'email': u.email,
+                'onproject': True
+            })
+        else:
+            user_list.append({
+                'username': u.username,
+                'email': u.email,
+                'onproject': False
+            })
+
+    context = {
+        'query': query,
+        'tags': list(tags),
+        'fields': fields,
+        'untagged': untagged,
+        'users': user_list
+    }
+    return HttpResponse(template.render(context, request))
+
 ##################################################
 ## View all docs
-@login_required
+
 def doclist(request,qid):
 
     template = loader.get_template('scoping/docs.html')
 
     query = Query.objects.get(pk=qid)
-
     qdocs = Doc.objects.filter(query__id=qid)
-
     all_docs = qdocs
-
     ndocs = all_docs.count()
 
-    docs = list(all_docs[:100].values('wosarticle__ti','wosarticle__ab','wosarticle__py'))
-
-    
-
-    print(len(docs))
-
-    fields = [f for f in Doc._meta.get_fields()]
+    docs = list(all_docs[:100].values('wosarticle__ti','wosarticle__ab','wosarticle__py'))    
 
     fields = []
 
@@ -107,13 +144,8 @@ def doclist(request,qid):
                 if not rf.is_relation:
                     path = f.name+"__"+rf.name
                     fields.append({"path": path, "name": rf.verbose_name})
-        #else:
-            #fields.append({"path": f.name, "name": f.verbose_name})
-            #print(dir(f))
 
     basic_fields = ['Title', 'Abstract', 'Year']
-
-    
 
     context = {
         'query': query,
@@ -153,8 +185,57 @@ def sortdocs(request):
     f_text = request.GET.getlist('f_text[]',None)
     f_join = request.GET.getlist('f_join[]',None)
 
+    tag_title = request.GET.get('tag_title',None)
 
+    # get the query
     query = Query.objects.get(pk=qid)
+
+    # filter the docs according to the query
+    all_docs = Doc.objects.filter(query__id=qid)
+    filt_docs = Doc.objects.filter(query__id=qid)
+
+    tag_text = ""
+    # filter the docs according to the currently active filter
+    for i in range(len(f_fields)):
+        if i==0:
+            joiner = "AND"
+            text_joiner = ""
+        else:
+            joiner = f_join[i-1]
+            text_joiner = f_join[i-1]
+        if f_operators[i] == "noticontains":
+            op = "icontains"
+            exclude = True
+        else:
+            op =  f_operators[i] 
+            exclude = False  
+        try:
+            kwargs = {
+                '{0}__{1}'.format(f_fields[i],op): f_text[i]
+            } 
+            if joiner=="AND":
+                if exclude:
+                    filt_docs = filt_docs.exclude(**kwargs)
+                else:
+                    filt_docs = filt_docs.filter(**kwargs)
+            else:
+                if exclude:
+                    filt_docs = filt_docs | all_docs.exclude(**kwargs)
+                else:
+                    filt_docs = filt_docs | all_docs.exclude(**kwargs)
+            tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
+        except:
+            break
+
+    if tag_title is not None:
+        t = Tag(title=tag_title)
+        t.text = tag_text
+        t.query = query
+        t.save()
+        for doc in filt_docs:
+            doc.tag.add(t)
+        return(JsonResponse("",safe=False))
+
     if sortdir=="+":
         sortdir=""
 
@@ -173,30 +254,6 @@ def sortdocs(request):
     #print(mult_fields)
         
     mult_fields=[]
-
-    all_docs = Doc.objects.filter(query__id=qid)
-    filt_docs = Doc.objects.filter(query__id=qid)
-
-    for i in range(len(f_fields)):
-        if i==0:
-            joiner = "AND"
-        else:
-            joiner = f_join[i-1]
-        try:
-            kwargs = {
-                '{0}__{1}'.format(f_fields[i],f_operators[i]): f_text[i]
-            } 
-            if joiner=="AND":
-                filt_docs = filt_docs.filter(**kwargs)
-            else:
-                filt_docs = filt_docs | all_docs.filter(**kwargs)
-            print(kwargs)
-            print(filt_docs.count())
-        except:
-            print(kwargs)
-            break
-
-
 
     if sortdir is not None:
         null_filter = field+'__isnull'
@@ -218,9 +275,24 @@ def sortdocs(request):
 
     return JsonResponse(response,safe=False)
 
+def activate_user(request):
 
+    qid = request.GET.get('qid',None)
+    checked = request.GET.get('checked',None)
+    user = request.GET.get('user',None)
 
+    query = Query.objects.get(pk=qid)
+    user = User.objects.get(username=user)
 
+    if checked=="true":       
+        query.users.add(user)
+        query.save()
+        response=1
+    else:
+        response=-1
+        query.users.remove(user)
+
+    return JsonResponse(response,safe=False)
 
 
 

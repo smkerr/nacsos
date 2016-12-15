@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 # Create your models here.
 
@@ -7,10 +8,17 @@ class Query(models.Model):
     text = models.TextField(null=True, verbose_name="Query Text")
     date = models.DateTimeField(verbose_name="Query Date")
     r_count = models.IntegerField(null=True, verbose_name="Query Results Count")
+    users = models.ManyToManyField(User)
+
+class Tag(models.Model):
+    title = models.TextField(null=True, verbose_name="Tag Title")
+    text = models.TextField(null=True, verbose_name="Tag Text")
+    query = models.ForeignKey('Query',null=True, verbose_name="TagQuery")
 
 class Doc(models.Model):
     UT = models.CharField(max_length=30,db_index=True,primary_key=True)
     query = models.ManyToManyField('Query')
+    tag = models.ManyToManyField('Tag')
     title = models.TextField(null=True)
     content = models.TextField(null=True) 
     PY = models.IntegerField(null=True,db_index=True)
