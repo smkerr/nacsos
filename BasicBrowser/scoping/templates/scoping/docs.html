@@ -1,0 +1,311 @@
+<html>
+<head>
+{% load static %}
+{% load scoping_extras %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
+<title>Scoping</title>
+<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+
+</head>
+  <body>
+
+<div id="main">
+<div id="graph">
+<h1> Scoping Review Helper</h1>
+<br>
+
+<!-- Query manager -->
+<h2> Document list ({{query.id}}) </h2>
+<br>
+
+<p id="field_container">
+{% for f in fields %}
+    {% if f.name in basic_fields %}
+        <span class="field_name" data-active="true" name="{{f.path}}">{{ f.name }} <button class="filter" onclick="button_filter(event,this)">filter</button></span>, 
+    {% else %}
+        <span class="field_name" data-active="false" name="{{f.path}}">{{ f.name }}</span>, 
+    {% endif %}
+{% endfor %}
+</p>
+
+<p style="text-align:left">
+    Filter these results...
+    <table id="filtertable">
+        <tr>    
+            <td>
+                <input class="f_field" type="text">
+            </td>
+            <td>
+                <select class="f_operator">
+                    <option value="icontains">CONTAINS</option>
+                    <option>EQUALS</option>
+                    <option>IS GREATER THAN</option>
+                    <option>IS LESS THAN</option>
+                </select>
+            </td>
+            <td>
+                <input type="text" class="f_text">
+            </td>
+            <td>
+                <select class="f_join" onchange="join_filter(this)">
+                    <option></option>
+                    <option>AND</option>
+                    <option>OR</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+<button id="dofilter">Filter</button>
+</p>
+
+<p style="text-align:left">Showing documents 1-100 of <span id="doc_count">{{ ndocs }}</span>
+</p>
+<br>
+
+<table class="light" style="width:100%">
+		<tr class="title">
+        {% for f in fields %}
+            {% if f.name in basic_fields %}
+                <td class="field" name="{{f.path}}">{{f.name}} <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td>
+            {% endif %}
+        {% endfor %}
+        </tr>
+		{% for doc in docs %}
+        <tr class="datarow">
+        {% for f in fields %}
+            {% if f.name in basic_fields %}
+                <td class="data">{{doc|keyvalue:f.path}}</td>
+            {% endif %}
+        {% endfor %}
+<!--
+			<td class="data">{{ doc.title }}</td>
+            <td class="data">{{ doc.content }}</td>
+			<td class="data">{{ doc.PY }}</td>
+-->
+		</tr>
+		{% endfor %}
+</table>
+
+<br><hr><br>
+
+</div>
+</div>
+</body>
+
+<script>
+
+var qid = {{ query.id }}
+
+console.log(qid)
+
+var fields = ['title','content','PY']
+
+$(".field").data("sortdir","-")
+
+$(".uparrow").click(function() {
+    field = $(this).parent()
+    sortfield(field, "+")
+})
+$(".downarrow").click(function() {
+    field = $(this).parent()
+    sortfield(field, "-")
+})
+
+function sortfield(field, sortdir) {
+    var active_field_paths = [];
+    var active_field_names = [];
+    $('*[data-active="true"]').map(function(){
+        active_field_paths.push($(this).attr('name'));
+        active_field_names.push($(this).text());
+    });
+    fieldname = field.attr("name")
+    console.log(fieldname)
+    $.ajax({
+        url: '/scoping/sort_docs',
+        data: {
+            'qid': qid,
+            'fields': active_field_paths,
+            'field': fieldname,
+            'sortdir': sortdir
+        },
+        success: function(data) {
+            nfields = Object.keys(data[0]).length;
+            console.log(data)
+            $(".data").each(function( i ) {
+                r = Math.floor(i/nfields)
+                c = i % nfields
+                f = active_field_paths[c]
+                $(this).text(data[r][f])
+            })
+        }
+    })
+}
+
+$(".field_name").click(function() {
+    if ($(this).attr("data-active") == "true") {
+        $(this).attr("data-active","false")
+        $(this).children().remove()
+    } else {
+        $(this).attr("data-active","true")
+        $(this).append(' <button class="filter" onclick="button_filter(event,this)">filter</button>')
+    }
+    update_fields()
+})
+
+/*
+$("button.filter").click(function( event ) {
+    //add field tag to first empty filter field
+    event.stopPropagation();
+    var field = $(this).parent()
+    $(".f_field").each(function(){
+        if ($(this).val()=="") {
+            $(this).val(field.attr('name'))
+            return false;
+        }
+    })
+})
+*/
+
+$("#dofilter").click(function( ) {
+    update_fields();
+})
+
+function button_filter(event, element) {
+    event.stopPropagation();
+    var field = $(element).parent()
+    $(".f_field").each(function(){
+        if ($(this).val()=="") {
+            $(this).val(field.attr('name'))
+            return false;
+        }
+    })
+}
+
+function join_filter(element) {
+    if ($(element).val() != "") {
+        table = $("#filtertable")
+        table.append('<tr><td><input class="f_field" type="text"></td><td><select class="f_operator"><option value="icontains">CONTAINS</option><option>EQUALS</option><option>IS GREATER THAN</option><option>IS LESS THAN</option></select></td><td><input type="text" class="f_text"> </td><td><select class="f_join" onchange="join_filter(this)"><option></option><option>AND</option><option>OR</option></select></td></tr>')
+    }
+}
+
+function update_fields() {
+    // get arrays of all the filter columns
+    var fields = []
+    $(".f_field").each(function(){
+        fields.push($(this).val())
+    })
+    var operators = []
+    $(".f_operator").each(function(){
+        operators.push($(this).val())
+    })
+    var text = []
+    $(".f_text").each(function(){
+        text.push($(this).val())
+    })
+    var joins = []
+    $(".f_join").each(function(){
+        joins.push($(this).val())
+    })
+    var active_field_paths = [];
+    var active_field_names = [];
+    $('*[data-active="true"]').map(function(){
+        active_field_paths.push($(this).attr('name'));
+        active_field_names.push($(this).contents().get(0).nodeValue);
+    });
+    $.ajax({
+        url: '/scoping/sort_docs',
+        data: {
+            'qid': qid,
+            'fields': active_field_paths,
+            'f_fields': fields,
+            'f_operators': operators,
+            'f_text': text,
+            'f_join': joins
+        },
+        success: function(data) {
+            var n_docs = data.n_docs
+            $("#doc_count").text(n_docs)
+            data = data.data
+            nfields = Object.keys(data[0]).length
+            console.log(data.length)
+            $("table.light tr:first").html("")
+            $("table.light tr:not(:first)").html("")
+            for (f=0;f<active_field_paths.length;f++) {
+                fpath = active_field_paths[f]
+                fname = active_field_names[f]
+                $("table.light tr:first").append('<td class="field" name="'+fpath+'">'+fname+' <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td>');
+                $("table.light tr:not(:first)").append('<td class="data">');
+            } 
+            fields.push(fname.replace(".","__"))
+            $(".data").each(function( i ) {
+                r = Math.floor(i/nfields)
+                c = i % nfields
+                f = active_field_paths[c]
+                $(this).text(data[r][f])
+            })
+            $(".field").data("sortdir","-")
+
+            $(".uparrow").click(function() {
+                field = $(this).parent()
+                sortfield(field, "+")
+            })
+            $(".downarrow").click(function() {
+                field = $(this).parent()
+                sortfield(field, "-")
+            })
+        }
+    })
+}
+
+/*
+function update_fields() {
+    var active_field_paths = [];
+    var active_field_names = [];
+    $('*[data-active="true"]').map(function(){
+        active_field_paths.push($(this).attr('name'));
+        active_field_names.push($(this).contents().get(0).nodeValue);
+    });
+    $.ajax({
+        url: '/scoping/sort_docs',
+        data: {
+            'qid': qid,
+            'fields': active_field_paths,
+        },
+        success: function(data) {
+            
+            nfields = Object.keys(data[0]).length
+            console.log(data)
+            $("table.light tr:first").html("")
+            $("tr:not(:first)").html("")
+            for (f=0;f<active_field_paths.length;f++) {
+                fpath = active_field_paths[f]
+                fname = active_field_names[f]
+                $("table.light tr:first").append('<td class="field" name="'+fpath+'">'+fname+' <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td>');
+                $("table.light tr:not(:first)").append('<td class="data">');
+            } 
+            fields.push(fname.replace(".","__"))
+            $(".data").each(function( i ) {
+                r = Math.floor(i/nfields)
+                c = i % nfields
+                f = active_field_paths[c]
+                $(this).text(data[r][f])
+            })
+            $(".field").data("sortdir","-")
+
+            $(".uparrow").click(function() {
+                field = $(this).parent()
+                sortfield(field, "+")
+            })
+            $(".downarrow").click(function() {
+                field = $(this).parent()
+                sortfield(field, "-")
+            })
+        }
+    })
+
+}
+*/
+
+</script>
+</html>

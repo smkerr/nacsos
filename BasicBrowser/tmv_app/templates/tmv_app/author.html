@@ -74,7 +74,7 @@
 				</tr>
 				{% if docs %}
 					{% for doc in docs %}
-					<tr class="list"><td id="{{ doc.title }}" onclick="window.location.href='/tmv_app/doc/{{ doc.doc }}'">{{ doc.title }}</td><tr>
+					<tr class="list"><td id="{{ doc.title }}" onclick="window.location.href='/tmv_app/doc/{{ doc.UT }}'">{{ doc.title }}</td><tr>
 					{% endfor %}
 				{% endif %}
 				</table>
@@ -86,6 +86,6 @@
         <br>
         <hr noshade>
     </div>
-<p align=center>The contents of the Wikipedia articles are released under <a href="http://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>.</p>
+
 </body>
 </html>

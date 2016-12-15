@@ -247,6 +247,7 @@ width: 100%
     width: 80%;
 }
 
+
 .bars {
     width: 100%;
     vertical-align:top;
@@ -672,33 +673,74 @@ table#xscale {
 	background-color: #f2f2f2;
 }
 
-path.current_topic {
-	stroke: #fbb4ae;
-	stroke-width: 2
-	z-index: 1;
-}
-
 path.other_topic {
 	stroke: #f2f2f2;
 	z-index: -1;
-	stroke-width: 1;
-}
-
-circle.current_topic {
-	fill: #fbb4ae;
 	stroke-width: 2;
-	r: 2;
-	z-index: 1;
 }
 
 circle.other_topic {
 	fill: #f2f2f2;
 	z-index: -1;
 	stroke-width: 0.5;
-	r: 1;
+	r: 2;
+}
+
+path.hovered {
+	stroke: #b3cde3;
+	stroke-width: 2
+	z-index: 1;
+}
+
+circle.hovered {
+	stroke: #b3cde3;
+	stroke-width: 2
+	z-index: 1;
+}
+
+circle.current_topic {
+	fill: #fbb4ae;
+	stroke-width: 3;
+	r: 4;
+	z-index: 1;
+}
+
+path.current_topic {
+	stroke: #fbb4ae;
+	stroke-width: 3;
+	z-index: 1;
 }
 
 tr.active_run {
 	background-color: #fbb4ae;
 }
+
+	.node {
+		cursor: pointer;
+	}
+
+	.node circle {
+	  fill: #fff;
+	  stroke: steelblue;
+	  stroke-width: 3px;
+	}
+
+	.node text {
+	  font: 12px sans-serif;
+	}
+
+	.link {
+	  fill: none;
+	  stroke: #ccc;
+	  stroke-width: 2px;
+	}
+
+    .node .selected {
+        fill: #fbb4ae;
+    }
+
+.doc_box {
+    font-size: 12px ;
+}
+
 

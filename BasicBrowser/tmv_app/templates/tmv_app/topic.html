@@ -33,27 +33,50 @@
 </table>
 <table>
 <tr>
-<td width="30.0%">
-<table class="dark">
-<tr class="title">
-<td>words</td></tr>
-{% if terms %}
-	{% for term in terms %}
-	<tr class="list" onclick="window.location.href='/tmv_app/term/{{ term.term }}'" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')"><td id="{{ term.title }}_list">{{ term.title }}</td><tr>
-	{% endfor %}
-{% endif %}
-<tmv-topic-terms-column>
-</table>
+<td width="25.0%">
+    <table class="dark">
+    <tr class="title">
+    <td>words</td></tr>
+    {% if terms %}
+	    {% for term in terms %}
+	    <tr class="list" onclick="window.location.href='/tmv_app/term/{{ term.term }}'" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')"><td id="{{ term.title }}_list">{{ term.title }}</td><tr>
+	    {% endfor %}
+    {% endif %}
+    <tmv-topic-terms-column>
+    </table>
 </td>
 
-<td width="70.0%">
-<table class="light">
+<td width="50.0%">
+    <table class="light">
+    <tr class="title">
+    <td>related documents</td>
+    </tr>
+    </table>
+        <table class="light">
+        {% if docs %}
+	        {% for doc in docs %}
+	        <tr id="{{ doc.title }}" class="list" onclick="window.location.href='/tmv_app/doc/{{ doc.UT }}'">
+                <td>{{ doc.PY }}</td>
+                <td>{{ doc.title }}</td>
+            <tr>
+	        {% endfor %}
+        {% endif %}
+        
+    </table>
+</td>
+
+<td width="25.0%">
+<table class="dark">
 <tr class="title">
-<td>related documents</td>
+<td>related topics</td>
 </tr>
-{% if docs %}
-	{% for doc in docs %}
-	<tr class="list"><td id="{{ doc.title }}" onclick="window.location.href='/tmv_app/doc/{{ doc.doc }}'">{{ doc.title }}</td><tr>
+<table class="dark">
+{% if corrtops %}
+	{% for corrtop in corrtops %}
+	<tr id="{{ corrtop.title }}" class="list" onclick="window.location.href='/tmv_app/topic/{{ corrtop.topic }}'">
+        <td>{{ corrtop.title }}</td>
+        <td>{{ corrtop.score }}</td>
+    <tr>
 	{% endfor %}
 {% endif %}
 </table>
@@ -95,8 +118,8 @@
     console.log(topic_title)
     console.log(data)
 
-    var width = 800
-    var height = 600
+    var width = $("#pyGraph").parent().width();
+    var height = width /3 
 
     var graph = d3.select("#pyGraph")
 	    .append("svg")
@@ -158,6 +181,12 @@
     .sortValues(function(a,b) { return a.PY - b.PY})
     .entries(data);
 
+    var years = d3.nest()
+    .key(function(d) {
+        return d.PY;
+    })
+    .entries(data);
+
     console.log(topics)
 
 
@@ -195,22 +224,36 @@
                 return topicClass(d.key)
             })
 			.on("mouseover", function() {
-                d3.select(this).transition().duration(200)
-                    .style("stroke", "#b3cde3")
-                    .style("stroke-width", 2);
+                d3.select(this).classed("hovered",true)
                 d3.select("#topic").transition().duration(200)
                     .style("fill", "#b3cde3")
                     .text(d.key);
             })
             .on("mouseout", function() {
-                d3.select(this).transition().duration(200)
-                    .style("stroke", "#f2f2f2")
-                    .style("stroke-width", 1);
+                d3.select(this).classed("hovered",false)
                 d3.select("#topic").transition().duration(200)
-                    .style("fill", "black")
+                    .style("fill", "#fbb4ae")
                     .text(topic_title);
             })
+            .on("click", function() {
+                link = "/tmv_app/topic/"+d.values[0].topic_id
+                window.location.assign(link)
+            })
             .attr('fill', 'none');
+    });
+
+    years.forEach(function(d) {
+        graph.append('svg:text')
+            .attr("text-anchor", "middle")
+            .attr("fill", "black")
+		    .attr("font-size", "18px")
+		    .attr("x", function() { return xscale(parseFloat(d.key))})
+		    .attr("y", height*0.97)
+            .text(function() { 
+                if(parseFloat(d.key) % 5==0) { 
+                    return d.key
+                }
+            });
     });
 
     

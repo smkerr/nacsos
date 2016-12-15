@@ -73,12 +73,110 @@ def add_topics(no_topics):
 
 
 def add_doc(title,content,docID,UT,PY,AU):
-    doc = Doc(title=urllib.parse.unquote(title), content=urllib.parse.unquote(content),UT=UT,PY=PY,run_id=run_id)
-    doc.save()
-    AUlist = str(AU)
-    for au in AUlist.split("\n"):
-        docauth = DocAuthors(doc=doc,author=au.strip(),run_id=run_id)
-        docauth.save()
+    try:
+        doc = Doc.objects.get(UT=doc_id)
+    except:
+        doc = Doc(title=urllib.parse.unquote(title), content=urllib.parse.unquote(content),UT=UT,PY=PY)
+        doc.save()
+        AUlist = str(AU)
+        for au in AUlist.split("\n"):
+            docauth = DocAuthors(doc=doc,author=au.strip())
+            docauth.save()
+
+def update_doc(d):
+    doc = Doc.objects.get(UT=d.UT)
+    article = Article(
+        doc = doc,
+        TI = d.TI,
+        AB = d.AB,
+        PY = d.PY,
+        TC = d.TC # times cited
+    )
+    article.save()
+    try:
+        doc = Doc.objects.get(UT=d.UT)
+        article = Article(
+            doc = doc,
+            TI = d.TI,
+            AB = d.AB,
+            PY = d.PY,
+            TC = d.TC # times cited
+            #AR = d.AR,
+#            BN = d.BN, # ISBN
+#            #BP = d.BP, # beginning page
+#            C1 = d.C1, # author address
+#            CL = d.CL, # conf location
+#            CT = d.CT, # conf title
+#            DE = d.DE, # keywords - separate table?
+#            DI = d.DI, # DOI
+#            DT = d.DT,
+#            EM = d.EM,
+#            EP = d.EP,
+#            FU = d.FU, #funding agency + grant number
+#            FX = d.FX, # funding text
+#            GA = d.GA, # document delivery number
+#            HO = d.HO, # conference host
+#            ID = d.ID, # keywords plus ??
+#            #IS = d.IS,
+#            J9 = d.J9, # 29 char source abbreviation
+#            JI = d.JI, # ISO source abbrev
+#            LA = d.LA, # Language
+#            NR = d.NR, # number of references
+#            PA = d.PA, # pub address
+#            PD = d.PD, # pub month
+#            #PG = d.PG, # page count
+#            PI = d.PI, # pub city
+#            PT = d.PT, # pub type
+#            PU = d.PU, # publisher
+#            RP = d.RP, # reprint address
+#            SC = d.SC, # subj category
+#            SE = d.SE, # book series title
+#            SI = d.SI, # special issue
+#            SN = d.SN, # ISSN
+#            SO = d.SO, # publication name
+#            SP = d.SP, # conf sponsors
+#            SU = d.SU, # supplement        
+            #VL = d.VL, # volume
+        )
+        article.save()
+#        AUlist = str(AU)
+#        for au in AUlist.split("\n"):
+#            docauth = DocAuthors(doc=doc,author=au.strip())
+#            docauth.save()
+    except:
+        print("not saved")
+
+def update_docinstitute(d):
+    doc = Doc.objects.get(UT=d.UT)
+    try:
+        institutes = d.C1.split("\n")
+        for inst in d.C1.split("\n"):
+            inst = inst.split("] ")[1]
+            try:
+                DocInstitutions.objects.get(doc=doc,institution=inst.strip())
+            except:
+                docinst = DocInstitutions(doc=doc,institution=inst.strip())
+                docinst.save()
+    except:
+        pass
+
+def update_topiccorr(topic_id,corrtopic,score,run_id):
+    topic = Topic.objects.get(topic=topic_id)
+    try:
+        topiccorr = TopicCorr.objects.get(topic=topic, topiccorr=corrtopic, run_id=run_id)
+    except:
+        topiccorr = TopicCorr(topic=topic,topiccorr=corrtopic,run_id=run_id)
+    topiccorr.score = score
+    topiccorr.save()
+
+def update_doccorr(doc_id,corrdoc,score,run_id):
+    doc = Doc.objects.get(UT=topic_id)
+    try:
+        doccorr = DocCorr.objects.get(doc=doc, doccorr=corrdoc, run_id=run_id)
+    except:
+        doccorr = DocCorr(doc=doc, doccorr=corrdoc ,run_id=run_id)
+    doccorr.score = score
+    doccorr.save()
 
 def docdiff(d):
     django.db.connections.close_all()
@@ -91,7 +189,7 @@ def add_doc_topic(doc_id, topic_id, score, scaled_score):
     if score < 1:
         return
     topic_id = topic_id+t_diff
-    doc = Doc.objects.get(doc=doc_id)
+    doc = Doc.objects.get(UT=doc_id)
     topic = Topic.objects.get(topic=topic_id)
     dt = DocTopic(doc=doc, topic=topic, score=score, scaled_score=scaled_score,run_id=run_id)
     dt.save()

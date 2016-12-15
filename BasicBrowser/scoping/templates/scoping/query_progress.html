@@ -1,0 +1,44 @@
+<html>
+<head>
+{% load static %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Scoping</title>
+<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+
+</head>
+  <body>
+
+<div id="main">
+<div id="graph">
+<h1> Scoping Review Helper</h1>
+<br>
+
+<!-- Query manager -->
+<h2> Query Progress </h2>
+<br>
+(Refresh page to update progress)
+<br>
+<br>
+
+<div id="logbox">
+{% for l in log %}
+    {{l}}
+{% endfor %}
+</div>
+
+<br>
+{% if finished %}
+<p>Looks like it's done!</p>
+    {% if doclength == 0 %}
+    <p>{{doclength}} of these documents are in the database. Would you like to add them now? 
+    {% else %}
+        <p><a href="../docs/{{query.id}}">View the documents</a>
+    {% endif %}
+{% endif %}
+
+
+
+</div>
+</div>
+</body>
+</html>

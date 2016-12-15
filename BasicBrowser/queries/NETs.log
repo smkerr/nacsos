@@ -1,0 +1,17 @@
+
+This search generates 3366 results. We'll download them in chunks of 500...
+1. downloading records from 1 to 500: 14.9%
+took 11 seconds, approx. 1 minutes and 2 seconds remaining
+2. downloading records from 501 to 1000: 29.7%
+took 11 seconds, approx. 0 minutes and 52 seconds remaining
+3. downloading records from 1001 to 1500: 44.6%
+took 9 seconds, approx. 0 minutes and 34 seconds remaining
+4. downloading records from 1501 to 2000: 59.4%
+took 10 seconds, approx. 0 minutes and 26 seconds remaining
+5. downloading records from 2001 to 2500: 74.3%
+took 9 seconds, approx. 0 minutes and 16 seconds remaining
+6. downloading records from 2501 to 3000: 89.1%
+took 9 seconds, approx. 0 minutes and 6 seconds remaining
+7. downloading records from 3001 to 3366: 100.0%
+took 7 seconds, approx. 0 minutes and 0 seconds remaining
+done! total time: 1 minutes and 5 seconds
