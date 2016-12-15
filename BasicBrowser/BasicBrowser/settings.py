@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'scoping.apps.ScopingConfig',
     'tmv_app.apps.TmvAppConfig',
     'django.contrib.admin',
     'django.contrib.auth',

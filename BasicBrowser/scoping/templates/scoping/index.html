@@ -1,0 +1,61 @@
+<html>
+<head>
+{% load static %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Scoping</title>
+<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+
+</head>
+  <body>
+
+<div id="main">
+<div id="graph">
+<h1> Scoping Review Helper</h1>
+<br>
+
+<!-- Query manager -->
+<h2> Query manager </h2>
+<br>
+
+<table class="light">
+		<tr>
+			<th>ID</td>
+            <th>Title</td>
+			<th>Text</td>
+			<th>Date</td>
+			<th>n Results</td>
+            <th>Progress</th>
+        </tr>
+		{% for query in queries %}
+        <tr>
+			<td>{{ query.id }}</td>
+            <td>{{ query.title }}</td>
+			<td>{{ query.text }}</td>
+			<td>{{ query.date }}</td>
+            <td><a href="docs/{{query.id}}">{{ query.r_count }}</a></td>
+            <td><a href="querying/{{query.id}}">View progress</a></td>
+		</tr>
+		{% endfor %}
+</table>
+
+<br><hr><br>
+
+<!-- This gets new queries -->
+<h2> Query Getter </h2>
+<br>
+<form action="{% url 'scoping:doquery' %}" method="post">
+{% csrf_token %}
+
+<h4> Query Title </h3>
+<input type="text" name="qtitle"></input>
+
+<h4> Query Text </h3>
+<textarea rows=3 cols=50 name="qtext"></textarea>
+<br><br>
+
+<input type="submit" value="Search Query" />
+</form>
+</div>
+</div>
+</body>
+</html>

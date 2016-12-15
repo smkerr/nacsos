@@ -4,6 +4,7 @@ from django.conf import settings
 
 urlpatterns = [
     url(r'^tmv_app/', include('tmv_app.urls')),
+    url(r'^scoping/', include('scoping.urls')),
     url(r'^admin/', admin.site.urls),
 ]
 

@@ -79,6 +79,11 @@
                        {{ doc.PY }}
                     </p>
                     <p>
+                       {% for inst in doc_institutions %}
+                          <a href="/tmv_app/institution/{{ inst.institution }}">{{ inst.institution }}</a>;
+                       {% endfor %}
+                    </p>
+                    <p>
 			            {% for word in words %}
 								<span class="{{ word.topic }}">{{ word.title }}</span>
 							{% endfor %}
@@ -94,6 +99,6 @@
         <br>
         <hr noshade>
     </div>
-<p align=center>The contents of the Wikipedia articles are released under <a href="http://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>.</p>
+
 </body>
 </html>
