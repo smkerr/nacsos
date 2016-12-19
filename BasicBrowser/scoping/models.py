@@ -22,9 +22,16 @@ class Doc(models.Model):
     title = models.TextField(null=True)
     content = models.TextField(null=True) 
     PY = models.IntegerField(null=True,db_index=True)
+    users = models.ManyToManyField(User, through='DocOwnership')
     
     def word_count(self):
         return len(str(self.content).split())
+
+class DocOwnership(models.Model):
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    query = models.ForeignKey(Query, on_delete=models.CASCADE)
+    relevant = models.IntegerField(default=0, db_index=True)
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")
