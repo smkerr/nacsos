@@ -1,5 +1,5 @@
 from django.shortcuts import render
-import os, time
+import os, time, math
 
 # Create your views here.
 
@@ -12,6 +12,7 @@ from django.urls import reverse
 
 from .models import *
 
+@login_required
 def index(request):
     template = loader.get_template('scoping/index.html')
     queries = Query.objects.all()
@@ -22,6 +23,7 @@ def index(request):
 
 import subprocess
 import sys
+@login_required
 def doquery(request):
     template = loader.get_template('scoping/index.html')
     qtitle = request.POST['qtitle']
@@ -43,6 +45,7 @@ def doquery(request):
 
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
 
+@login_required
 def querying(request, qid):
 
     template = loader.get_template('scoping/query_progress.html')
@@ -77,6 +80,7 @@ def querying(request, qid):
     }
     return HttpResponse(template.render(context, request))
 
+@login_required
 def query(request,qid):
     template = loader.get_template('scoping/query.html')
     query = Query.objects.get(pk=qid)
@@ -88,6 +92,13 @@ def query(request,qid):
     for tag in tags:
         #docs = Doc.objects.filter(tag=tag).count()
         tag['docs'] = Doc.objects.filter(tag=tag['id']).count()
+        tag['a_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],).count()       
+        if tag['a_docs'] == 0:
+            tag['a_docs'] = False
+        else:
+            tag['seen_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant__gt=0).count() 
+            tag['rel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()    
+            tag['relevance'] = round(tag['rel_docs']/tag['seen_docs']*100)
   
     fields = ['id','title','text']
 
@@ -98,19 +109,29 @@ def query(request,qid):
     proj_users = users.query
 
     user_list = []
+
+    user_docs = {}
     
     for u in users:
+        tdocs = DocOwnership.objects.filter(query=query,user=u)
+        user_docs['tdocs'] = tdocs.count()
+        user_docs['reldocs'] = tdocs.filter(relevant=1).count()
+        user_docs['irreldocs'] = tdocs.filter(relevant=2).count()
+        user_docs['maybedocs'] = tdocs.filter(relevant=3).count()
+        user_docs['checked_percent'] = round((user_docs['reldocs'] + user_docs['irreldocs'] + user_docs['maybedocs']) / user_docs['tdocs'] * 100)
         if query in u.query_set.all():
             user_list.append({
                 'username': u.username,
                 'email': u.email,
-                'onproject': True
+                'onproject': True,
+                'user_docs': user_docs
             })
         else:
             user_list.append({
                 'username': u.username,
                 'email': u.email,
-                'onproject': False
+                'onproject': False,
+                'user_docs': user_docs
             })
 
     context = {
@@ -124,7 +145,7 @@ def query(request,qid):
 
 ##################################################
 ## View all docs
-
+@login_required
 def doclist(request,qid):
 
     template = loader.get_template('scoping/docs.html')
@@ -172,6 +193,7 @@ class StringAgg(Aggregate):
             return ''
         return value
 
+@login_required
 def sortdocs(request):
 
     qid = request.GET.get('qid',None)
@@ -275,6 +297,7 @@ def sortdocs(request):
 
     return JsonResponse(response,safe=False)
 
+@login_required
 def activate_user(request):
 
     qid = request.GET.get('qid',None)
@@ -293,6 +316,97 @@ def activate_user(request):
         query.users.remove(user)
 
     return JsonResponse(response,safe=False)
+
+def assign_docs(request):
+    qid = request.GET.get('qid',None)
+    users = request.GET.getlist('users[]',None)
+    tags = request.GET.getlist('tags[]',None)
+    proportion = float(request.GET.get('proportion',None))
+
+    query = Query.objects.get(pk=qid)  
+
+    user_list = []
+
+    for user in users:
+        user_list.append(User.objects.get(username=user))
+
+
+    for tag in tags:
+        t = Tag.objects.get(pk=tag)
+        docs = Doc.objects.filter(query=query,tag=t)
+        ndocs = docs.count()
+        ssize = math.ceil(ndocs*proportion)
+        sample = docs.order_by('?')[:ssize]
+        for s in range(len(sample)):
+            doc = sample[s]
+            user = user_list[s % len(user_list)]
+            docown = DocOwnership(doc=doc,query=query,user=user)
+            docown.save()
+
+    return HttpResponse("bla")
+
+def check_docs(request,qid):
+
+    query = Query.objects.get(pk=qid)  
+    user = request.user
+    docs = Doc.objects.filter(query=query,users=user.id,docownership__relevant=0)
+
+    ndocs = docs.count()
+    doc = docs.first()
+
+    authors = DocAuthInst.objects.filter(doc=doc)
+
+    template = loader.get_template('scoping/doc.html')
+    context = {
+        'query': query,
+        'doc': doc,
+        'ndocs': ndocs,
+        'user': user,
+        'authors': authors
+    }
+    return HttpResponse(template.render(context, request))
+
+def review_docs(request,qid):
+
+    query = Query.objects.get(pk=qid)  
+    user = request.user
+    docs = Doc.objects.filter(query=query,users=user.id,docownership__relevant__gt=0)
+
+    ndocs = docs.count()
+    doc = docs.first()
+
+    authors = DocAuthInst.objects.filter(doc=doc)
+
+    template = loader.get_template('scoping/doc.html')
+    context = {
+        'query': query,
+        'doc': doc,
+        'ndocs': ndocs,
+        'user': user,
+        'authors': authors
+    }
+    return HttpResponse(template.render(context, request))
+
+from django.core.mail import send_mail
+
+def do_review(request):
+
+    qid = request.GET.get('query',None)
+    doc_id = request.GET.get('doc',None)
+    d = request.GET.get('d',None)
+
+    doc = Doc.objects.get(pk=doc_id)
+    query = Query.objects.get(pk=qid)  
+    user = request.user
+
+    docown = DocOwnership.objects.filter(doc=doc,query=query,user=user).first()
+    docown.relevant=d
+    docown.save()
+
+
+   
+    return HttpResponse("")
+	
 
 
 

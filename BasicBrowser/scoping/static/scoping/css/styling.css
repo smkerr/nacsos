@@ -937,3 +937,20 @@ input[type=range]:focus::-ms-fill-lower {
 input[type=range]:focus::-ms-fill-upper {
     background: #ccc;
 }
+
+#docbox {
+	background: white;
+	padding: 15px;
+	margin: 20px;
+	margin-left: auto;
+    margin-right: auto;
+    width: 80%;
+	border: 1px solid grey;
+	border-radius: 5px;
+}
+
+table.spread td {
+	text-align:center;
+	width:33%;
+} 
+

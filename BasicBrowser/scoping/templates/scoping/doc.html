@@ -1,0 +1,63 @@
+<html>
+<head>
+{% load static %}
+{% load scoping_extras %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
+<title>Scoping</title>
+<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+
+</head>
+  <body>
+
+<div id="main">
+<div id="graph">
+<h1> Scoping Review Helper</h1>
+<br>
+
+<!-- Query manager -->
+<h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}} </h2>
+<p>Is the document below (one of {{ ndocs }}) relevant?
+
+<div id="docbox">
+<h4> {{doc.wosarticle.ti}}</h4>
+<p>{{ doc.wosarticle.so }} ({{ doc.wosarticle.py }})
+<p style="text-align:left">
+{{ doc.docauthinst }}
+{% for au in authors %}
+	<span>{{au.AF}} [{{au.institution}}];</span>
+{% endfor %}
+<p style="text-align:left">
+{{ doc.wosarticle.ab }}
+</div>
+<table class="spread" width="100%">
+	<tr>
+	<td><button onclick="review(1)">Yes</button>
+	<td><button onclick="review(2)">No</button>
+	<td><button onclick="review(3)">Maybe?</button>
+	</tr>
+</table>
+
+<script>
+
+var qid = {{ query.id }}
+var docid = "{{ doc.UT }}"
+function review(d) {
+	console.log(qid)
+	console.log(docid)
+	$.ajax({
+		url: '/scoping/do_review',
+		data: {
+			'query': qid,
+			'doc': docid,
+			'd':d
+		},
+		success: function() {
+			location.reload()
+		}
+	})
+}
+</script>
+
+</body>
+</html>
