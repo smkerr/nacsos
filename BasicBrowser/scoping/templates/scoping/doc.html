@@ -4,19 +4,21 @@
 {% load scoping_extras %}
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <title>Scoping</title>
 <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
 
 </head>
   <body>
-
+{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
 <div id="main">
 <div id="graph">
 <h1> Scoping Review Helper</h1>
 <br>
-
+<h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}}, your progress: </h2>
+<div id="progress"></div>
 <!-- Query manager -->
-<h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}} </h2>
+
 <p>Is the document below (one of {{ ndocs }}) relevant?
 
 <div id="docbox">
@@ -40,6 +42,55 @@
 
 <script>
 
+var tdocs = {{ tdocs }}
+var sdocs = {{ sdocs }}
+
+var width = $("#progress").parent().width()*0.8;
+var height = 40
+
+var graph = d3.select("#progress")
+    .append("svg")
+    .attr("width", width) 
+    .attr("height", height);
+
+graph.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .style("fill", "white")
+    .style("stroke", "black")
+    .style("stroke-width", 2)
+
+xscale = d3.scale.linear()
+    .domain([0, tdocs])
+    .range([width*0.0, width*1]);
+
+graph.append("rect")
+    .attr("width", xscale(sdocs))
+    .attr("y", height*0.35)
+    .attr("height", height*0.3)
+    .style("fill", "steelblue")
+    .style("stroke", "grey")
+    .style("stroke-width", 1);
+
+tick = tdocs/10
+ticks = []
+for (i=1;i<10;i++) {
+    ticks.push({'pcnt': i*10, 'value': i*tick})
+}
+console.log(ticks)
+
+graph.selectAll("line")
+	.data(ticks)
+	.enter()
+	.append("line")
+    .style("stroke","grey")
+    .style("stroke-width",1)
+	.attr("x1", function(d) { return xscale(d.value)})
+	.attr("x2", function(d) { return xscale(d.value)})
+    .attr("y1", 0)
+    .attr("y2", height);
+    
+	
 var qid = {{ query.id }}
 var docid = "{{ doc.UT }}"
 function review(d) {

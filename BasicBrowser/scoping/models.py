@@ -29,9 +29,9 @@ class Doc(models.Model):
 
 class DocOwnership(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Reviewer")
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
-    relevant = models.IntegerField(default=0, db_index=True)
+    relevant = models.IntegerField(default=0, db_index=True, verbose_name="Relevance")
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")
@@ -58,7 +58,7 @@ class WoSArticle(models.Model):
     py = models.IntegerField(null=True, verbose_name="Year") 
     ar = models.CharField(null=True, max_length=100, verbose_name="Article Number") # Article number
     bn = models.CharField(null=True, max_length=100, verbose_name="ISBN") # ISBN
-    bp = models.CharField(null=True, max_length=5, verbose_name="Beginning Page") # beginning page
+    bp = models.CharField(null=True, max_length=10, verbose_name="Beginning Page") # beginning page
     c1 = models.TextField(null=True, verbose_name="Author Address") # author address
     cl = models.TextField(null=True, verbose_name="Conference Location") # conf location
     ct = models.TextField(null=True, verbose_name="Conference Title") # conf title
@@ -66,7 +66,7 @@ class WoSArticle(models.Model):
     di = models.CharField(null=True, max_length=150, verbose_name="DOI") # DOI
     dt = models.CharField(null=True, max_length=50, verbose_name="Document Type") # doctype
     em = models.TextField(null=True, verbose_name="E-mail Address") #email 
-    ep = models.CharField(null=True, max_length=5, verbose_name="Ending Page") # last page
+    ep = models.CharField(null=True, max_length=10, verbose_name="Ending Page") # last page
     fn = models.CharField(null=True, max_length=150, verbose_name="File Name") # filename?
     fu = models.TextField(null=True, verbose_name="Funding Agency and Grant Number") #funding agency + grant number
     fx = models.TextField(null=True, verbose_name="Funding Text") # funding text

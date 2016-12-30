@@ -7,7 +7,7 @@
 
 </head>
   <body>
-
+{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
 <div id="main">
 <div id="graph">
 <h1> Scoping Review Helper</h1>
@@ -28,7 +28,7 @@
         </tr>
 		{% for query in queries %}
         <tr>
-			<td>{{ query.id }}</td>
+			<td><a href="query/{{query.id}}">{{ query.id }}</a></td>
             <td>{{ query.title }}</td>
 			<td>{{ query.text }}</td>
 			<td>{{ query.date }}</td>

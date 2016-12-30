@@ -522,8 +522,6 @@ def stats(request):
 
     stats_template = loader.get_template('tmv_app/stats.html')
 
-    nav_bar = loader.get_template('tmv_app/nav_bar.html')
-
     stats = RunStats.objects.get(run_id=run_id)
 
     if stats.get_method_display() == 'hlda':
@@ -544,8 +542,6 @@ def runs(request):
 
     run_id = find_run_id(request.session)
     runs_template = loader.get_template('tmv_app/runs.html')
-
-    nav_bar = loader.get_template('tmv_app/nav_bar.html')
 
     stats = RunStats.objects.all().order_by('-start')
 
