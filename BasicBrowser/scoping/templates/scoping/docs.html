@@ -9,7 +9,7 @@
 
 </head>
   <body>
-
+{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
 <div id="main">
 <div id="graph">
 <h1> Scoping Review Helper</h1>
@@ -71,7 +71,7 @@ Save this filter as <input type="text" id="tag_title"> <button onclick="savetag(
 		<tr class="title">
         {% for f in fields %}
             {% if f.name in basic_fields %}
-                <td class="field" name="{{f.path}}">{{f.name}} <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td>
+                <td class="field" name="{{f.path}}">{{f.name}} <span class="uparrow sort">&uarr;</span><span class="downarrow sort">&darr;</span></td>
             {% endif %}
         {% endfor %}
         </tr>
@@ -109,42 +109,17 @@ $(".field").data("sortdir","-")
 
 $(".uparrow").click(function() {
     field = $(this).parent()
-    sortfield(field, "+")
 })
 $(".downarrow").click(function() {
     field = $(this).parent()
-    sortfield(field, "-")
 })
 
-function sortfield(field, sortdir) {
-    var active_field_paths = [];
-    var active_field_names = [];
-    $('*[data-active="true"]').map(function(){
-        active_field_paths.push($(this).attr('name'));
-        active_field_names.push($(this).text());
-    });
-    fieldname = field.attr("name")
-    console.log(fieldname)
-    $.ajax({
-        url: '/scoping/sort_docs',
-        data: {
-            'qid': qid,
-            'fields': active_field_paths,
-            'field': fieldname,
-            'sortdir': sortdir
-        },
-        success: function(data) {
-            nfields = Object.keys(data[0]).length;
-            console.log(data)
-            $(".data").each(function( i ) {
-                r = Math.floor(i/nfields)
-                c = i % nfields
-                f = active_field_paths[c]
-                $(this).text(data[r][f])
-            })
-        }
-    })
-}
+$(".sort").click(function() {
+	$(this).toggleClass("sort_active")
+	update_fields()
+})
+
+
 
 $(".field_name").click(function() {
     if ($(this).attr("data-active") == "true") {
@@ -231,6 +206,18 @@ function update_fields() {
     $(".f_join").each(function(){
         joins.push($(this).val())
     })
+	var sortfields = [];
+	var sortdirs = [];
+	$(".sort_active").each(function() {
+		n = $(this).parent().attr('name')
+		if ($(this).hasClass("uparrow")) {
+			dir = "+"
+		} else {
+			dir = "-"
+		}
+		sortfields.push(n)
+		sortdirs.push(dir)
+	})
     var active_field_paths = [];
     var active_field_names = [];
     $('*[data-active="true"]').map(function(){
@@ -245,21 +232,34 @@ function update_fields() {
             'f_fields': fields,
             'f_operators': operators,
             'f_text': text,
-            'f_join': joins
+            'f_join': joins,
+			'sort_fields': sortfields,
+			'sort_dirs': sortdirs
         },
         success: function(data) {
             var n_docs = data.n_docs
             $("#doc_count").text(n_docs)
             data = data.data
             console.log(data)
-            nfields = Object.keys(data[0]).length
+            nfields = active_field_paths.length
             console.log(data.length)
             $("table.light tr:first").html("")
             $("table.light tr:not(:first)").html("")
             for (f=0;f<active_field_paths.length;f++) {
                 fpath = active_field_paths[f]
                 fname = active_field_names[f]
-                $("table.light tr:first").append('<td class="field" name="'+fpath+'">'+fname+' <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td>');
+				i = sortfields.indexOf(fpath)
+				up = ""
+				down = ""
+				if (i > -1) {
+					console.log(sortdirs[i])
+					if (sortdirs[i]=="+") {
+						up = "sort_active"
+					} else {
+						down = "sort_active"
+					}		
+				}
+                $("table.light tr:first").append('<td class="field" name="'+fpath+'">'+fname+' <span class="uparrow sort '+ up +'">&uarr;</span><span class="downarrow sort '+ down +'">&darr;</span></td>');
                 $("table.light tr:not(:first)").append('<td class="data">');
             } 
             fields.push(fname.replace(".","__"))
@@ -272,18 +272,14 @@ function update_fields() {
                 } else {
                     var text = data[r][f]
                 }
-                $(this).text(text)
+                $(this).html(text)
             })
             $(".field").data("sortdir","-")
 
-            $(".uparrow").click(function() {
-                field = $(this).parent()
-                sortfield(field, "+")
-            })
-            $(".downarrow").click(function() {
-                field = $(this).parent()
-                sortfield(field, "-")
-            })
+			$(".sort").click(function() {
+				$(this).toggleClass("sort_active")
+				update_fields()
+			})
         }
     })
 }

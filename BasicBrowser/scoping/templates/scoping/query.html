@@ -10,13 +10,15 @@
 </head>
   <body>
 
+{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
+
 <div id="main">
 <div id="graph">
 <h1> Scoping Review Helper</h1>
 <br>
 
 <!-- Query manager -->
-<h2> Query #{{query.id}} Overview</h2>
+<h2> Query #{{query.id}} Overview - <a href="/scoping/docs/{{query.id}}">View Docs</a></h2>
 <br>
 
 <table class="light" style="width:100%">
@@ -24,10 +26,9 @@
     {% for f in fields %}
         <td class="field" name="{{f}}">{{f}} <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td>
     {% endfor %}
+    <td>
     <td class="field" name="docs">Documents <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td> 
-    {% if tags.0.a_docs %}
-        <td>Relevance </td> 
-    {% endif %}
+    <td>Relevance </td> 
     </tr>
 	{% for tag in tags %}
     <tr class="tagdatarow" name="{{ tag.id }}">
@@ -36,11 +37,14 @@
     {% endfor %}
     
     {% if tag.a_docs %}
+        <td>
         <td>{{tag.docs}}
         ({{tag.a_docs}} assigned for review)
         <td>{{tag.relevance}}%
     {% else %}
-        <td class="data-ndocs">{{tag.docs}}
+        <td><input type="range" min="0" max="{{tag.docs}}" oninput="inputUpdate(value, {{tag.id}})" value="{{tag.docs}}" autocomplete="off">
+        <td class="data-ndocs">{{tag.docs}} [Assign <output id="out_{{tag.id}}" class="tag_assignment" data-tagid="{{ tag.id }}">{{tag.docs}}</output> documents for review?]
+        <td>NA
     {% endif %}
 	</tr>
 	{% endfor %}
@@ -73,24 +77,41 @@
             </label></td>
         {% else %}
             <td><label class="switch">
-            <input type="checkbox" class="user_active" data-user="{{u.username}}" onchange="activate_user(this)">
+            <input type="checkbox" class="user_active" data-user="{{u.username}}" onchange="activate_user(this)"></input>
             <div class="slider round"></div>
             </label></td>
         {% endif %}
+
+        {% if u.user_docs.tdocs %}
         <td>{{ u.user_docs.tdocs }} ({{ u.user_docs.checked_percent }}% checked)
         <td>{{ u.user_docs.reldocs }}
         <td>{{ u.user_docs.irreldocs }}
         <td>{{ u.user_docs.maybedocs }}
+        {% else %}
+        <td><td><td><td>
+        {% endif %}
         
     </tr>      
     {% endfor %}
 </table>
 <p style="text-align:left">
-<input type="range" id="sample" min="0.01" value="0.1" max="1" step="0.01" oninput="outputUpdate(value)"/>
-<output for="sample" id="sample_size">0.1</output>
 
-<div id="assignment_box">
-Assign a total of <span id="docUserTotal"></span> documents each to <span id="userTotal"></span> users? <button onclick="do_assignment()">Assign</button>
+
+<div class="assignment_box">
+<p>
+<table id="split_table"><td>Double Check Documents
+<td>
+<label class="switch">
+<input type="checkbox" id="split" onclick="updateAssignment()" checked>
+<div class="slider round"></div>
+</label>
+</td>
+<td>Split Documents
+</table>
+</p>
+<p>Assign a total of <span id="docUserTotal"></span> documents each to <span id="userTotal"></span> users? <button onclick="do_assignment()">Assign</button>
+
+<p>Clear all document-user assignments from this query? WARNING: This cannot be undone <button onclick="remove_assignments({{ query.id }})">Remove</button>
 
 </div>
 </div>
@@ -104,6 +125,7 @@ var qid = {{ query.id }}
 var total_docs = 0
 
 var total_users = 0
+var docsplit = $("#split").is(':checked')
 
 $(".user_active").each(function() {
     if ($(this).is(':checked')) {
@@ -112,20 +134,41 @@ $(".user_active").each(function() {
     console.log($(this))
 })
 
-$(".data-ndocs").each(function(){
+$(".tag_assignment").each(function(){
     total_docs += parseInt($(this).text())
 })
 
 updateAssignment()
 
-function outputUpdate(vol) {
-	document.querySelector('#sample_size').value = vol;
+function inputUpdate(x,t) {
+    $('#out_'+t).val(x)
     updateAssignment()
 }
 
+
 function updateAssignment() {
-    vol = $("#sample").val() 
-    docs_each = Math.ceil(total_docs*vol)
+    var active_users = []
+    var tags = []
+    var tagdocs = []
+    var total_docs = 0
+    var docsplit = $("#split").is(':checked')
+    
+    $(".user_active").each(function() {
+        if ($(this).is(':checked')) {
+            active_users.push($(this).attr("data-user") )
+        }  
+    })
+
+    $(".tag_assignment").each(function() {
+        tags.push($(this).attr("data-tagid") ) 
+        tagdocs.push($(this).val()) 
+            total_docs += $(this).val()
+    })    
+    if (docsplit==true) {
+        docs_each = Math.ceil(total_docs/active_users.length)
+    } else {
+        docs_each = Math.ceil(total_docs)
+    }
     $("#docUserTotal").text(docs_each)
     $("#userTotal").text(total_users)
 }
@@ -152,30 +195,46 @@ function do_assignment() {
     console.log("assign")
     var active_users = []
 	var tags = []
+    var tagdocs = []
     $(".user_active").each(function() {
         if ($(this).is(':checked')) {
             active_users.push($(this).attr("data-user") )
         }  
     })
 
-    $(".tagdatarow").each(function() {
-        tags.push($(this).attr("name") ) 
+    $(".tag_assignment").each(function() {
+        tags.push($(this).attr("data-tagid") ) 
+        tagdocs.push($(this).val()) 
     })
     var proportion = $("#sample").val()
 	console.log(active_users)
     console.log(tags)
-    console.log(proportion)
+    console.log(tagdocs)
     console.log(qid)
+    var docsplit = $("#split").is(':checked')
     $.ajax({
         url: '/scoping/assign_docs',
         data : {
             'qid': qid,
             'users': active_users,
             'tags': tags,
-            'proportion': proportion
+            'tagdocs': tagdocs,
+            'docsplit': docsplit
+        },
+        success: function() {
+            location.reload()
         }
     })
 }
 
+function remove_assignments(qid) {
+	$.ajax({
+		url: '/scoping/remove_assignments',
+		data: {'qid':qid},
+		success: function() {
+			location.reload()
+		}
+	})
+}
 </script>
 </html>

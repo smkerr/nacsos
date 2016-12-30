@@ -1,0 +1,55 @@
+<html>
+<head>
+{% load static %}
+{% load scoping_extras %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script language="JavaScript" src="http://code.jquery.com/jquery-1.4.4.js"></script>
+<title>Scoping</title>
+<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+
+</head>
+  <body>
+{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
+<div id="main">
+<div id="graph">
+<h1> Scoping Review Helper</h1>
+<br>
+
+<!-- Query manager -->
+<h2> User <span class="username">{{ user.username }}</span> Overview</h2>
+
+<table class="light" style="width:80%">
+    <tr class="title">
+        <td>ID
+        <td>Title
+        <td># Documents
+        <td>! To review
+        <td>Reviewed
+        <td>Unknowns
+    </tr>
+    {% for q in queries %}
+        <tr>
+        <td><a href="/scoping/query/{{q.id}}">{{q.id}}
+        <td>{{q.title}}
+        <td>{{q.ndocs}}
+        {% if q.revdocs > 0 %}
+            <td class="review{{q.unreviewed_docs}} review"><a href="/scoping/check/{{q.id}}">{{q.unreviewed_docs}}</a>
+            <td class="review{{q.revieweddocs}} review"><a href="/scoping/review/{{q.id}}/0">{{q.revieweddocs}}</a> ({{q.relevance}}% relevant)
+            <td class="review{{q.maybedocs}} review"><a href="/scoping/maybe/{{q.id}}/0">{{q.maybedocs}}</a>
+        {% else %}
+            <td>0
+            <td>0
+            <td>0
+        {% endif %}
+    {% endfor %}
+</table>
+<p><button onclick="location.href='/accounts/logout'">Log Out</button>
+
+</div>
+</div>
+</body>
+
+<script>
+
+</script>
+</html>

@@ -51,7 +51,7 @@ class TopicCorr(models.Model):
 
 class Term(models.Model):    
     term = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=70)
+    title = models.CharField(max_length=100)
     run_id = models.IntegerField(db_index=True)
 
     def __unicode__(self):
