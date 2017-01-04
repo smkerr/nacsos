@@ -9,6 +9,7 @@ class Query(models.Model):
     date = models.DateTimeField(verbose_name="Query Date")
     r_count = models.IntegerField(null=True, verbose_name="Query Results Count")
     users = models.ManyToManyField(User)
+    criteria = models.TextField(null=True)
 
 class Tag(models.Model):
     title = models.TextField(null=True, verbose_name="Tag Title")
@@ -31,6 +32,7 @@ class DocOwnership(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Reviewer")
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
     relevant = models.IntegerField(default=0, db_index=True, verbose_name="Relevance")
 
 class DocAuthInst(models.Model):
@@ -73,6 +75,7 @@ class WoSArticle(models.Model):
     ga = models.CharField(null=True, max_length=100, verbose_name="Document Delivery Number") # document delivery number
     ho = models.TextField(null=True, verbose_name="Conference Host") # conference host
     #ID = models.TextField() # keywords plus ??
+    kwp = models.TextField(null=True, verbose_name="Keywords Plus")
     j9 = models.CharField(null=True, max_length=30, verbose_name="29-Character Source Abbreviation") # 29 char source abbreviation
     ji = models.CharField(null=True, max_length=100, verbose_name="ISO Source Abbreviation") # ISO source abbrev
     la = models.CharField(null=True, max_length=100, verbose_name="Language") # Language

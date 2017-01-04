@@ -9,8 +9,13 @@ from django.contrib.auth.models import User
 from django.template import loader
 from django.utils import timezone
 from django.urls import reverse
+from django.contrib.auth.decorators import user_passes_test
 
 from .models import *
+
+
+def super_check(user):
+    return user.groups.filter(name__in=['superuser'])
 
 ########################################################
 ## Homepage - list the queries, form for adding new ones
@@ -120,16 +125,18 @@ def query(request,qid):
         if tag['a_docs'] == 0:
             tag['a_docs'] = False
         else:
+            tag['a_docs'] = Doc.objects.filter(docownership__tag=tag['id'],docownership__isnull=False).distinct().count()  
             tag['seen_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant__gt=0).count() 
-            tag['rel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()    
+            tag['rel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()  
+            tag['irrel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=2).count()    
             try:
-                tag['relevance'] = round(tag['rel_docs']/tag['seen_docs']*100)
+                tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
             except:
                 tag['relevance'] = 0
   
     fields = ['id','title','text']
 
-    untagged = Doc.objects.filter(tag__isnull=True).count()
+    untagged = Doc.objects.filter(query=query,tag__isnull=True).count()
 
     users = User.objects.all()
 
@@ -147,6 +154,7 @@ def query(request,qid):
             user_docs['reldocs'] = tdocs.filter(relevant=1).count()
             user_docs['irreldocs'] = tdocs.filter(relevant=2).count()
             user_docs['maybedocs'] = tdocs.filter(relevant=3).count()
+            user_docs['yesbuts'] = tdocs.filter(relevant=4).count()
             user_docs['checked_percent'] = round((user_docs['reldocs'] + user_docs['irreldocs'] + user_docs['maybedocs']) / user_docs['tdocs'] * 100)
         if query in u.query_set.all():
             user_list.append({
@@ -172,6 +180,7 @@ def query(request,qid):
 		'user': request.user
     }
 
+    #add_manually()
 
     return HttpResponse(template.render(context, request))
 
@@ -191,9 +200,11 @@ def userpage(request):
         reviewed_docs = DocOwnership.objects.filter(query=q,user=request.user,relevant__gt=0).count()
         unreviewed_docs = revdocs - reviewed_docs
         reldocs = DocOwnership.objects.filter(query=q,user=request.user,relevant=1).count()
+        irreldocs = DocOwnership.objects.filter(query=q,user=request.user,relevant=2).count()
         maybedocs = DocOwnership.objects.filter(query=q,user=request.user,relevant=3).count()
+        yesbuts = DocOwnership.objects.filter(query=q,user=request.user,relevant=4).count()
         try:
-            relevance = round(reldocs/reviewed_docs*100)
+            relevance = round(reldocs/(reldocs+irreldocs)*100)
         except:
             relevance = 0
         query_list.append({
@@ -205,6 +216,7 @@ def userpage(request):
             'unreviewed_docs': unreviewed_docs,
             'reldocs': reldocs,
             'maybedocs': maybedocs,
+            'yesbuts': yesbuts,
             'relevance': relevance
         })
 
@@ -388,14 +400,18 @@ def sortdocs(request):
     #mult_fields=[]
 
     if len(users) > 0:
+        uname = users[0].split("__")[1] 
+        user = User.objects.get(username=uname)
         null_filter = 'docownership__relevant__isnull'
-        reldocs = filt_docs.filter(**{null_filter:False}).values("UT")
+        reldocs = filt_docs.filter(docownership__user=user,docownership__query=query).values("UT")
         filt_docs = filt_docs.filter(UT__in=reldocs)
 
-    print(len(filt_docs))
+    #print(len(filt_docs))
 
     if sort_dirs is not None:
-        order_by = []
+        order_by = ('-PY','UT')
+        if len(sort_dirs) > 0:
+            order_by = []
         for s in range(len(sort_dirs)):
             sortdir = sort_dirs[s]
             field = sort_fields[s]
@@ -431,6 +447,9 @@ def sortdocs(request):
                 do = DocOwnership.objects.filter(doc_id=d['UT'],user__username=uname)
                 if do.count() > 0:
                     d[u] = do.first().relevant
+                    tag = str(do.first().tag.id)
+                    user = str(User.objects.filter(username=uname).first().id)
+                    d[u] = '<span class="relevant_cycle" data-user='+user+' data-tag='+tag+' data-id='+d['UT']+' onclick="cyclescore(this)">'+str(d[u])+'</span>'
         try:
             d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
         except:
@@ -452,7 +471,27 @@ def sortdocs(request):
 
     return JsonResponse(response,safe=False)
 
+def cycle_score(request):
+
+    qid = int(request.GET.get('qid',None))
+    score = int(request.GET.get('score',None))
+    doc_id = request.GET.get('doc_id',None)
+    user = int(request.GET.get('user',None))
+    tag = int(request.GET.get('tag',None))
+
+
+    if score == 4:
+        new_score = 0
+    else:
+        new_score = score+1
+    docown = DocOwnership.objects.filter(query__id=qid, doc__UT=doc_id, user__id=user, tag__id=tag).first()
+    docown.relevant = new_score
+    docown.save()
+
+    return HttpResponse("")
+
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def activate_user(request):
 
     qid = request.GET.get('qid',None)
@@ -471,6 +510,16 @@ def activate_user(request):
         query.users.remove(user)
 
     return JsonResponse(response,safe=False)
+
+def update_criteria(request):
+    qid = request.GET.get('qid',None)
+    criteria = request.POST['criteria']
+
+    query = Query.objects.get(pk=qid)
+    query.criteria = criteria
+    query.save()
+
+    return HttpResponseRedirect(reverse('scoping:query', kwargs={'qid': qid}))
 
 def assign_docs(request):
     qid = request.GET.get('qid',None)
@@ -498,14 +547,16 @@ def assign_docs(request):
             doc = sample[s]
             if docsplit=="true":
                 user = user_list[s % len(user_list)]
-                docown = DocOwnership(doc=doc,query=query,user=user)
+                docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
                 docown.save()
             else:
                 for user in user_list:
-                    docown = DocOwnership(doc=doc,query=query,user=user)
+                    docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
                     docown.save()
 
     return HttpResponse("bla")
+
+import re
 
 def check_docs(request,qid):
 
@@ -525,8 +576,9 @@ def check_docs(request,qid):
         return HttpResponseRedirect(reverse('scoping:userpage'))
 
     doc = Doc.objects.filter(UT=doc_id).first()
-
     authors = DocAuthInst.objects.filter(doc=doc)
+    abstract = highlight_words(doc.content,query.text)
+    title = highlight_words(doc.wosarticle.ti,query.text)
 
     template = loader.get_template('scoping/doc.html')
     context = {
@@ -536,9 +588,18 @@ def check_docs(request,qid):
         'user': user,
         'authors': authors,
         'tdocs': tdocs,
-        'sdocs': sdocs
+        'sdocs': sdocs,
+        'abstract': abstract,
+        'title': title
     }
     return HttpResponse(template.render(context, request))
+
+def back_review(request,qid):
+    query = Query.objects.get(pk=qid)  
+    user = request.user
+    docs = DocOwnership.objects.filter(query=query,user=user.id,relevant__gt=0)
+    tdocs = docs.count() - 1
+    return HttpResponseRedirect(reverse('scoping:review_docs', kwargs={'qid': qid,'d': tdocs}))
 
 def review_docs(request,qid,d=0):
     d = int(d)
@@ -556,12 +617,12 @@ def review_docs(request,qid,d=0):
     except:
         return HttpResponseRedirect(reverse('scoping:userpage'))
 
-
     doc = Doc.objects.filter(UT=doc_id).first()
-
     authors = DocAuthInst.objects.filter(doc=doc)
+    abstract = highlight_words(doc.content,query.text)
+    title = highlight_words(doc.wosarticle.ti,query.text)
 
-    template = loader.get_template('scoping/review.html')
+    template = loader.get_template('scoping/doc.html')
     context = {
         'query': query,
         'doc': doc,
@@ -569,7 +630,9 @@ def review_docs(request,qid,d=0):
         'user': user,
         'authors': authors,
         'tdocs': tdocs,
-        'sdocs': sdocs
+        'sdocs': sdocs,
+        'abstract': abstract,
+        'title': title
     }
     return HttpResponse(template.render(context, request))
 
@@ -586,10 +649,11 @@ def maybe_docs(request,qid,d=0):
     ndocs = docs.count()
     doc_id = docs[d].doc_id
     doc = Doc.objects.filter(UT=doc_id).first()
-
     authors = DocAuthInst.objects.filter(doc=doc)
+    abstract = highlight_words(doc.content,query.text)
+    title = highlight_words(doc.wosarticle.ti,query.text)
 
-    template = loader.get_template('scoping/review.html')
+    template = loader.get_template('scoping/doc.html')
     context = {
         'query': query,
         'doc': doc,
@@ -597,7 +661,9 @@ def maybe_docs(request,qid,d=0):
         'user': user,
         'authors': authors,
         'tdocs': tdocs,
-        'sdocs': sdocs
+        'sdocs': sdocs,
+        'abstract': abstract,
+        'title': title
     }
     return HttpResponse(template.render(context, request))
 
@@ -611,23 +677,21 @@ def do_review(request):
     query = Query.objects.get(pk=qid)  
     user = request.user
 
-    docown = DocOwnership.objects.filter(doc=doc,query=query,user=user).first()
-
-    print(docown.relevant)
+    docown = DocOwnership.objects.filter(doc=doc,query=query,user=user).order_by("relevant").first()
 
     docown.relevant=d
     docown.save()
 
     time.sleep(1)
-
-
    
     return HttpResponse("")
 
 def remove_assignments(request):
-	qid = request.GET.get('qid',None)
-	DocOwnership.objects.filter(query=qid).delete()
-	return HttpResponse("")
+    qid = request.GET.get('qid',None)
+    query = Query.objects.get(pk=qid)
+    todelete = DocOwnership.objects.filter(query=query)
+    DocOwnership.objects.filter(query=int(qid)).delete()
+    return HttpResponse("")
 
 
 from django.contrib.auth import logout
@@ -637,7 +701,33 @@ def logout_view(request):
     #return HttpResponse("logout")
     return HttpResponseRedirect(reverse('scoping:index'))
 
+def add_manually():
 
+
+    qid = 48
+    tag = 18
+    user = User.objects.get(username="fuss")
+    DocOwnership.objects.filter(user=user).delete()
+    query = Query.objects.get(id=qid)
+    t = Tag.objects.get(pk=tag)  
+    docs = Doc.objects.filter(docownership__query=query,docownership__tag=t).distinct()
+    for doc in docs:
+        docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
+        docown.save()
+
+    return HttpResponse("")
+
+def highlight_words(s,query):
+    qwords = re.findall('\w+',query)
+    nots = ["TS","AND","NOT","NEAR","OR","and"]
+    qwords = set([x for x in qwords if x not in nots])
+    abstract = []
+    for word in s.split(" "):
+        if word in qwords:
+            abstract.append('<span class="t1">'+word+'</span>')
+        else:
+            abstract.append(word)
+    return(" ".join(abstract))
 
 	
 
