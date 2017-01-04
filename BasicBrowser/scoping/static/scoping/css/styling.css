@@ -951,7 +951,7 @@ output {
 	width: 3em;
 }
 
-#docbox, .assignment_box {
+#docbox, .assignment_box, #criteria {
 	background: white;
 	padding: 15px;
 	margin: 20px;
@@ -964,7 +964,7 @@ output {
 
 table.spread td {
 	text-align:center;
-	width:33%;
+	width:25%;
 } 
 
 #split_table td {
@@ -991,3 +991,12 @@ span.username {
 	box-shadow: none !important;
 }
 
+#criteria {
+	background-color: white
+}
+
+.relevant_cycle {
+	cursor: pointer;
+}
+
+.waiting * { cursor: 'wait' !important}

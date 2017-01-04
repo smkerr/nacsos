@@ -55,6 +55,19 @@
 
 <br><hr><br>
 
+<h2>Criteria</h2>
+
+<form action='/scoping/update_criteria?qid={{query.id}}' method="post">
+{% csrf_token %}
+<h4> Enter/edit criteria below </h3>
+<textarea rows=3 cols=50 name="criteria">{{ query.criteria }}</textarea>
+<br><br>
+
+<input type="submit" value="Save changes" />
+</form>
+
+<br><hr><br>
+
 <h2> Users </h2>
 <table class="light" style="width:100%">
     <tr class="title">
@@ -185,9 +198,18 @@ function activate_user(element) {
             'checked': checked
         },
         success: function(data) {
-            total_users+=data
-            updateAssignment()
-        }
+			if (typeof data == "string") {
+				alert("Looks like you don't have permission to do this")
+				element.checked = !checked
+			} else {
+		        total_users+=data
+		        updateAssignment()
+			}
+        },
+		error: function() {
+			alert("Looks like you don't have permission to do this")
+			element.checked = !checked
+		}
     })
 }
 

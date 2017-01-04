@@ -26,6 +26,7 @@
         <td>! To review
         <td>Reviewed
         <td>Unknowns
+		<td>Yes buts
     </tr>
     {% for q in queries %}
         <tr>
@@ -36,10 +37,13 @@
             <td class="review{{q.unreviewed_docs}} review"><a href="/scoping/check/{{q.id}}">{{q.unreviewed_docs}}</a>
             <td class="review{{q.revieweddocs}} review"><a href="/scoping/review/{{q.id}}/0">{{q.revieweddocs}}</a> ({{q.relevance}}% relevant)
             <td class="review{{q.maybedocs}} review"><a href="/scoping/maybe/{{q.id}}/0">{{q.maybedocs}}</a>
+			<td class="review{{q.yesbuts}} review"><a href="/scoping/yesbut/{{q.id}}/0">{{q.yesbuts}}</a>
+
         {% else %}
             <td>0
             <td>0
             <td>0
+			<td>0
         {% endif %}
     {% endfor %}
 </table>

@@ -3809,3 +3809,4 @@ System check identified 1 issue (0 silenced).
 [03/Nov/2016 14:48:00] "GET /static/debug_toolbar/css/toolbar.css HTTP/1.1" 304 0
 [03/Nov/2016 14:48:00] "GET /static/debug_toolbar/img/ajax-loader.gif HTTP/1.1" 304 0
 [03/Nov/2016 14:48:00] "GET /static/debug_toolbar/css/print.css HTTP/1.1" 304 0
+done! total time: 69 minutes and 52 seconds
