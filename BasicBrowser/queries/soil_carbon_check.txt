@@ -1,0 +1,1 @@
+TS = ((soil NEAR/3 (carbon OR CO2) NEAR/3 (sequest* OR storage)) AND ("climate change" OR "global warm*")) NOT TS = ((soil NEAR/3 (carbon OR CO2) NEAR/3 (sequest* OR storage)) AND ("climate change" OR "global warm*") AND (manag* OR practice* OR restoration OR land-use))

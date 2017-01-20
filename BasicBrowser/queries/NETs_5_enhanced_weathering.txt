@@ -1,0 +1,1 @@
+TS=((enhance* OR artificial*) NEAR/2 weathering AND (carbon OR CO(2) OR CO2)) NOT TS = (ice* OR paleo* OR glaci* OR palaeo* OR jurassic)

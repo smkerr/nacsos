@@ -420,7 +420,7 @@ def sortdocs(request):
             null_filter = field+'__isnull'
             order_by.append(sortdir+field)
             filt_docs = filt_docs.filter(**{null_filter:False})
-        print(order_by)
+        #print(order_by) COMMENTED BECAUSE OF 500 ERROR
         docs = filt_docs.order_by(*order_by).values(*single_fields)[:100]
 
 
