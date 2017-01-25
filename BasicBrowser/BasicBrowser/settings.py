@@ -12,15 +12,19 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 
 import os
 
+from .settings_local import *
+
+# SECURITY WARNING: keep the secret key used in production secret!
+#SECRET_KEY = '@-*jt+re$+w6i1nd53x&p5e&#@rv##*yv_fkebk_1%0z!=#3q4'
+
+
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '@-*jt+re$+w6i1nd53x&p5e&#@rv##*yv_fkebk_1%0z!=#3q4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -55,9 +59,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'BasicBrowser.urls'
 
-INTERNAL_IPS = [
-    '10.10.12.63',
-]
+
 
 TEMPLATES = [
     {
@@ -81,20 +83,7 @@ WSGI_APPLICATION = 'BasicBrowser.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
-DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.sqlite3',
-#        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#    }
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'tmv_app',
-        'USER': 'tmv',
-        'PASSWORD': 'topicmodels',
-        'HOST': 'localhost',
-        'PORT': '',
-    }
-}
+
 
 
 # Password validation
@@ -134,3 +123,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = '/var/www/tmv/BasicBrowser/static/'
