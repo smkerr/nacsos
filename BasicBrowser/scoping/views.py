@@ -441,9 +441,9 @@ def sortdocs(request):
         if len(users) > 0:
             for u in users:
                 uname = u.split("__")[1] 
-                print(uname)
+                #print(uname)
                 doc = Doc.objects.get(UT=d['UT'])
-                print(d['UT'])
+                #print(d['UT'])
                 do = DocOwnership.objects.filter(doc_id=d['UT'],user__username=uname)
                 if do.count() > 0:
                     d[u] = do.first().relevant
@@ -528,7 +528,7 @@ def assign_docs(request):
     tagdocs = request.GET.getlist('tagdocs[]',None)
     docsplit = request.GET.get('docsplit',None)
     
-    print(docsplit)
+    #print(docsplit)
 
     query = Query.objects.get(pk=qid)  
 
