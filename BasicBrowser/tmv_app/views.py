@@ -28,7 +28,6 @@ def find_run_id(request):
             request['run_id'] = run_id
         except:
             pass
-    print(run_id)
     return(int(run_id))
 
 def get_year_filter(request):
@@ -283,7 +282,6 @@ def doc_detail(request, doc_id):
         return(doc_detail_hlda(request, doc_id))
     update_topic_titles(request.session)
     response = ''
-    print ( "doc: " + str(doc_id) )
     doc_template = loader.get_template('tmv_app/doc.html')
     
     doc = Doc.objects.get(UT=doc_id)
@@ -299,7 +297,6 @@ def doc_detail(request, doc_id):
     topics = []
     pie_array = []
     dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
-    print ( dt_threshold )
     dt_thresh_scaled = Settings.objects.get(id=1).doc_topic_scaled_score
     topicwords = {}
     ntopic = 0
@@ -315,13 +312,11 @@ def doc_detail(request, doc_id):
             topicwords[ntopic] = []
             for tt in terms:
                 topicwords[ntopic].append(tt.title)
-            print ( topic.title )
             if not dt_thresh_scaled:
                 pie_array.append([dt.score, '/topic/' + str(topic.topic), 'topic_' + str(topic.topic)])
             else:
                 pie_array.append([dt.scaled_score, '/topic/' + str(topic.topic), 'topic_' + str(topic.topic)])
-        else:
-            print ( (dt.score, dt.scaled_score) )
+
    
     words = []
     for word in doc.content.split():
@@ -346,7 +341,6 @@ def doc_detail_hlda(request, doc_id):
 
     update_topic_titles(request.session)
     response = ''
-    print ( "doc: " + str(doc_id) )
     doc_template = loader.get_template('tmv_app/doc.html')
     
     doc = Doc.objects.get(UT=doc_id)
@@ -374,7 +368,6 @@ def doc_detail_hlda(request, doc_id):
         topicwords[ntopic] = []
         for tt in terms:
             topicwords[ntopic].append(tt.title)
-        print ( topic.title )
         pie_array.append([dt.score, '/topic/' + str(topic.topic), 'topic_' + str(topic.topic)])
 
    
@@ -553,7 +546,6 @@ def runs(request):
             stat.topics = Topic.objects.filter(run_id=stat_run_id).count()        
         stat.terms = Term.objects.filter(run_id=stat_run_id).count()
 
-    print("run id = " + str(run_id))
 
     runs_page_context = Context({'nav_bar': nav_bar, 'stats':stats, 'run_id':run_id})
 
@@ -578,16 +570,10 @@ def settings(request):
 
 def apply_settings(request):
     settings = Settings.objects.get(id=1)
-    print ( settings.doc_topic_score_threshold )
-    print ( settings.doc_topic_scaled_score )
     form = SettingsForm(request.POST, instance=settings)
-    print ( form )
-    print ( settings )
     #TODO: add in checks for threshold (make sure it's a float)
     settings.doc_topic_score_threshold = float(request.POST['threshold'])
-   
-    print ( settings.doc_topic_score_threshold )
-    print ( settings.doc_topic_scaled_score )
+  
     settings.save()
 
     return HttpResponseRedirect('/topic_list')
@@ -640,7 +626,6 @@ def update_topic_titles(session):
     stats = RunStats.objects.get(run_id=run_id)
     if not stats.topic_titles_current:
     #if "a" in "ab":
-        print("updating topic titles")
         for topic in Topic.objects.filter(run_id=run_id):
             #topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')[:3]
             topicterms = Term.objects.filter(topicterm__topic=topic.topic).order_by('-topicterm__score')[:3]
@@ -665,7 +650,6 @@ def update_topic_titles_hlda(session):
     stats = RunStats.objects.get(run_id=run_id)
     if not stats.topic_titles_current:
     #if "a" in "ab":
-        print("updating topic titles")
         for topic in HTopic.objects.filter(run_id=run_id):
             #topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')[:3]
             topicterms = Term.objects.filter(htopicterm__topic=topic.topic).order_by('-htopicterm__count')[:3]
@@ -690,7 +674,6 @@ def update_topic_scores(session):
     stats = RunStats.objects.get(run_id=run_id)
     #if "a" in "ab":
     if not stats.topic_scores_current:
-        print("updating topic scores")
 
         topics = Topic.objects.filter(run_id=run_id)
         for t in topics:
@@ -716,7 +699,6 @@ def update_year_topic_scores(session):
     stats = RunStats.objects.get(run_id=run_id)
     #if "a" in "a":    
     if not stats.topic_year_scores_current:
-        print("updating year scores")
         if stats.get_method_display() == 'hlda':
             yts = HDocTopic.objects.filter(doc__PY__gt=1989,run_id=run_id)  
 
