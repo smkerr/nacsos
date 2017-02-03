@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.urls import reverse
 from django.contrib.auth.decorators import user_passes_test
 
+
 from .models import *
 
 
@@ -47,15 +48,20 @@ def doquery(request):
         text=qtext,
         date=timezone.now()
     )
+    path = os.getcwd()
+    dpath = os.path.dirname(os.path.realpath(__file__)) 
     q.save()
 
 	# write the query into a text file
-    fname = "queries/"+qtitle+".txt"
+    fname = "/queries/"+qtitle+".txt"
     with open(fname,"w") as qfile:
         qfile.write(qtext)
 
+    time.sleep(1)
+
+
 	# run "scrapeQuery.py" on the text file in the background
-    subprocess.Popen(["scrapeQuery.py", fname])
+    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
 
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
 
@@ -63,9 +69,16 @@ def doquery(request):
 ## Add the documents to the database
 @login_required
 def dodocadd(request):
-	qid = request.GET.get('qid',None)
-	subprocess.Popen(["python3", "upload_docs.py", qid])
-	return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
+    qid = request.GET.get('qid',None)
+
+    upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
+
+    subprocess.Popen(["python3", upload, qid])
+
+    #subprocess.Popen(["python3", "/home/galm/combine_recs.py"])
+
+    return HttpResponse(upload)
+    #return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
 
 
 #########################################################
@@ -77,7 +90,7 @@ def querying(request, qid):
     template = loader.get_template('scoping/query_progress.html')
 
     query = Query.objects.get(pk=qid)
-    logfile = "queries/"+query.title+".log"
+    logfile = "/queries/"+query.title+".log"
 
     wait = True
     # wait up to 15 seconds for the log file, then go to a page which displays its contents
@@ -87,7 +100,7 @@ def querying(request, qid):
                 log = lfile.readlines()
             break
         except:
-            log = ["oops, there seems to be some kind of problem, I can't find the log file"]
+            log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
             time.sleep(1)
 
     finished = False
