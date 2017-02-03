@@ -19,7 +19,7 @@ def add_doc(r):
     try: # if this doc is in the database, do nothing
         doc = Doc.objects.get(UT=r['UT'])
         doc.query.add(q)
-    except:
+    except: # otherwise, add it!
         doc = Doc(UT=r['UT'])
         doc.title=get(r,'TI')
         doc.content=get(r,'AB')
@@ -37,11 +37,9 @@ def add_doc(r):
             except:
                 print(field)
                 print(r[field])
-#        try:
+
         article.save()
-#        except:
-#            print(r)
-#            sys.exit()
+
     
         ## Add authors
         for a in range(len(r['AF'])):
@@ -81,7 +79,7 @@ def main():
     global q
     q = Query.objects.get(pk=qid)
 
-    Doc.objects.filter(query=qid).delete()
+    #Doc.objects.filter(query=qid).delete() # doesn't seem like a good idea
 
     i=0
     n_records = 0
@@ -92,7 +90,9 @@ def main():
     max_chunk_size = 2000
     chunk_size = 0
 
-    with open("queries/"+q.title+"/results.txt") as res:
+    print(q.title)
+
+    with open("/queries/"+q.title+"/results.txt", encoding="utf-8") as res:
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue
