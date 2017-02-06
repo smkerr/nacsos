@@ -17,16 +17,18 @@
 
 <!-- Query manager -->
 <h2> Query Progress </h2>
+
+{% if log %}
 <br>
 (Refresh page to update progress)
 <br>
 <br>
-
 <div id="logbox">
-{% for l in log %}
-    {{l}}
-{% endfor %}
+    {% for l in log %}
+        {{l}}
+    {% endfor %}
 </div>
+{% endif %}
 
 <br>
 {% if finished %}
@@ -34,7 +36,7 @@
     {% if doclength == 0 %}
     <p id="doc_adder">{{doclength}} of these documents are in the database. Would you like to add them now? 
 	<br>
-	<button onclick="docadd({{query.id}})">Add Documents</button>
+	<a href="/scoping/dodocadd?qid={{query.id}}"><button >Add Documents</button></a>
     {% else %}
         <p><a href="../docs/{{query.id}}">View the documents</a>
     {% endif %}
@@ -48,6 +50,8 @@
 <script>
 
 function docadd(qid) {
+    
+    /*
 	$.ajax({
 		url: '/scoping/dodocadd',
 		data: {
@@ -58,6 +62,7 @@ function docadd(qid) {
 			$("#doc_adder").html('<p><a href="../docs/'+qid+'">View the documents</a>')
 		}
 	})
+    */
 }
 
 </script>

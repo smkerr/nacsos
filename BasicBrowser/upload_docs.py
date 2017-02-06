@@ -1,4 +1,4 @@
-import django, os, sys, time, resource, re, gc
+import django, os, sys, time, resource, re, gc, shutil
 from multiprocess import Pool
 from functools import partial
 
@@ -137,6 +137,10 @@ def main():
     django.db.connections.close_all()
     q.r_count = n_records
     q.save()
+
+    shutil.rmtree("/queries/"+q.title)
+    os.remove("/queries/"+q.title+".txt")
+    os.remove("/queries/"+q.title+".log")
 
 
 if __name__ == '__main__':
