@@ -24,8 +24,7 @@
             <th>Title</td>
 			<th>Text</td>
 			<th>Date</td>
-			<th>n Results</td>
-            <th>Progress</th>
+			<th>Documents</td>
         </tr>
 		{% for query in queries %}
         <tr>
@@ -33,8 +32,11 @@
             <td>{{ query.title }}</td>
 			<td>{{ query.text }}</td>
 			<td>{{ query.date }}</td>
+            {% if query.r_count > 0 %}
             <td><a href="docs/{{query.id}}">{{ query.r_count }}</a></td>
+            {% else %}
             <td><a href="querying/{{query.id}}">View progress</a></td>
+            {% endif %}
 		</tr>
 		{% endfor %}
 </table>

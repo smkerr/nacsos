@@ -1,1 +1,0 @@
-TS = (capture NEAR/4 (air OR atmosph* ) AND (CO2 OR carbon)) 

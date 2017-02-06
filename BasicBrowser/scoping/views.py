@@ -75,10 +75,11 @@ def dodocadd(request):
 
     subprocess.Popen(["python3", upload, qid])
 
-    #subprocess.Popen(["python3", "/home/galm/combine_recs.py"])
+    time.sleep(2)
+  
 
-    return HttpResponse(upload)
-    #return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
+    #return HttpResponse(upload)
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
 
 
 #########################################################
@@ -90,26 +91,31 @@ def querying(request, qid):
     template = loader.get_template('scoping/query_progress.html')
 
     query = Query.objects.get(pk=qid)
-    logfile = "/queries/"+query.title+".log"
 
-    wait = True
-    # wait up to 15 seconds for the log file, then go to a page which displays its contents
-    for i in range(15):
-        try:
-            with open(logfile,"r") as lfile:
-                log = lfile.readlines()
-            break
-        except:
-            log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
-            time.sleep(1)
-
-    finished = False
-    if "done!" in log[-1]:
-        finished = True
-
-	# How many docs are there?
+	# How many docs are there already added?
     docs = Doc.objects.filter(query__id=qid)
     doclength = len(docs)
+
+    if doclength == 0: # if we've already added the docs, we don't need to show the log
+        logfile = "/queries/"+query.title+".log"
+
+        wait = True
+        # wait up to 15 seconds for the log file, then go to a page which displays its contents
+        for i in range(15):
+            try:
+                with open(logfile,"r") as lfile:
+                    log = lfile.readlines()
+                break
+            except:
+                log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
+                time.sleep(1)
+
+        finished = False
+        if "done!" in log[-1]:
+            finished = True
+    else: 
+        log=False
+        finished=True
 
     context = {
         'log': log,
