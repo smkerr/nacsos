@@ -19,30 +19,7 @@
 <br>
 
 <table class="light">
-<<<<<<< HEAD
-  <tr>
-    <th>ID</th>
-    <th>Type</th>
-    <th>Title</th>
-    <th>Text</th>
-    <th>Date</th>
-    <th>Documents</th>
-  </tr>
-  {% for query in queries %}
-  <tr>
-    <td><a href="query/{{query.id}}">{{ query.id }}</a></td>
-    <td>{{ query.type }}</td>
-    <td>{{ query.title }}</td>
-    <td>{{ query.text }}</td>
-    <td>{{ query.date }}</td>
-    {% if query.r_count > 0 %}
-      <td><a href="docs/{{query.id}}">{{ query.r_count }}</a></td>
-    {% else %}
-      <td><a href="querying/{{query.id}}">View progress</a></td>
-    {% endif %}
-  </tr>
-  {% endfor %}
-=======
+
 		<tr class="title">
 			<td>ID</td>
             <td>Created by</td>
@@ -67,7 +44,7 @@
             <td><a href="delete_query/{{query.id}}"><button onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button></a></td>
 		</tr>
 		{% endfor %}
->>>>>>> 7789f0f17834c5bf48a62b0fc1806846a53242cc
+
 </table>
 
 <br/><hr/><br/>
