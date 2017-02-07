@@ -4,10 +4,11 @@ from django.contrib.auth.models import User
 # Create your models here.
 
 class Query(models.Model):
-    title = models.TextField(null=True, unique=True, verbose_name="Query Title")
+    title = models.TextField(null=True, verbose_name="Query Title")
     text = models.TextField(null=True, verbose_name="Query Text")
     date = models.DateTimeField(verbose_name="Query Date")
     r_count = models.IntegerField(null=True, verbose_name="Query Results Count")
+    creator = models.ForeignKey(User,null=True, verbose_name="Query Creator", related_name="user_creations")
     users = models.ManyToManyField(User)
     criteria = models.TextField(null=True)
 

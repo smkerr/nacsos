@@ -26,9 +26,11 @@ def index(request):
     template = loader.get_template('scoping/index.html')
     queries = Query.objects.all().order_by('-id')
     query = queries.last()
+    users = User.objects.all()
     context = {
         'queries': queries,
-        'query': query
+        'query': query,
+        'users': users,
     }
     return HttpResponse(template.render(context, request))
 
@@ -40,20 +42,22 @@ import sys
 @login_required
 def doquery(request):
 
+
     qtitle = request.POST['qtitle']
     qtext = request.POST['qtext']
 	# create a new query record in the database
     q = Query(
         title=qtitle,
         text=qtext,
-        date=timezone.now()
+        date=timezone.now(),
+        creator = request.user
     )
     path = os.getcwd()
     dpath = os.path.dirname(os.path.realpath(__file__)) 
     q.save()
 
 	# write the query into a text file
-    fname = "/queries/"+qtitle+".txt"
+    fname = "/queries/"+str(q.id)+".txt"
     with open(fname,"w") as qfile:
         qfile.write(qtext)
 
@@ -64,6 +68,17 @@ def doquery(request):
     subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
 
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
+
+#########################################################
+## Delete the query
+@login_required
+def delete_query(request, qid):
+    try:
+        q = Query.objects.get(pk=qid)
+        q.delete()  
+    except: 
+        pass
+    return HttpResponseRedirect(reverse('scoping:index'))
 
 #########################################################
 ## Add the documents to the database
@@ -97,7 +112,7 @@ def querying(request, qid):
     doclength = len(docs)
 
     if doclength == 0: # if we've already added the docs, we don't need to show the log
-        logfile = "/queries/"+query.title+".log"
+        logfile = "/queries/"+str(query.id)+".log"
 
         wait = True
         # wait up to 15 seconds for the log file, then go to a page which displays its contents
