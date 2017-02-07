@@ -19,16 +19,19 @@
 <br>
 
 <table class="light">
-		<tr>
-			<th>ID</td>
-            <th>Title</td>
-			<th>Text</td>
-			<th>Date</td>
-			<th>Documents</td>
+		<tr class="title">
+			<td>ID</td>
+            <td>Created by</td>
+            <td>Title</td>
+			<td>Text</td>
+			<td>Date</td>
+			<td>Documents</td>
+            <td>Delete</td>
         </tr>
 		{% for query in queries %}
         <tr>
 			<td><a href="query/{{query.id}}">{{ query.id }}</a></td>
+            <td>{{ query.creator }}</td>
             <td>{{ query.title }}</td>
 			<td>{{ query.text }}</td>
 			<td>{{ query.date }}</td>
@@ -37,6 +40,7 @@
             {% else %}
             <td><a href="querying/{{query.id}}">View progress</a></td>
             {% endif %}
+            <td><a href="delete_query/{{query.id}}"><button onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button></a></td>
 		</tr>
 		{% endfor %}
 </table>
