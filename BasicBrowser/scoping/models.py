@@ -3,13 +3,28 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 
+class SnowballingSession(models.Model):
+    name           = models.TextField(null=True, unique=True, verbose_name="SB Name")
+    initial_pearls = models.TextField(null=True,              verbose_name="SB Initial Pearls")
+    date           = models.DateTimeField(                    verbose_name="SB Date")
+#    completed      = models.BooleanField(verbose_name="Is SB Completed")
+    users          = models.ManyToManyField(User)
+
+    def __str__(self):
+      return self.name
+
 class Query(models.Model):
     title = models.TextField(null=True, unique=True, verbose_name="Query Title")
+    type  = models.TextField(null=True, verbose_name="Query Type")
     text = models.TextField(null=True, verbose_name="Query Text")
     date = models.DateTimeField(verbose_name="Query Date")
     r_count = models.IntegerField(null=True, verbose_name="Query Results Count")
     users = models.ManyToManyField(User)
     criteria = models.TextField(null=True)
+    snowball = models.IntegerField(null=True, verbose_name="Snowball ID")
+
+    def __str__(self):
+      return self.title
 
 class Tag(models.Model):
     title = models.TextField(null=True, verbose_name="Tag Title")
@@ -25,6 +40,9 @@ class Doc(models.Model):
     PY = models.IntegerField(null=True,db_index=True)
     users = models.ManyToManyField(User, through='DocOwnership')
     
+    def __str__(self):
+      return self.UT
+
     def word_count(self):
         return len(str(self.content).split())
 
@@ -96,5 +114,8 @@ class WoSArticle(models.Model):
     su = models.TextField(null=True, verbose_name="Supplement") # supplement
     tc = models.IntegerField(null=True, verbose_name="Times Cited") # times cited
     vl = models.CharField(null=True, max_length=10, verbose_name="Volume")
+    
+    def __str__(self):
+      return self.ar
 
 

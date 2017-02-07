@@ -16,21 +16,42 @@ from .models import *
 
 
 def super_check(user):
-    return user.groups.filter(name__in=['superuser'])
+  return user.groups.filter(name__in=['superuser'])
 
 ########################################################
 ## Homepage - list the queries, form for adding new ones
 
 @login_required
 def index(request):
-    template = loader.get_template('scoping/index.html')
-    queries = Query.objects.all().order_by('-id')
-    query = queries.last()
-    context = {
-        'queries': queries,
-        'query': query
-    }
-    return HttpResponse(template.render(context, request))
+  template = loader.get_template('scoping/index.html')
+  
+  queries_none  = Query.objects.all().filter(type=None)
+  queries_dft   = Query.objects.all().filter(type="default")
+  queries = queries_none | queries_dft
+  queries = queries.order_by('-id')
+  query    = queries.last()
+
+  context = {
+    'queries'  : queries,
+    'query'    : query
+  }
+
+  return HttpResponse(template.render(context, request))
+
+########################################################
+## Snowballing homepage
+@login_required
+def snowball(request):
+  template        = loader.get_template('scoping/snowball.html')
+
+  sb_sessions     = SnowballingSession.objects.all().order_by('-id')
+  sb_session_last = sb_sessions.last()
+  context = {
+    'sb_sessions': sb_sessions,
+    'sb_session_last': sb_session_last
+  }
+  return HttpResponse(template.render(context, request))
+
 
 
 #########################################################
@@ -40,46 +61,90 @@ import sys
 @login_required
 def doquery(request):
 
-    qtitle = request.POST['qtitle']
-    qtext = request.POST['qtext']
-	# create a new query record in the database
-    q = Query(
-        title=qtitle,
-        text=qtext,
-        date=timezone.now()
-    )
-    path = os.getcwd()
-    dpath = os.path.dirname(os.path.realpath(__file__)) 
-    q.save()
+  qtitle = request.POST['qtitle']
+  qtype  = request.POST['qtype']
+  qtext  = request.POST['qtext']
 
-	# write the query into a text file
-    fname = "/queries/"+qtitle+".txt"
-    with open(fname,"w") as qfile:
-        qfile.write(qtext)
+  #  create a new query record in the database
+  q = Query(
+      title=qtitle,
+      type=qtype,
+      text=qtext,
+      date=timezone.now()
+  )
+  q.save()
 
-    time.sleep(1)
+  # write the query into a text file
+  fname = "/queries/"+qtype+"_"+qtitle+".txt"
+  with open(fname,"w") as qfile:
+    qfile.write(qtext)
+
+  time.sleep(1)
+
+  # run "scrapeQuery.py" on the text file in the background
+  subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
+
+  return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
+
+#########################################################
+## Start snowballing
+import subprocess
+import sys
+@login_required
+def start_snowballing(request):
+
+  qtitle = request.POST['sbs_name']
+  qtype  = 'backward' 
+  qtext  = request.POST['sbs_initialpearls']
+
+  curdate = timezone.now()
+
+  sbs = SnowballingSession(
+    name = qtitle,
+    initial_pearls = qtext,
+    date=curdate
+  )
+  sbs.save()
+
+  #  create a new query record in the database
+  q = Query(
+      title=qtitle+"_backward_1",
+      type=qtype,
+      text=qtext,
+      date=curdate,
+      snowball=sbs.id
+  )
+  q.save()
+
+  # write the query into a text file
+  fname = "/queries/"+qtype+"_"+qtitle+".txt"
+  with open(fname,"w") as qfile:
+    qfile.write(qtext)
+
+  time.sleep(1)
+
+  # run "scrapeQuery.py" on the text file in the background
+  subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
+
+  return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
 
 
-	# run "scrapeQuery.py" on the text file in the background
-    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
-
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
 
 #########################################################
 ## Add the documents to the database
 @login_required
 def dodocadd(request):
-    qid = request.GET.get('qid',None)
+  qid = request.GET.get('qid',None)
 
-    upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
+  upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
 
-    subprocess.Popen(["python3", upload, qid])
+  subprocess.Popen(["python3", upload, qid])
 
-    time.sleep(2)
+  time.sleep(2)
   
 
-    #return HttpResponse(upload)
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
+  #return HttpResponse(upload)
+  return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
 
 
 #########################################################
@@ -88,43 +153,105 @@ def dodocadd(request):
 @login_required
 def querying(request, qid):
 
-    template = loader.get_template('scoping/query_progress.html')
+  template = loader.get_template('scoping/query_progress.html')
 
-    query = Query.objects.get(pk=qid)
+  query = Query.objects.get(pk=qid)
 
-	# How many docs are there already added?
-    docs = Doc.objects.filter(query__id=qid)
+  if query.type == "default":
+
+    # How many docs are there already added?
+    docs      = Doc.objects.filter(query__id=qid)
     doclength = len(docs)
 
     if doclength == 0: # if we've already added the docs, we don't need to show the log
-        logfile = "/queries/"+query.title+".log"
+      logfile = "/queries/"+query.type+"_"+query.title+".log"
 
-        wait = True
-        # wait up to 15 seconds for the log file, then go to a page which displays its contents
-        for i in range(15):
-            try:
-                with open(logfile,"r") as lfile:
-                    log = lfile.readlines()
-                break
-            except:
-                log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
-                time.sleep(1)
+      wait = True
+      # wait up to 15 seconds for the log file, then go to a page which displays its contents
+      for i in range(15):
+        try:
+          with open(logfile,"r") as lfile:
+            log = lfile.readlines()
+          break
+        except:
+          log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
+          time.sleep(1)
 
-        finished = False
-        if "done!" in log[-1]:
-            finished = True
+      finished = False
+      if "done!" in log[-1]:
+        finished = True
     else: 
-        log=False
-        finished=True
+      log=False
+      finished=True
 
     context = {
-        'log': log,
-        'finished': finished,
-        'docs': docs,
-        'doclength': doclength,
-        'query': query
+      'log': log,
+      'finished': finished,
+      'docs': docs,
+      'doclength': doclength,
+      'query': query
     }
-    return HttpResponse(template.render(context, request))
+
+  else:
+    # How many docs are associated to the query?
+    docs      = Doc.objects.filter(query__id=qid)
+    doclength = len(docs)
+
+    if doclength == 0: # if none, the query was probably not yet processed
+      logfile = "/queries/"+query.type+"_"+query.title+".log"
+      
+      wait = True
+      # wait up to 15 seconds for the log file, then go to a page which displays its contents
+      for i in range(15):
+        try:
+          with open(logfile,"r") as lfile:
+            log = lfile.readlines()
+          break
+        except:
+          log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
+          time.sleep(1)
+
+      finished = False
+      if "done!" in log[-1]:
+        finished = True
+    else:
+      log=False
+      finished=True
+
+    if finished:
+      # Process results
+      rstfile = "/queries/"+query.type+"_"+query.title+"/results.txt"      
+      with open(rstfile,"r") as lfile:
+        rst = lfile.readlines()
+
+      # Get references
+
+ 
+      # Check how many references are there already in the DB?
+      refs      = Doc.objects.filter(query__id=qid)
+
+
+    # For each document
+    #  - check if available in DB (if not add it)
+
+    # For each reference
+    #  - check if available in DB (if not add to list for second scraping)
+
+    # If list of missing docs not empty, do scrapeWoS a second time
+
+    # Add new documents to the DB
+    
+    # Create Doc-Cite links
+
+    context = {
+      'log': log,
+      'finished': finished,
+      'docs': docs,
+      'doclength': doclength,
+      'query': query
+    }
+
+  return HttpResponse(template.render(context, request))
 
 ############################################################
 ## Query homepage - manage tags and user-doc assignments
