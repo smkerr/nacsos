@@ -8,7 +8,7 @@
     <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
   </head>
   <body>
-<<<<<<< HEAD
+
     {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
     <div id="main">
       <div id="graph">
@@ -18,29 +18,6 @@
         <h1> Snowballing Helper</h1>
         {% endif %}
         <br/>
-=======
-{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
-<div id="main">
-<div id="graph">
-<h1> Scoping Review Helper</h1>
-<br>
-
-<!-- Query manager -->
-<h2> Query Progress </h2>
-
-{% if log %}
-<br>
-(Refresh page to update progress)
-<br>
-<br>
-<div id="logbox">
-    {% for l in log %}
-        {{l}}<br>
-    {% endfor %}
-</div>
-{% endif %}
->>>>>>> 7789f0f17834c5bf48a62b0fc1806846a53242cc
-
         <!-- Query manager -->
         <h2> Query Progress </h2>
 

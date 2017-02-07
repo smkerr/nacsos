@@ -55,6 +55,15 @@ def snowball(request):
     }
     return HttpResponse(template.render(context, request))
 
+#########################################################
+## Test the SSH connection
+def ssh_test():
+    ssh_working = subprocess.Popen(["check_selenium_ip.py", "-b", "chrome"], stdout=subprocess.PIPE).communicate()[0].strip().decode()
+    print(repr(ssh_working))
+    if ssh_working == "False":
+        subprocess.Popen(["setsid","ssh","-D","1080","minx@aix.pik-potsdam.de"])
+    return(ssh_working)
+
 
 #########################################################
 ## Do the query
@@ -63,6 +72,7 @@ import sys
 @login_required
 def doquery(request):
 
+    ssh_test()
 
     qtitle = request.POST['qtitle']
     qtype  = request.POST['qtype']
@@ -79,7 +89,7 @@ def doquery(request):
     q.save()
 
     # write the query into a text file
-    fname = "/queries/"+qtype+"_"+qtitle+".txt"
+    fname = "/queries/"+str(q.id)+".txt"
     with open(fname,"w") as qfile:
         qfile.write(qtext)
 
@@ -96,6 +106,8 @@ import subprocess
 import sys
 @login_required
 def start_snowballing(request):
+
+    ssh_test()
 
     qtitle = request.POST['sbs_name']
     qtype  = 'backward'
@@ -121,7 +133,7 @@ def start_snowballing(request):
     q.save()
 
     # write the query into a text file
-    fname = "/queries/"+qtype+"_"+qtitle+".txt"
+    fname = "/queries/"+str(q.id)+".txt"
     with open(fname,"w") as qfile:
         qfile.write(qtext)
 
@@ -141,6 +153,10 @@ def delete_query(request, qid):
     try:
         q = Query.objects.get(pk=qid)
         q.delete()
+        title = str(qid.id)
+        shutil.rmtree("/queries/"+title)
+        os.remove("/queries/"+title+".txt")
+        os.remove("/queries/"+title+".log")
     except:
         pass
     return HttpResponseRedirect(reverse('scoping:index'))
@@ -213,7 +229,7 @@ def querying(request, qid):
         doclength = len(docs)
 
         if doclength == 0: # if none, the query was probably not yet processed
-            logfile = "/queries/"+query.type+"_"+query.title+".log"
+            logfile = "/queries/"+str(qid)+".log"
 
             wait = True
             # wait up to 15 seconds for the log file, then go to a page which displays its contents
