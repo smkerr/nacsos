@@ -16,55 +16,44 @@ from .models import *
 
 
 def super_check(user):
-  return user.groups.filter(name__in=['superuser'])
+    return user.groups.filter(name__in=['superuser'])
 
 ########################################################
 ## Homepage - list the queries, form for adding new ones
 
 @login_required
 def index(request):
-<<<<<<< HEAD
-  template = loader.get_template('scoping/index.html')
-  
-  queries_none  = Query.objects.all().filter(type=None)
-  queries_dft   = Query.objects.all().filter(type="default")
-  queries = queries_none | queries_dft
-  queries = queries.order_by('-id')
-  query    = queries.last()
 
-  context = {
-    'queries'  : queries,
-    'query'    : query
-  }
+    template = loader.get_template('scoping/index.html')
 
-  return HttpResponse(template.render(context, request))
+    queries_none  = Query.objects.all().filter(type=None)
+    queries_dft   = Query.objects.all().filter(type="default")
+    queries = queries_none | queries_dft
+    queries = queries.order_by('-id')
+    query    = queries.last()
+    users = User.objects.all()
+
+    context = {
+      'queries'  : queries,
+      'query'    : query,
+      'users'    : users
+    }
+
+    return HttpResponse(template.render(context, request))
 
 ########################################################
 ## Snowballing homepage
 @login_required
 def snowball(request):
-  template        = loader.get_template('scoping/snowball.html')
+    template        = loader.get_template('scoping/snowball.html')
 
-  sb_sessions     = SnowballingSession.objects.all().order_by('-id')
-  sb_session_last = sb_sessions.last()
-  context = {
-    'sb_sessions': sb_sessions,
-    'sb_session_last': sb_session_last
-  }
-  return HttpResponse(template.render(context, request))
-
-=======
-    template = loader.get_template('scoping/index.html')
-    queries = Query.objects.all().order_by('-id')
-    query = queries.last()
-    users = User.objects.all()
+    sb_sessions     = SnowballingSession.objects.all().order_by('-id')
+    sb_session_last = sb_sessions.last()
     context = {
-        'queries': queries,
-        'query': query,
-        'users': users,
+      'sb_sessions': sb_sessions,
+      'sb_session_last': sb_session_last
     }
     return HttpResponse(template.render(context, request))
->>>>>>> 7789f0f17834c5bf48a62b0fc1806846a53242cc
 
 
 #########################################################
@@ -74,51 +63,32 @@ import sys
 @login_required
 def doquery(request):
 
-<<<<<<< HEAD
-  qtitle = request.POST['qtitle']
-  qtype  = request.POST['qtype']
-  qtext  = request.POST['qtext']
-=======
 
     qtitle = request.POST['qtitle']
-    qtext = request.POST['qtext']
-	# create a new query record in the database
+    qtype  = request.POST['qtype']
+    qtext  = request.POST['qtext']
+
+    #  create a new query record in the database
     q = Query(
         title=qtitle,
+        type=qtype,
         text=qtext,
-        date=timezone.now(),
-        creator = request.user
+        creator = request.user,
+        date=timezone.now()
     )
-    path = os.getcwd()
-    dpath = os.path.dirname(os.path.realpath(__file__)) 
     q.save()
 
-	# write the query into a text file
-    fname = "/queries/"+str(q.id)+".txt"
+    # write the query into a text file
+    fname = "/queries/"+qtype+"_"+qtitle+".txt"
     with open(fname,"w") as qfile:
         qfile.write(qtext)
->>>>>>> 7789f0f17834c5bf48a62b0fc1806846a53242cc
 
-  #  create a new query record in the database
-  q = Query(
-      title=qtitle,
-      type=qtype,
-      text=qtext,
-      date=timezone.now()
-  )
-  q.save()
+    time.sleep(1)
 
-  # write the query into a text file
-  fname = "/queries/"+qtype+"_"+qtitle+".txt"
-  with open(fname,"w") as qfile:
-    qfile.write(qtext)
+    # run "scrapeQuery.py" on the text file in the background
+    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
 
-  time.sleep(1)
-
-  # run "scrapeQuery.py" on the text file in the background
-  subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
-
-  return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
 
 #########################################################
 ## Start snowballing
@@ -127,40 +97,40 @@ import sys
 @login_required
 def start_snowballing(request):
 
-  qtitle = request.POST['sbs_name']
-  qtype  = 'backward' 
-  qtext  = request.POST['sbs_initialpearls']
+    qtitle = request.POST['sbs_name']
+    qtype  = 'backward'
+    qtext  = request.POST['sbs_initialpearls']
 
-  curdate = timezone.now()
+    curdate = timezone.now()
 
-  sbs = SnowballingSession(
-    name = qtitle,
-    initial_pearls = qtext,
-    date=curdate
-  )
-  sbs.save()
+    sbs = SnowballingSession(
+      name = qtitle,
+      initial_pearls = qtext,
+      date=curdate
+    )
+    sbs.save()
 
-  #  create a new query record in the database
-  q = Query(
-      title=qtitle+"_backward_1",
-      type=qtype,
-      text=qtext,
-      date=curdate,
-      snowball=sbs.id
-  )
-  q.save()
+    #  create a new query record in the database
+    q = Query(
+        title=qtitle+"_backward_1",
+        type=qtype,
+        text=qtext,
+        date=curdate,
+        snowball=sbs.id
+    )
+    q.save()
 
-  # write the query into a text file
-  fname = "/queries/"+qtype+"_"+qtitle+".txt"
-  with open(fname,"w") as qfile:
-    qfile.write(qtext)
+    # write the query into a text file
+    fname = "/queries/"+qtype+"_"+qtitle+".txt"
+    with open(fname,"w") as qfile:
+        qfile.write(qtext)
 
-  time.sleep(1)
+    time.sleep(1)
 
-  # run "scrapeQuery.py" on the text file in the background
-  subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
+    # run "scrapeQuery.py" on the text file in the background
+    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
 
-  return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
 
 
 
@@ -170,8 +140,8 @@ def start_snowballing(request):
 def delete_query(request, qid):
     try:
         q = Query.objects.get(pk=qid)
-        q.delete()  
-    except: 
+        q.delete()
+    except:
         pass
     return HttpResponseRedirect(reverse('scoping:index'))
 
@@ -179,17 +149,17 @@ def delete_query(request, qid):
 ## Add the documents to the database
 @login_required
 def dodocadd(request):
-  qid = request.GET.get('qid',None)
+    qid = request.GET.get('qid',None)
 
-  upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
+    upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
 
-  subprocess.Popen(["python3", upload, qid])
+    subprocess.Popen(["python3", upload, qid])
 
-  time.sleep(2)
-  
+    time.sleep(2)
 
-  #return HttpResponse(upload)
-  return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
+
+    #return HttpResponse(upload)
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
 
 
 #########################################################
@@ -198,109 +168,105 @@ def dodocadd(request):
 @login_required
 def querying(request, qid):
 
-  template = loader.get_template('scoping/query_progress.html')
+    template = loader.get_template('scoping/query_progress.html')
 
-  query = Query.objects.get(pk=qid)
+    query = Query.objects.get(pk=qid)
 
-  if query.type == "default":
+    if query.type == "default":
 
     # How many docs are there already added?
-    docs      = Doc.objects.filter(query__id=qid)
-    doclength = len(docs)
+        docs      = Doc.objects.filter(query__id=qid)
+        doclength = len(docs)
 
-    if doclength == 0: # if we've already added the docs, we don't need to show the log
-<<<<<<< HEAD
-      logfile = "/queries/"+query.type+"_"+query.title+".log"
-=======
-        logfile = "/queries/"+str(query.id)+".log"
->>>>>>> 7789f0f17834c5bf48a62b0fc1806846a53242cc
+        if doclength == 0: # if we've already added the docs, we don't need to show the log
+            logfile = "/queries/"+str(query.id)+".log"
 
-      wait = True
-      # wait up to 15 seconds for the log file, then go to a page which displays its contents
-      for i in range(15):
-        try:
-          with open(logfile,"r") as lfile:
-            log = lfile.readlines()
-          break
-        except:
-          log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
-          time.sleep(1)
+            wait = True
+            # wait up to 15 seconds for the log file, then go to a page which displays its contents
+            for i in range(15):
+                try:
+                    with open(logfile,"r") as lfile:
+                        log = lfile.readlines()
+                    break
+                except:
+                    log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
+                    time.sleep(1)
 
-      finished = False
-      if "done!" in log[-1]:
-        finished = True
-    else: 
-      log=False
-      finished=True
+            finished = False
+            if "done!" in log[-1]:
+                finished = True
+        else:
+            log=False
+            finished=True
 
-    context = {
-      'log': log,
-      'finished': finished,
-      'docs': docs,
-      'doclength': doclength,
-      'query': query
-    }
+        context = {
+          'log': log,
+          'finished': finished,
+          'docs': docs,
+          'doclength': doclength,
+          'query': query
+        }
 
-  else:
-    # How many docs are associated to the query?
-    docs      = Doc.objects.filter(query__id=qid)
-    doclength = len(docs)
-
-    if doclength == 0: # if none, the query was probably not yet processed
-      logfile = "/queries/"+query.type+"_"+query.title+".log"
-      
-      wait = True
-      # wait up to 15 seconds for the log file, then go to a page which displays its contents
-      for i in range(15):
-        try:
-          with open(logfile,"r") as lfile:
-            log = lfile.readlines()
-          break
-        except:
-          log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
-          time.sleep(1)
-
-      finished = False
-      if "done!" in log[-1]:
-        finished = True
     else:
-      log=False
-      finished=True
+        # How many docs are associated to the query?
+        docs      = Doc.objects.filter(query__id=qid)
+        doclength = len(docs)
 
-    if finished:
-      # Process results
-      rstfile = "/queries/"+query.type+"_"+query.title+"/results.txt"      
-      with open(rstfile,"r") as lfile:
-        rst = lfile.readlines()
+        if doclength == 0: # if none, the query was probably not yet processed
+            logfile = "/queries/"+query.type+"_"+query.title+".log"
 
-      # Get references
+            wait = True
+            # wait up to 15 seconds for the log file, then go to a page which displays its contents
+            for i in range(15):
+                try:
+                    with open(logfile,"r") as lfile:
+                        log = lfile.readlines()
+                    break
+                except:
+                    log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
+                    time.sleep(1)
 
- 
-      # Check how many references are there already in the DB?
-      refs      = Doc.objects.filter(query__id=qid)
+            finished = False
+            if "done!" in log[-1]:
+                finished = True
+        else:
+            log=False
+            finished=True
+
+        if finished:
+            # Process results
+            rstfile = "/queries/"+query.type+"_"+query.title+"/results.txt"
+            with open(rstfile,"r") as lfile:
+                rst = lfile.readlines()
+
+            # Get references
 
 
-    # For each document
-    #  - check if available in DB (if not add it)
+            # Check how many references are there already in the DB?
+            refs      = Doc.objects.filter(query__id=qid)
 
-    # For each reference
-    #  - check if available in DB (if not add to list for second scraping)
 
-    # If list of missing docs not empty, do scrapeWoS a second time
+        # For each document
+        #  - check if available in DB (if not add it)
 
-    # Add new documents to the DB
-    
-    # Create Doc-Cite links
+        # For each reference
+        #  - check if available in DB (if not add to list for second scraping)
 
-    context = {
-      'log': log,
-      'finished': finished,
-      'docs': docs,
-      'doclength': doclength,
-      'query': query
-    }
+        # If list of missing docs not empty, do scrapeWoS a second time
 
-  return HttpResponse(template.render(context, request))
+        # Add new documents to the DB
+
+        # Create Doc-Cite links
+
+        context = {
+          'log': log,
+          'finished': finished,
+          'docs': docs,
+          'doclength': doclength,
+          'query': query
+        }
+
+    return HttpResponse(template.render(context, request))
 
 ############################################################
 ## Query homepage - manage tags and user-doc assignments
@@ -316,19 +282,19 @@ def query(request,qid):
 
     for tag in tags:
         tag['docs'] = Doc.objects.filter(tag=tag['id']).count()
-        tag['a_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],).count()       
+        tag['a_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],).count()
         if tag['a_docs'] == 0:
             tag['a_docs'] = False
         else:
-            tag['a_docs'] = Doc.objects.filter(docownership__tag=tag['id'],docownership__isnull=False).distinct().count()  
-            tag['seen_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant__gt=0).count() 
-            tag['rel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()  
-            tag['irrel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=2).count()    
+            tag['a_docs'] = Doc.objects.filter(docownership__tag=tag['id'],docownership__isnull=False).distinct().count()
+            tag['seen_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant__gt=0).count()
+            tag['rel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()
+            tag['irrel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=2).count()
             try:
                 tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
             except:
                 tag['relevance'] = 0
-  
+
     fields = ['id','title','text']
 
     untagged = Doc.objects.filter(query=query,tag__isnull=True).count()
@@ -337,8 +303,8 @@ def query(request,qid):
 
     proj_users = users.query
 
-    user_list = []  
-    
+    user_list = []
+
     for u in users:
         user_docs = {}
         tdocs = DocOwnership.objects.filter(query=query,user=u)
@@ -372,7 +338,7 @@ def query(request,qid):
         'fields': fields,
         'untagged': untagged,
         'users': user_list,
-		'user': request.user
+                'user': request.user
     }
 
     #add_manually()
@@ -404,7 +370,7 @@ def userpage(request):
             relevance = 0
         query_list.append({
             'id': q.id,
-            'title': q.title, 
+            'title': q.title,
             'ndocs': ndocs,
             'revdocs': revdocs,
             'revieweddocs': reviewed_docs,
@@ -418,8 +384,8 @@ def userpage(request):
     query = queries.last()
 
     context = {
-	    'user': request.user,
-	    'queries': query_list,
+            'user': request.user,
+            'queries': query_list,
         'query': query
     }
     return HttpResponse(template.render(context, request))
@@ -440,7 +406,7 @@ def doclist(request,qid):
     all_docs = qdocs
     ndocs = all_docs.count()
 
-    docs = list(all_docs[:100].values('wosarticle__ti','wosarticle__ab','wosarticle__py'))    
+    docs = list(all_docs[:100].values('wosarticle__ti','wosarticle__ab','wosarticle__py'))
 
     fields = []
 
@@ -461,7 +427,7 @@ def doclist(request,qid):
 #        else:
 #            path = "docownership__"+f.name
 #        if f.name !="doc" and f.name !="query":
-#            fields.append({"path": path, "name": f.verbose_name})     
+#            fields.append({"path": path, "name": f.verbose_name})
 
     for u in User.objects.all():
         path = "docownership__"+u.username
@@ -470,7 +436,7 @@ def doclist(request,qid):
     for f in DocAuthInst._meta.get_fields():
         path = "docauthinst__"+f.name
         if f.name !="doc" and f.name !="query":
-            fields.append({"path": path, "name": f.verbose_name})      
+            fields.append({"path": path, "name": f.verbose_name})
 
     basic_fields = ['Title', 'Abstract', 'Year']
 
@@ -542,12 +508,12 @@ def sortdocs(request):
             op = "icontains"
             exclude = True
         else:
-            op =  f_operators[i] 
-            exclude = False  
+            op =  f_operators[i]
+            exclude = False
         try:
             kwargs = {
                 '{0}__{1}'.format(f_fields[i],op): f_text[i]
-            } 
+            }
             if joiner=="AND":
                 if exclude:
                     filt_docs = filt_docs.exclude(**kwargs)
@@ -591,11 +557,11 @@ def sortdocs(request):
     mult_fields_tuple = tuple(mult_fields)
 
     #print(mult_fields)
-        
+
     #mult_fields=[]
 
     if len(users) > 0:
-        uname = users[0].split("__")[1] 
+        uname = users[0].split("__")[1]
         user = User.objects.get(username=uname)
         null_filter = 'docownership__relevant__isnull'
         reldocs = filt_docs.filter(docownership__user=user,docownership__query=query).values("UT")
@@ -621,7 +587,7 @@ def sortdocs(request):
 
         if len(mult_fields) > 0:
 
-            #fdocs = filt_docs.order_by(*order_by)[:100]            
+            #fdocs = filt_docs.order_by(*order_by)[:100]
             #adocs = fdocs.annotate(
             #    **{mult_fields[0]:StringAgg(mult_fields[0],"; ")}
             #).values(*mult_fields)
@@ -635,7 +601,7 @@ def sortdocs(request):
     for d in docs:
         if len(users) > 0:
             for u in users:
-                uname = u.split("__")[1] 
+                uname = u.split("__")[1]
                 #print(uname)
                 doc = Doc.objects.get(UT=d['UT'])
                 #print(d['UT'])
@@ -650,12 +616,12 @@ def sortdocs(request):
         except:
             pass
 
-    
-            
+
+
 
     response = {
         'data': list(docs),
-        'n_docs': filt_docs.count()    
+        'n_docs': filt_docs.count()
     }
 
     template = loader.get_template('scoping/doc.html')
@@ -696,7 +662,7 @@ def activate_user(request):
     query = Query.objects.get(pk=qid)
     user = User.objects.get(username=user)
 
-    if checked=="true":       
+    if checked=="true":
         query.users.add(user)
         query.save()
         response=1
@@ -722,10 +688,10 @@ def assign_docs(request):
     tags = request.GET.getlist('tags[]',None)
     tagdocs = request.GET.getlist('tagdocs[]',None)
     docsplit = request.GET.get('docsplit',None)
-    
+
     #print(docsplit)
 
-    query = Query.objects.get(pk=qid)  
+    query = Query.objects.get(pk=qid)
 
     user_list = []
 
@@ -755,7 +721,7 @@ import re
 
 def check_docs(request,qid):
 
-    query = Query.objects.get(pk=qid)  
+    query = Query.objects.get(pk=qid)
     user = request.user
     docs = DocOwnership.objects.filter(query=query,user=user.id,relevant=0)
 
@@ -790,7 +756,7 @@ def check_docs(request,qid):
     return HttpResponse(template.render(context, request))
 
 def back_review(request,qid):
-    query = Query.objects.get(pk=qid)  
+    query = Query.objects.get(pk=qid)
     user = request.user
     docs = DocOwnership.objects.filter(query=query,user=user.id,relevant__gt=0)
     tdocs = docs.count() - 1
@@ -798,7 +764,7 @@ def back_review(request,qid):
 
 def review_docs(request,qid,d=0):
     d = int(d)
-    query = Query.objects.get(pk=qid)  
+    query = Query.objects.get(pk=qid)
     user = request.user
 
     docs = DocOwnership.objects.filter(query=query,user=user.id,relevant__gt=0)
@@ -833,7 +799,7 @@ def review_docs(request,qid,d=0):
 
 def maybe_docs(request,qid,d=0):
     d = int(d)
-    query = Query.objects.get(pk=qid)  
+    query = Query.objects.get(pk=qid)
     user = request.user
 
     docs = DocOwnership.objects.filter(query=query,user=user.id,relevant=3)
@@ -869,7 +835,7 @@ def do_review(request):
     d = request.GET.get('d',None)
 
     doc = Doc.objects.get(pk=doc_id)
-    query = Query.objects.get(pk=qid)  
+    query = Query.objects.get(pk=qid)
     user = request.user
 
     docown = DocOwnership.objects.filter(doc=doc,query=query,user=user).order_by("relevant").first()
@@ -878,7 +844,7 @@ def do_review(request):
     docown.save()
 
     time.sleep(1)
-   
+
     return HttpResponse("")
 
 def remove_assignments(request):
@@ -904,7 +870,7 @@ def add_manually():
     user = User.objects.get(username="fuss")
     DocOwnership.objects.filter(user=user).delete()
     query = Query.objects.get(id=qid)
-    t = Tag.objects.get(pk=tag)  
+    t = Tag.objects.get(pk=tag)
     docs = Doc.objects.filter(docownership__query=query,docownership__tag=t).distinct()
     for doc in docs:
         docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
@@ -923,9 +889,3 @@ def highlight_words(s,query):
         else:
             abstract.append(word)
     return(" ".join(abstract))
-
-	
-
-
-
-
