@@ -15,6 +15,7 @@ def get(r, k):
     return(x)
 
 def add_doc(r):
+
     django.db.connections.close_all()
     try: # if this doc is in the database, do nothing
         doc = Doc.objects.get(UT=r['UT'])
@@ -39,6 +40,7 @@ def add_doc(r):
                 print(r[field])
 
         article.save()
+
 
     
         ## Add authors
@@ -69,7 +71,44 @@ def add_doc(r):
                 dai.AF = af
                 dai.position = a
                 dai.save()
-            
+
+############################################################################
+############################################################################
+## NEW PART TO DEAL WITH REFERENCES
+
+    # Now that the article's saved, we can look at the references....
+    # these are in a list accessible by get(r,'CR')
+    refs = get(r,'CR')
+    for r in refs:
+        #print(r)
+        # Add them to a table of docs to references (a simple table of just the dois)
+        dr = DocReferences(doc=doc)
+        dr.refall = r
+        try: # try and get the doi if it's there
+            doi = re.search(", DOI ([^ ]*)",r).group(1)
+            doi = re.sub('^\[','',doi) ## This is to deal with lists !! of dois
+            dr.refdoi=doi
+            #print(doi)
+            # Is this document already in our database?????
+            doidoc = Doc.objects.filter(wosarticle__di=doi)
+            if len(doidoc) > 0:
+                print(doidoc)
+                doidoc = doidoc.first()
+                doc.references.add(doidoc)
+                doc.save() # If so, create the link already!
+            else: # otherwise, add it to a list of docs to lookup
+                doi_lookups.append(doi)
+        except: 
+            pass 
+        dr.save() #uncomment this when we want to actually save these
+
+
+        # We can access a documents references by doc.references.all()
+        # And get its citations by doc.doc_set.all()
+        
+#############################################################################
+#############################################################################
+#############################################################################           
         
 
 def main():
@@ -87,6 +126,9 @@ def main():
     record = {}
     mfields = ['AU','AF','CR','C1']
 
+    global doi_lookups # make a list of dois to lookup (global so accessible inside the parallel function)
+    doi_lookups = []
+
     max_chunk_size = 2000
     chunk_size = 0
 
@@ -98,31 +140,22 @@ def main():
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue
+###############################
+#### Don't do this parellely anymore, just one at a time is easier here.
             if line=='ER\n':   
-                # end of record - save it and start a new one
-                n_records +=1            
+                # end of record - add whatever is currently in record
+                add_doc(record)
+                n_records +=1
+                record = {} 
+               
+           
                 records.append(record)
-                record = {}
-                chunk_size+=1
-                if chunk_size==max_chunk_size:
-                    # parallely add docs
-                    pool = Pool(processes=50)
-                    pool.map(add_doc, records)
-                    #pool.map(partial(add_doc, q=q),records)
-                    pool.terminate()
-                    records = []
-                    chunk_size = 0
                 continue
-            if re.match("^EF",line): #end of file
-                if chunk_size < max_chunk_size:
-                    # parallely add docs
-                    pool = Pool(processes=50)
-                    pool.map(add_doc, records)
-                    #pool.map(partial(add_doc, q=q),records)
-                    pool.terminate()
-                #done!
+            if re.match("^EF",line): #end of file, stop now
                 break
-            if re.match("(^[A-Z][A-Z1-9])",line):
+            # if the beginning of the line starts with a field key, start a new field
+            # otherwise, add whatever is in the line to the current field
+            if re.match("(^[A-Z][A-Z1-9])",line): 
                 s = re.search("(^[A-Z][A-Z1-9]) (.*)",line)
                 key = s.group(1).strip()
                 value = s.group(2).strip()
@@ -140,10 +173,20 @@ def main():
     q.r_count = n_records
     q.save()
 
+    ############ When happy with the script we can uncomment and delete the files again
 
-    shutil.rmtree("/queries/"+title)
-    os.remove("/queries/"+title+".txt")
-    os.remove("/queries/"+title+".log")
+    #shutil.rmtree("/queries/"+title)
+    #os.remove("/queries/"+title+".txt")
+    #os.remove("/queries/"+title+".log")
+
+    doiset = set(doi_lookups) # unique values
+    print(len(doiset))
+    query = 'DO = ("' + '" OR "'.join(doiset) + '")'
+    print(query)
+
+    ## Now we can write this to a text file and continue......
+
+    
 
 
 if __name__ == '__main__':

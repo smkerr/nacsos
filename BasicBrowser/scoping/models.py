@@ -40,6 +40,7 @@ class Doc(models.Model):
     content = models.TextField(null=True) 
     PY = models.IntegerField(null=True,db_index=True)
     users = models.ManyToManyField(User, through='DocOwnership')
+    references = models.ManyToManyField("self", symmetrical=False)
     
     def __str__(self):
       return self.UT
@@ -61,9 +62,15 @@ class DocAuthInst(models.Model):
     institution = models.CharField(max_length=150, db_index=True, verbose_name="Institution Name")
     position = models.IntegerField(verbose_name="Author Position")
 
-class DocCites(models.Model):
-    doc = models.ForeignKey('Doc',null=True, related_name='doc')
-    reference = models.ForeignKey('Doc',null=True, related_name='ref')
+# A simple form of the table below, just to store the dois as we parse them
+class DocReferences(models.Model):
+    doc = models.ForeignKey('Doc',null=True)
+    refdoi = models.CharField(null=True, max_length=150, verbose_name="DOI")
+    refall = models.TextField(null=True, verbose_name="All reference information") #in case we want to use this later...
+
+#class DocCites(models.Model):
+#    doc = models.ForeignKey('Doc',null=True, related_name='doc')
+#    reference = models.ForeignKey('Doc',null=True, related_name='ref')
 
 ##############################################
 ## Article holds more WoS type information for each doc
