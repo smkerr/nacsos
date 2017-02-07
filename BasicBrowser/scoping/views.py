@@ -23,6 +23,7 @@ def super_check(user):
 
 @login_required
 def index(request):
+<<<<<<< HEAD
   template = loader.get_template('scoping/index.html')
   
   queries_none  = Query.objects.all().filter(type=None)
@@ -52,6 +53,18 @@ def snowball(request):
   }
   return HttpResponse(template.render(context, request))
 
+=======
+    template = loader.get_template('scoping/index.html')
+    queries = Query.objects.all().order_by('-id')
+    query = queries.last()
+    users = User.objects.all()
+    context = {
+        'queries': queries,
+        'query': query,
+        'users': users,
+    }
+    return HttpResponse(template.render(context, request))
+>>>>>>> 7789f0f17834c5bf48a62b0fc1806846a53242cc
 
 
 #########################################################
@@ -61,9 +74,30 @@ import sys
 @login_required
 def doquery(request):
 
+<<<<<<< HEAD
   qtitle = request.POST['qtitle']
   qtype  = request.POST['qtype']
   qtext  = request.POST['qtext']
+=======
+
+    qtitle = request.POST['qtitle']
+    qtext = request.POST['qtext']
+	# create a new query record in the database
+    q = Query(
+        title=qtitle,
+        text=qtext,
+        date=timezone.now(),
+        creator = request.user
+    )
+    path = os.getcwd()
+    dpath = os.path.dirname(os.path.realpath(__file__)) 
+    q.save()
+
+	# write the query into a text file
+    fname = "/queries/"+str(q.id)+".txt"
+    with open(fname,"w") as qfile:
+        qfile.write(qtext)
+>>>>>>> 7789f0f17834c5bf48a62b0fc1806846a53242cc
 
   #  create a new query record in the database
   q = Query(
@@ -131,6 +165,17 @@ def start_snowballing(request):
 
 
 #########################################################
+## Delete the query
+@login_required
+def delete_query(request, qid):
+    try:
+        q = Query.objects.get(pk=qid)
+        q.delete()  
+    except: 
+        pass
+    return HttpResponseRedirect(reverse('scoping:index'))
+
+#########################################################
 ## Add the documents to the database
 @login_required
 def dodocadd(request):
@@ -164,7 +209,11 @@ def querying(request, qid):
     doclength = len(docs)
 
     if doclength == 0: # if we've already added the docs, we don't need to show the log
+<<<<<<< HEAD
       logfile = "/queries/"+query.type+"_"+query.title+".log"
+=======
+        logfile = "/queries/"+str(query.id)+".log"
+>>>>>>> 7789f0f17834c5bf48a62b0fc1806846a53242cc
 
       wait = True
       # wait up to 15 seconds for the log file, then go to a page which displays its contents

@@ -92,7 +92,13 @@ def main():
 
     print(q.title)
 
+<<<<<<< HEAD
     with open("/queries/"+q.type+"_"+q.title+"/results.txt", encoding="utf-8") as res:
+=======
+    title = str(q.id)
+
+    with open("/queries/"+title+"/results.txt", encoding="utf-8") as res:
+>>>>>>> 7789f0f17834c5bf48a62b0fc1806846a53242cc
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue
@@ -138,9 +144,15 @@ def main():
     q.r_count = n_records
     q.save()
 
+<<<<<<< HEAD
     shutil.rmtree("/queries/"+q.type+"_"+q.title)
     os.remove("/queries/"+q.type+"_"+q.title+".txt")
     os.remove("/queries/"+q.type+"_"+q.title+".log")
+=======
+    shutil.rmtree("/queries/"+title)
+    os.remove("/queries/"+title+".txt")
+    os.remove("/queries/"+title+".log")
+>>>>>>> 7789f0f17834c5bf48a62b0fc1806846a53242cc
 
 
 if __name__ == '__main__':

@@ -14,6 +14,7 @@ urlpatterns = [
     url(r'^update_criteria$', views.update_criteria, name='update_criteria'),
     url(r'^dodocadd$', views.dodocadd, name='dodocadd'),
     url(r'^querying/(?P<qid>[0-9]+)$', views.querying, name='querying'),
+    url(r'^delete_query/(?P<qid>[0-9]+)$', views.delete_query, name='delete'),
     url(r'^query/(?P<qid>[0-9]+)$', views.query, name='query'),
     url(r'^docs/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
     url(r'^sort_docs$', views.sortdocs, name='sortdocs'),
