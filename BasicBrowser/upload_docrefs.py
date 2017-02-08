@@ -2,6 +2,9 @@ import django, os, sys, time, resource, re, gc, shutil
 from multiprocess import Pool
 from functools import partial
 
+from django.utils import timezone
+import subprocess
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "BasicBrowser.settings")
 django.setup()
 
@@ -96,6 +99,11 @@ def add_doc(r):
                 doidoc = doidoc.first()
                 doc.references.add(doidoc)
                 doc.save() # If so, create the link already!
+
+                # Add to query
+                doidoc.query.add(q2)
+                doidoc.save()
+
             else: # otherwise, add it to a list of docs to lookup
                 doi_lookups.append(doi)
         except: 
@@ -112,21 +120,28 @@ def add_doc(r):
         
 
 def main():
-    qid = sys.argv[1]
+    # Get query ID from kwargs
+    qid  = sys.argv[1]
+    q2id = sys.argv[2]
 
-    ## Get query
+    print("The reference query has the following ID: "+str(q2id))
+
+    ## Get queries
     global q
     q = Query.objects.get(pk=qid)
+    global q2
+    q2 = Query.objects.get(pk=q2id)
 
     #Doc.objects.filter(query=qid).delete() # doesn't seem like a good idea
 
     i=0
     n_records = 0
-    records=[]
-    record = {}
-    mfields = ['AU','AF','CR','C1']
+    records   = []
+    record    = {}
+    mfields   = ['AU','AF','CR','C1']
 
     global doi_lookups # make a list of dois to lookup (global so accessible inside the parallel function)
+
     doi_lookups = []
 
     max_chunk_size = 2000
@@ -136,6 +151,7 @@ def main():
 
     title = str(q.id)
 
+    # Open results file and loop over lines
     with open("/queries/"+title+"/results.txt", encoding="utf-8") as res:
         for line in res:
             if '\ufeff' in line: # BOM on first line
@@ -156,8 +172,8 @@ def main():
             # if the beginning of the line starts with a field key, start a new field
             # otherwise, add whatever is in the line to the current field
             if re.match("(^[A-Z][A-Z1-9])",line): 
-                s = re.search("(^[A-Z][A-Z1-9]) (.*)",line)
-                key = s.group(1).strip()
+                s     = re.search("(^[A-Z][A-Z1-9]) (.*)",line)
+                key   = s.group(1).strip()
                 value = s.group(2).strip()
                 if key in mfields:
                     record[key] = [value]
@@ -179,14 +195,21 @@ def main():
     #os.remove("/queries/"+title+".txt")
     #os.remove("/queries/"+title+".log")
 
-    doiset = set(doi_lookups) # unique values
+    doiset = set(doi_lookups)     # unique values
+    doiset = doiset.remove("DOI") # remove element DOI
     print(len(doiset))
     query = 'DO = ("' + '" OR "'.join(doiset) + '")'
     print(query)
 
-    ## Now we can write this to a text file and continue......
+    if (len(doiset) > 0):
+      print("Need extra WoS access to complete missing information on references...")
 
-    
+      ## Now we can write this to a text file and continue......
+      # write the query into a text file
+      fname = "/queries/"+str(q2id)+".txt"
+      with open(fname,"w") as qfile:
+        qfile.write(query)
+
 
 
 if __name__ == '__main__':
