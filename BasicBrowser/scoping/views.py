@@ -48,6 +48,7 @@ def snowball(request):
     template        = loader.get_template('scoping/snowball.html')
 
     sb_sessions     = SnowballingSession.objects.all().order_by('-id')
+    # Get latest step associated with each SB sessions
     sb_session_last = sb_sessions.last()
     context = {
       'sb_sessions': sb_sessions,
@@ -58,7 +59,7 @@ def snowball(request):
 #########################################################
 ## Test the SSH connection
 def ssh_test():
-    ssh_working = subprocess.Popen(["check_selenium_ip.py", "-b", "chrome"], stdout=subprocess.PIPE).communicate()[0].strip().decode()
+    ssh_working = subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/check_selenium_ip.py", "-b", "chrome"], stdout=subprocess.PIPE).communicate()[0].strip().decode()
     print(repr(ssh_working))
     if ssh_working == "False":
         subprocess.Popen(["setsid","ssh","-D","1080","minx@aix.pik-potsdam.de"])
@@ -98,7 +99,7 @@ def doquery(request):
     # run "scrapeQuery.py" on the text file in the background
     subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
 
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 0}))
 
 #########################################################
 ## Start snowballing
@@ -124,11 +125,13 @@ def start_snowballing(request):
 
     #  create a new query record in the database
     q = Query(
-        title=qtitle+"_backward_1",
+        title=qtitle+"_backward_1_1",
         type=qtype,
         text=qtext,
         date=curdate,
-        snowball=sbs.id
+        snowball=sbs.id,
+        step=1,
+        substep=1
     )
     q.save()
 
@@ -142,8 +145,105 @@ def start_snowballing(request):
     # run "scrapeQuery.py" on the text file in the background
     subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
 
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1}))
 
+
+#########################################################
+## Snowballing Query Substep 1
+import subprocess
+import sys
+@login_required
+def doSBQuerySubstep1(request):
+
+    ssh_test()
+
+#    curstep = 2
+#    curstep  = request.POST['qid'] + 1
+#    qtitle = request.POST['sbs_name']
+#    qtype  = 'backward'
+#    qtext  = request.POST['sbs_initialpearls']
+
+    curdate = timezone.now()
+
+    sbs = SnowballingSession(
+      name = qtitle,
+      initial_pearls = qtext,
+      date=curdate
+    )
+    sbs.save()
+
+    #  create a new query record in the database
+    q = Query(
+        title=qtitle+"_backward_"+str(curstep)+"_1",
+        type=qtype,
+        text=qtext,
+        date=curdate,
+        snowball=sbs.id,
+        step=curstep,
+        substep=1
+    )
+    q.save()
+
+    # write the query into a text file
+    fname = "/queries/"+str(q.id)+".txt"
+    with open(fname,"w") as qfile:
+        qfile.write(qtext)
+
+    time.sleep(1)
+
+    # run "scrapeQuery.py" on the text file in the background
+    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
+
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1}))
+
+
+#########################################################
+## Snowballing Query Substep 2
+import subprocess
+import sys
+@login_required
+def doSBQuerySubstep2(request):
+
+    ssh_test()
+
+    curstep=2
+
+    qtitle = request.POST['sbs_name']
+    qtype  = 'backward'
+    qtext  = request.POST['sbs_initialpearls']
+
+    curdate = timezone.now()
+
+    sbs = SnowballingSession(
+      name = qtitle,
+      initial_pearls = qtext,
+      date=curdate
+    )
+    sbs.save()
+
+    #  create a new query record in the database
+    q = Query(
+        title=qtitle+"_backward_"+str(curstep)+"_2",
+        type=qtype,
+        text=qtext,
+        date=curdate,
+        snowball=sbs.id,
+        step=curstep,
+        substep=1
+    )
+    q.save()
+
+    # write the query into a text file
+    fname = "/queries/"+str(q.id)+".txt"
+    with open(fname,"w") as qfile:
+        qfile.write(qtext)
+
+    time.sleep(1)
+
+    # run "scrapeQuery.py" on the text file in the background
+    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
+
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 2}))
 
 
 #########################################################
@@ -175,14 +275,74 @@ def dodocadd(request):
 
 
     #return HttpResponse(upload)
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': 0}))
 
+#########################################################
+## Add the documents and their references to the database
+@login_required
+def dodocrefadd(request):
+    qid = request.GET.get('qid',None)
+
+    q = Query.objects.get(pk=qid)
+
+    # Create reference query
+    q2 = Query(
+      title=q.title+"_backward_"+str(q.step)+"_2",
+      type="backward",
+      text="",
+      date=timezone.now(),
+      snowball=q.snowball,
+      step=q.step,
+      substep=2
+    )
+    q2.save()
+
+    print(q2.title+" has been created! Running upload_docrefs.py...")
+
+    upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docrefs.py'))
+
+    subprocess.Popen(["python3", upload, qid, q2.id])
+
+    time.sleep(5)
+
+    print("upload_docrefs.py done")
+
+    fname = "/queries/"+str(q2.id)+".txt"
+
+
+    print("Check if "+fname+" exists...")
+    if os.path.isfile(fname):
+      print("Yes... Start scraping")
+      # run "scrapeQuery.py" on the text file in the background
+      subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
+
+      time.sleep(2)
+ 
+    #return HttpResponse(upload)
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q2.id, 'substep': 2}))
+
+
+#########################################################
+## Add the documents to the database
+@login_required
+def dorefadd(request):
+    qid = request.GET.get('qid',None)
+
+    upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
+
+    subprocess.Popen(["python3", upload, qid])
+
+    time.sleep(2)
+
+
+    #return HttpResponse(upload)
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': 2}))
 
 #########################################################
 ## Page views progress of query scraping
 
 @login_required
-def querying(request, qid):
+def querying(request, qid, substep):
 
     template = loader.get_template('scoping/query_progress.html')
 
@@ -220,7 +380,8 @@ def querying(request, qid):
           'finished': finished,
           'docs': docs,
           'doclength': doclength,
-          'query': query
+          'query': query,
+          'substep': substep
         }
 
     else:
@@ -250,36 +411,19 @@ def querying(request, qid):
             finished=True
 
         if finished:
+          rstfile = "/queries/"+str(qid)+"/results.txt"
+          if os.path.isfile(rstfile):
             # Process results
-            rstfile = "/queries/"+query.type+"_"+query.title+"/results.txt"
             with open(rstfile,"r") as lfile:
                 rst = lfile.readlines()
-
-            # Get references
-
-
-            # Check how many references are there already in the DB?
-            refs      = Doc.objects.filter(query__id=qid)
-
-
-        # For each document
-        #  - check if available in DB (if not add it)
-
-        # For each reference
-        #  - check if available in DB (if not add to list for second scraping)
-
-        # If list of missing docs not empty, do scrapeWoS a second time
-
-        # Add new documents to the DB
-
-        # Create Doc-Cite links
 
         context = {
           'log': log,
           'finished': finished,
           'docs': docs,
           'doclength': doclength,
-          'query': query
+          'query': query,
+          'substep':substep
         }
 
     return HttpResponse(template.render(context, request))

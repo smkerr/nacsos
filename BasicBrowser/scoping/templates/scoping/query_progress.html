@@ -35,13 +35,33 @@
 
         <br/>
         {% if finished %}
-          <p>Looks like it's done!</p>
-          {% if doclength == 0 %}
-            <p id="doc_adder">{{doclength}} of these documents are in the database. Would you like to add them now? 
-	    <br/>
-            <a href="/scoping/dodocadd?qid={{query.id}}"><button>Add Documents</button></a>
+          {% if qtype == "default" %}
+            <p>Looks like it's done!</p>
+            {% if doclength == 0 %}
+              <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now? 
+              <br/>
+              <a href="/scoping/dodocadd?qid={{query.id}}"><button>Add Documents</button></a>
+            {% else %}
+              <p><a href="../docs/{{query.id}}">View the documents</a>
+            {% endif %}
           {% else %}
-            <p><a href="../docs/{{query.id}}">View the documents</a>
+            {% if substep == 1 %}
+              <p>Looks like it's done!</p>
+              {% if doclength == 0 %}
+                <p id="doc_adder2">{{doclength}} of these documents are in the database. Would you like to add them now?
+                <br/>
+                <a href="/scoping/dodocrefadd?qid={{query.id}}"><button>Add Documents and References</button></a>
+              {% endif %}
+            {% else %}
+              <p>Looks like it's done!</p>
+              {% if doclength == 0 %}
+                <p id="doc_adder">{{doclength}} of these documents are in the database. Would you like to add them now?
+                <br/>
+                <a href="/scoping/dodocadd?qid={{query.id}}"><button>Add References missing information</button></a>
+              {% else %}
+                <p><a href="../docs/{{query.id}}">View the references</a>
+              {% endif %}
+            {% endif %}
           {% endif %}
         {% endif %}
       </div>
@@ -58,9 +78,25 @@
 	    },
 	    response: function() {
 	      console.log("add docs")
-	      $("#doc_adder").html('<p><a href="../docs/'+qid+'">View the documents</a>')
+	      $("#doc_adder1").html('<p><a href="../docs/'+qid+'">View the documents</a>')
 	    }
 	  })
+        */
+      }
+
+      function docrefadd(qid) {
+
+        /*
+          $.ajax({
+            url: '/scoping/dodocrefadd',
+            data: {
+              'qid': qid
+            },
+            response: function() {
+              console.log("add docs and refs")
+              $("#doc_adder2").html('<p><a href="../docs/'+qid+'">View the references</a>')
+            }
+          })
         */
       }
     </script>

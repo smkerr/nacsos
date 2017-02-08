@@ -14,15 +14,17 @@ class SnowballingSession(models.Model):
       return self.name
 
 class Query(models.Model):
-    type  = models.TextField(null=True, verbose_name="Query Type")
-    title = models.TextField(null=True, verbose_name="Query Title")
-    text = models.TextField(null=True, verbose_name="Query Text")
-    date = models.DateTimeField(verbose_name="Query Date")
-    r_count = models.IntegerField(null=True, verbose_name="Query Results Count")
-    creator = models.ForeignKey(User,null=True, verbose_name="Query Creator", related_name="user_creations")
-    users = models.ManyToManyField(User)
+    type     = models.TextField(null=True, verbose_name="Query Type")
+    title    = models.TextField(null=True, verbose_name="Query Title")
+    text     = models.TextField(null=True, verbose_name="Query Text")
+    date     = models.DateTimeField(verbose_name="Query Date")
+    r_count  = models.IntegerField(null=True, verbose_name="Query Results Count")
+    creator  = models.ForeignKey(User,null=True, verbose_name="Query Creator", related_name="user_creations")
+    users    = models.ManyToManyField(User)
     criteria = models.TextField(null=True)
     snowball = models.IntegerField(null=True, verbose_name="Snowball ID")
+    step     = models.IntegerField(null=True, verbose_name="Snowball steps")
+    substep  = models.IntegerField(null=True, verbose_name="Snowball query substeps")
 
     def __str__(self):
       return self.title
