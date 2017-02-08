@@ -76,7 +76,6 @@ def doquery(request):
     ssh_test()
 
     qtitle = request.POST['qtitle']
-    qdb  = request.POST['qdb']
     qtype  = request.POST['qtype']
     qtext  = request.POST['qtext']
 
@@ -86,8 +85,7 @@ def doquery(request):
         type=qtype,
         text=qtext,
         creator = request.user,
-        date=timezone.now(),
-        database = qdb
+        date=timezone.now()
     )
     q.save()
 
@@ -98,10 +96,8 @@ def doquery(request):
 
     time.sleep(1)
 
-    
-
     # run "scrapeQuery.py" on the text file in the background
-    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
+    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
 
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 0}))
 
@@ -270,12 +266,8 @@ def delete_query(request, qid):
 @login_required
 def dodocadd(request):
     qid = request.GET.get('qid',None)
-    db = request.GET.get('db',None)
 
-    if db=="WoS":
-        upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
-    if db=="scopus":
-        upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_scopus_docs.py'))
+    upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
 
     subprocess.Popen(["python3", upload, qid])
 
@@ -320,12 +312,12 @@ def dodocrefadd(request):
 
     print("Check if "+fname+" exists...")
     if os.path.isfile(fname):
-        print("Yes... Start scraping")
-        # run "scrapeQuery.py" on the text file in the background
-        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
+      print("Yes... Start scraping")
+      # run "scrapeQuery.py" on the text file in the background
+      subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
 
-        time.sleep(2)
-
+      time.sleep(2)
+ 
     #return HttpResponse(upload)
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q2.id, 'substep': 2}))
 
@@ -419,11 +411,11 @@ def querying(request, qid, substep):
             finished=True
 
         if finished:
-            rstfile = "/queries/"+str(qid)+"/results.txt"
-            if os.path.isfile(rstfile):
+          rstfile = "/queries/"+str(qid)+"/results.txt"
+          if os.path.isfile(rstfile):
             # Process results
-                with open(rstfile,"r") as lfile:
-                    rst = lfile.readlines()
+            with open(rstfile,"r") as lfile:
+                rst = lfile.readlines()
 
         context = {
           'log': log,
