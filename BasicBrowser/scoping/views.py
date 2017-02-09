@@ -28,18 +28,64 @@ def index(request):
 
     queries_none  = Query.objects.all().filter(type=None)
     queries_dft   = Query.objects.all().filter(type="default")
-    queries = queries_none | queries_dft
-    queries = queries.order_by('-id')
-    query   = queries.last()
-    users   = User.objects.all()
+    queries       = queries_none | queries_dft
+    queries       = queries.order_by('-id')
+    query         = queries.last()
+    users         = User.objects.all()
+    technologies  = Technology.objects.all()
 
     context = {
-        'queries'  : queries,
-        'query'    : query,
-        'users'    : users
+      'queries'      : queries,
+      'query'        : query,
+      'users'        : users,
+      'active_users' : users.filter(username=request.user.username),
+      'techs'        : technologies
     }
 
     return HttpResponse(template.render(context, request))
+
+########################################################
+## Tech Homepage - list the technologies, form for adding new ones
+
+@login_required
+def technologies(request):
+
+    template = loader.get_template('scoping/tech.html')
+
+    technologies = Technology.objects.all()
+
+    users = User.objects.all()
+
+    for t in technologies:
+        t.queries = len(t.query_set.all())
+        t.docs = len(t.doc_set.all())
+
+    context = {
+      'techs'    : technologies,
+      'users'    : users
+    }
+
+    return HttpResponse(template.render(context, request))
+
+########################################################
+## edit tech query
+
+@login_required
+def technology_query(request):
+
+    tid = request.GET.get('tid', None)
+    qid = request.GET.get('qid', None)
+
+    q = Query.objects.get(pk=qid)
+    if tid=="None":
+        q.technology = None
+    else:
+        t = Technology.objects.get(pk=tid)
+        q.technology = t
+
+    q.save()
+
+    return HttpResponse("")
 
 ########################################################
 ## Snowballing homepage
@@ -64,6 +110,36 @@ def ssh_test():
     if ssh_working == "False":
         subprocess.Popen(["setsid","ssh","-D","1080","minx@aix.pik-potsdam.de"])
     return(ssh_working)
+
+########################################################
+## Add the technology
+@login_required
+def add_tech(request):
+    tname = request.POST['tname']
+    tdesc  = request.POST['tdesc']
+    #  create a new query record in the database
+    t = Technology(
+        name=tname,
+        description=tdesc
+    )
+    t.save()
+    return HttpResponseRedirect(reverse('scoping:technologies'))
+
+########################################################
+## Add the technology
+@login_required
+def update_tech(request):
+
+    tid = request.POST['tid']
+    tname = request.POST['tname']
+    tdesc  = request.POST['tdesc']
+    #  create a new query record in the database
+    t = Technology.objects.get(pk=tid)
+    t.name=tname
+    t.description=tdesc
+    t.save()
+    return HttpResponseRedirect(reverse('scoping:technologies'))
+
 
 
 #########################################################
