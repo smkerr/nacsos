@@ -773,6 +773,16 @@ tr.active_run {
     padding: 4px;
 }
 
+.field_name {
+    cursor: pointer;
+    padding: 4px;
+    background-color: white;
+}
+
+.field_name.active {
+    background-color: #fbb4ae;
+}
+
 .uparrow, .downarrow {
     cursor: pointer;
 }
