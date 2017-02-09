@@ -36,7 +36,8 @@ def index(request):
     context = {
       'queries'  : queries,
       'query'    : query,
-      'users'    : users
+      'users'    : users,
+      'active_users'     : users.filter(username=request.user.username)
     }
 
     return HttpResponse(template.render(context, request))
