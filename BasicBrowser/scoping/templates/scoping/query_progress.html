@@ -5,17 +5,21 @@
         <script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
         <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
         <title>Scoping</title>
-        <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+        {% if query.type == "default" %}
+          <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+        {% else %}
+          <link href="{% static 'scoping/css/stylingsbs.css' %}" rel="stylesheet" type="text/css">
+        {% endif %}
     </head>
     <body>
 
         {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
         <div id="main">
             <div id="graph">
-                {% if qtype == "default" %}
+                {% if query.type == "default" %}
                 <h1> Scoping Review Helper</h1>
                 {% else %}
-                <h1> Snowballing Helper</h1>
+                <h1> Snowballing - Query Helper</h1>
                 {% endif %}
                 <br/>
                 <!-- Query manager -->
@@ -42,24 +46,24 @@
                             <br/>
                             <a href="/scoping/dodocadd?qid={{query.id}}&db={{query.database}}"><button>Add Documents</button></a>
                         {% else %}
-                            <p><a href="../docs/{{query.id}}">View the documents</a>
+                            <p><a href="../../docs/{{query.id}}">View the documents</a>
                         {% endif %}
                     {% else %}
-                        {% if substep == 1 %}
-                            <p>Looks like it's done!</p>
+                        {% if substep == "1" %}
+                            <p>Looks like the 1st query is done! (Another one might be needed in case references are not in the database) </p>
                             {% if doclength == 0 %}
                                 <p id="doc_adder2">{{doclength}} of these documents are in the database. Would you like to add them now?
                                 <br/>
-                                <a href="/scoping/dodocrefadd?qid={{query.id}}"><button>Add Documents and References</button></a>
+                                <a href="/scoping/dodocrefadd?qid={{query.id}}&db={{query.database}}"><button>Add Documents and References</button></a>
                             {% endif %}
                         {% else %}
                             <p>Looks like it's done!</p>
                             {% if doclength == 0 %}
-                                <p id="doc_adder">{{doclength}} of these documents are in the database. Would you like to add them now?
+                                <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now?
                                 <br/>
-                                <a href="/scoping/dodocadd?qid={{query.id}}"><button>Add References missing information</button></a>
+                                <a href="/scoping/dodocadd?qid={{query.id}}&db={{query.database}}"><button>Add References missing information</button></a>
                             {% else %}
-                                <p><a href="../docs/{{query.id}}">View the references</a>
+                                <p><a href="../../docs/{{query.id}}">View the references</a>
                             {% endif %}
                         {% endif %}
                     {% endif %}

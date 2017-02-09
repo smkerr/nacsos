@@ -1,9 +1,9 @@
 <html>
   <head>
-{% load static %}
+    {% load static %}
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Snowballing</title>
-    <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'scoping/css/stylingsbs.css' %}" rel="stylesheet" type="text/css">
   </head>
   <body>
   {% include 'scoping/nav_bar.html' with user=user sbsid=sb_session_last.id %}
@@ -13,9 +13,39 @@
         <h1> Snowballing Helper</h1>
         <br/>
 
-        <!-- Query manager -->
+        <!-- This gets new snowballing sessions -->
+        <h2> Start new snowballing session </h2>
+        <br/>
+
+        <form action="{% url 'scoping:start_snowballing' %}" method="post">
+        {% csrf_token %}
+
+          <h3> SB session name </h3>
+          <input type="text" name="sbs_name" />
+
+          <h3> Initial pearls </h3>
+          <p>
+            <i>Provide a list of references to start snowballing from seperated by the operator OR.</i><br/>
+            <i>Accepted formats:<i><br/>
+            <i>(AU=[author name] AND TI=[Title] AND PY=[Publishing year])</i><br/>
+            <i>(DO=[doi])<i>
+          </p>
+          <textarea rows=10 cols=100 name="sbs_initialpearls"></textarea>
+          <br/><br/>
+
+          <input type="submit" value="Start snowballing" />
+        </form>
+
+
+        <br/>
+        <hr/>
+        <br/>
+
+        <!-- Snowballing session manager -->
         <h2> Snowballing session manager </h2>
         <br/>
+
+        <!-- button to delete all snowballing sessions -->
 
         <table class="light">
           <tr>
@@ -26,6 +56,7 @@
             <th># Steps</th>
             <th># Selected docs</th>
             <th>Status</th>
+            <th>Delete</th>
           </tr>
           {% for sbs in sb_sessions %}
           <tr>
@@ -36,34 +67,11 @@
             <td></td>
             <td></td>
             <td>View progress</td>
+            <td><a href="delete_sbs/{{sbs.id}}"><button type="button" onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button></a></td> 
           </tr>
           {% endfor %}
         </table>
 
-        <br/><hr/><br/>
-
-        <!-- This gets new queries -->
-        <h2> Start new snowballing session </h2>
-        <br/>
-
-        <form action="{% url 'scoping:start_snowballing' %}" method="post">
-        {% csrf_token %}
-
-          <h3> SB session name (optional) </h3>
-          <input type="text" name="sbs_name" />
-
-          <h3> Initial pearls </h3>
-          <p>
-            <i>Provide a list of references to start snowballing from.</i><br/>
-            <i>Accepted formats:<i><br/> 
-            <i>(AU=[author name] AND TI=[Title])</i><br/>
-            <i>(DO=[doi])<i>
-          </p>
-          <textarea rows=10 cols=100 name="sbs_initialpearls"></textarea>
-          <br/><br/>
-
-          <input type="submit" value="Start snowballing" />
-        </form>
       </div>
     </div>
   </body>
