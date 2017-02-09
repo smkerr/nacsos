@@ -7,6 +7,10 @@ app_name = 'scoping'
 
 urlpatterns = [
     url(r'^$', views.index, name='index'),
+    url(r'^technologies',views.technologies, name='technologies'),
+    url(r'^add_tech',views.add_tech, name='add_tech'),
+    url(r'^update_tech',views.update_tech, name='update_tech'),   
+    url(r'^technology_query',views.technology_query, name='technology_query'),   
     url(r'^user$', views.userpage, name='userpage'),
     url(r'^snowball$', views.snowball, name='snowball'),
     url(r'^start_snowballing$', views.start_snowballing, name='start_snowballing'),

@@ -26,9 +26,14 @@ class Query(models.Model):
     snowball = models.IntegerField(null=True, verbose_name="Snowball ID")
     step     = models.IntegerField(null=True, verbose_name="Snowball steps")
     substep  = models.IntegerField(null=True, verbose_name="Snowball query substeps")
+    technology = models.ForeignKey('Technology', null=True)
 
     def __str__(self):
       return self.title
+
+class Technology(models.Model):
+    name = models.TextField(null = True, verbose_name="Technology Name")
+    description = models.TextField(null=True, verbose_name="Technology Description")
 
 class Tag(models.Model):
     title = models.TextField(null=True, verbose_name="Tag Title")
@@ -44,6 +49,7 @@ class Doc(models.Model):
     PY = models.IntegerField(null=True,db_index=True)
     users = models.ManyToManyField(User, through='DocOwnership')
     references = models.ManyToManyField("self", symmetrical=False)
+    technology = models.ManyToManyField('Technology')
     
     def __str__(self):
       return self.UT
