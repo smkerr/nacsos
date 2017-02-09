@@ -176,7 +176,7 @@ def main():
         pool.terminate()
     
     django.db.connections.close_all()
-    q.r_count = n_records
+    q.r_count = len(Doc.objects.filter(query=q))
     q.save()
 
 

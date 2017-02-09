@@ -91,14 +91,31 @@ def doquery(request):
     )
     q.save()
 
-    # write the query into a text file
-    fname = "/queries/"+str(q.id)+".txt"
-    with open(fname,"w") as qfile:
-        qfile.write(qtext)
+    if qdb=="intern":
+        args = qtext.split(" ")
+        q1 = Doc.objects.filter(query=args[0])
+        op = args[1]
+        q2 = Doc.objects.filter(query=args[2])
+        if op =="AND":
+            combine = q1 | q2
+        if op == "NOT":
+            combine = q1.exclude(query=args[2])
+        for d in combine:
+            d.query.add(q)
 
-    time.sleep(1)
+        q.r_count = len(combine.distinct())
+        q.save()
 
-    
+        return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': q.id}))
+
+
+    else:
+        # write the query into a text file
+        fname = "/queries/"+str(q.id)+".txt"
+        with open(fname,"w") as qfile:
+            qfile.write(qtext)
+
+        time.sleep(1)
 
     # run "scrapeQuery.py" on the text file in the background
     subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
