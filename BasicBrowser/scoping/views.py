@@ -56,6 +56,10 @@ def technologies(request):
 
     users = User.objects.all()
 
+    for t in technologies:
+        t.queries = len(t.query_set.all())
+        t.docs = len(t.doc_set.all())
+
     context = {
       'techs'    : technologies,
       'users'    : users
