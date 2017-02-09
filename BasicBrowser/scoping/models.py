@@ -36,7 +36,7 @@ class Tag(models.Model):
     query = models.ForeignKey('Query',null=True, verbose_name="TagQuery")
 
 class Doc(models.Model):
-    UT = models.CharField(max_length=30,db_index=True,primary_key=True)
+    UT = models.CharField(max_length=240,db_index=True,primary_key=True)
     query = models.ManyToManyField('Query')
     tag = models.ManyToManyField('Tag')
     title = models.TextField(null=True)
@@ -104,6 +104,8 @@ class WoSArticle(models.Model):
     ga = models.CharField(null=True, max_length=100, verbose_name="Document Delivery Number") # document delivery number
     ho = models.TextField(null=True, verbose_name="Conference Host") # conference host
     #ID = models.TextField() # keywords plus ??
+    iss = models.CharField(null=True, max_length=100, verbose_name="Issue")
+    ad = models.TextField(null=True, verbose_name="Institution (unlinked to author")
     kwp = models.TextField(null=True, verbose_name="Keywords Plus")
     j9 = models.CharField(null=True, max_length=30, verbose_name="29-Character Source Abbreviation") # 29 char source abbreviation
     ji = models.CharField(null=True, max_length=100, verbose_name="ISO Source Abbreviation") # ISO source abbrev

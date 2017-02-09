@@ -27,6 +27,9 @@ def add_doc(r):
         doc.save()
         doc.query.add(q)
         article = WoSArticle(doc=doc)
+
+        r['kwp'] = get(r,'ID')
+        r['iss'] = get(r,'IS')
         for field in r:
             f = field.lower()
             try:

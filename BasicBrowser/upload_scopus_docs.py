@@ -2,6 +2,7 @@ import django, os, sys, time, resource, re, gc, shutil
 from multiprocess import Pool
 from functools import partial
 import scrapeWoS #import scopus2wosfields
+from urllib.parse import urlparse, parse_qsl
 
 print(dir(scrapeWoS))
 
@@ -19,23 +20,24 @@ def get(r, k):
 
 def add_doc(r):
     try:
-        did = (r['di'])
-        print(repr(did))
+        did = r['di']
+        r['UT'] = eid = dict(parse_qsl(urlparse(r['UT']).query))['eid'] 
         django.db.connections.close_all()
         try: # if this doc is in the database, do nothing
             doc = Doc.objects.get(wosarticle__di=did)
-            print(doc)
-            print(doc.title)
-            print(r['ti'])
             doc.query.add(q)
         except: # otherwise, add it!
-            #doc = Doc(UT=r['UT'])
+            doc = Doc(UT=r['UT'])
+            print(doc)
             doc.title=get(r,'ti')
             doc.content=get(r,'ab')
             doc.PY=get(r,'py')
             doc.save()
             doc.query.add(q)
+            doc.save()
             article = WoSArticle(doc=doc)
+
+
             for field in r:
                 f = field.lower()
                 try:
@@ -48,40 +50,22 @@ def add_doc(r):
                     print(r[field])
 
             article.save()
+            print("article saved")
 
         
             ## Add authors
-            for a in range(len(r['AF'])):
-                af = r['AF'][a]
-                au = r['AU'][a]
-                if 'C1' not in r:               
-                    r['C1'] = [""]
-                a_added = False
-                for inst in r['C1']:
-                    inst = inst.split('] ',1)
-                    iauth = inst[0]
-                    try:
-                        institute = inst[1]
-                        if af in iauth:
-                            dai = DocAuthInst(doc=doc)
-                            dai.AU = au
-                            dai.AF = af
-                            dai.institution = institute
-                            dai.position = a+1
-                            dai.save()
-                            a_added = True
-                    except:
-                        pass # Fix this later, these errors are caused by multiline institutions
-                if a_added == False:
-                    dai = DocAuthInst(doc=doc)
-                    dai.AU = au
-                    dai.AF = af
-                    dai.position = a
-                    dai.save()
+            for a in range(len(r['au'])):
+                #af = r['AF'][a]
+                au = r['au'][a]  
+                dai = DocAuthInst(doc=doc)
+                dai.AU = au
+                dai.position = a
+                dai.save()
 
     except:
-        #print(r)
         pass
+    #print(r)
+
         
             
         
@@ -93,13 +77,18 @@ def main():
     global q
     q = Query.objects.get(pk=qid)
 
+    docs = Doc.objects.filter(query=qid)
+    for d in docs:
+        if len(d.query.all()) == 1:
+            d.delete()
+
     #Doc.objects.filter(query=qid).delete() # doesn't seem like a good idea
 
     i=0
     n_records = 0
     records=[]
     record = {}
-    mfields = ['AU','AF','CR','C1']
+    mfields = ['au','AF','CR','C1']
 
     max_chunk_size = 2000
     chunk_size = 0
@@ -113,7 +102,7 @@ def main():
         'TI': 'ti',
         'T2': '',
         'C3': '',
-        'J2': '',
+        'J2': 'so',
         'VL': 'vl',
         'IS': '',
         'SP': 'bp',
@@ -122,10 +111,9 @@ def main():
         'DO': 'di',
         'SN': 'sn',
         'AU': 'au',
-        'AD': '',
+        'AD': 'ad',
         'AB': 'ab',
-        'KW': '',
-        'T2': '',
+        'KW': 'kwp',
         'Y2': '',
         'CY': '',
         #N1 means we need to read the next bit as key
