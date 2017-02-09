@@ -36,6 +36,7 @@
 			<td>Text</td>
 			<td>Date</td>
 			<td>Documents</td>
+            <td>Technology</td>
             <td>Delete</td>
         </tr>
 		{% for query in queries %}
@@ -54,6 +55,16 @@
                 {% else %}
                 <td><a href="querying/{{query.id}}">View progress</a></td>
                 {% endif %}
+                <td>
+                    <select class="tech" data-query="{{query.id}}" autocomplete="off">
+                        {% if not query.tech %}
+                        <option selected value="None">{{query.tech}}</option>
+                        {% endif %}
+                        {% for t in techs %}
+                            <option value={{t.id}}>{{t.name}}</option>
+                        {% endfor %}
+                    </select>
+                </td>
                 <td><a href="delete_query/{{query.id}}"><button onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button></a></td>
 		    </tr>
 
@@ -100,6 +111,22 @@ $(".field_name").click(function() {
     console.log($('*[data-name="'+user+'"]'))
     $('*[data-name="'+user+'"]').toggleClass('hidden')
     console.log(user)
+})
+
+$(".tech").change(function() {
+    query = $(this).attr("data-query")
+    tech = $(this).val()
+    console.log(query)
+    console.log(tech)
+    $.ajax({
+        url: '/scoping/technology_query',
+        data: {
+            'qid': query,
+            'tid': tech
+        },
+        success: function(data) {
+        }
+    })
 })
 
 </script>
