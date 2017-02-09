@@ -30,13 +30,13 @@ def index(request):
     queries_dft   = Query.objects.all().filter(type="default")
     queries = queries_none | queries_dft
     queries = queries.order_by('-id')
-    query    = queries.last()
-    users = User.objects.all()
+    query   = queries.last()
+    users   = User.objects.all()
 
     context = {
-      'queries'  : queries,
-      'query'    : query,
-      'users'    : users
+        'queries'  : queries,
+        'query'    : query,
+        'users'    : users
     }
 
     return HttpResponse(template.render(context, request))
@@ -51,8 +51,8 @@ def snowball(request):
     # Get latest step associated with each SB sessions
     sb_session_last = sb_sessions.last()
     context = {
-      'sb_sessions': sb_sessions,
-      'sb_session_last': sb_session_last
+        'sb_sessions': sb_sessions,
+        'sb_session_last': sb_session_last
     }
     return HttpResponse(template.render(context, request))
 
@@ -76,7 +76,7 @@ def doquery(request):
     ssh_test()
 
     qtitle = request.POST['qtitle']
-    qdb  = request.POST['qdb']
+    qdb    = request.POST['qdb']
     qtype  = request.POST['qtype']
     qtext  = request.POST['qtext']
 
@@ -86,7 +86,7 @@ def doquery(request):
         type=qtype,
         text=qtext,
         creator = request.user,
-        date=timezone.now(),
+        date = timezone.now(),
         database = qdb
     )
     q.save()
@@ -135,6 +135,8 @@ def start_snowballing(request):
     qtype  = 'backward'
     qtext  = request.POST['sbs_initialpearls']
 
+    qdb = "WoS"
+
     curdate = timezone.now()
 
     sbs = SnowballingSession(
@@ -147,6 +149,7 @@ def start_snowballing(request):
     #  create a new query record in the database
     q = Query(
         title=qtitle+"_backward_1_1",
+        database=qdb,
         type=qtype,
         text=qtext,
         date=curdate,
@@ -164,107 +167,9 @@ def start_snowballing(request):
     time.sleep(1)
 
     # run "scrapeQuery.py" on the text file in the background
-    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
+    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
 
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1}))
-
-
-#########################################################
-## Snowballing Query Substep 1
-import subprocess
-import sys
-@login_required
-def doSBQuerySubstep1(request):
-
-    ssh_test()
-
-#    curstep = 2
-#    curstep  = request.POST['qid'] + 1
-#    qtitle = request.POST['sbs_name']
-#    qtype  = 'backward'
-#    qtext  = request.POST['sbs_initialpearls']
-
-    curdate = timezone.now()
-
-    sbs = SnowballingSession(
-      name = qtitle,
-      initial_pearls = qtext,
-      date=curdate
-    )
-    sbs.save()
-
-    #  create a new query record in the database
-    q = Query(
-        title=qtitle+"_backward_"+str(curstep)+"_1",
-        type=qtype,
-        text=qtext,
-        date=curdate,
-        snowball=sbs.id,
-        step=curstep,
-        substep=1
-    )
-    q.save()
-
-    # write the query into a text file
-    fname = "/queries/"+str(q.id)+".txt"
-    with open(fname,"w") as qfile:
-        qfile.write(qtext)
-
-    time.sleep(1)
-
-    # run "scrapeQuery.py" on the text file in the background
-    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
-
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1}))
-
-
-#########################################################
-## Snowballing Query Substep 2
-import subprocess
-import sys
-@login_required
-def doSBQuerySubstep2(request):
-
-    ssh_test()
-
-    curstep=2
-
-    qtitle = request.POST['sbs_name']
-    qtype  = 'backward'
-    qtext  = request.POST['sbs_initialpearls']
-
-    curdate = timezone.now()
-
-    sbs = SnowballingSession(
-      name = qtitle,
-      initial_pearls = qtext,
-      date=curdate
-    )
-    sbs.save()
-
-    #  create a new query record in the database
-    q = Query(
-        title=qtitle+"_backward_"+str(curstep)+"_2",
-        type=qtype,
-        text=qtext,
-        date=curdate,
-        snowball=sbs.id,
-        step=curstep,
-        substep=1
-    )
-    q.save()
-
-    # write the query into a text file
-    fname = "/queries/"+str(q.id)+".txt"
-    with open(fname,"w") as qfile:
-        qfile.write(qtext)
-
-    time.sleep(1)
-
-    # run "scrapeQuery.py" on the text file in the background
-    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
-
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 2}))
 
 
 #########################################################
@@ -281,6 +186,33 @@ def delete_query(request, qid):
     except:
         pass
     return HttpResponseRedirect(reverse('scoping:index'))
+
+#########################################################
+## Delete the query
+@login_required
+def delete_sbs(request, sbsid):
+    try:
+        sbs = SnowballingSession.objects.get(pk=sbsid)
+
+        # Get associated queries
+        qs = Query.objects.filter(snowball=sbsid)
+
+        # Delete SB session
+        sbs.delete()
+
+        # Delete asociated queries and files
+        #TODO: Could be better handled by cascade function in postgres DB
+        for qid in qs :
+            q = Query.objects.get(pk=qid)
+            q.delete()
+
+            title = str(qid)
+            shutil.rmtree("/queries/"+title)
+            os.remove("/queries/"+title+".txt")
+            os.remove("/queries/"+title+".log")
+    except:
+        pass
+    return HttpResponseRedirect(reverse('scoping:snowball'))
 
 #########################################################
 ## Add the documents to the database
@@ -302,31 +234,39 @@ def dodocadd(request):
     #return HttpResponse(upload)
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': 0}))
 
+
+
 #########################################################
 ## Add the documents and their references to the database
 @login_required
 def dodocrefadd(request):
     qid = request.GET.get('qid',None)
+    db = request.GET.get('db',None)
 
     q = Query.objects.get(pk=qid)
 
     # Create reference query
     q2 = Query(
-      title=q.title+"_backward_"+str(q.step)+"_2",
-      type="backward",
-      text="",
-      date=timezone.now(),
-      snowball=q.snowball,
-      step=q.step,
-      substep=2
+        title=q.title+"_backward_"+str(q.step)+"_2",
+        database=db,
+        type="backward",
+        text="",
+        date=timezone.now(),
+        snowball=q.snowball,
+        step=q.step,
+        substep=2
     )
     q2.save()
 
     print(q2.title+" has been created! Running upload_docrefs.py...")
 
-    upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docrefs.py'))
+    if db=="WoS":
+        upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docrefs.py'))
+    if db=="scopus":
+        print("Not yet implemented")
+        exit()
 
-    subprocess.Popen(["python3", upload, qid, q2.id])
+    subprocess.Popen(["python3", upload, qid, str(q2.id)])
 
     time.sleep(5)
 
@@ -339,7 +279,7 @@ def dodocrefadd(request):
     if os.path.isfile(fname):
         print("Yes... Start scraping")
         # run "scrapeQuery.py" on the text file in the background
-        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", fname])
+        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", "-s", db, fname])
 
         time.sleep(2)
 
@@ -401,12 +341,12 @@ def querying(request, qid, substep):
             finished=True
 
         context = {
-          'log': log,
-          'finished': finished,
-          'docs': docs,
-          'doclength': doclength,
-          'query': query,
-          'substep': substep
+            'log': log,
+            'finished': finished,
+            'docs': docs,
+            'doclength': doclength,
+            'query': query,
+            'substep': substep
         }
 
     else:
@@ -414,9 +354,12 @@ def querying(request, qid, substep):
         docs      = Doc.objects.filter(query__id=qid)
         doclength = len(docs)
 
-        if doclength == 0: # if none, the query was probably not yet processed
-            logfile = "/queries/"+str(qid)+".log"
+        doclength = 0  # force it for now
 
+        logfile = "/queries/"+str(qid)+".log"
+        rstfile = "/queries/"+str(qid)+"/results.txt"
+ 
+        if not os.path.isfile(rstfile):
             wait = True
             # wait up to 15 seconds for the log file, then go to a page which displays its contents
             for i in range(15):
@@ -435,20 +378,13 @@ def querying(request, qid, substep):
             log=False
             finished=True
 
-        if finished:
-            rstfile = "/queries/"+str(qid)+"/results.txt"
-            if os.path.isfile(rstfile):
-            # Process results
-                with open(rstfile,"r") as lfile:
-                    rst = lfile.readlines()
-
         context = {
-          'log': log,
-          'finished': finished,
-          'docs': docs,
-          'doclength': doclength,
-          'query': query,
-          'substep':substep
+            'log': log,
+            'finished': finished,
+            'docs': docs,
+            'doclength': doclength,
+            'query': query,
+            'substep':substep
         }
 
     return HttpResponse(template.render(context, request))

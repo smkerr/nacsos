@@ -196,8 +196,13 @@ def main():
     #os.remove("/queries/"+title+".log")
 
     doiset = set(doi_lookups)     # unique values
-    doiset = doiset.remove("DOI") # remove element DOI
+    print(doiset)
+    print("Length doiset #1:")
     print(len(doiset))
+    if "DOI" in doiset:
+      doiset.remove("DOI") # remove element DOI
+      print("Length doiset #2:")
+      print(len(doiset))
     query = 'DO = ("' + '" OR "'.join(doiset) + '")'
     print(query)
 
