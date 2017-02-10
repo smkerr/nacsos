@@ -1,30 +1,38 @@
 <html>
-<head>
-{% load static %}
-{% load scoping_extras %}
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-<script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
-<title>Scoping</title>
-<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
-
-</head>
+  <head>
+    {% load static %}
+    {% load scoping_extras %}
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
+    <script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
+    {% if query.type == "default" %}
+      <title>Scoping</title>
+      <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+    {% else %}
+      <title>Snowballing - Reviewing documents</title>
+      <link href="{% static 'scoping/css/stylingsbs.css' %}" rel="stylesheet" type="text/css">
+    {% endif %}
+  </head>
   <body>
-{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
-<div id="main">
-<div id="graph">
-<h1> Scoping Review Helper</h1>
-<br>
-<h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}}, your progress: </h2>
-<div id="progress"></div>
-<!-- Query manager -->
+    {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
+    <div id="main">
+      <div id="graph">
+        {% if query.type == "default" %}
+          <h1> Scoping Review Helper</h1>
+        {% else %}
+          <h1> Snowballing Document Review Helper</h1>
+        {% endif %}
+        <br/>
+        <h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}}, your progress: </h2>
+        <div id="progress"></div>
+          <!-- Query manager -->
 
-<p>Is the document below (one of {{ ndocs }}) relevant?
+          <p>Is the document below (one of {{ ndocs }}) relevant?
 
-<div id="criteria">
-<h4>Inclusion/Exclusion Criteria</h4>
-{{ query.criteria }}
-</div>
+          <div id="criteria">
+            <h4>Inclusion/Exclusion Criteria</h4>
+              {{ query.criteria }}
+          </div>
 
 <div id="docbox">
 <h4> {{ title | safe }}</h4>

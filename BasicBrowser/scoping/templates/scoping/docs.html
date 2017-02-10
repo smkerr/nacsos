@@ -1,106 +1,122 @@
 <html>
-<head>
-{% load static %}
-{% load scoping_extras %}
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
-<script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-<title>Scoping</title>
-<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
-
-</head>
-  <body>
-{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
-<div id="main">
-<div id="graph">
-<h1> Scoping Review Helper</h1>
-<br>
-
-<!-- Query manager -->
-<h2> Document list (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) </h2>
-<br>
-
-<p id="field_container">
-{% for f in fields %}
-    {% if f.name in basic_fields %}
-        <span class="field_name" data-active="true" name="{{f.path}}">{{ f.name }} <button class="filter" onclick="button_filter(event,this)">filter</button></span>, 
+  <head>
+    {% load static %}
+    {% load scoping_extras %}
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
+    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
+    {% if query.type == "default" %}
+      <title>Scoping</title>
+      <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
     {% else %}
-        <span class="field_name" data-active="false" name="{{f.path}}">{{ f.name }}</span>, 
+      <title>Snowballing - Reviewing documents</title>
+      <link href="{% static 'scoping/css/stylingsbs.css' %}" rel="stylesheet" type="text/css">
     {% endif %}
-{% endfor %}
-</p>
+  </head>
+  <body>
+    {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
+    <div id="main">
+      <div id="graph">
+        {% if query.type == "default" %}
+          <h1> Scoping Review Helper</h1>
+        {% else %}
+          <h1> Snowballing Document Review Helper</h1>
+          <p>Quickly exclude irrelevant documents by clicking on the Exclude button</p>
+        {% endif %} 
+        <br/>
 
-<p style="text-align:left">
-    Filter these results...
-    <table id="filtertable">
-        <tr>    
-            <td>
+        <!-- Query manager -->
+        <h2> Document list associated to <a href="/scoping/query/{{query.id}}">{{query.type}} query no. {{query.id}}</a> </h2>
+        <br/>
+
+        <p id="field_container">
+          {% for f in fields %}
+            {% if f.name in basic_fields %}
+              <span class="field_name" data-active="true" name="{{f.path}}">{{ f.name }} <button class="filter" onclick="button_filter(event,this)">filter</button></span>, 
+            {% else %}
+              <span class="field_name" data-active="false" name="{{f.path}}">{{ f.name }}</span>, 
+            {% endif %}
+          {% endfor %}
+<!--          <span class="field_name" data-active="true" name="sbsexclude">SBS_exclude</span> -->
+        </p>
+
+        <p style="text-align:left">
+          Filter these results...
+          <table id="filtertable">
+            <tr>    
+              <td>
                 <input class="f_field" type="text">
-            </td>
-            <td>
+              </td>
+              <td>
                 <select class="f_operator">
-                    <option value="icontains">CONTAINS</option>
-                    <option value="noticontains">NOT</option>
-                    <option>EQUALS</option>
-                    <option>IS GREATER THAN</option>
-                    <option>IS LESS THAN</option>
+                  <option value="icontains">CONTAINS</option>
+                  <option value="noticontains">NOT</option>
+                  <option>EQUALS</option>
+                  <option>IS GREATER THAN</option>
+                  <option>IS LESS THAN</option>
                 </select>
-            </td>
-            <td>
+              </td>
+              <td>
                 <input type="text" class="f_text">
-            </td>
-            <td>
+              </td>
+              <td>
                 <select class="f_join" onchange="join_filter(this)">
-                    <option></option>
-                    <option>AND</option>
-                    <option>OR</option>
+                  <option></option>
+                  <option>AND</option>
+                  <option>OR</option>
                 </select>
-            </td>
-        </tr>
-    </table>
-<button id="dofilter">Filter</button>
-</p>
-<p style="text-align:left">
-Save this filter as <input type="text" id="tag_title"> <button onclick="savetag()">Save</button>
-</p>
+              </td>
+            </tr>
+          </table>
+          <button id="dofilter">Filter</button>
+        </p>
+        <p style="text-align:left">
+          Save this filter as <input type="text" id="tag_title"> <button onclick="savetag()">Save</button>
+        </p>
 
-<p style="text-align:left">Showing documents 1-100 of <span id="doc_count">{{ ndocs }}</span>
-</p>
-<br>
+        <p style="text-align:left">Showing documents 1-100 of <span id="doc_count">{{ ndocs }}</span></p>
+        <br/>
 
-<table class="light" style="width:100%">
-		<tr class="title">
-        {% for f in fields %}
-            {% if f.name in basic_fields %}
-                <td class="field" name="{{f.path}}">{{f.name}} <span class="uparrow sort">&uarr;</span><span class="downarrow sort">&darr;</span></td>
+        <table class="light" style="width:100%">
+	  <tr class="title">
+            {% for f in fields %}
+              {% if f.name in basic_fields %}
+                <td class="field" name="{{f.path}}">{{f.name}}<span class="uparrow sort">&uarr;</span><span class="downarrow sort">&darr;</span></td>
+              {% endif %}
+            {% endfor %}
+            {% if query.type != "default" %}
+              <td>Exclude</td>
             {% endif %}
-        {% endfor %}
-        </tr>
-		{% for doc in docs %}
-        <tr class="datarow">
-        {% for f in fields %}
-            {% if f.name in basic_fields %}
-                <td class="data">{{doc|keyvalue:f.path}}</td>
+          </tr>
+          {% for doc in docs %}
+          <tr class="datarow">
+            {% for f in fields %}
+              {% if f.name in basic_fields %}
+                <td class="data">{{doc|keyvalue:f.path}}</td>                
+              {% endif %}
+            {% endfor %}
+            {% if query.type != "default" %}
+              <td><a href="scoping:sbsExcludeDoc?qid={{query.id}}&did={{doc.UT}}"><button type="button">Exclude</button></a></td>
             {% endif %}
-        {% endfor %}
 <!--
 			<td class="data">{{ doc.title }}</td>
             <td class="data">{{ doc.content }}</td>
 			<td class="data">{{ doc.PY }}</td>
 -->
-		</tr>
-		{% endfor %}
-</table>
+          </tr>
+        {% endfor %}
+      </table>
 
-<br><hr><br>
+      <br/><hr/><br/>
 
-</div>
-</div>
+    </div>
+  </div>
 </body>
 
 <script>
 
 var qid = {{ query.id }}
+var qtype = "{{ query.type }}"
 
 console.log(qid)
 
@@ -116,11 +132,9 @@ $(".downarrow").click(function() {
 })
 
 $(".sort").click(function() {
-	$(this).toggleClass("sort_active")
-	update_fields()
+    $(this).toggleClass("sort_active")
+    update_fields()
 })
-
-
 
 $(".field_name").click(function() {
     if ($(this).attr("data-active") == "true") {
@@ -190,7 +204,7 @@ function join_filter(element) {
 }
 
 function update_fields() {
-	$('body').toggleClass('waiting');
+    $('body').toggleClass('waiting');
     // get arrays of all the filter columns
     var fields = []
     $(".f_field").each(function(){
@@ -208,18 +222,18 @@ function update_fields() {
     $(".f_join").each(function(){
         joins.push($(this).val())
     })
-	var sortfields = [];
-	var sortdirs = [];
-	$(".sort_active").each(function() {
-		n = $(this).parent().attr('name')
-		if ($(this).hasClass("uparrow")) {
-			dir = "+"
-		} else {
-			dir = "-"
-		}
-		sortfields.push(n)
-		sortdirs.push(dir)
-	})
+    var sortfields = [];
+    var sortdirs = [];
+    $(".sort_active").each(function() {
+ 	n = $(this).parent().attr('name')
+	if ($(this).hasClass("uparrow")) {
+	    dir = "+"
+	} else {
+	    dir = "-"
+	}
+	sortfields.push(n)
+	sortdirs.push(dir)
+    })
     var active_field_paths = [];
     var active_field_names = [];
     $('*[data-active="true"]').map(function(){
@@ -235,8 +249,8 @@ function update_fields() {
             'f_operators': operators,
             'f_text': text,
             'f_join': joins,
-			'sort_fields': sortfields,
-			'sort_dirs': sortdirs
+            'sort_fields': sortfields,
+	    'sort_dirs': sortdirs
         },
         success: function(data) {
             var n_docs = data.n_docs
@@ -250,20 +264,21 @@ function update_fields() {
             for (f=0;f<active_field_paths.length;f++) {
                 fpath = active_field_paths[f]
                 fname = active_field_names[f]
-				i = sortfields.indexOf(fpath)
-				up = ""
-				down = ""
-				if (i > -1) {
-					console.log(sortdirs[i])
-					if (sortdirs[i]=="+") {
-						up = "sort_active"
-					} else {
-						down = "sort_active"
-					}		
-				}
+		i = sortfields.indexOf(fpath)
+		up = ""
+		down = ""
+		if (i > -1) {
+  		    console.log(sortdirs[i])
+		    if (sortdirs[i]=="+") {
+		        up = "sort_active"
+		    } else {
+		        down = "sort_active"
+		    }		
+		}
                 $("table.light tr:first").append('<td class="field" name="'+fpath+'">'+fname+' <span class="uparrow sort '+ up +'">&uarr;</span><span class="downarrow sort '+ down +'">&darr;</span></td>');
                 $("table.light tr:not(:first)").append('<td class="data">');
-            } 
+            }
+            
             fields.push(fname.replace(".","__"))
             $(".data").each(function( i ) {
                 r = Math.floor(i/nfields)
@@ -278,32 +293,39 @@ function update_fields() {
             })
             $(".field").data("sortdir","-")
 
-			$(".sort").click(function() {
-				$(this).toggleClass("sort_active")
-				update_fields()
-			})
-		$('body').toggleClass('waiting');
+   	    $(".sort").click(function() {
+	        $(this).toggleClass("sort_active")
+		    update_fields()
+		})
+
+            /* SBS exclude column*/
+            if (qtype != "default") {
+              $("table.light tr:first").append('<td class="field" name="sbsexclude">Exclude</td>');
+              $("table.light tr:not(:first)").append('<td class="data"><a href=""><button type="button">Exclude</button></a></td>');
+            }
+
+	    $('body').toggleClass('waiting');
         }
     })
 }
 
 function cyclescore(el) {
-	var el = $(el)
-	var data = {}
-	data['score'] = parseInt(el.text())
-	data['doc_id'] = el.attr("data-id")
-	data['tag'] = parseInt(el.attr("data-tag"))
-	data['user'] = parseInt(el.attr("data-user"))
-	data['qid'] = qid
-	$('body').toggleClass('waiting');
-	$.ajax({
-		url: '/scoping/cycle_score',
-		data: data,
-		success: function() {
-			update_fields()
-			$('body').toggleClass('waiting');
-		}
-	})
+    var el = $(el)
+    var data = {}
+    data['score'] = parseInt(el.text())
+    data['doc_id'] = el.attr("data-id")
+    data['tag'] = parseInt(el.attr("data-tag"))
+    data['user'] = parseInt(el.attr("data-user"))
+    data['qid'] = qid
+    $('body').toggleClass('waiting');
+    $.ajax({
+        url: '/scoping/cycle_score',
+	data: data,
+	success: function() {
+	    update_fields()
+	    $('body').toggleClass('waiting');
+	}
+    })
 }
 
 </script>

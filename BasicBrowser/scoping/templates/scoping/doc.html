@@ -1,54 +1,63 @@
 <html>
-<head>
-{% load static %}
-{% load scoping_extras %}
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
-<script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-<title>Scoping</title>
-<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
-
-</head>
+  <head>
+    {% load static %}
+    {% load scoping_extras %}
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
+    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
+    {% if query.type == "default" %}
+      <title>Scoping</title>
+      <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+    {% else %}
+      <title>Snowballing - Reviewing documents</title>
+      <link href="{% static 'scoping/css/stylingsbs.css' %}" rel="stylesheet" type="text/css">
+    {% endif %}
+  </head>
   <body>
-{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
-<div id="main">
-<div id="graph">
-<h1> Scoping Review Helper</h1>
-<br>
-<h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}}, your progress: </h2>
-<div id="progress"></div>
-<!-- Query manager -->
+    {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
+    <div id="main">
+      <div id="graph">
+        {% if query.type == "default" %}
+          <h1> Scoping Review Helper</h1>
+        {% else %}
+          <h1> Snowballing Document Review Helper</h1>
+        {% endif %}
+        <br/>
+        <h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}}, your progress: </h2>
+        <div id="progress"></div>
+        <!-- Query manager -->
 
-<p><a href="/scoping/back_review/{{query.id}}">Back</a>
+        <p><a href="/scoping/back_review/{{query.id}}">Back</a>
 
-<p>Is the document below (one of {{ ndocs }} remaining) relevant?
+        <p>Is the document below (one of {{ ndocs }} remaining) relevant?
 
-<div id="criteria">
-<h4>Inclusion/Exclusion Criteria</h4>
-{{ query.criteria }}
-</div>
+        <div id="criteria">
+          <h4>Inclusion/Exclusion Criteria</h4>
+            {{ query.criteria }}
+       </div>
 
-<div id="docbox">
-<h4> {{ title | safe }}</h4>
-<p>{{ doc.wosarticle.so }} ({{ doc.wosarticle.py }}) <a target="_blank" href="http://dx.doi.org/{{ doc.wosarticle.di }}">{{ doc.wosarticle.di}}</a>
-<p style="text-align:left">
-{{ doc.docauthinst }}
-{% for au in authors %}
-	<span>{{au.AF}} [{{au.institution}}];</span>
-{% endfor %}
-<p style="text-align:left">
-{{ abstract | safe }}
-</div>
-<table class="spread" width="100%">
-	<tr>
-	<td><button onclick="review(1)">Yes</button>
-	<td><button onclick="review(2)">No</button>
-	<td><button onclick="review(3)">Maybe?</button>
-	<td><button onclick="review(4)">Yes but not this technology</button>
-	</tr>
-</table>
-
-<script>
+       <div id="docbox">
+         <h4> {{ title | safe }}</h4>
+         <p>{{ doc.wosarticle.so }} ({{ doc.wosarticle.py }}) <a target="_blank" href="http://dx.doi.org/{{ doc.wosarticle.di }}">{{ doc.wosarticle.di}}</a>
+         <p style="text-align:left">
+           {{ doc.docauthinst }}
+           {% for au in authors %}
+             <span>{{au.AF}} [{{au.institution}}];</span>
+           {% endfor %}
+         </p>
+         <p style="text-align:left">
+           {{ abstract | safe }}
+         </p>
+       </div>
+       <table class="spread" width="100%">
+         <tr>
+           <td><button onclick="review(1)">Keep</button>  
+           <td><button onclick="review(2)">Exclude</button>
+         </tr>
+       </table>
+     </div>
+   </div>  
+ <script>
 
 var tdocs = {{ tdocs }}
 var sdocs = {{ sdocs }}

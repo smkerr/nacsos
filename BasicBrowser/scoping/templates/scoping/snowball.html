@@ -48,15 +48,16 @@
         <!-- button to delete all snowballing sessions -->
 
         <table class="light">
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Initial Pearls</th>
-            <th>Date</th>
-            <th># Steps</th>
-            <th># Selected docs</th>
-            <th>Status</th>
-            <th>Delete</th>
+          <tr class="title">
+            <td>ID</td>
+            <td>Name</td>
+            <td>Initial Pearls</td>
+            <td>Date</td>
+            <td># Steps</td>
+            <td>Latest query</td>
+            <td># Selected docs</td>
+            <td>Status</td>
+            <td>Delete</td>
           </tr>
           {% for sbs in sb_sessions %}
           <tr>
@@ -64,6 +65,7 @@
             <td>{{ sbs.name }}</td>
 	    <td>{{ sbs.initial_pearls }}</td>
             <td>{{ sbs.date }}</td>
+            <td></td>
             <td></td>
             <td></td>
             <td>View progress</td>
