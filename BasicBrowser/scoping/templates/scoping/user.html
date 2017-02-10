@@ -58,18 +58,21 @@
 
         <table style="width:80%">
           <tr style="background:#f7ab31">
-            <td>ID</td>
-            <td>Title</td>
+            <td>QID</td>
+            <td>SBS Title</td>
+            <td>Q Title</td>
             <td># Documents</td>
             <td>! To review</td>
             <td>Reviewed</td>
             <td>Kept</td>
             <td>Excluded</td>
+            <td>Next step</td>
           </tr>
           {% for q in queries %}
             {% if q.type != "default" %}
-              <tr>
+              <tr>                
                 <td><a href="/scoping/query/{{q.id}}">{{q.id}}</td>
+                <td>SBS ID</td>
                 <td>{{q.title}}</td>
                 <td>{{q.ndocs}}</td>
                 {% if q.revdocs > 0 %}
@@ -77,12 +80,18 @@
                   <td class="review{{q.revieweddocs}} review"><a href="/scoping/review/{{q.id}}/0">{{q.revieweddocs}}</a> ({{q.relevance}}% relevant)</td>
                   <td class="review{{q.maybedocs}} review"><a href="/scoping/maybe/{{q.id}}/0">{{q.maybedocs}}</a></td>
                   <td class="review{{q.yesbuts}} review"><a href="/scoping/yesbut/{{q.id}}/0">{{q.yesbuts}}</a></td>
+                  {% if True %}
+                    <td><a href=""><button type="button">Snowball</button></a></td>
+                  {% else %} 
+                    <td></td>
+                  {% endif %}
                 {% else %}
                   <td>0</td>
                   <td>0</td>
                   <td>0</td>
                   <td>0</td>
-                {% endif %}
+                  <td></td>
+                {% endif %}                
               </tr>
             {% endif %}
           {% endfor %}
