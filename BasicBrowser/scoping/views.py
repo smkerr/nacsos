@@ -14,7 +14,6 @@ from django.contrib.auth.decorators import user_passes_test
 
 from .models import *
 
-
 def super_check(user):
     return user.groups.filter(name__in=['superuser'])
 
@@ -105,8 +104,14 @@ def snowball(request):
 #########################################################
 ## Test the SSH connection
 def ssh_test():
-    ssh_working = subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/check_selenium_ip.py", "-b", "chrome"], stdout=subprocess.PIPE).communicate()[0].strip().decode()
-    print(repr(ssh_working))
+
+    NoSSHTest = True
+
+    if NoSSHTest :
+      ssh_working = True
+    else :
+      ssh_working = subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/check_selenium_ip.py", "-b", "chrome"], stdout=subprocess.PIPE).communicate()[0].strip().decode()
+      print(repr(ssh_working))
     if ssh_working == "False":
         subprocess.Popen(["setsid","ssh","-D","1080","minx@aix.pik-potsdam.de"])
     return(ssh_working)
@@ -196,7 +201,7 @@ def doquery(request):
     # run "scrapeQuery.py" on the text file in the background
     subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
 
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 0}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 0, 'docadded': 0}))
 
 #########################################################
 ## Start snowballing
@@ -574,11 +579,15 @@ def userpage(request):
 ##################################################
 ## Exclude docs from snowballing session
 @login_required
-def sbsExcludeDoc(request,qid):
+def sbsExcludeDoc(request,qid,did):
 
     #Set doc review to 0
+    docs = DocOwnership.objects.all(doc=did, query=qid, user=user)
+ 
+    print(docs)
+    
 
-    return HttpResponseRedirect(reverse('scoping:review_docs', kwargs={'qid': qid,'d': tdocs}))
+    return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': qid}))
 
 ##################################################
 ## View all docs
@@ -595,7 +604,7 @@ def doclist(request,qid):
     all_docs = qdocs
     ndocs = all_docs.count()
 
-    docs = list(all_docs[:100].values('wosarticle__ti','wosarticle__ab','wosarticle__py'))
+    docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
 
     fields = []
 
