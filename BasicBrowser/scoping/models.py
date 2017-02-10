@@ -14,7 +14,7 @@ class SnowballingSession(models.Model):
       return self.name
 
 class Query(models.Model):
-    type     = models.TextField(null=True, verbose_name="Query Type")
+    type     = models.TextField(null=True, verbose_name="Query Type", default="default")
     title    = models.TextField(null=True, verbose_name="Query Title")
     text     = models.TextField(null=True, verbose_name="Query Text")
     database = models.CharField(max_length=6,null=True, verbose_name="Query database")
@@ -57,12 +57,40 @@ class Doc(models.Model):
     def word_count(self):
         return len(str(self.content).split())
 
+class Note(models.Model):
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Notemaker")
+    date = models.DateTimeField()
+    text = models.TextField(null=True)
+    class Meta:
+        ordering = ['date']
+
 class DocOwnership(models.Model):
+
+    UNRATED = 0
+    YES = 1
+    NO = 2
+    MAYBE = 3
+    OTHERTECH = 4
+
+    Status = (
+        (UNRATED, 'Unrated'),
+        (YES, 'Yes'),
+        (NO, 'No'),
+        (MAYBE, 'Maybe'),
+        (OTHERTECH, 'Other Technology'),
+    )
+
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Reviewer")
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
-    relevant = models.IntegerField(default=0, db_index=True, verbose_name="Relevance")
+    relevant = models.IntegerField(
+        choices=Status,
+        default=0, 
+        db_index=True, 
+        verbose_name="Relevance"
+    )
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")

@@ -1,5 +1,5 @@
 from django.shortcuts import render
-import os, time, math, itertools
+import os, time, math, itertools, csv
 
 # Create your views here.
 
@@ -32,6 +32,14 @@ def index(request):
     query         = queries.last()
     users         = User.objects.all()
     technologies  = Technology.objects.all()
+
+    for q in queries:
+        q.tech = q.technology
+        if q.technology==None:
+            q.tech="None"
+        else:
+            q.tech=q.technology.name
+        print(q.tech)
 
     context = {
       'queries'      : queries,
@@ -576,6 +584,7 @@ def userpage(request):
     query_list = []
 
     for q in queries:
+        print(q.type)
         ndocs = Doc.objects.filter(query=q).count()
         revdocs = DocOwnership.objects.filter(query=q,user=request.user).count()
         reviewed_docs = DocOwnership.objects.filter(query=q,user=request.user,relevant__gt=0).count()
@@ -590,6 +599,7 @@ def userpage(request):
             relevance = 0
         query_list.append({
             'id': q.id,
+            'type': q.type,
             'title': q.title,
             'ndocs': ndocs,
             'revdocs': revdocs,
@@ -753,6 +763,9 @@ def sortdocs(request):
         if f_operators[i] == "noticontains":
             op = "icontains"
             exclude = True
+        if f_operators[i] == "notexact":
+            op = "exact"
+            exclude = True
         else:
             op =  f_operators[i]
             exclude = False
@@ -854,9 +867,10 @@ def sortdocs(request):
                 do = DocOwnership.objects.filter(doc_id=d['UT'],user__username=uname)
                 if do.count() > 0:
                     d[u] = do.first().relevant
+                    text = do.first().get_relevant_display()
                     tag = str(do.first().tag.id)
                     user = str(User.objects.filter(username=uname).first().id)
-                    d[u] = '<span class="relevant_cycle" data-user='+user+' data-tag='+tag+' data-id='+d['UT']+' onclick="cyclescore(this)">'+str(d[u])+'</span>'
+                    d[u] = '<span class="relevant_cycle" data-user='+user+' data-tag='+tag+' data-id='+d['UT']+' data-value='+str(d[u])+' onclick="cyclescore(this)">'+text+'</span>'
         try:
             d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
         except:
@@ -972,6 +986,8 @@ def check_docs(request,qid):
     tdocs = Doc.objects.filter(query=query,users=user.id).count()
     sdocs = Doc.objects.filter(query=query,users=user.id, docownership__relevant__gt=0).count()
 
+
+
     ndocs = docs.count()
 
     try:
@@ -984,6 +1000,10 @@ def check_docs(request,qid):
     abstract = highlight_words(doc.content,query.text)
     title = highlight_words(doc.wosarticle.ti,query.text)
 
+    qtechs = Technology.objects.filter(query__doc=doc) | Technology.objects.filter(doc=doc)
+    qtechs = qtechs.distinct()
+    ntechs = Technology.objects.exclude(query__doc=doc).exclude(doc=doc)
+
     template = loader.get_template('scoping/doc.html')
     context = {
         'query': query,
@@ -994,7 +1014,10 @@ def check_docs(request,qid):
         'tdocs': tdocs,
         'sdocs': sdocs,
         'abstract': abstract,
-        'title': title
+        'title': title,
+        'page': 'check_docs',
+        'qtechs': qtechs,
+        'ntechs': ntechs
     }
     return HttpResponse(template.render(context, request))
 
@@ -1026,6 +1049,10 @@ def review_docs(request,qid,d=0):
     abstract = highlight_words(doc.content,query.text)
     title = highlight_words(doc.wosarticle.ti,query.text)
 
+    qtechs = Technology.objects.filter(query__doc=doc) | Technology.objects.filter(doc=doc)
+    qtechs = qtechs.distinct()
+    ntechs = Technology.objects.exclude(query__doc=doc).exclude(doc=doc)
+
     template = loader.get_template('scoping/doc.html')
     context = {
         'query': query,
@@ -1036,7 +1063,10 @@ def review_docs(request,qid,d=0):
         'tdocs': tdocs,
         'sdocs': sdocs,
         'abstract': abstract,
-        'title': title
+        'title': title,
+        'page': 'review_docs',
+        'qtechs': qtechs,
+        'ntechs': ntechs
     }
     return HttpResponse(template.render(context, request))
 
@@ -1057,6 +1087,10 @@ def maybe_docs(request,qid,d=0):
     abstract = highlight_words(doc.content,query.text)
     title = highlight_words(doc.wosarticle.ti,query.text)
 
+    qtechs = Technology.objects.filter(query__doc=doc) | Technology.objects.filter(doc=doc)
+    qtechs = qtechs.distinct()
+    ntechs = Technology.objects.exclude(query__doc=doc).exclude(doc=doc)
+
     template = loader.get_template('scoping/doc.html')
     context = {
         'query': query,
@@ -1067,7 +1101,10 @@ def maybe_docs(request,qid,d=0):
         'tdocs': tdocs,
         'sdocs': sdocs,
         'abstract': abstract,
-        'title': title
+        'title': title,
+        'page': 'maybe_docs',
+        'qtechs': qtechs,
+        'ntechs': ntechs
     }
     return HttpResponse(template.render(context, request))
 
@@ -1097,6 +1134,73 @@ def remove_assignments(request):
     DocOwnership.objects.filter(query=int(qid)).delete()
     return HttpResponse("")
 
+def add_note(request):
+    doc_id = request.POST.get('docn',None)
+    page = request.POST.get('page',None)
+    qid = request.POST.get('qid',None)
+    text = request.POST.get('note',None)
+
+    doc = Doc.objects.get(pk=doc_id)
+    note = Note(
+        doc=doc,
+        user=request.user,
+        date=timezone.now(),
+        text=text
+    )
+    note.save()
+        
+    print(doc_id)
+    print(page)
+    return HttpResponseRedirect(reverse('scoping:'+page, kwargs={'qid': qid}))
+
+
+
+
+#########################################################
+## Download the queryset
+
+
+def download(request, qid):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="documents.csv"'
+
+    writer = csv.writer(response)
+
+    headers = []
+
+    for f in WoSArticle._meta.get_fields():
+        path = "wosarticle__"+f.name
+        if f.name !="doc":
+            headers.append({"path": path, "name": f.verbose_name})
+
+    for f in DocAuthInst._meta.get_fields():
+        path = "docauthinst__"+f.name
+        if f.name !="doc" and f.name !="query":
+            headers.append({"path": path, "name": f.verbose_name})
+
+    hrow = [x['name'] for x in headers]
+    fields = [x['path'] for x in headers]
+
+    writer.writerow(hrow)
+    
+    q = Query.objects.get(pk=qid)
+    docs = Doc.objects.filter(query=q)
+    docvals = docs.values(*fields)
+    for d in docvals:
+        row = [d[x] for x in fields]
+        writer.writerow(row)
+        
+
+    return response
+
+def doc_tech(request):
+    did = request.GET.get('did',None)
+    tid = request.GET.get('tid',None)
+    doc = Doc.objects.get(pk=did)
+    tech = Technology.objects.get(pk=tid)
+    doc.technology.add(tech)
+    doc.save()
+    return HttpResponse()
 
 from django.contrib.auth import logout
 def logout_view(request):
@@ -1107,9 +1211,8 @@ def logout_view(request):
 
 def add_manually():
 
-
-    qid = 48
-    tag = 18
+    #qid = 48
+    #tag = 18
     user = User.objects.get(username="fuss")
     DocOwnership.objects.filter(user=user).delete()
     query = Query.objects.get(id=qid)
@@ -1132,3 +1235,5 @@ def highlight_words(s,query):
         else:
             abstract.append(word)
     return(" ".join(abstract))
+
+

@@ -26,7 +26,7 @@
         <br/>
 
         <!-- Query manager -->
-        <h2> Document list associated to <a href="/scoping/query/{{query.id}}">{{query.type}} query no. {{query.id}}</a> </h2>
+        <h2> Document list associated to <a href="/scoping/query/{{query.id}}">{{query.type}} query no. {{query.id}}</a>. <a href="/scoping/download/{{query.id}}">Download</a> these documents as a csv</h2>
         <br/>
 
         <p id="field_container">
@@ -49,10 +49,11 @@
               <td>
                 <select class="f_operator">
                   <option value="icontains">CONTAINS</option>
-                  <option value="noticontains">NOT</option>
-                  <option>EQUALS</option>
-                  <option>IS GREATER THAN</option>
-                  <option>IS LESS THAN</option>
+                  <option value="noticontains">NOT CONTAINS</option>
+                  <option value="exact">EQUALS</option>
+                  <option value="notexact">NOT EQUALS</option>
+                  <option value="gt">IS GREATER THAN</option>
+                  <option value="lt">IS LESS THAN</option>
                 </select>
               </td>
               <td>
@@ -73,7 +74,7 @@
           Save this filter as <input type="text" id="tag_title"> <button onclick="savetag()">Save</button>
         </p>
 
-        <p style="text-align:left">Showing documents 1-100 of <span id="doc_count">{{ ndocs }}</span></p>
+        <p style="text-align:left">Showing documents 1-100 of <span id="doc_count">{{ ndocs }}</span></p> 
         <br/>
 
         <table class="light" style="width:100%">
@@ -313,7 +314,7 @@ function update_fields() {
 function cyclescore(el) {
     var el = $(el)
     var data = {}
-    data['score'] = parseInt(el.text())
+    data['score'] = parseInt(el.attr("data-value"))
     data['doc_id'] = el.attr("data-id")
     data['tag'] = parseInt(el.attr("data-tag"))
     data['user'] = parseInt(el.attr("data-user"))
