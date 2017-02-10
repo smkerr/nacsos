@@ -15,7 +15,11 @@
 <br>
 
 <!-- Query manager -->
+<div class="explanation">
+
 <h2> Query manager </h2>
+<p>Use the buttons below to filter queries by user and technology.
+New queries can be made at the bottom of the page.
 <br>
 <p id="field_container">
 {% for u in users %}
@@ -26,6 +30,16 @@
     {% endif %}
 {% endfor %}
 </p>
+
+<p id="field_container">
+    <span class="field_name active" name="None">None</span>
+{% for t in techs %}
+    <span class="field_name active" name="{{t.name}}">{{ t.name }}</span>
+{% endfor %}
+</p>
+</div>
+
+<p>
 
 <table class="light">
 
@@ -41,9 +55,9 @@
         </tr>
 		{% for query in queries %}
             {% if query.creator in active_users %}
-            <tr data-name="{{query.creator}}">     
+            <tr data-name="{{query.creator}}"  data-tech="{{query.tech}}">     
             {% else %}
-            <tr class="hidden" data-name="{{query.creator}}">
+            <tr class="hidden" data-name="{{query.creator}}" data-tech="{{query.tech}}">
             {% endif %}       
 			    <td><a href="query/{{query.id}}">{{ query.id }}</a></td>
                 <td>{{ query.creator }}</td>
@@ -57,11 +71,17 @@
                 {% endif %}
                 <td>
                     <select class="tech" data-query="{{query.id}}" autocomplete="off">
-                        {% if not query.tech %}
-                        <option selected value="None">{{query.tech}}</option>
+                        {% if not query.technology %}
+                        <option selected value="None">{{query.technology}}</option>
+                        {% else %}
+                        <option value="None">None</option>
                         {% endif %}
                         {% for t in techs %}
+                            {% if t == query.technology %}
+                            <option selected value={{t.id}}>{{t.name}}</option>
+                            {% else %}
                             <option value={{t.id}}>{{t.name}}</option>
+                            {% endif %}
                         {% endfor %}
                     </select>
                 </td>
@@ -75,8 +95,16 @@
 <br/><hr/><br/>
 
 <!-- This gets new queries -->
+
+<div class="explanation">
 <h2> Query Getter </h2>
-<br/>
+
+<p>
+Use this form to submit a new query, which will be run in the background. Be aware that queries of external databases may take some time, and involve scraping outside websites and downloading large amounts of information. 
+<p>It is recommended that you develop a query at the external page (<a href="http://apps.webofknowledge.com/WOS_AdvancedSearch_input.do?SID=3CWPGcaiOusPROlzkHF&product=WOS&search_mode=AdvancedSearch">Web of Science</a> or <a href="https://www.scopus.com/search/form.uri?display=advanced">Scopus</a>). When you enter it here, the server will type it into the box on the relevant page, download bibliographic information about all results, and upload them to the server where they can be analysed in more detail.
+<p>Note that larger queries (more than 2000 results in any single year) cannot currently be carried out in Scopus.
+<p>Choose the source "internal" to compare and combine two existing queries, identified by their IDs, using the operators "NOT" and "AND"; e.g. "36 AND 42", or "42 NOT 36".
+</p>
 <form action="{% url 'scoping:doquery' %}" method="post">
   {% csrf_token %}
 
@@ -86,6 +114,7 @@
   <input type="hidden" name="qtype" value="default"></input>
 
   <h4> Query Source </h4>
+
 
     <select name="qdb">
         <option value="WoS">Web of Science</option>
@@ -100,6 +129,8 @@
   <input type="submit" value="Search Query" />
 </form>
 </div>
+<p>
+</div>
 </div>
 </body>
 
@@ -108,8 +139,8 @@
 $(".field_name").click(function() {
     user = $(this).attr('name')
     $(this).toggleClass('active')
-    console.log($('*[data-name="'+user+'"]'))
     $('*[data-name="'+user+'"]').toggleClass('hidden')
+    $('*[data-tech="'+user+'"]').toggleClass('thidden')
     console.log(user)
 })
 

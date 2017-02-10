@@ -36,4 +36,9 @@ urlpatterns = [
     url(r'^review/(?P<qid>[0-9]+)$', views.review_docs, name='review_docs'),
     url(r'^review/(?P<qid>[0-9]+)/(?P<d>[0-9]+)$', views.review_docs, name='review_docs'),
     url(r'^maybe/(?P<qid>[0-9]+)/(?P<d>[0-9]+)$', views.maybe_docs, name='maybe_docs'),
+    url(r'^add_note', views.add_note, name='add_note'),
+    url(r'^doc_tech', views.doc_tech, name='doc_tech'),
+    url(r'^download/(?P<qid>[0-9]+)', views.download, name='download'),
+
+
 ]
