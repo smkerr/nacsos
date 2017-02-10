@@ -455,6 +455,40 @@ def querying(request, qid, substep, docadded):
     return HttpResponse(template.render(context, request))
 
 ############################################################
+## SBS - Set default ownership to current user
+
+@login_required
+def sbs_allocateDocsToUser(request,qid):
+    
+    #Get query
+    query = Query.objects.get(pk=qid)
+
+    # Get associated docs
+    docs = Doc.objects.filter(query=query.id)
+
+    # Define new tag
+    tag = Tag(
+        title = "sbs_"+query.title+"_"+request.user,
+        text  = "",
+        query = query.id
+    )
+    tag.save()
+
+    # Population Docownership table
+    for doc in docs:
+        docown = DocOwnership(
+            doc = doc.UT,
+            user = request.user,
+            query = query.id,
+            tag = tag.id
+        )
+        docown.save()
+
+    # Set all documents to keep status
+
+    return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': q.id}))
+
+############################################################
 ## Query homepage - manage tags and user-doc assignments
 
 @login_required
@@ -579,10 +613,23 @@ def userpage(request):
 ##################################################
 ## Exclude docs from snowballing session
 @login_required
+def sbsKeepDoc(request,qid,did):
+
+    #Set doc review to 0
+    docs = DocOwnership.objects.all(doc=did, query=qid, user=request.user)
+
+    print(docs)
+
+
+    return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': qid}))
+
+##################################################
+## Exclude docs from snowballing session
+@login_required
 def sbsExcludeDoc(request,qid,did):
 
     #Set doc review to 0
-    docs = DocOwnership.objects.all(doc=did, query=qid, user=user)
+    docs = DocOwnership.objects.all(doc=did, query=qid, user=request.user)
  
     print(docs)
     
@@ -601,6 +648,7 @@ def doclist(request,qid):
 
     query = Query.objects.get(pk=qid)
     qdocs = Doc.objects.filter(query__id=qid)
+
     all_docs = qdocs
     ndocs = all_docs.count()
 
@@ -643,7 +691,7 @@ def doclist(request,qid):
         'docs': docs,
         'fields': fields,
         'basic_fields': basic_fields,
-        'ndocs': ndocs
+        'ndocs': ndocs,
     }
     return HttpResponse(template.render(context, request))
 
@@ -813,9 +861,6 @@ def sortdocs(request):
             d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
         except:
             pass
-
-
-
 
     response = {
         'data': list(docs),
