@@ -46,7 +46,7 @@
                             <br/>
                             <a href="/scoping/dodocadd?qid={{query.id}}&db={{query.database}}"><button>Add Documents</button></a>
                         {% else %}
-                            <p><a href="../../docs/{{query.id}}">View the documents</a>
+                            <p><a href="../../../docs/{{query.id}}">View the documents</a>
                         {% endif %}
                     {% else %}
                         {% if substep == "1" %}
@@ -58,12 +58,12 @@
                             {% endif %}
                         {% else %}
                             <p>Looks like it's done!</p>
-                            {% if doclength == 0 %}
+                            {% if docadded != "1" %}
                                 <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now?
                                 <br/>
                                 <a href="/scoping/dodocadd?qid={{query.id}}&db={{query.database}}"><button>Add References missing information</button></a>
                             {% else %}
-                                <p><a href="../../docs/{{query.id}}">View the references</a>
+                                <p><a href="../../../docs/{{query.id}}">View the references</a>
                             {% endif %}
                         {% endif %}
                     {% endif %}

@@ -245,7 +245,7 @@ def start_snowballing(request):
     # run "scrapeQuery.py" on the text file in the background
     subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
 
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1, 'docadded': 0}))
 
 
 #########################################################
@@ -308,7 +308,7 @@ def dodocadd(request):
 
 
     #return HttpResponse(upload)
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': 0}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': 0, 'docadded': 1}))
 
 
 
@@ -323,7 +323,7 @@ def dodocrefadd(request):
 
     # Create reference query
     q2 = Query(
-        title=q.title+"_backward_"+str(q.step)+"_2",
+        title=str.split(q.title, "_")[0]+"_backward_"+str(q.step)+"_2",
         database=db,
         type="backward",
         text="",
@@ -360,30 +360,13 @@ def dodocrefadd(request):
         time.sleep(2)
 
     #return HttpResponse(upload)
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q2.id, 'substep': 2}))
-
-
-#########################################################
-## Add the documents to the database
-@login_required
-def dorefadd(request):
-    qid = request.GET.get('qid',None)
-
-    upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
-
-    subprocess.Popen(["python3", upload, qid])
-
-    time.sleep(2)
-
-
-    #return HttpResponse(upload)
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': 2}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q2.id, 'substep': 2, 'docadded': 1}))
 
 #########################################################
 ## Page views progress of query scraping
 
 @login_required
-def querying(request, qid, substep):
+def querying(request, qid, substep, docadded):
 
     template = loader.get_template('scoping/query_progress.html')
 
@@ -460,7 +443,8 @@ def querying(request, qid, substep):
             'docs': docs,
             'doclength': doclength,
             'query': query,
-            'substep':substep
+            'substep':substep,
+            'docadded':docadded
         }
 
     return HttpResponse(template.render(context, request))
@@ -587,6 +571,14 @@ def userpage(request):
     }
     return HttpResponse(template.render(context, request))
 
+##################################################
+## Exclude docs from snowballing session
+@login_required
+def sbsExcludeDoc(request,qid):
+
+    #Set doc review to 0
+
+    return HttpResponseRedirect(reverse('scoping:review_docs', kwargs={'qid': qid,'d': tdocs}))
 
 ##################################################
 ## View all docs
