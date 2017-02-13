@@ -35,10 +35,16 @@ class Technology(models.Model):
     name = models.TextField(null = True, verbose_name="Technology Name")
     description = models.TextField(null=True, verbose_name="Technology Description")
 
+    def __str__(self):
+      return self.name
+
 class Tag(models.Model):
     title = models.TextField(null=True, verbose_name="Tag Title")
     text = models.TextField(null=True, verbose_name="Tag Text")
     query = models.ForeignKey('Query',null=True, verbose_name="TagQuery")
+
+    def __str__(self):
+      return self.title
 
 class Doc(models.Model):
     UT = models.CharField(max_length=240,db_index=True,primary_key=True)
@@ -64,6 +70,9 @@ class Note(models.Model):
     text = models.TextField(null=True)
     class Meta:
         ordering = ['date']
+
+    def __str__(self):
+      return self.doc
 
 class DocOwnership(models.Model):
 
@@ -92,6 +101,9 @@ class DocOwnership(models.Model):
         verbose_name="Relevance"
     )
 
+    def __str__(self):
+      return self.doc
+
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")
     AU = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author")
@@ -99,11 +111,17 @@ class DocAuthInst(models.Model):
     institution = models.CharField(max_length=150, db_index=True, verbose_name="Institution Name")
     position = models.IntegerField(verbose_name="Author Position")
 
+    def __str__(self):
+      return self.doc
+
 # A simple form of the table below, just to store the dois as we parse them
 class DocReferences(models.Model):
     doc = models.ForeignKey('Doc',null=True)
     refdoi = models.CharField(null=True, max_length=150, verbose_name="DOI")
     refall = models.TextField(null=True, verbose_name="All reference information") #in case we want to use this later...
+
+    def __str__(self):
+      return self.doc
 
 #class DocCites(models.Model):
 #    doc = models.ForeignKey('Doc',null=True, related_name='doc')
