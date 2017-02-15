@@ -113,7 +113,7 @@ def snowball(request):
 ## Test the SSH connection
 def ssh_test():
 
-    NoSSHTest = True
+    NoSSHTest = False 
 
     if NoSSHTest :
       ssh_working = True
@@ -260,6 +260,72 @@ def start_snowballing(request):
 
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1, 'docadded': 0}))
 
+#########################################################
+## Start snowballing
+import subprocess
+import sys
+@login_required
+def do_snowballing(request,qid):
+
+    ssh_test()
+ 
+    # Get current query
+    query = Query.objects.get(id=qid)
+    
+    qtitle  = str.split(query.title,"_")[0] 
+    qtype   = 'backward'
+    qstep   = query.step
+    qdb     = "WoS"
+    curdate = timezone.now()
+    sbsid   = query.snowball 
+
+    # Generate query from selected documents
+    #TODO: Tag?
+    docs    = DocOwnership.objects.filter(query_id=qid, user_id=request.user, relevant=1)
+    docdois = []
+    for doc in docs:
+        docdoi = WoSArticle.objects.get(doc_id=doc.doc_id)
+        docdois.append(docdoi.di)
+    doiset  = set(docdois)
+    if (len(doiset) > 0):
+        # Generate query
+        qtext   = 'DO = ("' + '" OR "'.join(doiset) + '")' 
+
+        print(qtext)
+
+        #  create a new query record in the database
+        q = Query(
+            title=qtitle+"_backward_"+str(qstep+1)+"_1",
+            database=qdb,
+            type=qtype,
+            text=qtext,
+            date=curdate,
+            snowball=sbsid,
+            step=qstep+1,
+            substep=1
+        )
+        q.save()
+
+        # write the query into a text file
+        fname = "/queries/"+str(q.id)+".txt"
+        with open(fname,"w") as qfile:
+            qfile.write(qtext)
+
+        time.sleep(1)
+
+        # run "scrapeQuery.py" on the text file in the background
+        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
+
+        return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1, 'docadded': 0}))
+
+    else :
+        print("No document selected. Select at least one document before snowballing.")
+        return HttpResponseRedirect(reverse('scoping:query', kwargs={'qid': q.id}))
+      
+
+#    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1, 'docadded': 0}))
+#    return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': qid}))
+
 
 #########################################################
 ## Delete the query
@@ -310,6 +376,8 @@ def dodocadd(request):
     qid = request.GET.get('qid',None)
     db = request.GET.get('db',None)
 
+    q = Query.objects.get(pk=qid)
+
     if db=="WoS":
         upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
     if db=="scopus":
@@ -319,9 +387,13 @@ def dodocadd(request):
 
     time.sleep(2)
 
+    if q.type == "default":
+        substep = 0
+    else:
+        substep = 2
 
     #return HttpResponse(upload)
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': 0, 'docadded': 1}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': substep, 'docadded': 1}))
 
 
 
@@ -330,9 +402,11 @@ def dodocadd(request):
 @login_required
 def dodocrefadd(request):
     qid = request.GET.get('qid',None)
-    db = request.GET.get('db',None)
+    #db = request.GET.get('db',None)
 
     q = Query.objects.get(pk=qid)
+
+    db = q.database
 
     # Create reference query
     q2 = Query(
@@ -365,6 +439,7 @@ def dodocrefadd(request):
 
 
     print("Check if "+fname+" exists...")
+    adddocs = 1
     if os.path.isfile(fname):
         print("Yes... Start scraping")
         # run "scrapeQuery.py" on the text file in the background
@@ -372,8 +447,10 @@ def dodocrefadd(request):
 
         time.sleep(2)
 
+        adddocs = 0
+
     #return HttpResponse(upload)
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q2.id, 'substep': 2, 'docadded': 1}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q2.id, 'substep': 2, 'docadded': adddocs}))
 
 #########################################################
 ## Page views progress of query scraping
@@ -468,8 +545,13 @@ def querying(request, qid, substep, docadded):
 @login_required
 def sbs_allocateDocsToUser(request,qid):
     
+    DEBUG = False 
+
     #Get query
     query = Query.objects.get(pk=qid)
+
+    if DEBUG:
+        print("Getting query: "+str(query.title)+" ("+str(qid)+")")
 
     # Get associated docs
     docs = Doc.objects.filter(query=qid)
@@ -651,6 +733,8 @@ def sbsExcludeDoc(request,qid,did):
 def doclist(request,qid):
 
     template = loader.get_template('scoping/docs.html')
+  
+    print(str(qid))
 
     if qid == 0 or qid=='0':
         qid = Query.objects.all().last().id
@@ -665,6 +749,10 @@ def doclist(request,qid):
     docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
 #    else:
 #        docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py', 'docownership__'+str(request.user)))
+
+    print(len(docs))
+    print(docs)
+
 
     fields = []
 
@@ -866,7 +954,7 @@ def sortdocs(request):
                 #print(uname)
                 doc = Doc.objects.get(UT=d['UT'])
                 #print(d['UT'])
-                do = DocOwnership.objects.filter(doc_id=d['UT'],user__username=uname)
+                do = DocOwnership.objects.filter(doc_id=d['UT'],query__id=qid,user__username=uname)
                 if do.count() > 0:
                     d[u] = do.first().relevant
                     text = do.first().get_relevant_display()
@@ -899,14 +987,24 @@ def cycle_score(request):
     user = int(request.GET.get('user',None))
     tag = int(request.GET.get('tag',None))
 
+    query = Query.objects.get(id=qid)
 
-    if score == 4:
-        new_score = 0
+    if query.type == "default":
+        if score == 4:
+            new_score = 0
+        else:
+            new_score = score+1
+        docown = DocOwnership.objects.filter(query__id=qid, doc__UT=doc_id, user__id=user, tag__id=tag).first()
+        docown.relevant = new_score
+        docown.save()
     else:
-        new_score = score+1
-    docown = DocOwnership.objects.filter(query__id=qid, doc__UT=doc_id, user__id=user, tag__id=tag).first()
-    docown.relevant = new_score
-    docown.save()
+        if score == 2:
+            new_score = 1
+        else:
+            new_score = score+1
+        docown = DocOwnership.objects.filter(query__id=qid, doc__UT=doc_id, user__id=user, tag__id=tag).first()
+        docown.relevant = new_score
+        docown.save()
 
     return HttpResponse("")
 
