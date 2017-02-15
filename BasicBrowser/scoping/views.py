@@ -472,29 +472,28 @@ def sbs_allocateDocsToUser(request,qid):
     query = Query.objects.get(pk=qid)
 
     # Get associated docs
-    docs = Doc.objects.filter(query=query.id)
+    docs = Doc.objects.filter(query=qid)
 
     # Define new tag
     tag = Tag(
-        title = "sbs_"+query.title+"_"+request.user,
+        title = "sbs_"+str(query.title)+"_"+str(request.user),
         text  = "",
-        query = query.id
+        query = query
     )
     tag.save()
 
     # Population Docownership table
     for doc in docs:
         docown = DocOwnership(
-            doc = doc.UT,
-            user = request.user,
-            query = query.id,
-            tag = tag.id
+            doc      = doc,
+            user     = request.user,
+            query    = query,
+            tag      = tag,
+            relevant = 1    # Set all documents to keep status by default
         )
         docown.save()
 
-    # Set all documents to keep status
-
-    return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': q.id}))
+    return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': qid}))
 
 ############################################################
 ## Query homepage - manage tags and user-doc assignments
@@ -662,7 +661,10 @@ def doclist(request,qid):
     all_docs = qdocs
     ndocs = all_docs.count()
 
+#    if (query.type == "default") :
     docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
+#    else:
+#        docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py', 'docownership__'+str(request.user)))
 
     fields = []
 
@@ -694,7 +696,7 @@ def doclist(request,qid):
         if f.name !="doc" and f.name !="query":
             fields.append({"path": path, "name": f.verbose_name})
 
-    basic_fields = ['Title', 'Abstract', 'Year']
+    basic_fields = ['Title', 'Abstract', 'Year'] #, str(request.user)]
 
     context = {
         'query': query,
