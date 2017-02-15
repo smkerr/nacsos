@@ -15,11 +15,22 @@ def get(r, k):
     return(x)
 
 def add_doc(r):
+
+    DEBUG = True
+
+    if DEBUG:
+        print("  >> Entering add_doc() with document id: "+str(r['UT']))
+
     django.db.connections.close_all()
     try: # if this doc is in the database, do nothing
         doc = Doc.objects.get(UT=r['UT'])
+        doc.save()
         doc.query.add(q)
+        if DEBUG:
+            print("     > Document is already in the DB. Add to query table only.")
     except: # otherwise, add it!
+        if DEBUG:
+            print("     > Document is new. Add to doc, query and WoSArticle tables.")
         doc = Doc(UT=r['UT'])
         doc.title=get(r,'TI')
         doc.content=get(r,'AB')

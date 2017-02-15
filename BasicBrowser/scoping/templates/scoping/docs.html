@@ -70,9 +70,15 @@
           </table>
           <button id="dofilter">Filter</button>
         </p>
+      {% if query.type == "default" %}
         <p style="text-align:left">
           Save this filter as <input type="text" id="tag_title"> <button onclick="savetag()">Save</button>
         </p>
+      {% endif %}
+
+      {% if query.type != "default" %}
+        <div><a href="/scoping/do_snowballing/{{ query.id }}"><button type="button">Snowball the selected documents</button></a></div>
+      {% endif %}
 
         <p style="text-align:left">Showing documents 1-100 of <span id="doc_count">{{ ndocs }}</span></p> 
         <br/>
@@ -84,10 +90,12 @@
                 <td class="field" name="{{f.path}}">{{f.name}}<span class="uparrow sort">&uarr;</span><span class="downarrow sort">&darr;</span></td>
               {% endif %}
             {% endfor %}
+<!--
             {% if query.type != "default" %}
               <td>Keep</td>
               <td>Exclude</td>
             {% endif %}
+-->
           </tr>
           {% for doc in docs %}
           <tr class="datarow">
@@ -96,10 +104,12 @@
                 <td class="data">{{doc|keyvalue:f.path}}</td>                
               {% endif %}
             {% endfor %}
+<!--
             {% if query.type != "default" %}
               <td><a href="scoping:sbsKeepDoc?qid={{query.id}}&did={{doc.UT}}"><button type="button">Keep</button></a></td>
               <td><a href="scoping:sbsExcludeDoc?qid={{query.id}}&did={{doc.UT}}"><button type="button">Exclude</button></a></td>
             {% endif %}
+-->
 <!--
 			<td class="data">{{ doc.title }}</td>
             <td class="data">{{ doc.content }}</td>
@@ -109,6 +119,10 @@
         {% endfor %}
       </table>
 
+      {% if query.type != "default" %}
+        <div><a href="/scoping/do_snowballing/{{ query.id }}"><button type="button">Snowball the selected documents</button></a></div>
+      {% endif %}
+
       <br/><hr/><br/>
 
     </div>
@@ -117,19 +131,17 @@
 
 <script>
 
+var user = $("[name='docownership__{{user.username}}'")
+
+console.log(user)
+
 var qid = {{ query.id }}
 var qtype = "{{ query.type }}"
 
 console.log(qid)
 
 var fields = ['title','content','PY']
-/*
-if (qtype == "default") {
-    var fields = ['title','content','PY']
-} else {
-    var fields = ['title','content','PY', 'docownership__{{user}}']
-}
-*/
+
 $(".field").data("sortdir","-")
 
 $(".uparrow").click(function() {
@@ -306,12 +318,12 @@ function update_fields() {
 		    update_fields()
 		})
 
-            /* SBS exclude column*/
+            /* SBS exclude column
             if (qtype != "default") {
               $("table.light tr:first").append('<td class="field" name="sbsexclude">Exclude</td>');
               $("table.light tr:not(:first)").append('<td class="data"><a href=""><button type="button">Exclude</button></a></td>');
             }
-
+            */ 
 	    $('body').toggleClass('waiting');
         }
     })
@@ -334,6 +346,11 @@ function cyclescore(el) {
 	    $('body').toggleClass('waiting');
 	}
     })
+}
+
+// For snowballing queries add user (creator) field
+if (qtype != "default") {
+  user.click()
 }
 
 </script>

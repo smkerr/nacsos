@@ -19,15 +19,25 @@ def get(r, k):
 
 def add_doc(r):
 
+    DEBUG = True
+
+    if DEBUG:
+        print("  >> Entering add_doc() with document id: "+str(r['UT']))
+
     django.db.connections.close_all()
-    try: # if this doc is in the database, do nothing
+    try: # if this doc is in the database, just add to query
+        if DEBUG:
+            print("     > Document is already in the DB. Add to query table only.")
         doc = Doc.objects.get(UT=r['UT'])
         doc.query.add(q)
+        doc.save()
     except: # otherwise, add it!
-        doc = Doc(UT=r['UT'])
-        doc.title=get(r,'TI')
-        doc.content=get(r,'AB')
-        doc.PY=get(r,'PY')
+        if DEBUG:
+            print("     > Document is new. Add to doc, query and WoSArticle tables.")
+        doc         = Doc(UT=r['UT'])
+        doc.title   = get(r,'TI')
+        doc.content = get(r,'AB')
+        doc.PY      = get(r,'PY')
         doc.save()
         doc.query.add(q)
         article = WoSArticle(doc=doc)
@@ -44,8 +54,6 @@ def add_doc(r):
 
         article.save()
 
-
-    
         ## Add authors
         for a in range(len(r['AF'])):
             af = r['AF'][a]
@@ -82,7 +90,13 @@ def add_doc(r):
     # Now that the article's saved, we can look at the references....
     # these are in a list accessible by get(r,'CR')
     refs = get(r,'CR')
+    if DEBUG:
+            print("     > The document has the following references:")
+    skip = 0
+    doi_lookups_loc = []
     for r in refs:
+        if DEBUG:
+            print("       - "+str(r))
         #print(r)
         # Add them to a table of docs to references (a simple table of just the dois)
         dr = DocReferences(doc=doc)
@@ -91,11 +105,14 @@ def add_doc(r):
             doi = re.search(", DOI ([^ ]*)",r).group(1)
             doi = re.sub('^\[','',doi) ## This is to deal with lists !! of dois
             dr.refdoi=doi
+            if DEBUG:
+                print("         . DOI: "+str(doi))
             #print(doi)
             # Is this document already in our database?????
             doidoc = Doc.objects.filter(wosarticle__di=doi)
             if len(doidoc) > 0:
-                print(doidoc)
+                if DEBUG:
+                    print("         . DOI exists in DB! Add reference to doc and query2.")
                 doidoc = doidoc.first()
                 doc.references.add(doidoc)
                 doc.save() # If so, create the link already!
@@ -105,14 +122,38 @@ def add_doc(r):
                 doidoc.save()
 
             else: # otherwise, add it to a list of docs to lookup
+                if DEBUG:
+                    print("         . DOI not in DB! Add to lookup list.")
                 doi_lookups.append(doi)
+                doi_lookups_loc.append(doi)                 
         except: 
+            if DEBUG:
+                print("         . No DOI found for this record. Skipping...")
+            skip+=1
             pass 
         dr.save() #uncomment this when we want to actually save these
 
+    refindb = len(refs) - skip - len(doi_lookups_loc)
+
+    global totnbrefs
+    global totnbrefsindb
+    global totnbskips
+
+    totnbrefs     += len(refs)
+    totnbrefsindb += refindb
+    totnbskips    += skip
+
+    if DEBUG:
+        print("      > Number of references              : "+str(len(refs)))
+        print("      > Number of discarded references (%): "+str(skip)+" ("+str(skip/len(refs)*100)+"%)")
+        print("      > Number of references in DB (%)    : "+str(refindb)+" ("+str(refindb/len(refs)*100)+"%)")
+        print("      > Number of references to scrape (%): "+str(len(doi_lookups_loc))+" ("+str(len(doi_lookups_loc)/len(refs)*100)+"%)")
 
         # We can access a documents references by doc.references.all()
         # And get its citations by doc.doc_set.all()
+
+    if DEBUG:
+        print("  << Exiting add_doc()")
         
 #############################################################################
 #############################################################################
@@ -120,11 +161,19 @@ def add_doc(r):
         
 
 def main():
-    # Get query ID from kwargs
-    qid  = sys.argv[1]
-    q2id = sys.argv[2]
+    
+    DEBUG = True
 
-    print("The reference query has the following ID: "+str(q2id))
+    if DEBUG:
+        print(">> Entering main() function in upload_docrefs.py")
+
+    # Get query ID from kwargs
+    qid  = sys.argv[1] # Query containing list of documents
+    q2id = sys.argv[2] # Query containing list of references
+
+    if DEBUG:
+        print("  - The document query has the following ID: "+str(qid))
+        print("  - The reference query has the following ID: "+str(q2id))
 
     ## Get queries
     global q
@@ -134,20 +183,25 @@ def main():
 
     #Doc.objects.filter(query=qid).delete() # doesn't seem like a good idea
 
-    i=0
+    i         = 0
     n_records = 0
     records   = []
     record    = {}
     mfields   = ['AU','AF','CR','C1']
 
     global doi_lookups # make a list of dois to lookup (global so accessible inside the parallel function)
+    global totnbrefs
+    global totnbrefsindb
+    global totnbskips
 
-    doi_lookups = []
+    totnbrefs     = 0
+    totnbrefsindb = 0
+    totnbskips    = 0
+ 
+    doi_lookups   = []
 
     max_chunk_size = 2000
     chunk_size = 0
-
-    print(q.title)
 
     title = str(q.id)
 
@@ -163,8 +217,7 @@ def main():
                 add_doc(record)
                 n_records +=1
                 record = {} 
-               
-           
+              
                 records.append(record)
                 continue
             if re.match("^EF",line): #end of file, stop now
@@ -195,19 +248,28 @@ def main():
     #os.remove("/queries/"+title+".txt")
     #os.remove("/queries/"+title+".log")
 
+    print("  > Total Number of references processed    : "+str(totnbrefs))
+    print("  > Total Number of references in DB (%)    : "+str(totnbrefsindb)+" ("+str(totnbrefsindb/totnbrefs*100)+"%)")
+    print("  > Total Number of references to scrape (%): "+str(len(doi_lookups))+" ("+str(len(doi_lookups)/totnbrefs*100)+"%)")
+    print("  > Total Number of discarded references (%): "+str(totnbskips)+" ("+str(totnbskips/totnbrefs*100)+"%)")
+
+    # Get list of references to look up
     doiset = set(doi_lookups)     # unique values
-    print(doiset)
-    print("Length doiset #1:")
-    print(len(doiset))
+    if DEBUG:
+        print("  - List of references to look up:")
+        print(doiset)
     if "DOI" in doiset:
-      doiset.remove("DOI") # remove element DOI
-      print("Length doiset #2:")
-      print(len(doiset))
-    query = 'DO = ("' + '" OR "'.join(doiset) + '")'
-    print(query)
+        doiset.remove("DOI") # remove element DOI (if necessary)
 
     if (len(doiset) > 0):
-      print("Need extra WoS access to complete missing information on references...")
+      # Generate query
+      query = 'DO = ("' + '" OR "'.join(doiset) + '")'
+      if DEBUG:
+          print("  - The following query will be sent to the scraper: "+str(query))
+
+      # Save query text
+      q2.text = query
+      q2.save()
 
       ## Now we can write this to a text file and continue......
       # write the query into a text file
@@ -215,6 +277,11 @@ def main():
       with open(fname,"w") as qfile:
         qfile.write(query)
 
+      if DEBUG:
+          print("  - Query written in file: "+str(fname))
+
+    if DEBUG:
+        print("<< Exiting main() function in upload_docrefs.py")
 
 
 if __name__ == '__main__':
