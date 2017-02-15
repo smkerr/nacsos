@@ -123,7 +123,13 @@ var qtype = "{{ query.type }}"
 console.log(qid)
 
 var fields = ['title','content','PY']
-
+/*
+if (qtype == "default") {
+    var fields = ['title','content','PY']
+} else {
+    var fields = ['title','content','PY', 'docownership__{{user}}']
+}
+*/
 $(".field").data("sortdir","-")
 
 $(".uparrow").click(function() {
