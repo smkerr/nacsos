@@ -60,16 +60,30 @@ def add_terms(vocab):
         gid = x[0]
         term = Term(title=title,run_id=run_id)  
         term.save()
-    term_diff = term.term - gid
+
+
+def add_features(vocab):
+    vocab_ids = []
+    for x in range(len(vocab)):
+        title = vocab[x]
+        gid = x
+        term = Term(title=title,run_id=run_id)  
+        term.save()
+        vocab_ids.append(term.pk)
+    return(vocab_ids)
+
    
 
 def add_topics(no_topics):
     global t_diff
+    topic_ids = []
     for t in range(0,no_topics):
         title = "Topic " + str(t+1)
         topicrow = Topic(title=title,run_id=run_id)
         topicrow.save()
+        topic_ids.append(topicrow.pk)
     t_diff = topicrow.topic - t
+    return(topic_ids)
 
 
 def add_doc(title,content,docID,UT,PY,AU):
@@ -194,6 +208,14 @@ def add_doc_topic(doc_id, topic_id, score, scaled_score):
     dt = DocTopic(doc=doc, topic=topic, score=score, scaled_score=scaled_score,run_id=run_id)
     dt.save()
 
+def add_doc_topic_sk(doc_id, topic_id, score, scaled_score):
+    if score < 0.001:
+        return
+    doc = Doc.objects.get(UT=doc_id)
+    topic = Topic.objects.get(topic=topic_id)
+    dt = DocTopic(doc=doc, topic=topic, score=score, scaled_score=scaled_score,run_id=run_id)
+    dt.save()
+
 
 def clear_topic_terms(topic):
     topic = topic+t_diff
@@ -208,6 +230,13 @@ def add_topic_term(topic_id, term_no, score):
         term_no += term_diff
         topic = Topic.objects.get(topic=topic_id)
         term = Term.objects.get(term=term_no)
+        tt = TopicTerm(topic=(topic), term=(term), score=score,run_id=run_id)
+        tt.save()
+
+def add_topic_term_sk(topic_id, term_no, score):
+    if score >= .005:
+        topic = Topic.objects.get(pk=topic_id)
+        term = Term.objects.get(pk=term_no)
         tt = TopicTerm(topic=(topic), term=(term), score=score,run_id=run_id)
         tt.save()
 

@@ -192,16 +192,21 @@ class RunStats(models.Model):
     LDA = 'LD'
     HLDA = 'HL'
     DTM = 'DT'
+    NMF = 'NM'
     METHOD_CHOICES = (
         (LDA, 'lda'),
         (HLDA, 'hlda'),
         (DTM, 'dtm'),
+        (NMF,'nmf'),
     )
     method = models.CharField(
         max_length=2,
         choices=METHOD_CHOICES,
         default=LDA,
     )
+    error = models.FloatField(null=True)
+    errortype = models.TextField(null=True)
+    iterations = models.IntegerField(null=True)
 
 class Settings(models.Model):
     run_id = models.IntegerField()
