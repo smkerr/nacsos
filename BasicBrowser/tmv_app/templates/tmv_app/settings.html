@@ -26,7 +26,7 @@
 
     <div id="main">
         <table>
-            <form action="/settings/apply" method="post">
+            <form action="/tmv_app/settings/apply" method="post">
                 {% csrf_token %} 
                 <label for="id_doc_topic_score_threshold">Doc-Topic score threshold</label>
                   <input type="text" name="doc_topic_score_threshold" id="id_doc_topic_score_threshold" value="{{ settings.doc_topic_score_threshold }}" />

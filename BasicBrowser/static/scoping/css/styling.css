@@ -573,7 +573,7 @@ ul {
   list-style-type: none;
 }
 
-.hidden {
+.hidden, .thidden {
 	position: fixed;
 	display: none;
 	bottom: 0;
@@ -581,6 +581,8 @@ ul {
 	width: 100%;
 	background-color: #000;
 }
+
+
 
 .hidden .count {
 	background-color: #416DCC;
@@ -761,7 +763,7 @@ tr.active_run {
 }
 
 [data-active="true"] {
-    background-color: #fbb4ae;
+    background-color: #fbb4ae !important;
 }
 
 [data-active="false"] {
@@ -771,6 +773,24 @@ tr.active_run {
 [data-active="true"], [data-active="false"] {
     cursor:pointer;
     padding: 4px;
+}
+
+.field_name {
+    cursor: pointer;
+    padding: 6px;
+    margin: 6px 2px;
+    white-space:nowrap;
+    background-color: #DCDCDC;
+    border: 1px solid black;
+    border-radius: 2px;
+}
+
+.field_name.active {
+    background-color: #fbb4ae !important;
+}
+
+p#field_container {
+ line-height: 220%;
 }
 
 .uparrow, .downarrow {
@@ -957,6 +977,28 @@ output {
 	margin: 20px;
 	margin-left: auto;
     margin-right: auto;
+    width: 95%;
+	border: 1px solid grey;
+	border-radius: 5px;
+}
+
+div.noteform {
+	background: white;
+	padding: 15px;
+	margin: 20px;
+	margin-left: auto;
+    margin-right: auto;
+    width: 80%;
+	border: 1px solid grey;
+	border-radius: 5px;
+}
+
+div.note {
+	background: white;
+	padding: 15px;
+	margin: 20px;
+	margin-left: auto;
+    margin-right: auto;
     width: 80%;
 	border: 1px solid grey;
 	border-radius: 5px;
@@ -1000,3 +1042,13 @@ span.username {
 }
 
 .waiting * { cursor: 'wait' !important}
+
+div.explanation {
+    width:60%;
+	margin-left: auto;
+    margin-right: auto;
+    border: 3px solid #FFE5CC;
+    border-radius: 5px;
+    background-color: white;
+    padding: 10px;
+}
