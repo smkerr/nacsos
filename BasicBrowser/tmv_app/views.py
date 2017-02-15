@@ -134,8 +134,11 @@ def topic_detail(request, topic_id):
     topic_template = loader.get_template('tmv_app/topic.html')
     
     topic = Topic.objects.get(topic=topic_id,run_id=run_id)
-    topicterms = Term.objects.filter(topicterm__topic=topic.topic, run_id=run_id, topicterm__score__gt=0.01).order_by('-topicterm__score')
-    doctopics = Doc.objects.filter(doctopic__topic=topic.topic,doctopic__run_id=run_id).order_by('-doctopic__scaled_score')[:50]
+    topicterms = Term.objects.filter(topicterm__topic=topic.topic, run_id=run_id, topicterm__score__gt=0.00001).order_by('-topicterm__score')
+    if Settings.objects.first().doc_topic_scaled_score==True:
+        doctopics = Doc.objects.filter(doctopic__topic=topic.topic,doctopic__run_id=run_id).order_by('-doctopic__scaled_score')[:50]
+    else:
+        doctopics = Doc.objects.filter(doctopic__topic=topic.topic,doctopic__run_id=run_id).order_by('-doctopic__score')[:50]
     
     terms = []
     term_bar = []
@@ -147,7 +150,7 @@ def topic_detail(request, topic_id):
         score = tt.topicterm_set.all()[0].score
         
         terms.append(term)
-        if score >= .01:
+        if score >= .00001:
             term_bar.append((True, term, score * 100))
             remainder -= score
         else:
@@ -302,7 +305,8 @@ def doc_detail(request, doc_id):
     ntopic = 0
     for dt in doctopics:
 #        if ((not dt_thresh_scaled and dt.score >= dt_threshold) or (dt_thresh_scaled and dt.scaled_score*100 >= dt_threshold)):
-        if (dt_thresh_scaled and dt.scaled_score*80 >= dt_threshold):
+        if ((dt_thresh_scaled and dt.scaled_score*80 >= dt_threshold) or
+            (not dt_thresh_scaled and dt.score >= dt_threshold)):
             topic = Topic.objects.get(topic=dt.topic_id)
             ntopic+=1
             topic.ntopic = "t"+str(ntopic)
@@ -710,6 +714,20 @@ def update_year_topic_scores(session):
                 score=Count('doc')
             )
             HTopicYear.objects.filter(run_id=run_id).delete()
+            for ytt in ytts:
+                yttyear = ytt['doc__PY']
+                topic = HTopic.objects.get(topic=ytt['topic'])
+                for yt in yts:
+                    ytyear = yt['doc__PY']
+                    if yttyear==ytyear:
+                        yeartotal = yt['yeartotal']
+                try:
+                    topicyear = HTopicYear.objects.get(topic=topic,PY=yttyear, run_id=run_id)
+                except:
+                    topicyear = HTopicYear(topic=topic,PY=yttyear,run_id=run_id)
+                topicyear.score = ytt['score']
+                topicyear.count = yeartotal
+                topicyear.save()
         else:
             yts = DocTopic.objects.filter(doc__PY__gt=1989,run_id=run_id)  
 
@@ -721,21 +739,22 @@ def update_year_topic_scores(session):
                 score=Sum('scaled_score')
             )
             TopicYear.objects.filter(run_id=run_id).delete()
+            for ytt in ytts:
+                yttyear = ytt['doc__PY']
+                topic = Topic.objects.get(topic=ytt['topic'])
+                for yt in yts:
+                    ytyear = yt['doc__PY']
+                    if yttyear==ytyear:
+                        yeartotal = yt['yeartotal']
+                try:
+                    topicyear = TopicYear.objects.get(topic=topic,PY=yttyear, run_id=run_id)
+                except:
+                    topicyear = TopicYear(topic=topic,PY=yttyear,run_id=run_id)
+                topicyear.score = ytt['score']
+                topicyear.count = yeartotal
+                topicyear.save()
 
-        for ytt in ytts:
-            yttyear = ytt['doc__PY']
-            topic = HTopic.objects.get(topic=ytt['topic'])
-            for yt in yts:
-                ytyear = yt['doc__PY']
-                if yttyear==ytyear:
-                    yeartotal = yt['yeartotal']
-            try:
-                topicyear = HTopicYear.objects.get(topic=topic,PY=yttyear, run_id=run_id)
-            except:
-                topicyear = HTopicYear(topic=topic,PY=yttyear,run_id=run_id)
-            topicyear.score = ytt['score']
-            topicyear.count = yeartotal
-            topicyear.save()
+
 
         stats.topic_year_scores_current = True
         stats.save()
