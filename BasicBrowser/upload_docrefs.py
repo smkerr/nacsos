@@ -94,6 +94,9 @@ def add_doc(r):
             print("     > The document has the following references:")
     skip = 0
     doi_lookups_loc = []
+    au_lookups_loc  = []
+    py_lookups_loc  = []
+    so_lookups_loc  = []
     for r in refs:
         if DEBUG:
             print("       - "+str(r))
@@ -101,6 +104,14 @@ def add_doc(r):
         # Add them to a table of docs to references (a simple table of just the dois)
         dr = DocReferences(doc=doc)
         dr.refall = r
+        
+        if r[0] == "*":
+            if DEBUG:
+                print("         > Skipping (special document)")
+            skip+=1
+            continue
+
+        # Try to get DOI
         try: # try and get the doi if it's there
             doi = re.search(", DOI ([^ ]*)",r).group(1)
             doi = re.sub('^\[','',doi) ## This is to deal with lists !! of dois
@@ -133,7 +144,69 @@ def add_doc(r):
             pass 
         dr.save() #uncomment this when we want to actually save these
 
-    refindb = len(refs) - skip - len(doi_lookups_loc)
+        # Try to get AU, PY & TI
+        try: # try and get the fields
+            au = str.split(r, ",")[0].strip()
+            py = str.split(r, ",")[1].strip()
+            so = str.split(r, ",")[2].strip()
+
+            flag_problem = False
+
+            # Check validity of fields
+            test_au = re.match("^([a-zA-Z. ]*)$", au) is not None
+            if not test_au:
+                flag_problem = True
+                if DEBUG:
+                    print("         . AU doesn't look correct "+" (AU: "+str(au)+")")
+            if not py.isdigit():
+                flag_problem = True
+                if DEBUG:
+                    print("         . PY field is not a numeric "+" (PY: "+str(py)+")")
+            test_so = re.match("^([a-zA-Z0-9&. ]*)$", so) is not None
+            if not test_so:
+                flag_problem = True
+                if DEBUG:
+                    print("         . SO field doesn't look correct "+" (SO: "+str(so)+")")
+#            #dr.refdoi=doi
+            if DEBUG:
+                print("         . AU: "+str(au)+"("+str(test_au)+"), PY: "+str(py)+" ("+str(py.isdigit())+") and SO:"+str(so)+" ("+str(test_so)+")")
+            if flag_problem:
+                #skip += 1
+                if DEBUG:
+                    print("         . Problem with one of the fields. Skipping...")                
+            #print(doi)
+
+            # Is this document already in our database?????
+            #refdoc = Doc.objects.filter(wosarticle__au=au, wosarticle__py=py, wosarticle__so=so)
+
+            #if len(refdoc) > 0:
+            #    if DEBUG:
+            #        print("         . This reference exists in DB! Add reference to doc and query2.")
+            #    refdoc = refdoc.first()
+            #    doc.references.add(refdoc)
+            #    doc.save() # If so, create the link already!
+
+            #    # Add to query
+            #    doidoc.query.add(q2)
+            #    doidoc.save()
+
+            else: # otherwise, add it to a list of docs to lookup
+                if DEBUG:
+                    print("         . This reference is not in DB! Add to lookup lists.")
+                au_lookups.append(au)
+                au_lookups_loc.append(au)
+                py_lookups.append(py)
+                py_lookups_loc.append(py)
+                so_lookups.append(so)
+                so_lookups_loc.append(so)
+        except:
+            if DEBUG:
+                print("         . Current reference has less than 3 fields. Skipping...")
+            #skip+=1
+            pass
+        dr.save() #uncomment this when we want to actually save these
+       
+    refindb = len(refs) - skip - len(doi_lookups_loc) 
 
     global totnbrefs
     global totnbrefsindb
@@ -146,7 +219,7 @@ def add_doc(r):
     if DEBUG:
         print("      > Number of references              : "+str(len(refs)))
         print("      > Number of discarded references (%): "+str(skip)+" ("+str(skip/len(refs)*100)+"%)")
-        print("      > Number of references in DB (%)    : "+str(refindb)+" ("+str(refindb/len(refs)*100)+"%)")
+        print("      > Number of references in DB (%)    : "+str(refindb)+" ("+str(skip/len(refs)*100)+"%)")
         print("      > Number of references to scrape (%): "+str(len(doi_lookups_loc))+" ("+str(len(doi_lookups_loc)/len(refs)*100)+"%)")
 
         # We can access a documents references by doc.references.all()
@@ -190,6 +263,9 @@ def main():
     mfields   = ['AU','AF','CR','C1']
 
     global doi_lookups # make a list of dois to lookup (global so accessible inside the parallel function)
+    global au_lookups
+    global py_lookups
+    global so_lookups
     global totnbrefs
     global totnbrefsindb
     global totnbskips
@@ -199,6 +275,10 @@ def main():
     totnbskips    = 0
  
     doi_lookups   = []
+    au_lookups    = []
+    py_lookups    = []
+    so_lookups    = []
+
 
     max_chunk_size = 2000
     chunk_size = 0
@@ -255,6 +335,7 @@ def main():
 
     # Get list of references to look up
     doiset = set(doi_lookups)     # unique values
+
     if DEBUG:
         print("  - List of references to look up:")
         print(doiset)
@@ -262,23 +343,31 @@ def main():
         doiset.remove("DOI") # remove element DOI (if necessary)
 
     if (len(doiset) > 0):
-      # Generate query
-      query = 'DO = ("' + '" OR "'.join(doiset) + '")'
-      if DEBUG:
-          print("  - The following query will be sent to the scraper: "+str(query))
+        # Generate query
+        query = 'DO = ("' + '" OR "'.join(doiset) + '")'
 
-      # Save query text
-      q2.text = query
-      q2.save()
+        newquery = ''
+        for k in range(1,len(au_lookups)):
+            newquery += '(AU=' + str(au_lookups[k]) + ' AND PY=' + str(py_lookups[k]) + ' AND SO="' + str(so_lookups[k]) +'")'
+            if k != len(au_lookups):
+                newquery += ' OR '
 
-      ## Now we can write this to a text file and continue......
-      # write the query into a text file
-      fname = "/queries/"+str(q2id)+".txt"
-      with open(fname,"w") as qfile:
-        qfile.write(query)
+        if DEBUG:
+            print("  - The following query will be sent to the scraper: "+str(query))
+            print("  - The following query will be sent to the scraper: "+str(newquery))
 
-      if DEBUG:
-          print("  - Query written in file: "+str(fname))
+        # Save query text
+        q2.text = newquery+query
+        q2.save()
+
+        ## Now we can write this to a text file and continue......
+        # write the query into a text file
+        fname = "/queries/"+str(q2id)+".txt"
+        with open(fname,"w") as qfile:
+            qfile.write(newquery+query)
+
+        if DEBUG:
+            print("  - Query written in file: "+str(fname))
 
     if DEBUG:
         print("<< Exiting main() function in upload_docrefs.py")
