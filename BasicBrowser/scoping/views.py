@@ -833,6 +833,7 @@ def sortdocs(request):
     sort_fields = request.GET.getlist('sort_fields[]',None)
 
     tag_title = request.GET.get('tag_title',None)
+    download = request.GET.get('download',None)   
 
     # get the query
     query = Query.objects.get(pk=qid)
@@ -966,6 +967,23 @@ def sortdocs(request):
         except:
             pass
 
+    if download == "true":
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="documents.csv"'
+
+        writer = csv.writer(response)
+
+        writer.writerow(fields)
+
+        for d in docs:
+            row = [d[x] for x in fields]
+            writer.writerow(row)
+
+        #x = zu            
+
+        return response
+
+    #x = zu 
     response = {
         'data': list(docs),
         'n_docs': filt_docs.count()
