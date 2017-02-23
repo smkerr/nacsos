@@ -1,5 +1,5 @@
 from django.shortcuts import render
-import os, time, math, itertools, csv
+import os, time, math, itertools, csv, random
 
 # Create your views here.
 
@@ -1055,14 +1055,23 @@ def assign_docs(request):
     for user in users:
         user_list.append(User.objects.get(username=user))
 
+    print(tags)
 
     for tag in range(len(tags)):
         t = Tag.objects.get(pk=tags[tag])
         docs = Doc.objects.filter(query=query,tag=t)
+        l= len(docs)
         ssize = int(tagdocs[tag])
-        sample = docs.order_by('?')[:ssize]
+
+        my_ids = list(docs.values_list('UT', flat=True))
+
+        rand_ids = random.sample(my_ids, ssize)
+
+        sample = docs.filter(UT__in=rand_ids)
+        dsample = len(docs.distinct('UT'))
         for s in range(ssize):
             doc = sample[s]
+            print(doc)
             if docsplit=="true":
                 user = user_list[s % len(user_list)]
                 docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
@@ -1072,6 +1081,7 @@ def assign_docs(request):
                     docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
                     docown.save()
 
+    x = z
     return HttpResponse("bla")
 
 import re
@@ -1080,7 +1090,12 @@ def check_docs(request,qid):
 
     query = Query.objects.get(pk=qid)
     user = request.user
-    docs = DocOwnership.objects.filter(query=query,user=user.id,relevant=0)
+    docs = DocOwnership.objects.filter(
+        doc__wosarticle__isnull=False,
+        query=query,
+        user=user.id,
+        relevant=0
+    )
 
 
     tdocs = Doc.objects.filter(query=query,users=user.id).count()
@@ -1133,7 +1148,12 @@ def review_docs(request,qid,d=0):
     query = Query.objects.get(pk=qid)
     user = request.user
 
-    docs = DocOwnership.objects.filter(query=query,user=user.id,relevant__gt=0)
+    docs = DocOwnership.objects.filter(
+            doc__wosarticle__isnull=False,
+            query=query,
+            user=user.id,
+            relevant__gt=0
+    )
 
     tdocs = docs.count()
     sdocs = d
@@ -1220,10 +1240,17 @@ def do_review(request):
 
     docown = DocOwnership.objects.filter(doc=doc,query=query,user=user).order_by("relevant").first()
 
-    docown.relevant=d
+    print(docown.relevant)
+
+    print(docown.user.username)
+    print(docown.doc.UT)
+
+    docown.relevant=int(d)
     docown.save()
+    print(docown.relevant)
 
     time.sleep(1)
+
 
     return HttpResponse("")
 
@@ -1311,16 +1338,19 @@ def logout_view(request):
 
 def add_manually():
 
-    #qid = 48
-    #tag = 18
-    user = User.objects.get(username="fuss")
-    DocOwnership.objects.filter(user=user).delete()
+    qid = 308
+    tag = 61
+    user = User.objects.get(username="delm")
     query = Query.objects.get(id=qid)
     t = Tag.objects.get(pk=tag)
-    docs = Doc.objects.filter(docownership__query=query,docownership__tag=t).distinct()
+    docs = Doc.objects.filter(query=query,tag=t).distinct()
     for doc in docs:
-        docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
-        docown.save()
+        try:
+            DocOwnership.objects.get(doc=doc,query=query,user=user,tag=tag)
+        except:
+            docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
+            docown.save()
+            print("new docown added")
 
     return HttpResponse("")
 
