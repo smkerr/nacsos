@@ -961,7 +961,8 @@ def sortdocs(request):
                     text = do.first().get_relevant_display()
                     tag = str(do.first().tag.id)
                     user = str(User.objects.filter(username=uname).first().id)
-                    d[u] = '<span class="relevant_cycle" data-user='+user+' data-tag='+tag+' data-id='+d['UT']+' data-value='+str(d[u])+' onclick="cyclescore(this)">'+text+'</span>'
+                    if download == "false":
+                        d[u] = '<span class="relevant_cycle" data-user='+user+' data-tag='+tag+' data-id='+d['UT']+' data-value='+str(d[u])+' onclick="cyclescore(this)">'+text+'</span>'
         try:
             d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
         except:
