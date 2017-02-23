@@ -19,52 +19,70 @@ def get(r, k):
     return(x)
 
 def add_doc(r):
+    django.db.connections.close_all()
     try:
-        did = r['di']
-        r['UT'] = eid = dict(parse_qsl(urlparse(r['UT']).query))['eid'] 
-        django.db.connections.close_all()
-        try: # if this doc is in the database, do nothing
-            doc = Doc.objects.get(wosarticle__di=did)
-            doc.query.add(q)
-        except: # otherwise, add it!
-            doc = Doc(UT=r['UT'])
-            print(doc)
-            doc.title=get(r,'ti')
-            doc.content=get(r,'ab')
-            doc.PY=get(r,'py')
-            doc.save()
-            doc.query.add(q)
-            doc.save()
-            article = WoSArticle(doc=doc)
+        r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid'] 
+    except:
+        print(r)
+        return
+
+    try:
+        did = r['di']     
+    except:
+        did = 'NA'
+        pass
+
+    if did=='NA':
+        docs = Doc.objects.filter(
+                wosarticle__ti=get(r,'ti')).filter(PY=get(r,'py')
+        )
+    else: 
+        docs = Doc.objects.filter(wosarticle__di=did)
+
+    if len(docs)==1:
+        docs.first().query.add(q)
+    if len(docs)>1:
+        print("more than one doc matching!!!!!")
+    if len(docs)==0:
+        doc = Doc(UT=r['UT'])
+        print(doc)
+        doc.title=get(r,'ti')
+        doc.content=get(r,'ab')
+        doc.PY=get(r,'py')
+        doc.save()
+        doc.query.add(q)
+        doc.save()
+        article = WoSArticle(doc=doc)
 
 
-            for field in r:
-                f = field.lower()
-                try:
-                    article.f = r[field]
-                    setattr(article,f,r[field])
-                    #article.save()
-                    #print(r[field])
-                except:
-                    print(field)
-                    print(r[field])
+        for field in r:
+            f = field.lower()
+            try:
+                article.f = r[field]
+                setattr(article,f,r[field])
+                #article.save()
+                #print(r[field])
+            except:
+                print(field)
+                print(r[field])
 
+        try:
             article.save()
             print("article saved")
+        except:
+            pass
 
-        
-            ## Add authors
-            for a in range(len(r['au'])):
-                #af = r['AF'][a]
-                au = r['au'][a]  
-                dai = DocAuthInst(doc=doc)
-                dai.AU = au
-                dai.position = a
-                dai.save()
+    
+        ## Add authors
+        for a in range(len(r['au'])):
+            #af = r['AF'][a]
+            au = r['au'][a]  
+            dai = DocAuthInst(doc=doc)
+            dai.AU = au
+            dai.position = a
+            dai.save()
 
-    except:
-        pass
-    #print(r)
+
 
         
             
@@ -147,10 +165,24 @@ def main():
             if re.match("^EF",line): #end of file
                 #done!
                 break
-            if re.match("(^[A-Z][A-Z1-9])(\s*-\s*)",line):
-                s = re.search("(^[A-Z][A-Z1-9])(\s*-\s*)(.*)",line)
+            if re.search("([A-Z][A-Z1-9])(\s{2}-\s*)",line):
+                s = re.search("([A-Z][A-Z1-9])(\s{2}-\s*)(.*)",line)
                 key = s.group(1).strip()
                 value = s.group(3).strip()
+                if re.search("(.*)([A-Z][A-Z1-9])(\ {2}-\s*)",value):
+                    s = re.search("(.*)([A-Z][A-Z1-9])(\s*-\s*)(.*)",value)
+                    value = s.group(1).strip()
+                    nextkey = s.group(2).strip()
+                    nextvalue = s.group(4).strip()
+                    try:
+                        nextkey = scopus2WoSFields[nextkey]
+                    except:
+                        pass
+                    
+                    if nextkey in mfields:
+                        record[nextkey] = [nextvalue]
+                    else:
+                        record[nextkey] = nextvalue
                 try:
                     key = scopus2WoSFields[key]
                 except:
@@ -160,6 +192,7 @@ def main():
                     record[key] = [value]
                 else:
                     record[key] = value
+
             elif len(line) > 1:
                 if key in mfields:
                     record[key].append(line.strip())

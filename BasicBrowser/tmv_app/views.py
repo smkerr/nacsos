@@ -96,7 +96,7 @@ def institution_detail(request, institution_name):
     topics = Topic.objects.all()
     topics = []
 
-    topics = DocTopic.objects.filter(doc__docinstitutions__institution__icontains=institution_name,  scaled_score__gt=0.01,run_id=run_id)
+    topics = DocTopic.objects.filter(doc__docinstitutions__institution__icontains=institution_name,  scaled_score__gt=0.00002,run_id=run_id)
 
     topics = topics.annotate(total=(Sum('scaled_score')))
 
@@ -138,7 +138,7 @@ def topic_detail(request, topic_id):
     if Settings.objects.first().doc_topic_scaled_score==True:
         doctopics = Doc.objects.filter(doctopic__topic=topic.topic,doctopic__run_id=run_id).order_by('-doctopic__scaled_score')[:50]
     else:
-        doctopics = Doc.objects.filter(doctopic__topic=topic.topic,doctopic__run_id=run_id).order_by('-doctopic__score')[:50]
+        doctopics = Doc.objects.filter(doctopic__topic=topic.topic,doctopic__run_id=run_id).order_by('-doctopic__score').exclude(UT__contains='2WOS')[:50]
     
     terms = []
     term_bar = []
@@ -237,7 +237,7 @@ def topic_detail_hlda(request, topic_id):
 ##############################################################
 
 def term_detail(request, term_id):
-    update_topic_titles()
+    update_topic_titles(request.session)
     run_id = find_run_id(request.session)
     response = ''
 
@@ -326,7 +326,8 @@ def doc_detail(request, doc_id):
     for word in doc.content.split():
         wt = ""
         for t in range(1,ntopic+1):
-            if snowball_stemmer.stem(word) in topicwords[t]:
+            #if snowball_stemmer.stem(word) in topicwords[t]:
+            if word in topicwords[t]:
                 wt = t
         words.append({'title': word, 'topic':"t"+str(wt)})
     
