@@ -234,7 +234,7 @@ def add_topic_term(topic_id, term_no, score):
         tt.save()
 
 def add_topic_term_sk(topic_id, term_no, score):
-    if score >= .005:
+    if score >= .0005:
         topic = Topic.objects.get(pk=topic_id)
         term = Term.objects.get(pk=term_no)
         tt = TopicTerm(topic=(topic), term=(term), score=score,run_id=run_id)

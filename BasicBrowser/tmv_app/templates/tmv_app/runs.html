@@ -36,6 +36,9 @@
 					<th>Topics</td>
 					<th>Documents</td>
 					<th>Terms</td>
+					<th>Error</td>
+					<th>Iterations</td>
+                    <th>Duration</th>
                     <th>Actions</td>
                     <th>Notes</td>
                 </tr>
@@ -51,6 +54,9 @@
 					<td>{{ stat.topics }}</td>
 					<td>{{ stat.docs_seen }}</td>
 					<td>{{ stat.terms }}</td>
+					<td>{{ stat.error|floatformat:3 }}</td>
+					<td>{{ stat.iterations }}</td>
+                    <td>{{ stat.start|timesince:stat.last_update}}</td>
                     <td><button onclick="window.location.href='runs/delete/{{ stat.run_id }}';event.stopImmediatePropagation();">Delete</button></td>
                     <td onclick=event.stopImmediatePropagation();>
                         <form action="{% url 'tmv_app:update' stat.run_id %}" method="post" >
