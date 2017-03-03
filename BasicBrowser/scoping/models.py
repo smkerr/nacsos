@@ -4,10 +4,25 @@ from django.contrib.auth.models import User
 # Create your models here.
 
 class SnowballingSession(models.Model):
+
+    INPROGRESS = 0
+    COMPLETED  = 1
+
+    Status = (
+        (INPROGRESS, 'In progress'),
+        (COMPLETED,  'Completed'),
+    )
+
+
     name           = models.TextField(null=True, unique=True, verbose_name="SB Name")
     initial_pearls = models.TextField(null=True,              verbose_name="SB Initial Pearls")
     date           = models.DateTimeField(                    verbose_name="SB Date")
 #    completed      = models.BooleanField(verbose_name="Is SB Completed")
+    status         = models.IntegerField(
+                         choices      = Status,
+                         default      = 0,
+                         db_index     = True,
+                         verbose_name = "SB Status")
     users          = models.ManyToManyField(User)
 
     def __str__(self):

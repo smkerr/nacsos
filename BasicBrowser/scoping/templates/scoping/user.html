@@ -52,59 +52,69 @@
         </table>
 
         <hr/>
-
         <div style="width:100%; background:#ffe5cc">
-        <h4>Snowballing queries</h4>
+        <h4>Snowballing sessions and queries</h4>
 
         <table style="width:80%">
           <tr style="background:#f7ab31">
-            <td>QID</td>
+            <td>SBS ID</td>
             <td>SBS Title</td>
-            <td>Q Title</td>
+            <td># Steps</td>
             <td># Documents</td>
             <td>! To review</td>
-            <td>Reviewed</td>
             <td>Kept</td>
-            <td>Excluded</td>
             <td>Next step</td>
           </tr>
-          {% for q in queries %}
-            {% if q.type != "default" %}
-              <tr>                
-                <td><a href="/scoping/query/{{q.id}}">{{q.id}}</td>
-                <td>SBS ID</td>
-                <td>{{q.title}}</td>
-                <td>{{q.ndocs}}</td>
-                {% if q.revdocs > 0 %}
-                  <td class="review{{q.unreviewed_docs}} review"><a href="/scoping/check/{{q.id}}">{{q.unreviewed_docs}}</a></td>
-                  <td class="review{{q.revieweddocs}} review"><a href="/scoping/review/{{q.id}}/0">{{q.revieweddocs}}</a> ({{q.relevance}}% relevant)</td>
-                  <td class="review{{q.maybedocs}} review"><a href="/scoping/maybe/{{q.id}}/0">{{q.maybedocs}}</a></td>
-                  <td class="review{{q.yesbuts}} review"><a href="/scoping/yesbut/{{q.id}}/0">{{q.yesbuts}}</a></td>
-                  {% if True %}
-                    <td><a href=""><button type="button">Snowball</button></a></td>
-                  {% else %} 
-                    <td></td>
-                  {% endif %}
+          {% for sbs in sbsessions %}
+             <tr class="sbsheader expand">
+                <td>{{ sbs.id }}</td>
+                <td>{{ sbs.name }}</td>
+                <td>{{ sbs.ns }}</td>
+                <td>{{ sbs.ndtot }}</td>
+                <td>{{ sbs.ndrev }}</td>
+                <td>{{ sbs.ndsel }}</td>
+                <td><button type="button">Expand</button></td>
+            </tr>
+            <tr class="sbsquery"> 
+                <td></td>
+                <td>QID</td>
+                <td>Type</td>
+                <td># Docs</td>
+                <td># Doc reviewed</td>
+                <td># Doc selected</td>
+                <td>Action</td>
+            </tr>
+            {% for q in sbs.q_info %}
+              <tr class="sbsquery">  
+                <td></td>              
+                <td><a href="/scoping/query/{{ q.id }}">{{ q.id }}</td>
+                <td>{{ q.type }}</td>
+                <td>{{ q.nbdocsel }}</td>
+                <td>{{ q.nbdoctot }}</td>
+                <td>{{ q.nbdocrev }}</td>
+                {% if q.last == "True" %}
+                  <td><a href=""><button type="button">Snowball</button></a></td>
                 {% else %}
-                  <td>0</td>
-                  <td>0</td>
-                  <td>0</td>
-                  <td>0</td>
                   <td></td>
-                {% endif %}                
+                {% endif %}
               </tr>
-            {% endif %}
+            {% endfor %}  
           {% endfor %}
         </table>
         </div>
         <p><button onclick="location.href='/accounts/logout'">Log Out</button>
         <p><button onclick="location.href='/admin/password_change'">Change Password</button>
-
       </div>
     </div>
   </body>
 
 <script>
+  $(function(){
+     $('.sbsquery').hide();
+  });
 
+  $('.sbsheader').click(function(){
+     $(this).nextUntil('tr.sbsheader').toggle();
+  });
 </script>
 </html>

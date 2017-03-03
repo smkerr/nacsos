@@ -19,7 +19,7 @@ def get(r, k):
 
 def add_doc(r):
 
-    DEBUG = True
+    DEBUG    = True
 
     if DEBUG:
         print("  >> Entering add_doc() with document id: "+str(r['UT']))
@@ -90,140 +90,144 @@ def add_doc(r):
     # Now that the article's saved, we can look at the references....
     # these are in a list accessible by get(r,'CR')
     refs = get(r,'CR')
-    if DEBUG:
-            print("     > The document has the following references:")
-    skip = 0
-    doi_lookups_loc = []
-    au_lookups_loc  = []
-    py_lookups_loc  = []
-    so_lookups_loc  = []
-    for r in refs:
+    if len(refs) > 0:
         if DEBUG:
-            print("       - "+str(r))
-        #print(r)
-        # Add them to a table of docs to references (a simple table of just the dois)
-        dr = DocReferences(doc=doc)
-        dr.refall = r
+            print("     > The document has the following references:")
+        skip = 0
+        doi_lookups_loc = []
+        au_lookups_loc  = []
+        py_lookups_loc  = []
+        so_lookups_loc  = []
+        for r in refs:
+            if DEBUG:
+                print("       - "+str(r))
+            #print(r)
+            # Add them to a table of docs to references (a simple table of just the dois)
+            dr = DocReferences(doc=doc)
+            dr.refall = r
         
-        if r[0] == "*":
-            if DEBUG:
-                print("         > Skipping (special document)")
-            skip+=1
-            continue
-
-        # Try to get DOI
-        try: # try and get the doi if it's there
-            doi = re.search(", DOI ([^ ]*)",r).group(1)
-            doi = re.sub('^\[','',doi) ## This is to deal with lists !! of dois
-            dr.refdoi=doi
-            if DEBUG:
-                print("         . DOI: "+str(doi))
-            #print(doi)
-            # Is this document already in our database?????
-            doidoc = Doc.objects.filter(wosarticle__di=doi)
-            if len(doidoc) > 0:
+            if r[0] == "*":
                 if DEBUG:
-                    print("         . DOI exists in DB! Add reference to doc and query2.")
-                doidoc = doidoc.first()
-                doc.references.add(doidoc)
-                doc.save() # If so, create the link already!
+                    print("         > Skipping (special document)")
+                skip+=1
+                continue
 
-                # Add to query
-                doidoc.query.add(q2)
-                doidoc.save()
-
-            else: # otherwise, add it to a list of docs to lookup
+            # Try to get DOI
+            try: # try and get the doi if it's there
+                doi = re.search(", DOI ([^ ]*)",r).group(1)
+                doi = re.sub('^\[','',doi) ## This is to deal with lists !! of dois
+                dr.refdoi=doi
                 if DEBUG:
-                    print("         . DOI not in DB! Add to lookup list.")
-                doi_lookups.append(doi)
-                doi_lookups_loc.append(doi)                 
-        except: 
-            if DEBUG:
-                print("         . No DOI found for this record. Skipping...")
-            skip+=1
-            pass 
-        dr.save() #uncomment this when we want to actually save these
+                    print("         . DOI: "+str(doi))
+                #print(doi)
+                # Is this document already in our database?????
+                doidoc = Doc.objects.filter(wosarticle__di=doi)
+                if len(doidoc) > 0:
+                    if DEBUG:
+                        print("         . DOI exists in DB! Add reference to doc and query2.")
+                    doidoc = doidoc.first()
+                    doc.references.add(doidoc)
+                    doc.save() # If so, create the link already!
 
-        # Try to get AU, PY & TI
-        try: # try and get the fields
-            au = str.split(r, ",")[0].strip()
-            py = str.split(r, ",")[1].strip()
-            so = str.split(r, ",")[2].strip()
+                    # Add to query
+                    doidoc.query.add(q2)
+                    doidoc.save()
+    
+                else: # otherwise, add it to a list of docs to lookup
+                    if DEBUG:
+                        print("         . DOI not in DB! Add to lookup list.")
+                    doi_lookups.append(doi)
+                    doi_lookups_loc.append(doi)                 
+            except: 
+                if DEBUG:
+                    print("         . No DOI found for this record. Skipping...")
+                skip+=1
+                pass 
+            dr.save() #uncomment this when we want to actually save these
 
-            flag_problem = False
-
-            # Check validity of fields
-            test_au = re.match("^([a-zA-Z. ]*)$", au) is not None
-            if not test_au:
-                flag_problem = True
-                if DEBUG:
-                    print("         . AU doesn't look correct "+" (AU: "+str(au)+")")
-            if not py.isdigit():
-                flag_problem = True
-                if DEBUG:
-                    print("         . PY field is not a numeric "+" (PY: "+str(py)+")")
-            test_so = re.match("^([a-zA-Z0-9&. ]*)$", so) is not None
-            if not test_so:
-                flag_problem = True
-                if DEBUG:
-                    print("         . SO field doesn't look correct "+" (SO: "+str(so)+")")
+            # Try to get AU, PY & TI
+            try: # try and get the fields
+                au = str.split(r, ",")[0].strip()
+                py = str.split(r, ",")[1].strip()
+                so = str.split(r, ",")[2].strip()
+    
+                flag_problem = False
+  
+                # Check validity of fields
+                test_au = re.match("^([a-zA-Z. ]*)$", au) is not None
+                if not test_au:
+                    flag_problem = True
+                    if DEBUG:
+                        print("         . AU doesn't look correct "+" (AU: "+str(au)+")")
+                if not py.isdigit():
+                    flag_problem = True
+                    if DEBUG:
+                        print("         . PY field is not a numeric "+" (PY: "+str(py)+")")
+                test_so = re.match("^([a-zA-Z0-9&. ]*)$", so) is not None
+                if not test_so:
+                    flag_problem = True
+                    if DEBUG:
+                        print("         . SO field doesn't look correct "+" (SO: "+str(so)+")")
 #            #dr.refdoi=doi
-            if DEBUG:
-                print("         . AU: "+str(au)+"("+str(test_au)+"), PY: "+str(py)+" ("+str(py.isdigit())+") and SO:"+str(so)+" ("+str(test_so)+")")
-            if flag_problem:
-                #skip += 1
                 if DEBUG:
-                    print("         . Problem with one of the fields. Skipping...")                
-            #print(doi)
+                    print("         . AU: "+str(au)+"("+str(test_au)+"), PY: "+str(py)+" ("+str(py.isdigit())+") and SO:"+str(so)+" ("+str(test_so)+")")
+                if flag_problem:
+                    #skip += 1
+                    if DEBUG:
+                        print("         . Problem with one of the fields. Skipping...")                
+                #print(doi)
 
-            # Is this document already in our database?????
-            #refdoc = Doc.objects.filter(wosarticle__au=au, wosarticle__py=py, wosarticle__so=so)
+                # Is this document already in our database?????
+                #refdoc = Doc.objects.filter(wosarticle__au=au, wosarticle__py=py, wosarticle__so=so)
+  
+                #if len(refdoc) > 0:
+                #    if DEBUG:
+                #        print("         . This reference exists in DB! Add reference to doc and query2.")
+                #    refdoc = refdoc.first()
+                #    doc.references.add(refdoc)
+                #    doc.save() # If so, create the link already!
+ 
+                #    # Add to query
+                #    doidoc.query.add(q2)
+                #    doidoc.save()
 
-            #if len(refdoc) > 0:
-            #    if DEBUG:
-            #        print("         . This reference exists in DB! Add reference to doc and query2.")
-            #    refdoc = refdoc.first()
-            #    doc.references.add(refdoc)
-            #    doc.save() # If so, create the link already!
-
-            #    # Add to query
-            #    doidoc.query.add(q2)
-            #    doidoc.save()
-
-            else: # otherwise, add it to a list of docs to lookup
+                else: # otherwise, add it to a list of docs to lookup
+                    if DEBUG:
+                        print("         . This reference is not in DB! Add to lookup lists.")
+                    au_lookups.append(au)
+                    au_lookups_loc.append(au)
+                    py_lookups.append(py)
+                    py_lookups_loc.append(py)
+                    so_lookups.append(so)
+                    so_lookups_loc.append(so)
+            except:
                 if DEBUG:
-                    print("         . This reference is not in DB! Add to lookup lists.")
-                au_lookups.append(au)
-                au_lookups_loc.append(au)
-                py_lookups.append(py)
-                py_lookups_loc.append(py)
-                so_lookups.append(so)
-                so_lookups_loc.append(so)
-        except:
-            if DEBUG:
-                print("         . Current reference has less than 3 fields. Skipping...")
-            #skip+=1
-            pass
-        dr.save() #uncomment this when we want to actually save these
+                    print("         . Current reference has less than 3 fields. Skipping...")
+                #skip+=1
+                pass
+            dr.save() #uncomment this when we want to actually save these
        
-    refindb = len(refs) - skip - len(doi_lookups_loc) 
+        refindb = len(refs) - skip - len(doi_lookups_loc) 
+ 
+        global totnbrefs
+        global totnbrefsindb
+        global totnbskips
 
-    global totnbrefs
-    global totnbrefsindb
-    global totnbskips
+        totnbrefs     += len(refs)
+        totnbrefsindb += refindb
+        totnbskips    += skip
 
-    totnbrefs     += len(refs)
-    totnbrefsindb += refindb
-    totnbskips    += skip
+        if DEBUG:
+            print("      > Number of references              : "+str(len(refs)))
+            print("      > Number of discarded references (%): "+str(skip)+" ("+str(skip/len(refs)*100)+"%)")
+            print("      > Number of references in DB (%)    : "+str(refindb)+" ("+str(skip/len(refs)*100)+"%)")
+            print("      > Number of references to scrape (%): "+str(len(doi_lookups_loc))+" ("+str(len(doi_lookups_loc)/len(refs)*100)+"%)")
 
-    if DEBUG:
-        print("      > Number of references              : "+str(len(refs)))
-        print("      > Number of discarded references (%): "+str(skip)+" ("+str(skip/len(refs)*100)+"%)")
-        print("      > Number of references in DB (%)    : "+str(refindb)+" ("+str(skip/len(refs)*100)+"%)")
-        print("      > Number of references to scrape (%): "+str(len(doi_lookups_loc))+" ("+str(len(doi_lookups_loc)/len(refs)*100)+"%)")
+            # We can access a documents references by doc.references.all()
+            # And get its citations by doc.doc_set.all()
 
-        # We can access a documents references by doc.references.all()
-        # And get its citations by doc.doc_set.all()
+    else :
+        print("     > The document has no references!")
 
     if DEBUG:
         print("  << Exiting add_doc()")
@@ -236,6 +240,7 @@ def add_doc(r):
 def main():
     
     DEBUG = True
+    DOI_ONLY = True
 
     if DEBUG:
         print(">> Entering main() function in upload_docrefs.py")
@@ -347,10 +352,11 @@ def main():
         query = 'DO = ("' + '" OR "'.join(doiset) + '")'
 
         newquery = ''
-        for k in range(1,len(au_lookups)):
-            newquery += '(AU=' + str(au_lookups[k]) + ' AND PY=' + str(py_lookups[k]) + ' AND SO="' + str(so_lookups[k]) +'")'
-            if k != len(au_lookups):
-                newquery += ' OR '
+        if not DOI_ONLY:
+            for k in range(1,len(au_lookups)):
+                newquery += '(AU=' + str(au_lookups[k]) + ' AND PY=' + str(py_lookups[k]) + ' AND SO="' + str(so_lookups[k]) +'")'
+                if k != len(au_lookups):
+                    newquery += ' OR '
 
         if DEBUG:
             print("  - The following query will be sent to the scraper: "+str(query))
