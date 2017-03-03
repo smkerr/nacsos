@@ -1,5 +1,5 @@
 from django.shortcuts import render
-import os, time, math, itertools, csv
+import os, time, math, itertools, csv, random
 
 # Create your views here.
 
@@ -939,6 +939,7 @@ def sortdocs(request):
     sort_fields = request.GET.getlist('sort_fields[]',None)
 
     tag_title = request.GET.get('tag_title',None)
+    download = request.GET.get('download',None)   
 
     # get the query
     query = Query.objects.get(pk=qid)
@@ -1066,12 +1067,30 @@ def sortdocs(request):
                     text = do.first().get_relevant_display()
                     tag = str(do.first().tag.id)
                     user = str(User.objects.filter(username=uname).first().id)
-                    d[u] = '<span class="relevant_cycle" data-user='+user+' data-tag='+tag+' data-id='+d['UT']+' data-value='+str(d[u])+' onclick="cyclescore(this)">'+text+'</span>'
+                    if download == "false":
+                        d[u] = '<span class="relevant_cycle" data-user='+user+' data-tag='+tag+' data-id='+d['UT']+' data-value='+str(d[u])+' onclick="cyclescore(this)">'+text+'</span>'
         try:
             d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
         except:
             pass
 
+    if download == "true":
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="documents.csv"'
+
+        writer = csv.writer(response)
+
+        writer.writerow(fields)
+
+        for d in docs:
+            row = [d[x] for x in fields]
+            writer.writerow(row)
+
+        #x = zu            
+
+        return response
+
+    #x = zu 
     response = {
         'data': list(docs),
         'n_docs': filt_docs.count()
@@ -1161,14 +1180,23 @@ def assign_docs(request):
     for user in users:
         user_list.append(User.objects.get(username=user))
 
+    print(tags)
 
     for tag in range(len(tags)):
         t = Tag.objects.get(pk=tags[tag])
         docs = Doc.objects.filter(query=query,tag=t)
+        l= len(docs)
         ssize = int(tagdocs[tag])
-        sample = docs.order_by('?')[:ssize]
+
+        my_ids = list(docs.values_list('UT', flat=True))
+
+        rand_ids = random.sample(my_ids, ssize)
+
+        sample = docs.filter(UT__in=rand_ids)
+        dsample = len(docs.distinct('UT'))
         for s in range(ssize):
             doc = sample[s]
+            print(doc)
             if docsplit=="true":
                 user = user_list[s % len(user_list)]
                 docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
@@ -1178,6 +1206,7 @@ def assign_docs(request):
                     docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
                     docown.save()
 
+    x = z
     return HttpResponse("bla")
 
 import re
@@ -1186,7 +1215,12 @@ def check_docs(request,qid):
 
     query = Query.objects.get(pk=qid)
     user = request.user
-    docs = DocOwnership.objects.filter(query=query,user=user.id,relevant=0)
+    docs = DocOwnership.objects.filter(
+        doc__wosarticle__isnull=False,
+        query=query,
+        user=user.id,
+        relevant=0
+    )
 
 
     tdocs = Doc.objects.filter(query=query,users=user.id).count()
@@ -1239,7 +1273,12 @@ def review_docs(request,qid,d=0):
     query = Query.objects.get(pk=qid)
     user = request.user
 
-    docs = DocOwnership.objects.filter(query=query,user=user.id,relevant__gt=0)
+    docs = DocOwnership.objects.filter(
+            doc__wosarticle__isnull=False,
+            query=query,
+            user=user.id,
+            relevant__gt=0
+    )
 
     tdocs = docs.count()
     sdocs = d
@@ -1326,10 +1365,17 @@ def do_review(request):
 
     docown = DocOwnership.objects.filter(doc=doc,query=query,user=user).order_by("relevant").first()
 
-    docown.relevant=d
+    print(docown.relevant)
+
+    print(docown.user.username)
+    print(docown.doc.UT)
+
+    docown.relevant=int(d)
     docown.save()
+    print(docown.relevant)
 
     time.sleep(1)
+
 
     return HttpResponse("")
 
@@ -1417,16 +1463,19 @@ def logout_view(request):
 
 def add_manually():
 
-    #qid = 48
-    #tag = 18
-    user = User.objects.get(username="fuss")
-    DocOwnership.objects.filter(user=user).delete()
+    qid = 308
+    tag = 61
+    user = User.objects.get(username="delm")
     query = Query.objects.get(id=qid)
     t = Tag.objects.get(pk=tag)
-    docs = Doc.objects.filter(docownership__query=query,docownership__tag=t).distinct()
+    docs = Doc.objects.filter(query=query,tag=t).distinct()
     for doc in docs:
-        docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
-        docown.save()
+        try:
+            DocOwnership.objects.get(doc=doc,query=query,user=user,tag=tag)
+        except:
+            docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
+            docown.save()
+            print("new docown added")
 
     return HttpResponse("")
 

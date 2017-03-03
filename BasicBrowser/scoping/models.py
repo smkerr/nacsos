@@ -116,8 +116,6 @@ class DocOwnership(models.Model):
         verbose_name="Relevance"
     )
 
-    def __str__(self):
-      return self.doc
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")
