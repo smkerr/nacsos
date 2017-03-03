@@ -156,8 +156,8 @@ class HTopicYear(models.Model):
 ## for docs and topics respectively
 
 class DocTopic(models.Model):
-    doc = models.ForeignKey('Doc', null=True, db_index=True)
-    topic = models.ForeignKey('Topic',null=True,db_index=True)
+    doc = models.ForeignKey('Doc', null=True)
+    topic = models.ForeignKey('Topic',null=True)
     score = models.FloatField()
     scaled_score = models.FloatField()
     run_id = models.IntegerField(db_index=True)

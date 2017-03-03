@@ -26,7 +26,9 @@
         <br/>
 
         <!-- Query manager -->
-        <h2> Document list associated to <a href="/scoping/query/{{query.id}}">{{query.type}} query no. {{query.id}}</a>. <a href="/scoping/download/{{query.id}}">Download</a> these documents as a csv</h2>
+        <h2> Document list associated to <a href="/scoping/query/{{query.id}}">{{query.type}} query no. {{query.id}}</a>. 
+        <!-- <a href="/scoping/download/{{query.id}}">Download</a> these documents as a csv</h2> -->
+        <a onclick="update_fields(download='true')" id="download">Download</a> these documents as a csv</h2>
         <br/>
 
         <p id="field_container">
@@ -223,7 +225,9 @@ function join_filter(element) {
     }
 }
 
-function update_fields() {
+function update_fields(download="false") {
+    console.log(download)
+    
     $('body').toggleClass('waiting');
     // get arrays of all the filter columns
     var fields = []
@@ -260,73 +264,102 @@ function update_fields() {
         active_field_paths.push($(this).attr('name'));
         active_field_names.push($(this).contents().get(0).nodeValue);
     });
-    $.ajax({
-        url: '/scoping/sort_docs',
-        data: {
-            'qid': qid,
-            'fields': active_field_paths,
-            'f_fields': fields,
-            'f_operators': operators,
-            'f_text': text,
-            'f_join': joins,
-            'sort_fields': sortfields,
-	    'sort_dirs': sortdirs
-        },
-        success: function(data) {
-            var n_docs = data.n_docs
-            $("#doc_count").text(n_docs)
-            data = data.data
-            console.log(data)
-            nfields = active_field_paths.length
-            console.log(data.length)
-            $("table.light tr:first").html("")
-            $("table.light tr:not(:first)").html("")
-            for (f=0;f<active_field_paths.length;f++) {
-                fpath = active_field_paths[f]
-                fname = active_field_names[f]
-		i = sortfields.indexOf(fpath)
-		up = ""
-		down = ""
-		if (i > -1) {
-  		    console.log(sortdirs[i])
-		    if (sortdirs[i]=="+") {
-		        up = "sort_active"
-		    } else {
-		        down = "sort_active"
-		    }		
-		}
-                $("table.light tr:first").append('<td class="field" name="'+fpath+'">'+fname+' <span class="uparrow sort '+ up +'">&uarr;</span><span class="downarrow sort '+ down +'">&darr;</span></td>');
-                $("table.light tr:not(:first)").append('<td class="data">');
-            }
-            
-            fields.push(fname.replace(".","__"))
-            $(".data").each(function( i ) {
-                r = Math.floor(i/nfields)
-                c = i % nfields
-                f = active_field_paths[c]
-                if (r+1 > n_docs) {
-                    var text = ""
-                } else {
-                    var text = data[r][f]
-                }
-                $(this).html(text)
-            })
-            $(".field").data("sortdir","-")
-
-   	    $(".sort").click(function() {
-	        $(this).toggleClass("sort_active")
-		    update_fields()
-		})
-
-            /* SBS exclude column
-            if (qtype != "default") {
-              $("table.light tr:first").append('<td class="field" name="sbsexclude">Exclude</td>');
-              $("table.light tr:not(:first)").append('<td class="data"><a href=""><button type="button">Exclude</button></a></td>');
-            }
-            */ 
-	    $('body').toggleClass('waiting');
+    if (download=="true") {
+        url = '/scoping/sort_docs?'
+        url += 'qid='+qid
+        for (i =0 ; i<active_field_paths.length; i++) {
+            url += '&fields[]='+active_field_paths[i]
         }
-    })
+        for (i =0 ; i<fields.length; i++) {
+            url += '&f_fields[]='+fields[i]
+        }       
+        for (i =0 ; i<operators.length; i++) {
+            url += '&f_operators[]='+operators[i]
+        }  
+        for (i =0 ; i<joins.length; i++) {
+            url += '&_join[]='+joins[i]
+        }  
+        for (i =0 ; i<sortfields.length; i++) {
+            url += '&sort_fields[]='+sortfields[i]
+        }  
+        for (i =0 ; i<sortdirs.length; i++) {
+            url += '&sort_dirs[]='+sortdirs[i]
+        }  
+        url += '&f_text='+text
+        url += '&download='+download
+        window.location=url
+        console.log(url)
+    } else {
+
+        $.ajax({
+            url: '/scoping/sort_docs',
+            data: {
+                'qid': qid,
+                'fields': active_field_paths,
+                'f_fields': fields,
+                'f_operators': operators,
+                'f_text': text,
+                'f_join': joins,
+                'sort_fields': sortfields,
+	            'sort_dirs': sortdirs,
+                'download': download
+            },
+            success: function(data) {
+                var n_docs = data.n_docs
+                $("#doc_count").text(n_docs)
+                data = data.data
+                console.log(data)
+                nfields = active_field_paths.length
+                console.log(data.length)
+                $("table.light tr:first").html("")
+                $("table.light tr:not(:first)").html("")
+                for (f=0;f<active_field_paths.length;f++) {
+                    fpath = active_field_paths[f]
+                    fname = active_field_names[f]
+		    i = sortfields.indexOf(fpath)
+		    up = ""
+		    down = ""
+		    if (i > -1) {
+      		    console.log(sortdirs[i])
+		        if (sortdirs[i]=="+") {
+		            up = "sort_active"
+		        } else {
+		            down = "sort_active"
+		        }		
+		    }
+                    $("table.light tr:first").append('<td class="field" name="'+fpath+'">'+fname+' <span class="uparrow sort '+ up +'">&uarr;</span><span class="downarrow sort '+ down +'">&darr;</span></td>');
+                    $("table.light tr:not(:first)").append('<td class="data">');
+                }
+                
+                fields.push(fname.replace(".","__"))
+                $(".data").each(function( i ) {
+                    r = Math.floor(i/nfields)
+                    c = i % nfields
+                    f = active_field_paths[c]
+                    if (r+1 > n_docs) {
+                        var text = ""
+                    } else {
+                        var text = data[r][f]
+                    }
+                    $(this).html(text)
+                })
+                $(".field").data("sortdir","-")
+
+       	    $(".sort").click(function() {
+	            $(this).toggleClass("sort_active")
+		        update_fields()
+		    })
+
+                /* SBS exclude column
+                if (qtype != "default") {
+                  $("table.light tr:first").append('<td class="field" name="sbsexclude">Exclude</td>');
+                  $("table.light tr:not(:first)").append('<td class="data"><a href=""><button type="button">Exclude</button></a></td>');
+                }
+                */ 
+	        $('body').toggleClass('waiting');
+            }
+        })
+    }
 }
 
 function cyclescore(el) {
