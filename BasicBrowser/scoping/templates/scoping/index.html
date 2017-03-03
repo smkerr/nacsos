@@ -1,76 +1,75 @@
 <html>
-<head>
-{% load static %}
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<title>Scoping</title>
-<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
-<script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-
-</head>
+  <head>
+    {% load static %}
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Scoping</title>
+    <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
+  </head>
   <body>
-{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
-<div id="main">
-<div id="graph">
-<h1> Scoping Review Helper</h1>
-<br>
+    {% include 'scoping/nav_bar.html' with user=user qid=query.id mode=mode%}
+    <div id="main">
+      <div id="graph">
+        <h1> Scoping Review Helper</h1>
+        <br/>
 
-<!-- Query manager -->
-<div class="explanation">
+        <!-- Query manager -->
+        <div class="explanation">
 
-<h2> Query manager </h2>
-<p>Use the buttons below to filter queries by user and technology.
-New queries can be made at the bottom of the page.
-<br>
-<p id="field_container">
-{% for u in users %}
-    {% if u == user %}
-    <span class="field_name active" name="{{u.username}}">{{ u.username }}</span>
-    {% else %}
-    <span class="field_name" name="{{u.username}}">{{ u.username }}</span>
-    {% endif %}
-{% endfor %}
-</p>
+          <h2> Query manager </h2>
+          <p>Use the buttons below to filter queries by user and technology.
+             New queries can be made at the bottom of the page.</p>
+          <br/>
+          <p id="field_container">
+          {% for u in users %}
+              {% if u == user %}
+                <span class="field_name active" name="{{u.username}}">{{ u.username }}</span>
+              {% else %}
+                <span class="field_name" name="{{u.username}}">{{ u.username }}</span>
+              {% endif %}
+          {% endfor %}
+          </p>
 
-<p id="field_container">
-    <span class="field_name active" name="None">None</span>
-{% for t in techs %}
-    <span class="field_name active" name="{{t.name}}">{{ t.name }}</span>
-{% endfor %}
-</p>
-</div>
+          <p id="field_container">
+            <span class="field_name active" name="None">None</span>
+            {% for t in techs %}
+              <span class="field_name active" name="{{t.name}}">{{ t.name }}</span>
+            {% endfor %}
+          </p>
+        </div>
 
-<p>
+        <p>
 
-<table class="light">
+          <table class="light">
 
-		<tr class="title">
-			<td>ID</td>
-            <td>Created by</td>
-            <td>Title</td>
-			<td>Text</td>
-			<td>Date</td>
-			<td>Documents</td>
-            <td>Technology</td>
-            <td>Delete</td>
-        </tr>
-		{% for query in queries %}
-            {% if query.creator in active_users %}
-            <tr data-name="{{query.creator}}"  data-tech="{{query.tech}}">     
-            {% else %}
-            <tr class="hidden" data-name="{{query.creator}}" data-tech="{{query.tech}}">
-            {% endif %}       
-			    <td><a href="query/{{query.id}}">{{ query.id }}</a></td>
-                <td>{{ query.creator }}</td>
-                <td>{{ query.title }}</td>
-			    <td>{{ query.text }}</td>
-			    <td>{{ query.date }}</td>
-                {% if query.r_count > 0 %}
-                <td><a href="docs/{{query.id}}">{{ query.r_count }}</a></td>
+	    <tr class="title">
+	      <td>ID</td>
+              <td>Created by</td>
+              <td>Title</td>
+	      <td>Text</td>
+	      <td>Date</td>
+	      <td>Documents</td>
+              <td>Technology</td>
+              <td>Delete</td>
+            </tr>
+            {% for query in queries %}
+                {% if query.creator in active_users %}
+                  <tr data-name="{{query.creator}}"  data-tech="{{query.tech}}">     
                 {% else %}
-                <td><a href="querying/{{query.id}}">View progress</a></td>
-                {% endif %}
-                <td>
-                    <select class="tech" data-query="{{query.id}}" autocomplete="off">
+                  <tr class="hidden" data-name="{{query.creator}}" data-tech="{{query.tech}}">
+                {% endif %}       
+                    <td><a href="query/{{query.id}}">{{ query.id }}</a></td>
+                    <td>{{ query.creator }}</td>
+                    <td>{{ query.title }}</td>
+	 	    <td>{{ query.text }}</td>
+		    <td>{{ query.date }}</td>
+                    {% if query.r_count > 0 %}
+                      <td><a href="docs/{{query.id}}">{{ query.r_count }}</a></td>
+                    {% else %}
+                      <td><a href="querying/{{query.id}}">View progress</a></td>
+                    {% endif %}
+                    <td>
+                      <select class="tech" data-query="{{query.id}}" autocomplete="off">
                         {% if not query.technology %}
                         <option selected value="None">{{query.technology}}</option>
                         {% else %}
