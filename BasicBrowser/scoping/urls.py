@@ -23,6 +23,7 @@ urlpatterns = [
     url(r'^sbsKeepDoc/(?P<qid>[0-9]+)/(?P<did>.+)$', views.sbsKeepDoc, name='sbsKeepDoc'),
     url(r'^sbsExcludeDoc/(?P<qid>[0-9]+)/(?P<did>.+)$', views.sbsExcludeDoc, name='sbsExcludeDoc'),
     url(r'^delete_query/(?P<qid>[0-9]+)$', views.delete_query, name='delete'),
+    url(r'^delete_tag/(?P<qid>[0-9]+)/(?P<tid>[0-9]+)$', views.delete_tag, name='delete_tag'),
     url(r'^delete_sbs/(?P<sbsid>[0-9]+)$', views.delete_sbs, name='delete'),
     url(r'^query/(?P<qid>[0-9]+)$', views.query, name='query'),
     url(r'^docs/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),

@@ -33,10 +33,11 @@
         <table class="light" style="width:100%">
 	  <tr class="title">
             {% for f in fields %}
-              <td class="field" name="{{f}}">{{f}} <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td>
+              <td class="field" name="{{f}}">{{f}} </td>
             {% endfor %}
-            <td class="field" name="docs">Documents <span class="uparrow">&uarr;</span><span class="downarrow">&darr;</span></td> 
-            <td>Relevance </td> 
+            <td class="field" name="docs">Sample </td> 
+            <td>Documents </td> 
+            <td>Delete</td>
           </tr>
           {% for tag in tags %}
             <tr class="tagdatarow" name="{{ tag.id }}">
@@ -51,8 +52,9 @@
               {% else %}
                 <td><input type="range" min="0" max="{{tag.docs}}" oninput="inputUpdate(value, {{tag.id}})" value="{{tag.docs}}" autocomplete="off"></td>
                 <td class="data-ndocs">{{tag.docs}} [Assign <output id="out_{{tag.id}}" class="tag_assignment" data-tagid="{{ tag.id }}">{{tag.docs}}</output> documents for review?]</td>
-                <td>NA</td>
+                
               {% endif %}
+                <td><a href="/scoping/delete_tag/{{query.id}}/{{tag.id}}">Delete</a></td>
             </tr>
           {% endfor %}
         </table>
@@ -122,8 +124,9 @@
         <p style="text-align:left">
           <div class="assignment_box">
             <p>
-              <table id="split_table"><td>Double Check Documents
+              <table id="split_table">
                 <tr>
+                    <td>Double Check Documents
                   <td>
                     <label class="switch">
                       <input type="checkbox" id="split" onclick="updateAssignment()" checked />
@@ -157,7 +160,6 @@ $(".user_active").each(function() {
     if ($(this).is(':checked')) {
         total_users+=1
     }
-    console.log($(this))
 })
 
 $(".tag_assignment").each(function(){
