@@ -377,6 +377,17 @@ def delete_query(request, qid):
 #########################################################
 ## Delete the query
 @login_required
+def delete_tag(request, qid, tid):
+    try:
+        t = Tag.objects.get(pk=tid)
+        t.delete()
+    except:
+        pass
+    return HttpResponseRedirect(reverse('scoping:query', kwargs={'qid': qid}))
+
+#########################################################
+## Delete the query
+@login_required
 def delete_sbs(request, sbsid):
     try:
         sbs = SnowballingSession.objects.get(pk=sbsid)
@@ -636,9 +647,9 @@ def query(request,qid):
             except:
                 tag['relevance'] = 0
 
-    fields = ['id','title','text']
+    fields = ['id','title']
 
-    untagged = Doc.objects.filter(query=query,tag__isnull=True).count()
+    untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).count()
 
     users = User.objects.all()
 
@@ -679,10 +690,12 @@ def query(request,qid):
         'fields': fields,
         'untagged': untagged,
         'users': user_list,
-                'user': request.user
+        'user': request.user
     }
 
     #add_manually()
+
+
 
     return HttpResponse(template.render(context, request))
 
@@ -1206,8 +1219,7 @@ def assign_docs(request):
                     docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
                     docown.save()
 
-    x = z
-    return HttpResponse("bla")
+    return HttpResponse("xyzxyz")
 
 import re
 
