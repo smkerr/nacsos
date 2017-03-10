@@ -17,6 +17,12 @@ a:active {
 }
 */
 
+a {
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 h1 {
     line-height:0em;
     margin-top: 1.5em;
