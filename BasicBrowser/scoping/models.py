@@ -159,11 +159,11 @@ class WoSArticle(models.Model):
     cl = models.TextField(null=True, verbose_name="Conference Location") # conf location
     ct = models.TextField(null=True, verbose_name="Conference Title") # conf title
     de = models.TextField(null=True, verbose_name="Author Keywords") # keywords - separate table?
-    di = models.CharField(null=True, max_length=150, verbose_name="DOI") # DOI
+    di = models.CharField(null=True, max_length=250, verbose_name="DOI") # DOI
     dt = models.CharField(null=True, max_length=50, verbose_name="Document Type") # doctype
     em = models.TextField(null=True, verbose_name="E-mail Address") #email 
     ep = models.CharField(null=True, max_length=10, verbose_name="Ending Page") # last page
-    fn = models.CharField(null=True, max_length=150, verbose_name="File Name") # filename?
+    fn = models.CharField(null=True, max_length=250, verbose_name="File Name") # filename?
     fu = models.TextField(null=True, verbose_name="Funding Agency and Grant Number") #funding agency + grant number
     fx = models.TextField(null=True, verbose_name="Funding Text") # funding text
     ga = models.CharField(null=True, max_length=100, verbose_name="Document Delivery Number") # document delivery number
