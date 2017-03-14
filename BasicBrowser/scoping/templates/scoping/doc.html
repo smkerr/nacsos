@@ -18,7 +18,7 @@
 <h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}}, your progress: </h2>
 <div id="progress"></div>
 <!-- Query manager -->
-<p><a href="/scoping/back_review/{{query.id}}">Back</a>
+<p><a href="/scoping/screen/{{query.id}}/{{tag.id}}/1/-1">Back</a>
 
 <p>Is the document below (one of {{ ndocs }} remaining) relevant?
 
@@ -163,20 +163,30 @@ graph.selectAll("line")
 	
 var qid = {{ query.id }}
 var docid = "{{ doc.UT }}"
+
+
 function review(d) {
 	console.log(qid)
 	console.log(docid)
 	$.ajax({
 		url: '/scoping/do_review',
 		data: {
+            'tid' : {{tag.id}},
 			'query': qid,
 			'doc': docid,
 			'd':d
 		},
 		success: function() {
-			location.reload()
+            if ({{ctype}}>1) {
+                var doc = {{d}}
+                url = 'scoping/screen/{{query.id}}/{{tag.id}}/{{ctype}}/'+(doc+1)
+                window.location.href = url
+            } else {            
+			    location.reload()
+            }
 		}
 	})
+console.log({{page}})
 }
 </script>
 
