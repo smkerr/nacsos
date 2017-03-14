@@ -54,15 +54,19 @@ def add_doc_text(r):
             else:
                 record[key] += line.strip()
 
-    record['scopus_id'] = dict(parse_qsl(urlparse(record['UR']).query))['eid'] 
-    add_doc(record)
+    try:
+        record['scopus_id'] = dict(parse_qsl(urlparse(record['UR']).query))['eid'] 
+        add_doc(record)
+    except:
+        print("don't want to add this record, it has no id!")
+        print(record)
 
 def add_docs(docs):
     result = db.scopus_docs.insert_many(docs)
 
 
 def main():
-    very_par = False
+    very_par = True
     i=0
     n_records = 0
     records=[]
@@ -72,7 +76,8 @@ def main():
         record = {}
     mfields = ['au','AF','CR','C1']
 
-    max_chunk_size = 2000
+    # The bigger the chunk size, the faster it goes, but the more memory it eats!
+    max_chunk_size = 20000
     chunk_size = 0
 
     scopus2WoSFields = {
@@ -109,7 +114,7 @@ def main():
     #with open("/home/max/Desktop/353/1_scopus.ris", encoding="utf-8") as res:
     with open("/queries/354/s_results.txt", encoding="utf-8") as res:
         for line in res:
-            if n_records > 5000:
+            if n_records > 1000000:
                 break
             if '\ufeff' in line: # BOM on first line
                 continue
@@ -127,7 +132,7 @@ def main():
                 chunk_size+=1
                 if chunk_size==max_chunk_size:
                     ## parallely add docs
-                    pool = Pool(processes=6)
+                    pool = Pool(processes=32)
                     if very_par:
                         pool.map(add_doc_text, records)
                     else:
@@ -139,7 +144,8 @@ def main():
                 continue
             if re.match("^EF",line): #end of file
                 #done!
-                break
+                #break # We added files together, so there will be multiple EFs
+                continue 
             if not very_par:
                 if re.search("([A-Z][A-Z1-9])(\s{2}-\s*)",line):
                     s = re.search("([A-Z][A-Z1-9])(\s{2}-\s*)(.*)",line)
@@ -175,7 +181,7 @@ def main():
 
     if chunk_size < max_chunk_size:
         # parallely add docs
-        pool = Pool(processes=6)
+        pool = Pool(processes=32)
         if very_par:
             pool.map(add_doc_text, records)
         else:

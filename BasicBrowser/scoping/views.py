@@ -1076,11 +1076,6 @@ def sortdocs(request):
 
         if len(mult_fields) > 0:
 
-            #fdocs = filt_docs.order_by(*order_by)[:100]
-            #adocs = fdocs.annotate(
-            #    **{mult_fields[0]:StringAgg(mult_fields[0],"; ")}
-            #).values(*mult_fields)
-
             for d in docs:
                 for m in range(len(mult_fields)):
                     f = (mult_fields_tuple[m],)
