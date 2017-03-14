@@ -176,7 +176,10 @@ def main():
     if chunk_size < max_chunk_size:
         # parallely add docs
         pool = Pool(processes=6)
-        pool.map(add_doc_text, records)
+        if very_par:
+            pool.map(add_doc_text, records)
+        else:
+            pool.map(add_doc, records)
         pool.terminate()
         #result = db.scopus_docs.insert_many(records)
 
