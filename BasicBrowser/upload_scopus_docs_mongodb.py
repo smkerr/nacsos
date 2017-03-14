@@ -107,7 +107,7 @@ def main():
 
     #with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
     #with open("/home/max/Desktop/353/1_scopus.ris", encoding="utf-8") as res:
-    with open("/home/max/Desktop/354/s_results.txt", encoding="utf-8") as res:
+    with open("/queries/354/s_results.txt", encoding="utf-8") as res:
         for line in res:
             if n_records > 5000:
                 break

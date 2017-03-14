@@ -56,33 +56,39 @@ def add_doc(r):
 
     
         ## Add authors
-        for a in range(len(r['AF'])):
-            af = r['AF'][a]
-            au = r['AU'][a]
-            if 'C1' not in r:               
-                r['C1'] = [""]
-            a_added = False
-            for inst in r['C1']:
-                inst = inst.split('] ',1)
-                iauth = inst[0]
+        try:
+            for a in range(len(r['AU'])):
                 try:
-                    institute = inst[1]
-                    if af in iauth:
-                        dai = DocAuthInst(doc=doc)
-                        dai.AU = au
-                        dai.AF = af
-                        dai.institution = institute
-                        dai.position = a+1
-                        dai.save()
-                        a_added = True
+                    af = r['AF'][a]
                 except:
-                    pass # Fix this later, these errors are caused by multiline institutions
-            if a_added == False:
-                dai = DocAuthInst(doc=doc)
-                dai.AU = au
-                dai.AF = af
-                dai.position = a
-                dai.save()
+                    af = None
+                au = r['AU'][a]
+                if 'C1' not in r:               
+                    r['C1'] = [""]
+                a_added = False
+                for inst in r['C1']:
+                    inst = inst.split('] ',1)
+                    iauth = inst[0]
+                    try:
+                        institute = inst[1]
+                        if af in iauth:
+                            dai = DocAuthInst(doc=doc)
+                            dai.AU = au
+                            dai.AF = af
+                            dai.institution = institute
+                            dai.position = a+1
+                            dai.save()
+                            a_added = True
+                    except:
+                        pass # Fix this later, these errors are caused by multiline institutions
+                if a_added == False:
+                    dai = DocAuthInst(doc=doc)
+                    dai.AU = au
+                    dai.AF = af
+                    dai.position = a
+                    dai.save()
+        except:
+            pass
             
         
 

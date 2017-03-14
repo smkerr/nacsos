@@ -707,26 +707,30 @@ def userpage(request):
     template = loader.get_template('scoping/user.html')
 
     # Queries
-    queries = Query.objects.filter(users=request.user)
+    queries = Query.objects.filter(users=request.user).values('id','type','tag')
 
     query_list = []
 
-    for q in queries:
-        print(q.type)
+    for qt in queries:
+        print(qt['type'])
+        q = Query.objects.get(pk=qt['id'])
+        tag = Tag.objects.get(pk=qt['tag'])
         ndocs           = Doc.objects.filter(query=q).count()
-        revdocs         = DocOwnership.objects.filter(query=q,user=request.user).count()
-        reviewed_docs   = DocOwnership.objects.filter(query=q,user=request.user,relevant__gt=0).count()
+        dos = DocOwnership.objects.filter(query=q,user=request.user,tag=tag)
+        revdocs         = dos.count()
+        reviewed_docs   = dos.filter(relevant__gt=0).count()
         unreviewed_docs = revdocs - reviewed_docs
-        reldocs   = DocOwnership.objects.filter(query=q,user=request.user,relevant=1).count()
-        irreldocs = DocOwnership.objects.filter(query=q,user=request.user,relevant=2).count()
-        maybedocs = DocOwnership.objects.filter(query=q,user=request.user,relevant=3).count()
-        yesbuts   = DocOwnership.objects.filter(query=q,user=request.user,relevant=4).count()
+        reldocs   = dos.filter(relevant=1).count()
+        irreldocs = dos.filter(relevant=2).count()
+        maybedocs = dos.filter(relevant=3).count()
+        yesbuts   = dos.filter(relevant=4).count()
         try:
             relevance = round(reldocs/(reldocs+irreldocs)*100)
         except:
             relevance = 0
         query_list.append({
             'id': q.id,
+            'tag': tag,
             'type': q.type,
             'title': q.title,
             'ndocs': ndocs,
@@ -903,6 +907,8 @@ def doclist(request,qid):
         if f.name !="doc" and f.name !="query":
             fields.append({"path": path, "name": f.verbose_name})
 
+    fields.append({"path": "tag__title", "name": "Tag name"})
+
     basic_fields = ['Title', 'Abstract', 'Year'] #, str(request.user)]
 
     context = {
@@ -961,6 +967,9 @@ def sortdocs(request):
     all_docs = Doc.objects.filter(query__id=qid)
     filt_docs = Doc.objects.filter(query__id=qid)
 
+    #if "tag__title" in fields:
+    #    filt_docs = filt_docs.filter(tag__query__id=qid)
+
     tag_text = ""
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
@@ -980,22 +989,29 @@ def sortdocs(request):
             op =  f_operators[i]
             exclude = False
         try:
-            kwargs = {
-                '{0}__{1}'.format(f_fields[i],op): f_text[i]
-            }
-            if joiner=="AND":
-                if exclude:
-                    filt_docs = filt_docs.exclude(**kwargs)
+            if "tag__title" in f_fields[i]:
+                filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i])
+                tag_filter = f_text[i]
+            else: 
+                kwargs = {
+                    '{0}__{1}'.format(f_fields[i],op): f_text[i]
+                }
+                if joiner=="AND":
+                    if exclude:
+                        filt_docs = filt_docs.exclude(**kwargs)
+                    else:
+                        filt_docs = filt_docs.filter(**kwargs)
                 else:
-                    filt_docs = filt_docs.filter(**kwargs)
-            else:
-                if exclude:
-                    filt_docs = filt_docs | all_docs.exclude(**kwargs)
-                else:
-                    filt_docs = filt_docs | all_docs.filter(**kwargs)
-            tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
+                    if exclude:
+                        filt_docs = filt_docs | all_docs.exclude(**kwargs)
+                    else:
+                        filt_docs = filt_docs | all_docs.filter(**kwargs)
+                tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
         except:
             break
+
+    print(len(filt_docs))
+
 
     if tag_title is not None:
         t = Tag(title=tag_title)
@@ -1015,7 +1031,7 @@ def sortdocs(request):
     mult_fields = []
     users = []
     for f in fields:
-        if "docauthinst" in f:
+        if "docauthinst" in f or "tag__" in f:
             mult_fields.append(f)
             #single_fields.append(f)
         elif "docownership" in f:
@@ -1033,7 +1049,11 @@ def sortdocs(request):
         uname = users[0].split("__")[1]
         user = User.objects.get(username=uname)
         null_filter = 'docownership__relevant__isnull'
-        reldocs = filt_docs.filter(docownership__user=user,docownership__query=query).values("UT")
+        reldocs = filt_docs.filter(docownership__user=user,docownership__query=query)
+        if "tag__title" in f_fields:
+            reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter)
+            print(reldocs)
+        reldocs = reldocs.values("UT")
         filt_docs = filt_docs.filter(UT__in=reldocs)
 
     #print(len(filt_docs))
@@ -1064,7 +1084,10 @@ def sortdocs(request):
             for d in docs:
                 for m in range(len(mult_fields)):
                     f = (mult_fields_tuple[m],)
-                    adoc = Doc.objects.filter(UT=d['UT']).values_list(*f).order_by('docauthinst__position')
+                    if "tag__" in mult_fields_tuple[m]:
+                        adoc = Tag.objects.all().filter(doc__UT=d['UT'],query=qid).values_list("title")
+                    else:
+                        adoc = filt_docs.filter(UT=d['UT']).values_list(*f).order_by('docauthinst__position')
                     d[mult_fields[m]] = "; <br>".join(str(x) for x in (list(itertools.chain(*adoc))))
 
     for d in docs:
@@ -1075,6 +1098,8 @@ def sortdocs(request):
                 doc = Doc.objects.get(UT=d['UT'])
                 #print(d['UT'])
                 do = DocOwnership.objects.filter(doc_id=d['UT'],query__id=qid,user__username=uname)
+                if "tag__title" in f_fields:
+                    do = do.filter(tag__title__icontains=tag_filter)
                 if do.count() > 0:
                     d[u] = do.first().relevant
                     text = do.first().get_relevant_display()
@@ -1097,9 +1122,7 @@ def sortdocs(request):
 
         for d in docs:
             row = [d[x] for x in fields]
-            writer.writerow(row)
-
-        #x = zu            
+            writer.writerow(row)         
 
         return response
 
@@ -1115,6 +1138,7 @@ def sortdocs(request):
     }
     #return HttpResponse(template.render(context, request))
 
+    #x = y
     return JsonResponse(response,safe=False)
 
 def cycle_score(request):
@@ -1223,84 +1247,41 @@ def assign_docs(request):
 
 import re
 
-def check_docs(request,qid):
-
-    query = Query.objects.get(pk=qid)
-    user = request.user
-    docs = DocOwnership.objects.filter(
-        doc__wosarticle__isnull=False,
-        query=query,
-        user=user.id,
-        relevant=0
-    )
-
-
-    tdocs = Doc.objects.filter(query=query,users=user.id).count()
-    sdocs = Doc.objects.filter(query=query,users=user.id, docownership__relevant__gt=0).count()
-
-
-
-    ndocs = docs.count()
-
-    try:
-        doc_id = docs.first().doc_id
-    except:
-        return HttpResponseRedirect(reverse('scoping:userpage'))
-
-    doc = Doc.objects.filter(UT=doc_id).first()
-    authors = DocAuthInst.objects.filter(doc=doc)
-    abstract = highlight_words(doc.content,query.text)
-    title = highlight_words(doc.wosarticle.ti,query.text)
-
-    qtechs = Technology.objects.filter(query__doc=doc) | Technology.objects.filter(doc=doc)
-    qtechs = qtechs.distinct()
-    ntechs = Technology.objects.exclude(query__doc=doc).exclude(doc=doc)
-
-    template = loader.get_template('scoping/doc.html')
-    context = {
-        'query': query,
-        'doc': doc,
-        'ndocs': ndocs,
-        'user': user,
-        'authors': authors,
-        'tdocs': tdocs,
-        'sdocs': sdocs,
-        'abstract': abstract,
-        'title': title,
-        'page': 'check_docs',
-        'qtechs': qtechs,
-        'ntechs': ntechs
-    }
-    return HttpResponse(template.render(context, request))
-
-def back_review(request,qid):
-    query = Query.objects.get(pk=qid)
-    user = request.user
-    docs = DocOwnership.objects.filter(query=query,user=user.id,relevant__gt=0)
-    tdocs = docs.count() - 1
-    return HttpResponseRedirect(reverse('scoping:review_docs', kwargs={'qid': qid,'d': tdocs}))
-
-def review_docs(request,qid,d=0):
+## Universal screening function, ctype = type of documents to show
+def screen(request,qid,tid,ctype,d=0):
     d = int(d)
+    ctype = int(ctype)
     query = Query.objects.get(pk=qid)
+    tag = Tag.objects.get(pk=tid)
     user = request.user
 
     docs = DocOwnership.objects.filter(
             doc__wosarticle__isnull=False,
             query=query,
             user=user.id,
-            relevant__gt=0
+            tag=tag
     )
+    if ctype==1:
+        docs = docs.filter(relevant__gte=ctype)
+    else:
+        docs = docs.filter(relevant=ctype)
+    if d < 0:
+        d = docs.count() - 1
+
+    docs = docs.order_by('date')
 
     tdocs = docs.count()
     sdocs = d
 
     ndocs = docs.count()
+
     try:
         doc_id = docs[d].doc_id
     except:
         return HttpResponseRedirect(reverse('scoping:userpage'))
 
+    pages = ["check","review","review","maybe","yesbut"]
+
     doc = Doc.objects.filter(UT=doc_id).first()
     authors = DocAuthInst.objects.filter(doc=doc)
     abstract = highlight_words(doc.content,query.text)
@@ -1321,52 +1302,19 @@ def review_docs(request,qid,d=0):
         'sdocs': sdocs,
         'abstract': abstract,
         'title': title,
-        'page': 'review_docs',
+        'page': pages[ctype],
+        'ctype': ctype,
         'qtechs': qtechs,
-        'ntechs': ntechs
+        'ntechs': ntechs,
+        'tag': tag,
+        'd': d
     }
-    return HttpResponse(template.render(context, request))
 
-def maybe_docs(request,qid,d=0):
-    d = int(d)
-    query = Query.objects.get(pk=qid)
-    user = request.user
-
-    docs = DocOwnership.objects.filter(query=query,user=user.id,relevant=3)
-
-    tdocs = docs.count()
-    sdocs = d
-
-    ndocs = docs.count()
-    doc_id = docs[d].doc_id
-    doc = Doc.objects.filter(UT=doc_id).first()
-    authors = DocAuthInst.objects.filter(doc=doc)
-    abstract = highlight_words(doc.content,query.text)
-    title = highlight_words(doc.wosarticle.ti,query.text)
-
-    qtechs = Technology.objects.filter(query__doc=doc) | Technology.objects.filter(doc=doc)
-    qtechs = qtechs.distinct()
-    ntechs = Technology.objects.exclude(query__doc=doc).exclude(doc=doc)
-
-    template = loader.get_template('scoping/doc.html')
-    context = {
-        'query': query,
-        'doc': doc,
-        'ndocs': ndocs,
-        'user': user,
-        'authors': authors,
-        'tdocs': tdocs,
-        'sdocs': sdocs,
-        'abstract': abstract,
-        'title': title,
-        'page': 'maybe_docs',
-        'qtechs': qtechs,
-        'ntechs': ntechs
-    }
     return HttpResponse(template.render(context, request))
 
 def do_review(request):
 
+    tid = request.GET.get('tid',None)
     qid = request.GET.get('query',None)
     doc_id = request.GET.get('doc',None)
     d = request.GET.get('d',None)
@@ -1374,8 +1322,9 @@ def do_review(request):
     doc = Doc.objects.get(pk=doc_id)
     query = Query.objects.get(pk=qid)
     user = request.user
+    tag = Tag.objects.get(pk=tid)
 
-    docown = DocOwnership.objects.filter(doc=doc,query=query,user=user).order_by("relevant").first()
+    docown = DocOwnership.objects.filter(doc=doc,query=query,user=user,tag=tag).order_by("relevant").first()
 
     print(docown.relevant)
 
@@ -1383,12 +1332,11 @@ def do_review(request):
     print(docown.doc.UT)
 
     docown.relevant=int(d)
+    docown.date=timezone.now()
     docown.save()
     print(docown.relevant)
 
     time.sleep(1)
-
-
     return HttpResponse("")
 
 def remove_assignments(request):
