@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 # Create your models here.
 
@@ -115,13 +116,14 @@ class DocOwnership(models.Model):
         db_index=True, 
         verbose_name="Relevance"
     )
+    date     = models.DateTimeField(null=True,default=timezone.now,verbose_name="Rating Date")
 
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")
     AU = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author")
     AF = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author Full Name")
-    institution = models.CharField(max_length=150, db_index=True, verbose_name="Institution Name")
+    institution = models.CharField(max_length=250, db_index=True, verbose_name="Institution Name")
     position = models.IntegerField(verbose_name="Author Position")
 
     def __str__(self):
@@ -154,7 +156,7 @@ class WoSArticle(models.Model):
     py = models.IntegerField(null=True, verbose_name="Year") 
     ar = models.CharField(null=True, max_length=100, verbose_name="Article Number") # Article number
     bn = models.CharField(null=True, max_length=100, verbose_name="ISBN") # ISBN
-    bp = models.CharField(null=True, max_length=10, verbose_name="Beginning Page") # beginning page
+    bp = models.CharField(null=True, max_length=50, verbose_name="Beginning Page") # beginning page
     c1 = models.TextField(null=True, verbose_name="Author Address") # author address
     cl = models.TextField(null=True, verbose_name="Conference Location") # conf location
     ct = models.TextField(null=True, verbose_name="Conference Title") # conf title
@@ -162,7 +164,7 @@ class WoSArticle(models.Model):
     di = models.CharField(null=True, max_length=250, verbose_name="DOI") # DOI
     dt = models.CharField(null=True, max_length=50, verbose_name="Document Type") # doctype
     em = models.TextField(null=True, verbose_name="E-mail Address") #email 
-    ep = models.CharField(null=True, max_length=10, verbose_name="Ending Page") # last page
+    ep = models.CharField(null=True, max_length=50, verbose_name="Ending Page") # last page
     fn = models.CharField(null=True, max_length=250, verbose_name="File Name") # filename?
     fu = models.TextField(null=True, verbose_name="Funding Agency and Grant Number") #funding agency + grant number
     fx = models.TextField(null=True, verbose_name="Funding Text") # funding text
@@ -177,7 +179,7 @@ class WoSArticle(models.Model):
     la = models.CharField(null=True, max_length=100, verbose_name="Language") # Language
     nr = models.IntegerField(null=True, verbose_name="Cited Reference Count") # number of references
     pa = models.TextField(null=True, verbose_name="Publisher Address") # pub address
-    pd = models.CharField(null=True, max_length=10, verbose_name="Publication Date") # pub month
+    pd = models.CharField(null=True, max_length=50, verbose_name="Publication Date") # pub month
     pg = models.IntegerField(null=True, verbose_name="Page Count") # page count
     pi = models.TextField(null=True, verbose_name="Publisher City") # pub city
     pt = models.CharField(null=True, max_length=50, verbose_name="Publication Type") # pub type
@@ -187,11 +189,11 @@ class WoSArticle(models.Model):
     se = models.TextField(null=True, verbose_name="Book Series Title") # book series title
     si = models.TextField(null=True, verbose_name="Special Issue") # special issue
     sn = models.CharField(null=True, max_length=80, verbose_name="ISSN") # ISSN
-    so = models.CharField(null=True, max_length=150, verbose_name="Publication Name") # publication name
+    so = models.CharField(null=True, max_length=250, verbose_name="Publication Name") # publication name
     sp = models.TextField(null=True, verbose_name="Conference Sponsors") # conf sponsors
     su = models.TextField(null=True, verbose_name="Supplement") # supplement
     tc = models.IntegerField(null=True, verbose_name="Times Cited") # times cited
-    vl = models.CharField(null=True, max_length=10, verbose_name="Volume")
+    vl = models.CharField(null=True, max_length=50, verbose_name="Volume")
     
     def __str__(self):
       return self.ar
