@@ -64,7 +64,7 @@
 	 	    <td>{{ query.text }}</td>
 		    <td>{{ query.date }}</td>
                     {% if query.r_count > 0 %}
-                      <td><a href="docs/{{query.id}}">{{ query.r_count }}</a></td>
+                      <td><a href="docs/{{query.id}}">{{ query.doc_set.count }}</a></td>
                     {% else %}
                       <td><a href="querying/{{query.id}}/0/0">View progress</a></td>
                     {% endif %}
