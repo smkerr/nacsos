@@ -6,6 +6,7 @@ app_name = 'scoping'
 
 urlpatterns = [
     url(r'^$', views.index, name='index'),
+    url(r'^switchmode$', views.switch_mode, name='switch_mode'),
     url(r'^technologies',views.technologies, name='technologies'),
     url(r'^add_tech',views.add_tech, name='add_tech'),
     url(r'^update_tech',views.update_tech, name='update_tech'),   
