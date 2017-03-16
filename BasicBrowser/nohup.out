@@ -3812,3 +3812,103 @@ System check identified 1 issue (0 silenced).
 done! total time: 69 minutes and 52 seconds
 done! total time: 79 minutes and 17 seconds
 done! total time: 79 minutes and 48 seconds
+Traceback (most recent call last):
+  File "doc_comparison.py", line 134, in <module>
+    main()
+  File "doc_comparison.py", line 108, in main
+    print(unshingled_s_docs.count())
+  File "/usr/local/lib/python3.4/dist-packages/mongoengine/queryset/queryset.py", line 131, in count
+    return super(QuerySet, self).count(with_limit_and_skip)
+  File "/usr/local/lib/python3.4/dist-packages/mongoengine/queryset/base.py", line 384, in count
+    return self._cursor.count(with_limit_and_skip=with_limit_and_skip)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/cursor.py", line 711, in count
+    return self.__collection._count(cmd, self.__collation)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/collection.py", line 1310, in _count
+    collation=collation)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/collection.py", line 232, in _command
+    collation=collation)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/pool.py", line 424, in command
+    self._raise_connection_failure(error)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/pool.py", line 552, in _raise_connection_failure
+    raise error
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/pool.py", line 419, in command
+    collation=collation)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/network.py", line 108, in command
+    response = receive_message(sock, 1, request_id)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/network.py", line 137, in receive_message
+    header = _receive_data_on_socket(sock, 16)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/network.py", line 164, in _receive_data_on_socket
+    chunk = sock.recv(length)
+KeyboardInterrupt
+680
+multiprocess.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 119, in worker
+    result = (True, func(*args, **kwds))
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 44, in mapstar
+    return list(map(*args))
+  File "doc_comparison.py", line 58, in compare
+    d1 = s_docs[d1]
+  File "/usr/local/lib/python3.4/dist-packages/mongoengine/queryset/base.py", line 193, in __getitem__
+    return queryset._document._from_son(queryset._cursor[key],
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/cursor.py", line 568, in __getitem__
+    for doc in clone:
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/cursor.py", line 1114, in next
+    if len(self.__data) or self._refresh():
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/cursor.py", line 1036, in _refresh
+    self.__collation))
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/cursor.py", line 873, in __send_message
+    **kwargs)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/mongo_client.py", line 888, in _send_message_with_response
+    server = topology.select_server(selector)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/topology.py", line 214, in select_server
+    address))
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/topology.py", line 189, in select_servers
+    self._error_message(selector))
+pymongo.errors.ServerSelectionTimeoutError: localhost:27017: [Errno 111] Connection refused
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "doc_comparison.py", line 134, in <module>
+    main()
+  File "doc_comparison.py", line 126, in main
+    pool.map(partial(compare,dc2=wos_docs),s_docs_i)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 260, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 599, in get
+    raise self._value
+pymongo.errors.ServerSelectionTimeoutError: localhost:27017: [Errno 111] Connection refused
+Traceback (most recent call last):
+  File "doc_comparison.py", line 134, in <module>
+    main()
+  File "doc_comparison.py", line 108, in main
+    print(unshingled_s_docs.count())
+  File "/usr/local/lib/python3.4/dist-packages/mongoengine/queryset/queryset.py", line 131, in count
+    return super(QuerySet, self).count(with_limit_and_skip)
+  File "/usr/local/lib/python3.4/dist-packages/mongoengine/queryset/base.py", line 384, in count
+    return self._cursor.count(with_limit_and_skip=with_limit_and_skip)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/cursor.py", line 711, in count
+    return self.__collection._count(cmd, self.__collation)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/collection.py", line 1310, in _count
+    collation=collation)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/collection.py", line 232, in _command
+    collation=collation)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/pool.py", line 424, in command
+    self._raise_connection_failure(error)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/pool.py", line 552, in _raise_connection_failure
+    raise error
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/pool.py", line 419, in command
+    collation=collation)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/network.py", line 108, in command
+    response = receive_message(sock, 1, request_id)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/network.py", line 137, in receive_message
+    header = _receive_data_on_socket(sock, 16)
+  File "/usr/local/lib/python3.4/dist-packages/pymongo/network.py", line 164, in _receive_data_on_socket
+    chunk = sock.recv(length)
+KeyboardInterrupt
+680
+680
+680
