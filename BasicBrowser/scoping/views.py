@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 
 # Create your views here.
@@ -6,7 +6,7 @@ import os, time, math, itertools, csv, random
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.template import loader
+from django.template import loader, RequestContext
 from django.utils import timezone
 from django.urls import reverse
 from django.contrib.auth.decorators import user_passes_test
@@ -17,11 +17,33 @@ from .models import *
 def super_check(user):
     return user.groups.filter(name__in=['superuser'])
 
+
+@login_required
+def switch_mode(request):
+
+    print("SM1 - Session variable (snowball): "+str(request.session['snowball']))    
+
+    if request.session['snowball']==False:
+        request.session['snowball']=True
+        return HttpResponseRedirect(reverse('scoping:snowball'))
+    else:
+        request.session['snowball']=False
+        return HttpResponseRedirect(reverse('scoping:index'))
+
+    #print("SM2 - Session variable (snowball): "+str(request.session['snowball']))
+
+
 ########################################################
 ## Homepage - list the queries, form for adding new ones
 
 @login_required
 def index(request):
+
+    
+    if request.session.get('snowball', None):
+        request.session['snowball']=False
+
+    print("Session variable (snowball): "+str(request.session['snowball']))
 
     template = loader.get_template('scoping/index.html')
 
