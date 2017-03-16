@@ -54,17 +54,20 @@ def jaccard(s1,s2):
 
 def compare(d1,dc2):
     django.db.connections.close_all()
-    s_docs = scopus_doc.objects.all()
-    d1 = s_docs[d1]
+    d1 = scopus_doc.objects.all()[d1]
     if not hasattr(d1,'shingle'):
         return
     d1.shingle_list = d1.shingle
     d1.shingle = set()
     for li in list(d1.shingle_list):
         d1.shingle.add(tuple(li))
+    dc2 = Doc.objects.filter(PY=d1.PY)
     for d2 in dc2:
+        #d2 = Doc.objects.filter(PY=d1.PY)[d2]
         try:
-            j = jaccard(d1.shingle,d2.shingle)
+            j = jaccard(d1.shingle,d2.shingle())
+            if j < 0.1:
+                return
             if hasattr(d1,'DO'):
                 d1_do = True
             else:
@@ -93,7 +96,8 @@ def compare(d1,dc2):
                 jaccard=j,
                 py_diff=py_diff
             )
-            sim.save()
+            if j > 0.1:
+                sim.save()
             django.db.connections.close_all()
         except:
             pass
@@ -113,16 +117,16 @@ def main():
             pass
       
 
-    wos_docs = Doc.objects.all()[:10000]
-    for wd in wos_docs:
-        wd.shingle = shingle(wd.title,2)
+    wos_docs_i = Doc.objects.all().count()
 
     s_docs_i = range(s_docs.count())
 
     #s_docs_i = range(20)
 
+    similarity.objects.all().delete()
+
     pool = Pool(processes=8)
-    pool.map(partial(compare,dc2=wos_docs),s_docs_i)
+    pool.map(partial(compare,dc2=wos_docs_i),s_docs_i)
     pool.terminate()
     
     
