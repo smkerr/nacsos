@@ -4,12 +4,14 @@ from functools import partial
 import scrapeWoS #import scopus2wosfields
 from urllib.parse import urlparse, parse_qsl
 
-print(dir(scrapeWoS))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "BasicBrowser.settings")
 django.setup()
 
 from scoping.models import *
+
+def shingle(text):
+    return set(s for s in ngrams(text.lower().split(),2))
 
 def get(r, k):
     try:
@@ -17,6 +19,12 @@ def get(r, k):
     except:
         x = ""
     return(x)
+
+def jaccard(s1,s2):
+    try:
+        return len(s1.intersection(s2)) / len(s1.union(s2))
+    except:
+        return 0
 
 def add_doc(r):
     django.db.connections.close_all()
@@ -43,9 +51,23 @@ def add_doc(r):
         docs.first().query.add(q)
     if len(docs)>1:
         print("more than one doc matching!!!!!")
+        for d in docs:
+            print(d.title)
+            print(d.UT)
+    if len(docs)==0:
+        #print("no matching docs")
+        s1 = shingle(get(r,'ti'))
+        py_docs = Doc.objects.filter(PY=get(r,'py'))
+        docs = []
+        for d in py_docs:
+            j = jaccard(s1,d.shingle())
+            if j > 0.51:
+                d.query.add(q)
+                return
+
     if len(docs)==0:
         doc = Doc(UT=r['UT'])
-        print(doc)
+        #print(doc)
         doc.title=get(r,'ti')
         doc.content=get(r,'ab')
         doc.PY=get(r,'py')
@@ -68,19 +90,22 @@ def add_doc(r):
 
         try:
             article.save()
-            print("article saved")
+            
         except:
             pass
 
     
         ## Add authors
-        for a in range(len(r['au'])):
-            #af = r['AF'][a]
-            au = r['au'][a]  
-            dai = DocAuthInst(doc=doc)
-            dai.AU = au
-            dai.position = a
-            dai.save()
+        try:
+            for a in range(len(r['au'])):
+                #af = r['AF'][a]
+                au = r['au'][a]  
+                dai = DocAuthInst(doc=doc)
+                dai.AU = au
+                dai.position = a
+                dai.save()
+        except:
+            pass
 
 
 
@@ -95,12 +120,12 @@ def main():
     global q
     q = Query.objects.get(pk=qid)
 
+    # delete all docs that only belong to this query
     docs = Doc.objects.filter(query=qid)
     for d in docs:
         if len(d.query.all()) == 1:
             d.delete()
 
-    #Doc.objects.filter(query=qid).delete() # doesn't seem like a good idea
 
     i=0
     n_records = 0
@@ -164,7 +189,7 @@ def main():
                 continue
             if re.match("^EF",line): #end of file
                 #done!
-                break
+                continue
             if re.search("([A-Z][A-Z1-9])(\s{2}-\s*)",line):
                 s = re.search("([A-Z][A-Z1-9])(\s{2}-\s*)(.*)",line)
                 key = s.group(1).strip()

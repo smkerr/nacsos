@@ -40,7 +40,7 @@ def switch_mode(request):
 def index(request):
 
     
-    if request.session.get('snowball', None):
+    if request.session.get('snowball', None) == None:
         request.session['snowball']=False
 
     print("Session variable (snowball): "+str(request.session['snowball']))
