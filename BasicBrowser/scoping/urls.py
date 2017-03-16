@@ -28,6 +28,7 @@ urlpatterns = [
     url(r'^delete_sbs/(?P<sbsid>[0-9]+)$', views.delete_sbs, name='delete'),
     url(r'^query/(?P<qid>[0-9]+)$', views.query, name='query'),
     url(r'^docs/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
+    url(r'^docssbs/(?P<sbsid>[0-9]+)$', views.doclistsbs, name='doclistsbs'),
     url(r'^sort_docs$', views.sortdocs, name='sortdocs'),
     url(r'^cycle_score$', views.cycle_score, name='cycle_score'),
     url(r'^activate_user$', views.activate_user, name='activate_user'),

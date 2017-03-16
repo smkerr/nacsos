@@ -957,6 +957,93 @@ class StringAgg(Aggregate):
             return ''
         return value
 
+
+##################################################
+## View all docs in a Snowball session
+@login_required
+def doclistsbs(request,sbsid):
+
+    template = loader.get_template('scoping/docs_sbs.html')
+
+    print(str(sbsid))
+
+    if sbsid == 0 or sbsid=='0':
+        sbsid = SnowballingSession.objects.all().last().id
+
+    sbs = SnowballingSession.objects.get(pk=sbsid)
+
+    all_docs = []
+    queries = Query.objects.filter(snowball=sbsid)
+
+    for q in queries:
+        # Filter out non-reference queries
+        tmp = str.split(q.title,"_")
+        if tmp[len(tmp)-1] == "2":
+            qdocs = Doc.objects.filter(query__id=q.id)
+#            all_docs.append(qdocs.values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
+            qdocs2 = qdocs.values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py')
+            for d in qdocs2:
+                all_docs.append(d)
+
+    print(type(all_docs))
+    print(all_docs)
+
+    ndocs = len(all_docs)
+
+    print(ndocs)
+
+    docs = all_docs
+#    docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
+
+    print(len(docs))
+    print(docs)
+
+
+    fields = []
+
+ #   for f in Doc._meta.get_fields():
+ #       if f.is_relation:
+ #           for rf in f.related_model._meta.get_fields():
+ #               if not rf.is_relation:
+ #                   path = f.name+"__"+rf.name
+ #                   fields.append({"path": path, "name": rf.verbose_name})
+    for f in WoSArticle._meta.get_fields():
+        path = "wosarticle__"+f.name
+        if f.name !="doc":
+            fields.append({"path": path, "name": f.verbose_name})
+
+#    for f in DocOwnership._meta.get_fields():
+#        if f.name == "user":
+#            path = "docownership__user__username"
+#        else:
+#            path = "docownership__"+f.name
+#        if f.name !="doc" and f.name !="query":
+#            fields.append({"path": path, "name": f.verbose_name})
+
+    for u in User.objects.all():
+        path = "docownership__"+u.username
+        fields.append({"path": path, "name": u.username})
+
+    for f in DocAuthInst._meta.get_fields():
+        path = "docauthinst__"+f.name
+        if f.name !="doc" and f.name !="query":
+            fields.append({"path": path, "name": f.verbose_name})
+
+    fields.append({"path": "tag__title", "name": "Tag name"})
+
+    basic_fields = ['Title', 'Abstract', 'Year'] #, str(request.user)]
+
+    context = {
+        'sbs': sbs,
+        'docs': docs,
+        'fields': fields,
+        'basic_fields': basic_fields,
+        'ndocs': ndocs,
+    }
+    return HttpResponse(template.render(context, request))
+
+
+
 ##################################################
 ## Ajax function, to return sorted docs
 
