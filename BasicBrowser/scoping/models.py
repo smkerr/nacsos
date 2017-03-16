@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from nltk import ngrams
 
 # Create your models here.
 
@@ -78,6 +79,10 @@ class Doc(models.Model):
 
     def word_count(self):
         return len(str(self.content).split())
+
+    def shingle(self):
+        return set(s for s in ngrams(self.title.lower().split(),2))
+
 
 class Note(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)

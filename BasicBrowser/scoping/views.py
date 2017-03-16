@@ -299,7 +299,7 @@ import sys
 @login_required
 def do_snowballing(request,qid):
 
-    ssh_test()
+    #ssh_test()
  
     # Get current query
     query = Query.objects.get(id=qid)
