@@ -21,8 +21,9 @@
 
         <table class="light" style="width:80%">
           <tr class="title">
-            <td>ID</td>
-            <td>Title</td>
+            <td>Query ID</td>
+            <td>Query Title</td>
+            <td>Tag Title</td>
             <td># Documents</td>
             <td>! To review</td>
             <td>Reviewed</td>
@@ -34,12 +35,13 @@
               <tr>
                 <td><a href="/scoping/query/{{q.id}}">{{q.id}}</td>
                 <td>{{q.title}}</td>
+                <td>{{q.tag.title}}</td>
                 <td>{{q.ndocs}}</td>
                 {% if q.revdocs > 0 %}
-                  <td class="review{{q.unreviewed_docs}} review"><a href="/scoping/check/{{q.id}}">{{q.unreviewed_docs}}</a></td>
-                  <td class="review{{q.revieweddocs}} review"><a href="/scoping/review/{{q.id}}/0">{{q.revieweddocs}}</a> ({{q.relevance}}% relevant)</td>
-                  <td class="review{{q.maybedocs}} review"><a href="/scoping/maybe/{{q.id}}/0">{{q.maybedocs}}</a></td>
-                  <td class="review{{q.yesbuts}} review"><a href="/scoping/yesbut/{{q.id}}/0">{{q.yesbuts}}</a></td>
+                  <td class="review{{q.unreviewed_docs}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/0/0">{{q.unreviewed_docs}}</a></td>
+                  <td class="review{{q.revieweddocs}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/1/0">{{q.revieweddocs}}</a> ({{q.relevance}}% relevant)</td>
+                  <td class="review{{q.maybedocs}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/3/0">{{q.maybedocs}}</a></td>
+                  <td class="review{{q.yesbuts}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/4/0">{{q.yesbuts}}</a></td>
                 {% else %}
                   <td>0</td>
                   <td>0</td>
