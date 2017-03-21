@@ -17,6 +17,12 @@ a:active {
 }
 */
 
+a {
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 h1 {
     line-height:0em;
     margin-top: 1.5em;
@@ -461,6 +467,7 @@ canvas {
     background-color: #799FF2;
     margin: 0;
     padding: 0;
+    border-bottom: 1px solid #547DD6;
 }
 
 #navigation table td {
@@ -475,7 +482,7 @@ canvas {
 }
 
 #navigation table td.linked {
-    width: 8%;
+    width: 10%;
     margin-left: 0%;
     color: #12337A;
     padding: 2 0;
@@ -564,7 +571,7 @@ canvas {
     position: absolute;
     top: 1.1em;
     width: 100%;
-    background-color: #547DD6;
+    background-color: none;
     height: 1px;
     border: none;
 }
