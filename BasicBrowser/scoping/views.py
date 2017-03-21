@@ -671,7 +671,7 @@ def query(request,qid):
 
     fields = ['id','title']
 
-    untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).count()
+    untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
 
     users = User.objects.all()
 
