@@ -909,8 +909,8 @@ def doclist(request,qid):
  #                   fields.append({"path": path, "name": rf.verbose_name})
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
-        if f.name !="doc":
-            fields.append({"path": path, "name": f.verbose_name})
+        #if f.name !="doc":
+        fields.append({"path": path, "name": f.verbose_name})
 
 #    for f in DocOwnership._meta.get_fields():
 #        if f.name == "user":
