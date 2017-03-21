@@ -88,7 +88,10 @@ def technologies(request):
 
     for t in technologies:
         t.queries = len(t.query_set.all())
-        t.docs = len(t.doc_set.all())
+        tdocs = Doc.objects.filter(technology=t)
+        itdocs = Doc.objects.filter(query__technology=t)
+        tdocs = tdocs | itdocs
+        t.docs = tdocs.distinct().count()
 
     context = {
       'techs'    : technologies,
@@ -1440,6 +1443,7 @@ def add_note(request):
     tid = request.POST.get('tag',None)
     qid = request.POST.get('qid',None)
     ctype = request.POST.get('ctype',None)
+    d = request.POST.get('d',None)
     text = request.POST.get('note',None)
 
     doc = Doc.objects.get(pk=doc_id)
@@ -1451,13 +1455,12 @@ def add_note(request):
     )
     note.save()
         
-    print(doc_id)
-    print(page)
 
-    return HttpResponseRedirect(reverse('scoping:'+page, kwargs={
+    return HttpResponseRedirect(reverse('scoping:screen', kwargs={
         'qid': qid,
         'tid': tid,
-        'ctype': ctype
+        'ctype': ctype,
+        'd': d
     }))
 
 

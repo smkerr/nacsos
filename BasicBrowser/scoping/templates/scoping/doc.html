@@ -40,7 +40,7 @@
 <hr>
 {{note.text}}
 <hr>
-<a href="/scoping/delete/Note/{{note.pk}}">Delete
+<a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
 </a>
 
 </div>
@@ -89,7 +89,8 @@ Click on any of the following technologies to add this document to them
       <input type="hidden" name="docn" value="{{doc.UT}}"></input>
       <input type="hidden" name="qid" value="{{query.id}}"></input>
       <input type="hidden" name="ctype" value="{{ctype}}"></input>
-      <input type="hidden" name="tag" value="{{tag}}"></input>
+      <input type="hidden" name="tag" value="{{tag.id}}"></input>
+      <input type="hidden" name="d" value="{{d}}"></input>
     <textarea name="note" rows=3 cols=30>
     </textarea>
     <p>
