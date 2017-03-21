@@ -218,7 +218,7 @@ import sys
 @login_required
 def doquery(request):
 
-    ssh_test()
+    #ssh_test()
 
     qtitle = request.POST['qtitle']
     qdb    = request.POST['qdb']
