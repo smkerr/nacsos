@@ -32,6 +32,12 @@ class similarity(Document):
     jaccard = FloatField()
     py_diff = IntField()
 
+class match(Document):
+    scopus_id = StringField(required=True, max_length=50,unique_with='wos_ut')
+    wos_ut = StringField(required=True, max_length=50)
+    py_diff = IntField()
+    jaccard = FloatField()
+
 def shingle(text,k):
     
     text = text.lower()
@@ -52,83 +58,56 @@ def jaccard(s1,s2):
     except:
         return 0
 
-def compare(d1,dc2):
+def find_match(d1):
     django.db.connections.close_all()
-    d1 = scopus_doc.objects.all()[d1]
-    if not hasattr(d1,'shingle'):
-        return
     d1.shingle_list = d1.shingle
     d1.shingle = set()
     for li in list(d1.shingle_list):
         d1.shingle.add(tuple(li))
-    dc2 = Doc.objects.filter(PY=d1.PY)
-    if hasattr(d1,'DO'):
-        d1_do = True
-    else:
-        d1_do = False
-    for d2 in dc2:
-        #d2 = Doc.objects.filter(PY=d1.PY)[d2]
+    matches = Doc.objects.filter(wosarticle__di=d1.DO)
+    if matches.count() == 1:
+        d2 = matches.first()
         try:
-            j = jaccard(d1.shingle,d2.shingle())
-            if j < 0.1:
-                return
-            if d2.wosarticle.di is not None:
-                d2_do = True
-            else:
-                d2_do = False
-            if d1_do and d2_do:
-                if d1.DO == d2.wosarticle.di and len(d1.DO) > 5:
-                    match = True
-                else:
-                    match = False
-            else:
-                match = False
-            try:
-                py_diff = d1.PY - d2.PY
-            except:
-                py_diff = None
-            sim = similarity(
-                scopus_id=d1.scopus_id,
-                wos_ut=d2.UT,
-                scopus_do=d1_do,
-                wos_do=d2_do,
-                do_match=match,
-                jaccard=j,
-                py_diff=py_diff
-            )
-            if j > 0.1:
-                sim.save()
-            django.db.connections.close_all()
+            py_diff = d1.PY - d2.PY
         except:
-            pass
-
-
+            py_diff = None
+        j = jaccard(d1.shingle,d2.shingle())
+        m = match(
+            scopus_id = d1.scopus_id,
+            wos_ut = d2.UT,
+            py_diff = py_diff,
+            jaccard = j
+        )
+        return(m)
+        #m.save()
+        
 
 def main():
-    docs = []
-    s_docs = scopus_doc.objects.all()
-    unshingled_s_docs = s_docs.filter(shingle__exists=False)
-    print(unshingled_s_docs.count())
-    for sd in unshingled_s_docs:
-        try:
-            sd.shingle = list(shingle(sd.TI,2))
-            sd.save()
-        except:
-            pass
-      
 
-    wos_docs_i = Doc.objects.all().count()
+    match.objects.all().delete()
+    s_docs_count = scopus_doc.objects.filter(DO__exists=True,shingle__exists=True).count()
+    print(s_docs_count)
 
-    s_docs_i = range(s_docs.count())
+    #s_docs_count = 10025
 
-    #s_docs_i = range(20)
+    chunk_size= 10000
 
-    similarity.objects.all().delete()
+    for i in range(s_docs_count//chunk_size+1):
+        f = i*chunk_size
+        l = (i+1)*chunk_size-1
+        if l > s_docs_count:
+            l = s_docs_count-1
+        s_docs = scopus_doc.objects.filter(DO__exists=True,shingle__exists=True)[f:l]
 
-    pool = Pool(processes=8)
-    pool.map(partial(compare,dc2=wos_docs_i),s_docs_i)
-    pool.terminate()
-    
+        matches = []
+        pool = Pool(processes=16)
+        matches.append(pool.map(partial(find_match,),s_docs))
+        pool.terminate()    
+        #matches = [x for x in matches[0] if x is not None]
+        matches = list(filter(None.__ne__, matches[0]))
+        match.objects.insert(matches)
+
+
     
     
 

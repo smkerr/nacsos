@@ -26,6 +26,82 @@ def jaccard(s1,s2):
     except:
         return 0
 
+def add_doc_text(r):
+
+    scopus2WoSFields = {
+        'TY': 'dt',
+        'TI': 'ti',
+        'T2': '',
+        'C3': '',
+        'J2': 'so',
+        'VL': 'vl',
+        'IS': '',
+        'SP': 'bp',
+        'EP': 'ep',
+        'PY': 'py',
+        'DO': 'di',
+        'SN': 'sn',
+        'AU': 'au',
+        'AD': 'ad',
+        'AB': 'ab',
+        'KW': 'kwp',
+        'Y2': '',
+        'CY': '',
+        #N1 means we need to read the next bit as key
+        'Correspondence Address': '',
+        'References': '',
+        'UR': 'UT', # use url as ut, that's the only unique identifier...
+        'PB': ''
+        #'ER': , #End record
+
+    }
+
+    record = {}
+    mfields = ['au','AF','CR','C1']
+    for line in r:
+        if re.search("([A-Z][A-Z1-9])(\s{2}-\s*)",line):
+            s = re.search("([A-Z][A-Z1-9])(\s{2}-\s*)(.*)",line)
+            key = s.group(1).strip()
+            value = s.group(3).strip()
+            if re.search("(.*)([A-Z][A-Z1-9])(\ {2}-\s*)",value):
+                s = re.search("(.*)([A-Z][A-Z1-9])(\s*-\s*)(.*)",value)
+                value = s.group(1).strip()
+                nextkey = s.group(2).strip()
+                nextvalue = s.group(4).strip()
+
+                try:
+                    nextkey = scopus2WoSFields[nextkey]
+                except:
+                    pass
+                
+                if nextkey in mfields:
+                    record[nextkey] = [nextvalue]
+                else:
+                    record[nextkey] = nextvalue
+
+            try:
+                key = scopus2WoSFields[key]
+            except:
+                pass
+            
+            if key in mfields:
+                record[key] = [value]
+            else:
+                record[key] = value
+
+        elif len(line) > 1:
+            if key in mfields:
+                record[key].append(line.strip())
+            else:
+                record[key] += line.strip()
+
+    try:
+        record['scopus_id'] = dict(parse_qsl(urlparse(record['UT']).query))['eid'] 
+        add_doc(record)
+    except:
+        print("don't want to add this record, it has no id!")
+        print(record)
+
 def add_doc(r):
     django.db.connections.close_all()
     try:
@@ -97,15 +173,18 @@ def add_doc(r):
     
         ## Add authors
         try:
+            dais = []
             for a in range(len(r['au'])):
                 #af = r['AF'][a]
                 au = r['au'][a]  
                 dai = DocAuthInst(doc=doc)
                 dai.AU = au
                 dai.position = a
-                dai.save()
+                dais.append(dai)
+                #dai.save()
+            DocAuthInst.objects.bulk_create(dais)
         except:
-            pass
+            print("couldn't add authors")
 
 
 
@@ -116,6 +195,7 @@ def add_doc(r):
 def main():
     qid = sys.argv[1]
 
+    very_par = True
     ## Get query
     global q
     q = Query.objects.get(pk=qid)
@@ -130,7 +210,10 @@ def main():
     i=0
     n_records = 0
     records=[]
-    record = {}
+    if very_par == True:
+        record = []
+    else:
+        record = {}
     mfields = ['au','AF','CR','C1']
 
     max_chunk_size = 2000
@@ -173,16 +256,22 @@ def main():
             if '\ufeff' in line: # BOM on first line
                 continue
             if 'ER  -' in line:   
+
                 # end of record - save it and start a new one
                 n_records +=1            
                 records.append(record)
-                record = {}
+                if very_par:
+                    record = []
+                else:
+                    record = {}
                 chunk_size+=1
                 if chunk_size==max_chunk_size:
                     # parallely add docs
-                    pool = Pool(processes=50)
-                    pool.map(add_doc, records)
-                    #pool.map(partial(add_doc, q=q),records)
+                    pool = Pool(processes=32)
+                    if very_par:
+                        pool.map(add_doc_text, records)
+                    else:
+                        pool.map(add_doc, records)
                     pool.terminate()
                     records = []
                     chunk_size = 0
@@ -190,47 +279,52 @@ def main():
             if re.match("^EF",line): #end of file
                 #done!
                 continue
-            if re.search("([A-Z][A-Z1-9])(\s{2}-\s*)",line):
-                s = re.search("([A-Z][A-Z1-9])(\s{2}-\s*)(.*)",line)
-                key = s.group(1).strip()
-                value = s.group(3).strip()
-                if re.search("(.*)([A-Z][A-Z1-9])(\ {2}-\s*)",value):
-                    s = re.search("(.*)([A-Z][A-Z1-9])(\s*-\s*)(.*)",value)
-                    value = s.group(1).strip()
-                    nextkey = s.group(2).strip()
-                    nextvalue = s.group(4).strip()
+            if not very_par:
+                if re.search("([A-Z][A-Z1-9])(\s{2}-\s*)",line):
+                    s = re.search("([A-Z][A-Z1-9])(\s{2}-\s*)(.*)",line)
+                    key = s.group(1).strip()
+                    value = s.group(3).strip()
+                    if re.search("(.*)([A-Z][A-Z1-9])(\ {2}-\s*)",value):
+                        s = re.search("(.*)([A-Z][A-Z1-9])(\s*-\s*)(.*)",value)
+                        value = s.group(1).strip()
+                        nextkey = s.group(2).strip()
+                        nextvalue = s.group(4).strip()
+                        try:
+                            nextkey = scopus2WoSFields[nextkey]
+                        except:
+                            pass
+                        
+                        if nextkey in mfields:
+                            record[nextkey] = [nextvalue]
+                        else:
+                            record[nextkey] = nextvalue
                     try:
-                        nextkey = scopus2WoSFields[nextkey]
+                        key = scopus2WoSFields[key]
                     except:
                         pass
                     
-                    if nextkey in mfields:
-                        record[nextkey] = [nextvalue]
+                    if key in mfields:
+                        record[key] = [value]
                     else:
-                        record[nextkey] = nextvalue
-                try:
-                    key = scopus2WoSFields[key]
-                except:
-                    pass
-                
-                if key in mfields:
-                    record[key] = [value]
-                else:
-                    record[key] = value
+                        record[key] = value
 
-            elif len(line) > 1:
-                if key in mfields:
-                    record[key].append(line.strip())
-                else:
-                    record[key] += line.strip()
+                elif len(line) > 1:
+                    if key in mfields:
+                        record[key].append(line.strip())
+                    else:
+                        record[key] += line.strip()
+            else:
+                record.append(line)
 
     print(chunk_size)
 
     if chunk_size < max_chunk_size:
         # parallely add docs
-        pool = Pool(processes=50)
-        pool.map(add_doc, records)
-        #pool.map(partial(add_doc, q=q),records)
+        pool = Pool(processes=32)
+        if very_par:
+            pool.map(add_doc_text, records)
+        else:
+            pool.map(add_doc, records)
         pool.terminate()
     
     django.db.connections.close_all()

@@ -14,82 +14,19 @@ def get(r, k):
         x = ""
     return(x)
 
-def add_doc(r):
-
-    DEBUG = True
-
-    if DEBUG:
-        print("  >> Entering add_doc() with document id: "+str(r['UT']))
-
+def update_doc(r):
     django.db.connections.close_all()
-    try: # if this doc is in the database, do nothing
-        doc = Doc.objects.get(UT=r['UT'])
-        doc.save()
-        doc.query.add(q)
-        if DEBUG:
-            print("     > Document is already in the DB. Add to query table only.")
-    except: # otherwise, add it!
-        if DEBUG:
-            print("     > Document is new. Add to doc, query and WoSArticle tables.")
-        doc = Doc(UT=r['UT'])
-        doc.title=get(r,'TI')
-        doc.content=get(r,'AB')
-        doc.PY=get(r,'PY')
-        doc.save()
-        doc.query.add(q)
-        article = WoSArticle(doc=doc)
-
-        r['kwp'] = get(r,'ID')
-        r['iss'] = get(r,'IS')
-        for field in r:
-            f = field.lower()
-            try:
-                article.f = r[field]
-                setattr(article,f,r[field])
-                #article.save()
-                #print(r[field])
-            except:
-                print(field)
-                print(r[field])
-
+    doc = Doc.objects.get(UT=r['UT'])
+    doc.title = get(r,'TI')
+    doc.save()
+    try:
+        article = WoSArticle.objects.get(doc=doc)
+        article.ti = get(r,'TI')
         article.save()
-
-    
-        ## Add authors
-        try:
-            for a in range(len(r['AU'])):
-                try:
-                    af = r['AF'][a]
-                except:
-                    af = None
-                au = r['AU'][a]
-                if 'C1' not in r:               
-                    r['C1'] = [""]
-                a_added = False
-                for inst in r['C1']:
-                    inst = inst.split('] ',1)
-                    iauth = inst[0]
-                    try:
-                        institute = inst[1]
-                        if af in iauth:
-                            dai = DocAuthInst(doc=doc)
-                            dai.AU = au
-                            dai.AF = af
-                            dai.institution = institute
-                            dai.position = a+1
-                            dai.save()
-                            a_added = True
-                    except:
-                        pass # Fix this later, these errors are caused by multiline institutions
-                if a_added == False:
-                    dai = DocAuthInst(doc=doc)
-                    dai.AU = au
-                    dai.AF = af
-                    dai.position = a
-                    dai.save()
-        except:
-            pass
-            
+    except:
+        print("no article")
+    django.db.connections.close_all()
+         
         
 
 def main():
@@ -127,9 +64,10 @@ def main():
                 if chunk_size==max_chunk_size:
                     # parallely add docs
                     pool = Pool(processes=50)
-                    pool.map(add_doc, records)
+                    pool.map(update_doc, records)
                     #pool.map(partial(add_doc, q=q),records)
                     pool.terminate()
+                    
                     records = []
                     chunk_size = 0
                 continue
@@ -137,7 +75,7 @@ def main():
                 if chunk_size < max_chunk_size:
                     # parallely add docs
                     pool = Pool(processes=50)
-                    pool.map(add_doc, records)
+                    pool.map(update_doc, records)
                     #pool.map(partial(add_doc, q=q),records)
                     pool.terminate()
                 #done!

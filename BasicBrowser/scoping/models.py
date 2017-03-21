@@ -64,7 +64,7 @@ class Tag(models.Model):
       return self.title
 
 class Doc(models.Model):
-    UT = models.CharField(max_length=240,db_index=True,primary_key=True)
+    UT = models.CharField(max_length=240,db_index=True,primary_key=True, verbose_name='Document ID')
     query = models.ManyToManyField('Query')
     tag = models.ManyToManyField('Tag')
     title = models.TextField(null=True)
@@ -154,7 +154,8 @@ class WoSArticle(models.Model):
     doc = models.OneToOneField(
         'Doc',
         on_delete=models.CASCADE,
-        primary_key=True
+        primary_key=True,
+        verbose_name='Document ID'
     )
     ti = models.TextField(null=True, verbose_name="Title")
     ab = models.TextField(null=True, verbose_name="Abstract")   
@@ -166,7 +167,7 @@ class WoSArticle(models.Model):
     cl = models.TextField(null=True, verbose_name="Conference Location") # conf location
     ct = models.TextField(null=True, verbose_name="Conference Title") # conf title
     de = models.TextField(null=True, verbose_name="Author Keywords") # keywords - separate table?
-    di = models.CharField(null=True, max_length=250, verbose_name="DOI") # DOI
+    di = models.CharField(null=True, db_index=True, max_length=250, verbose_name="DOI") # DOI
     dt = models.CharField(null=True, max_length=50, verbose_name="Document Type") # doctype
     em = models.TextField(null=True, verbose_name="E-mail Address") #email 
     ep = models.CharField(null=True, max_length=50, verbose_name="Ending Page") # last page
