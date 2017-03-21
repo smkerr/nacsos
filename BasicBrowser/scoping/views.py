@@ -655,19 +655,15 @@ def query(request,qid):
     tags = tags.values()
 
     for tag in tags:
-        tag['docs'] = Doc.objects.filter(tag=tag['id']).count()
-        tag['a_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],).count()
-        if tag['a_docs'] == 0:
-            tag['a_docs'] = False
-        else:
-            tag['a_docs'] = Doc.objects.filter(docownership__tag=tag['id'],docownership__isnull=False).distinct().count()
-            tag['seen_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant__gt=0).count()
-            tag['rel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()
-            tag['irrel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=2).count()
-            try:
-                tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
-            except:
-                tag['relevance'] = 0
+        tag['docs'] = Doc.objects.filter(tag=tag['id']).distinct().count()
+        tag['a_docs'] = Doc.objects.filter(docownership__tag=tag['id']).distinct().count()
+        tag['seen_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant__gt=0).count()
+        tag['rel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()
+        tag['irrel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=2).count()
+        try:
+            tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
+        except:
+            tag['relevance'] = 0
 
     fields = ['id','title']
 
@@ -890,10 +886,7 @@ def doclist(request,qid):
     all_docs = qdocs
     ndocs = all_docs.count()
 
-#    if (query.type == "default") :
     docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
-#    else:
-#        docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py', 'docownership__'+str(request.user)))
 
     print(len(docs))
     print(docs)
@@ -901,24 +894,9 @@ def doclist(request,qid):
 
     fields = []
 
- #   for f in Doc._meta.get_fields():
- #       if f.is_relation:
- #           for rf in f.related_model._meta.get_fields():
- #               if not rf.is_relation:
- #                   path = f.name+"__"+rf.name
- #                   fields.append({"path": path, "name": rf.verbose_name})
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
-        #if f.name !="doc":
         fields.append({"path": path, "name": f.verbose_name})
-
-#    for f in DocOwnership._meta.get_fields():
-#        if f.name == "user":
-#            path = "docownership__user__username"
-#        else:
-#            path = "docownership__"+f.name
-#        if f.name !="doc" and f.name !="query":
-#            fields.append({"path": path, "name": f.verbose_name})
 
     for u in User.objects.all():
         path = "docownership__"+u.username
@@ -1323,6 +1301,8 @@ def assign_docs(request):
 
     print(tags)
 
+    dos = []
+
     for tag in range(len(tags)):
         t = Tag.objects.get(pk=tags[tag])
         docs = Doc.objects.filter(query=query,tag=t)
@@ -1330,24 +1310,23 @@ def assign_docs(request):
         ssize = int(tagdocs[tag])
 
         my_ids = list(docs.values_list('UT', flat=True))
-
         rand_ids = random.sample(my_ids, ssize)
-
-        sample = docs.filter(UT__in=rand_ids)
-        dsample = len(docs.distinct('UT'))
-        for s in range(ssize):
-            doc = sample[s]
-            print(doc)
+        sample = docs.filter(UT__in=rand_ids).all()
+        s = 0
+        for doc in sample:
+            s+=1
             if docsplit=="true":
                 user = user_list[s % len(user_list)]
                 docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
-                docown.save()
+                dos.append(docown)
             else:
                 for user in user_list:
                     docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
-                    docown.save()
+                    dos.append(docown)
+    DocOwnership.objects.bulk_create(dos)
+    print("Done")
 
-    return HttpResponse("xyzxyz")
+    return HttpResponse("<body>xyzxyz</body>")
 
 import re
 
