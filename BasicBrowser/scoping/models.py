@@ -93,7 +93,7 @@ class Note(models.Model):
         ordering = ['date']
 
     def __str__(self):
-      return self.doc
+      return self.text
 
 class DocOwnership(models.Model):
 

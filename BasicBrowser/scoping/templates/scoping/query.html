@@ -54,7 +54,7 @@
                 <td class="data-ndocs">{{tag.docs}} [Assign <output id="out_{{tag.id}}" class="tag_assignment" data-tagid="{{ tag.id }}">{{tag.docs}}</output> documents for review?]</td>
                 
               {% endif %}
-                <td><a href="/scoping/delete_tag/{{query.id}}/{{tag.id}}">Delete</a></td>
+                <td><a href="/scoping/delete/Tag/{{tag.id}}">Delete</a></td>
             </tr>
           {% endfor %}
         </table>

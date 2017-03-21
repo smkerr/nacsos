@@ -1429,10 +1429,17 @@ def remove_assignments(request):
     DocOwnership.objects.filter(query=int(qid)).delete()
     return HttpResponse("")
 
+
+def delete(request,thing,thingid):
+    from scoping import models
+    getattr(models, thing).objects.get(pk=thingid).delete()
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
 def add_note(request):
     doc_id = request.POST.get('docn',None)
-    page = request.POST.get('page',None)
+    tid = request.POST.get('tag',None)
     qid = request.POST.get('qid',None)
+    ctype = request.POST.get('ctype',None)
     text = request.POST.get('note',None)
 
     doc = Doc.objects.get(pk=doc_id)
@@ -1446,7 +1453,12 @@ def add_note(request):
         
     print(doc_id)
     print(page)
-    return HttpResponseRedirect(reverse('scoping:'+page, kwargs={'qid': qid}))
+
+    return HttpResponseRedirect(reverse('scoping:'+page, kwargs={
+        'qid': qid,
+        'tid': tid,
+        'ctype': ctype
+    }))
 
 
 
