@@ -36,7 +36,7 @@
               <td class="field" name="{{f}}">{{f}} </td>
             {% endfor %}
             <td class="field" name="docs">Sample </td> 
-            <td>Documents </td> 
+            <td>Assignment/Relevance </td> 
             <td>Delete</td>
           </tr>
           {% for tag in tags %}
@@ -46,8 +46,8 @@
               {% endfor %}
     
               {% if tag.a_docs %}
-                <td>{{tag.docs}}</td>
-                ({{tag.a_docs}} assigned for review)
+                <td>{{tag.docs}} ({{tag.a_docs}} assigned for review)</td>
+                
                 <td>{{tag.relevance}}%</td>
               {% else %}
                 <td><input type="range" min="0" max="{{tag.docs}}" oninput="inputUpdate(value, {{tag.id}})" value="{{tag.docs}}" autocomplete="off"></td>
@@ -190,7 +190,7 @@ function updateAssignment() {
     $(".tag_assignment").each(function() {
         tags.push($(this).attr("data-tagid") ) 
         tagdocs.push($(this).val()) 
-            total_docs += $(this).val()
+            total_docs += parseInt($(this).val())
     })    
     if (docsplit==true) {
         docs_each = Math.ceil(total_docs/active_users.length)
