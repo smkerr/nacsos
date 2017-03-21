@@ -24,7 +24,6 @@ urlpatterns = [
     url(r'^sbsKeepDoc/(?P<qid>[0-9]+)/(?P<did>.+)$', views.sbsKeepDoc, name='sbsKeepDoc'),
     url(r'^sbsExcludeDoc/(?P<qid>[0-9]+)/(?P<did>.+)$', views.sbsExcludeDoc, name='sbsExcludeDoc'),
     url(r'^delete_query/(?P<qid>[0-9]+)$', views.delete_query, name='delete'),
-    url(r'^delete_tag/(?P<qid>[0-9]+)/(?P<tid>[0-9]+)$', views.delete_tag, name='delete_tag'),
     url(r'^delete_sbs/(?P<sbsid>[0-9]+)$', views.delete_sbs, name='delete'),
     url(r'^query/(?P<qid>[0-9]+)$', views.query, name='query'),
     url(r'^docs/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
@@ -40,6 +39,6 @@ urlpatterns = [
     url(r'^add_note', views.add_note, name='add_note'),
     url(r'^doc_tech', views.doc_tech, name='doc_tech'),
     url(r'^download/(?P<qid>[0-9]+)', views.download, name='download'),
-
+    url(r'^delete/(?P<thing>[a-zA-Z]+)/(?P<thingid>[0-9]+)$', views.delete, name='delete'),
 
 ]
