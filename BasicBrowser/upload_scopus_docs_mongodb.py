@@ -22,11 +22,15 @@ def add_doc(r):
         d = scopus_doc(**r)
         d.save()
     except:
-        pass
+        print("noadd")
+        d = scopus_doc.objects.get(scopus_id=r['scopus_id'])
+        for f in r:
+            d[f] = r[f]
+        d.save()
 
 def add_doc_text(r):
     record = {}
-    mfields = ['au','AF','CR','C1']
+    mfields = ['au','AF','CR','C1','References']
     for line in r:
         if re.search("([A-Z][A-Z1-9])(\s{2}-\s*)",line):
             s = re.search("([A-Z][A-Z1-9])(\s{2}-\s*)(.*)",line)
@@ -42,6 +46,15 @@ def add_doc_text(r):
                     record[nextkey] = [nextvalue]
                 else:
                     record[nextkey] = nextvalue
+
+            if key=="N1":
+                s = re.search("([a-zA-Z1-9 ]*): *(.*)",value)
+                try:
+                    key = s.group(1).strip()
+                    value = s.group(2).strip()
+                except:
+                    print(key)
+                    print(value)
             
             if key in mfields:
                 record[key] = [value]
@@ -60,6 +73,8 @@ def add_doc_text(r):
     except:
         print("don't want to add this record, it has no id!")
         print(record)
+        return
+    
 
 def add_docs(docs):
     result = db.scopus_docs.insert_many(docs)
@@ -77,7 +92,7 @@ def main():
     mfields = ['au','AF','CR','C1']
 
     # The bigger the chunk size, the faster it goes, but the more memory it eats!
-    max_chunk_size = 20000
+    max_chunk_size = 10000
     chunk_size = 0
 
     scopus2WoSFields = {
@@ -112,9 +127,9 @@ def main():
 
     #with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
     #with open("/home/max/Desktop/353/1_scopus.ris", encoding="utf-8") as res:
-    with open("/queries/354/s_results.txt", encoding="utf-8") as res:
+    with open("/queries/411/s_results.txt", encoding="utf-8") as res:
         for line in res:
-            if n_records > 1000000:
+            if n_records > 1000000000:
                 break
             if '\ufeff' in line: # BOM on first line
                 continue

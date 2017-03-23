@@ -1,4 +1,4 @@
-import os, sys, time, resource, re, gc, shutil
+import os, sys, time, resource, re, gc, shutil, math
 from nltk import ngrams
 from multiprocess import Pool
 from functools import partial
@@ -37,6 +37,7 @@ class match(Document):
     wos_ut = StringField(required=True, max_length=50)
     py_diff = IntField()
     jaccard = FloatField()
+    wc_diff = IntField()
 
 def shingle(text,k):
     
@@ -64,6 +65,7 @@ def find_match(d1):
     d1.shingle = set()
     for li in list(d1.shingle_list):
         d1.shingle.add(tuple(li))
+    d1.wc = len(str(d1.TI).split())
     matches = Doc.objects.filter(wosarticle__di=d1.DO)
     if matches.count() == 1:
         d2 = matches.first()
@@ -71,12 +73,14 @@ def find_match(d1):
             py_diff = d1.PY - d2.PY
         except:
             py_diff = None
+        wc_diff = abs(d1.wc - d2.ti_word_count())
         j = jaccard(d1.shingle,d2.shingle())
         m = match(
             scopus_id = d1.scopus_id,
             wos_ut = d2.UT,
             py_diff = py_diff,
-            jaccard = j
+            jaccard = j,
+            wc_diff = wc_diff
         )
         return(m)
         #m.save()
@@ -88,7 +92,7 @@ def main():
     s_docs_count = scopus_doc.objects.filter(DO__exists=True,shingle__exists=True).count()
     print(s_docs_count)
 
-    #s_docs_count = 10025
+    s_docs_count = 10025
 
     chunk_size= 10000
 

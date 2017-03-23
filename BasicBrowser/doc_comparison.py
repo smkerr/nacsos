@@ -31,6 +31,7 @@ class similarity(Document):
     do_match = BooleanField()
     jaccard = FloatField()
     py_diff = IntField()
+    wc_diff = IntField()
 
 def shingle(text,k):
     
@@ -52,26 +53,27 @@ def jaccard(s1,s2):
     except:
         return 0
 
-def compare(d1,dc2):
+def compare(d1):
     django.db.connections.close_all()
-    d1 = scopus_doc.objects.all()[d1]
     if not hasattr(d1,'shingle'):
-        return
+        return None
     d1.shingle_list = d1.shingle
     d1.shingle = set()
     for li in list(d1.shingle_list):
         d1.shingle.add(tuple(li))
+    d1.wc = len(str(d1.TI).split())
     dc2 = Doc.objects.filter(PY=d1.PY)
     if hasattr(d1,'DO'):
         d1_do = True
     else:
         d1_do = False
+    sims = []
     for d2 in dc2:
         #d2 = Doc.objects.filter(PY=d1.PY)[d2]
         try:
             j = jaccard(d1.shingle,d2.shingle())
             if j < 0.1:
-                return
+                continue
             if d2.wosarticle.di is not None:
                 d2_do = True
             else:
@@ -94,40 +96,52 @@ def compare(d1,dc2):
                 wos_do=d2_do,
                 do_match=match,
                 jaccard=j,
-                py_diff=py_diff
+                py_diff=py_diff,
+                wc_diff=abs(d1.wc - d2.ti_word_count())
             )
-            if j > 0.1:
-                sim.save()
+            sims.append(sim)
             django.db.connections.close_all()
         except:
             pass
+    return sims
 
 
 
 def main():
-    docs = []
-    s_docs = scopus_doc.objects.all()
-    unshingled_s_docs = s_docs.filter(shingle__exists=False)
-    print(unshingled_s_docs.count())
-    for sd in unshingled_s_docs:
-        try:
-            sd.shingle = list(shingle(sd.TI,2))
-            sd.save()
-        except:
-            pass
-      
+    shingle = False
+    if shingle:
+        unshingled_s_docs = scopus_doc.objects.filter(shingle__exists=False)
+        print(unshingled_s_docs.count())
+        for sd in unshingled_s_docs:
+            try:
+                sd.shingle = list(shingle(sd.TI,2))
+                sd.save()
+            except:
+                pass     
 
-    wos_docs_i = Doc.objects.all().count()
+    s_docs_i = scopus_doc.objects.count()
 
-    s_docs_i = range(s_docs.count())
+    #s_docs_i = 10
 
-    #s_docs_i = range(20)
+    chunk_size= 1024
 
     similarity.objects.all().delete()
 
-    pool = Pool(processes=8)
-    pool.map(partial(compare,dc2=wos_docs_i),s_docs_i)
-    pool.terminate()
+    for i in range(s_docs_i//chunk_size+1):
+        f = i*chunk_size
+        l = (i+1)*chunk_size-1
+        if l > s_docs_i:
+            l = s_docs_i-1
+        s_docs = scopus_doc.objects[f:l]
+
+        sims = []
+        pool = Pool(processes=8)
+        sims.append(pool.map(partial(compare,),s_docs))
+        pool.terminate()    
+
+        sims = [item for sublist in sims for item in sublist]
+
+        similarity.objects.insert(sims)
     
     
     
