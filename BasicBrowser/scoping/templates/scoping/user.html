@@ -60,17 +60,21 @@
         </table>
 
         {% else %} 
-        <h4>Snowballing sessions and queries</h4>
+        <h4>My snowballing sessions and associated queries</h4>
         <br/>
 
-        <table style="width:80%">
-          <tr style="background:#f7ab31">
+        <div class="explanation">
+          <p>Click on a row or on the expland button to see the list of queries associated to a snowballing session.</p>
+        </div>
+
+        <table class="light" style="width:80%">
+          <tr  class="title" >
             <td>SBS ID</td>
             <td>SBS Title</td>
             <td># Steps</td>
             <td># Documents</td>
-            <td>! To review</td>
-            <td>Kept</td>
+            <td># Selected docs</td>
+            <td></td>
             <td>Next step</td>
           </tr>
           {% for sbs in sbsessions %}
@@ -79,27 +83,27 @@
                 <td>{{ sbs.name }}</td>
                 <td>{{ sbs.ns }}</td>
                 <td>{{ sbs.ndtot }}</td>
-                <td>{{ sbs.ndrev }}</td>
                 <td>{{ sbs.ndsel }}</td>
+                <td></td>
                 <td><button type="button">Expand</button></td>
             </tr>
-            <tr class="sbsquery"> 
+            <tr class="sbsquery" style="color: #999999; font-style: italic; font-weight: bold;"> 
                 <td></td>
                 <td>QID</td>
-                <td>Type</td>
+                <td>Q. Type</td>
                 <td># Docs</td>
-                <td># Doc reviewed</td>
                 <td># Doc selected</td>
+                <td></td>
                 <td>Action</td>
             </tr>
             {% for q in sbs.q_info %}
               <tr class="sbsquery">  
                 <td></td>              
-                <td><a href="/scoping/query/{{ q.id }}">{{ q.id }}</td>
+                <td><a href="/scoping/docs/{{ q.id }}">{{ q.id }}</td>
                 <td>{{ q.type }}</td>
-                <td>{{ q.nbdocsel }}</td>
                 <td>{{ q.nbdoctot }}</td>
-                <td>{{ q.nbdocrev }}</td>
+                <td>{{ q.nbdocsel }}</td>
+                <td></td>
                 {% if q.last == "True" %}
                   <td><a href=""><button type="button">Snowball</button></a></td>
                 {% else %}

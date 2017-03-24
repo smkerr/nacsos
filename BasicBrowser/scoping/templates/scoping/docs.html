@@ -79,7 +79,13 @@
       {% endif %}
 
       {% if query.type != "default" %}
-        <div><a href="/scoping/do_snowballing/{{ query.id }}"><button type="button">Snowball the selected documents</button></a></div>
+        <div id="sidebar">
+          <ul>
+            <li><a href="/scoping/do_snowballing/{{ query.id }}"><button type="button">Snowball the selected documents</button></a></li>
+            <li><a href="/scoping/sbs_setAllQDocsToIrrelevant/{{ query.id }}"><button type="button">Discard all documents</button></a></li>
+            <li><a href=""><button type="button">Allocate documents to another user</button></a></li>
+          </ul>
+        </div>
       {% endif %}
 
         <p style="text-align:left">Showing documents 1-100 of <span id="doc_count">{{ ndocs }}</span></p> 
@@ -386,5 +392,22 @@ if (qtype != "default") {
   user.click()
 }
 
+/*
+$(function() {
+  var offset = $("#sidebar").offset();
+  var topPadding = 15;
+  $(window).scroll(function() {
+    if ($(window).scrollTop() > offset.top) {
+      $("#sidebar").stop().animate({
+        marginTop: $(window).scrollTop() - offset.top + topPadding
+      });
+    } else {
+      $("#sidebar").stop().animate({
+        marginTop: 0
+      });
+    };
+  });
+});
+*/  
 </script>
 </html>

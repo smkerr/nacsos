@@ -21,6 +21,7 @@ urlpatterns = [
     url(r'^dodocrefadd$', views.dodocrefadd, name='dodocrefadd'),
     url(r'^querying/(?P<qid>[0-9]+)/(?P<substep>[0-9]+)/(?P<docadded>[0-9]+)$', views.querying, name='querying'),
     url(r'^sbs_allocateDocsToUser/(?P<qid>[0-9]+)$', views.sbs_allocateDocsToUser, name='sbs_allocateDocsToUser'),
+    url(r'^sbs_setAllQDocsToIrrelevant/(?P<qid>[0-9]+)$', views.sbs_setAllQDocsToIrrelevant, name='sbs_setAllQDocsToIrrelevant'),
     url(r'^sbsKeepDoc/(?P<qid>[0-9]+)/(?P<did>.+)$', views.sbsKeepDoc, name='sbsKeepDoc'),
     url(r'^sbsExcludeDoc/(?P<qid>[0-9]+)/(?P<did>.+)$', views.sbsExcludeDoc, name='sbsExcludeDoc'),
     url(r'^delete_query/(?P<qid>[0-9]+)$', views.delete_query, name='delete'),

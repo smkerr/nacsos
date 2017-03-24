@@ -127,5 +127,6 @@ STATIC_URL = '/static/'
 STATIC_ROOT = '/var/www/tmv/BasicBrowser/static/'
 
 INTERNAL_IPS = [
-    '10.10.12.20'
+    '10.10.12.20',
+    '10.10.12.129'
 ]

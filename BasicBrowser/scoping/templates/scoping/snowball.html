@@ -10,13 +10,16 @@
     <div id="main">
       <div id="graph">
 
-        <h1> Snowballing Helper</h1>
+        <h1>Snowballing Helper</h1>
         <br/>
 
         <!-- This gets new snowballing sessions -->
-        <h2> Start new snowballing session </h2>
+        <h2>Start a new snowballing session (SB)</h2>
         <br/>
-
+        <div class="explanation">
+          <p>Start a new snowballing session by using the form below.</p>
+        </div>
+        <img src="{% static 'scoping/img/monkey.jpg' %}" height="200px"/>
         <form action="{% url 'scoping:start_snowballing' %}" method="post">
         {% csrf_token %}
 
