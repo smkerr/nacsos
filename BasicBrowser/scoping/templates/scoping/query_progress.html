@@ -17,13 +17,22 @@
         <div id="main">
             <div id="graph">
                 {% if query.type == "default" %}
-                <h1> Scoping Review Helper</h1>
+                  <h1> Scoping Review Helper</h1>
                 {% else %}
-                <h1> Snowballing - Query Helper</h1>
+                  <h1> Snowballing - Query Helper</h1>
                 {% endif %}
                 <br/>
+
                 <!-- Query manager -->
-                <h2> Query Progress </h2>
+                {% if query.type == "default" %}
+                  <h2> Query Progress </h2>
+                {% else %}
+                    {% if substep == "1" %}
+                      <h2> Query Progress - SB substep {{ substep }} (Identifying references in submitted documents)</h2>
+                    {% else %}
+                      <h2> Query Progress - SB substep {{ substep }} (Obtaining information for all identified references)</h2>
+                    {% endif %}
+                {% endif %}
 
                 {% if log %}
                 <br/>
@@ -39,6 +48,7 @@
 
                 <br/>
                 {% if finished %}
+<!-- Scoping review -->
                     {% if query.type == "default" %}
                         <p>Looks like it's done!</p>
                         {% if doclength == 0 %}
@@ -49,19 +59,20 @@
                             <p><a href="../../../docs/{{query.id}}">View the documents</a>
                         {% endif %}
                     {% else %}
+<!-- Snowballing session -->
                         {% if substep == "1" %}
                             <p>Looks like it's done! (Another query might be needed in case references are not yet in the database) </p>
                             {% if doclength == 0 %}
-                                <p id="doc_adder2">{{doclength}} of these documents are in the database. Would you like to add them now?
+                                <p id="doc_adder2">{{reftotlen}} references were identified in the submitted documents. {{refdblen}} of them are already in the database. {{refscraplen}} need to be scraped to get additional information (authors, abstract ...). Would you like to do this now?
                                 <br/>
-                                <a href="/scoping/dodocrefadd?qid={{query.id}}&db={{query.database}}"><button>Add Documents and References</button></a>
+                                <a href="/scoping/dodocrefadd?qid={{query.id}}&db={{query.database}}"><button>Scrape References</button></a>
                             {% endif %}
                         {% else %}
                             <p>Looks like it's done!</p>
-                            {% if docadded != "1" %}
-                                <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now?
+                            {% if docadded != "1" and query.dlstat != "NOREC" %}
+                                <p id="doc_adder1">{{doclength}} references were correctly retrieved. Would you like to add them to the database?
                                 <br/>
-                                <a href="/scoping/dodocadd?qid={{query.id}}&db={{query.database}}"><button>Add References missing information</button></a>
+                                <a href="/scoping/dodocadd?qid={{query.id}}&db={{query.database}}"><button>Add missing information</button></a>
                             {% else %}
                                 <p><a href="../../../sbs_allocateDocsToUser/{{query.id}}">View the references</a>
                             {% endif %}

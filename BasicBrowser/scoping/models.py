@@ -31,19 +31,23 @@ class SnowballingSession(models.Model):
       return self.name
 
 class Query(models.Model):
-    type     = models.TextField(null=True, verbose_name="Query Type", default="default")
-    title    = models.TextField(null=True, verbose_name="Query Title")
-    text     = models.TextField(null=True, verbose_name="Query Text")
-    database = models.CharField(max_length=6,null=True, verbose_name="Query database")
-    date     = models.DateTimeField(verbose_name="Query Date")
-    r_count  = models.IntegerField(null=True, verbose_name="Query Results Count")
-    creator  = models.ForeignKey(User,null=True, verbose_name="Query Creator", related_name="user_creations")
-    users    = models.ManyToManyField(User)
-    criteria = models.TextField(null=True)
-    snowball = models.IntegerField(null=True, verbose_name="Snowball ID")
-    step     = models.IntegerField(null=True, verbose_name="Snowball steps")
-    substep  = models.IntegerField(null=True, verbose_name="Snowball query substeps")
-    technology = models.ForeignKey('Technology', null=True)
+    type        = models.TextField(null=True, verbose_name="Query Type", default="default")
+    title       = models.TextField(null=True, verbose_name="Query Title")
+    text        = models.TextField(null=True, verbose_name="Query Text")
+    database    = models.CharField(max_length=6,null=True, verbose_name="Query database")
+    date        = models.DateTimeField(verbose_name="Query Date")
+    r_count     = models.IntegerField(null=True, verbose_name="Query Results Count")
+    creator     = models.ForeignKey(User,null=True, verbose_name="Query Creator", related_name="user_creations")
+    users       = models.ManyToManyField(User)
+    criteria    = models.TextField(null=True)
+    snowball    = models.IntegerField(null=True, verbose_name="Snowball ID")
+    step        = models.IntegerField(null=True, verbose_name="Snowball steps")
+    substep     = models.IntegerField(null=True, verbose_name="Snowball query substeps")
+    reftotlen   = models.IntegerField(null=True, verbose_name="Snowball Number of references")
+    refdblen    = models.IntegerField(null=True, verbose_name="Snowball Number of references in the DB")
+    refscraplen = models.IntegerField(null=True, verbose_name="Snowball Number of references to be scraped")
+    dlstat      = models.CharField(max_length=6,null=True, verbose_name="Query download status")
+    technology  = models.ForeignKey('Technology', null=True)
 
     def __str__(self):
       return self.title

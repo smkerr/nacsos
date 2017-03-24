@@ -38,7 +38,6 @@ def switch_mode(request):
 
 @login_required
 def index(request):
-
     
     if request.session.get('snowball', None) == None:
         request.session['snowball']=False
@@ -143,7 +142,7 @@ def snowball(request):
         nbdoctot = 0
         nbdocrev = 0
         for q in sb_qs:
-            s = q.title.split("_")[3]
+            s = q.title.split("_")[2]
             if s > step:
                 step = s
             nbdocsel += DocOwnership.objects.filter(query = q, relevant = 1).count()
@@ -442,18 +441,19 @@ def delete_sbs(request, sbsid):
 @login_required
 def dodocadd(request):
     qid = request.GET.get('qid',None)
-    db = request.GET.get('db',None)
+    db  = request.GET.get('db',None)
 
     q = Query.objects.get(pk=qid)
 
-    if db=="WoS":
-        upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
-    if db=="scopus":
-        upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_scopus_docs.py'))
+    if q.dlstat != "NOREC":
+        if db=="WoS":
+            upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
+        if db=="scopus":
+            upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_scopus_docs.py'))
 
-    subprocess.Popen(["python3", upload, qid])
-
-    time.sleep(2)
+        subprocess.Popen(["python3", upload, qid])
+ 
+        time.sleep(2)
 
     if q.type == "default":
         substep = 0
@@ -497,20 +497,16 @@ def dodocrefadd(request):
         print("Not yet implemented")
         exit()
 
-    subprocess.Popen(["python3", upload, qid, str(q2.id)])
-
-    time.sleep(5)
+    subprocess.Popen(["python3", upload, qid, str(q2.id)]).wait()
 
     print("upload_docrefs.py done")
 
     fname = "/queries/"+str(q2.id)+".txt"
 
-
     print("Check if "+fname+" exists...")
     adddocs = 1
     if os.path.isfile(fname):
         print("Yes... Start scraping")
-        # run "scrapeQuery.py" on the text file in the background
         subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", "-s", db, fname])
 
         time.sleep(2)
@@ -573,6 +569,10 @@ def querying(request, qid, substep, docadded):
 
         doclength = 0  # force it for now
 
+        reftotlen   = query.reftotlen
+        refdblen    = query.refdblen
+        refscraplen = query.refscraplen
+
         logfile = "/queries/"+str(qid)+".log"
         rstfile = "/queries/"+str(qid)+"/results.txt"
  
@@ -591,6 +591,12 @@ def querying(request, qid, substep, docadded):
             finished = False
             if "done!" in log[-1]:
                 finished = True
+                query.dlstat = ""
+                query.save()
+            if "WoS couldn't find any records... exiting..." in log[-1]:
+                finished = True
+                query.dlstat = "NOREC"
+                query.save()
         else:
             log=False
             finished=True
@@ -600,6 +606,9 @@ def querying(request, qid, substep, docadded):
             'finished': finished,
             'docs': docs,
             'doclength': doclength,
+            'reftotlen': reftotlen,
+            'refdblen' : refdblen,
+            'refscraplen' : refscraplen,
             'query': query,
             'substep':substep,
             'docadded':docadded
@@ -642,6 +651,38 @@ def sbs_allocateDocsToUser(request,qid):
             relevant = 1    # Set all documents to keep status by default
         )
         docown.save()
+
+    return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': qid}))
+
+
+############################################################
+## SBS - Set default ownership to current user
+
+@login_required
+def sbs_setAllQDocsToIrrelevant(request,qid):
+
+    DEBUG = True
+
+    #Get query
+    query = Query.objects.get(pk=qid)
+
+    if DEBUG:
+        print("Getting query: "+str(query.title)+" ("+str(qid)+")")
+
+    # get latest tag
+    tag = Tag.objects.filter(query=qid).last()
+
+    if DEBUG:
+        print("Getting tag: "+str(tag.title)+" ("+str(tag.text)+")")
+
+
+    # Get associated docs
+    docs = DocOwnership.objects.filter(query=qid, tag=tag.id, user=request.user)
+
+    # Population Docownership table
+    for doc in docs:
+        doc.relevant = 2
+        doc.save()
 
     return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': qid}))
 
@@ -771,7 +812,10 @@ def userpage(request):
     sb_sessions     = SnowballingSession.objects.all().order_by('-id')
     
     # Get latest step associated with each SB sessions
-    sb_info = []
+    # Initialise variable that will contain the information to be sent to the webpage (context)
+    sb_info = []   
+
+    # Loop over SB sessions
     for sbs in sb_sessions:
         sb_info_tmp = {}
         sb_info_tmp['id']     = sbs.id
@@ -779,23 +823,35 @@ def userpage(request):
         sb_info_tmp['ip']     = sbs.initial_pearls
         sb_info_tmp['date']   = sbs.date
         sb_info_tmp['status'] = sbs.status
-        sb_qs = Query.objects.filter(snowball = sbs.id).order_by('-id')
-        step  = "1"
+
+        # Get queries associated with the current SB session
+        sb_qs    = Query.objects.filter(snowball = sbs.id).order_by('-id')
+
+        # Initialise step, count and query_info variables
+        step     = "1"
         nbdocsel = 0
         nbdoctot = 0
-        nbdocrev = 0
+        nbdocrem = 0
         sb_info_tmp['q_info'] = []
-        cnt = 0
+
+        # Loop over queries associated with the current SB session
+        cnt = 0 # Query iterator to capture last query (There must be a better way to do that)
         for q in sb_qs:
-            try: 
-                if q.title.split("_")[3] == "2":
-                    q_info_tmp = {} 
-                    q_info_tmp['id'] = q.id
-                    q_info_tmp['title'] = q.title
-                    q_info_tmp['type'] = q.type
-                    q_info_tmp['nbdocsel'] = DocOwnership.objects.filter(query = q, relevant = 1).count()
-                    q_info_tmp['nbdoctot'] = DocOwnership.objects.filter(query = q).count()
-                    q_info_tmp['nbdocrev'] = DocOwnership.objects.filter(query = q, relevant = 0).count()
+            # Select reference queries only (sub-step == 2)
+            if q.title.split("_")[3] == "2":
+                # For old queries
+                try: 
+                    q_info_tmp             = {} 
+                    q_info_tmp['id']       = q.id
+                    q_info_tmp['title']    = q.title
+                    q_info_tmp['type']     = q.type
+                    #q_info_tmp['nbdoctot'] = DocOwnership.objects.filter(query = q, user=request.user).count()
+                    #q_info_tmp['nbdocsel'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 1).count()
+                    #q_info_tmp['nbdocrev'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 0).count()
+                    #q_info_tmp['nbdoctot'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
+                    q_info_tmp['nbdocsel'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
+                    q_info_tmp['nbdocrem'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
+                    q_info_tmp['nbdoctot'] = q_info_tmp['nbdocsel'] + q_info_tmp['nbdocrem']
 
                     if cnt == 0:
                         q_info_tmp['last'] = "True"
@@ -803,39 +859,53 @@ def userpage(request):
                         q_info_tmp['last'] = "False"
 
                     sb_info_tmp['q_info'].append(q_info_tmp)
-            except:
-                q_info_tmp = {}
-                q_info_tmp['id'] = q.id
-                q_info_tmp['title'] = q.title
-                q_info_tmp['type'] = q.type
-                q_info_tmp['nbdocsel'] = DocOwnership.objects.filter(query = q, relevant = 1).count()
-                q_info_tmp['nbdoctot'] = DocOwnership.objects.filter(query = q).count()
-                q_info_tmp['nbdocrev'] = DocOwnership.objects.filter(query = q, relevant = 0).count()
+                except:
+                    q_info_tmp             = {}
+                    q_info_tmp['id']       = q.id
+                    q_info_tmp['title']    = q.title
+                    q_info_tmp['type']     = q.type
+                    #q_info_tmp['nbdoctot'] = DocOwnership.objects.filter(query = q, user=request.user).count()
+                    #q_info_tmp['nbdocsel'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 1).count()
+                    #q_info_tmp['nbdocrev'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 0).count()
+                    q_info_tmp['nbdoctot'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
+                    q_info_tmp['nbdocsel'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
+                    q_info_tmp['nbdocrem'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
  
-                if cnt == 0:
-                    q_info_tmp['last'] = "True"
-                else:
-                    q_info_tmp['last'] = "False"
+                    if cnt == 0:
+                        q_info_tmp['last'] = "True"
+                    else:
+                        q_info_tmp['last'] = "False"
 
-                sb_info_tmp['q_info'].append(q_info_tmp)
+                    sb_info_tmp['q_info'].append(q_info_tmp)
 
-            s = q.title.split("_")[2]
-            if s > step:
-                step = s
-            nbdocsel += DocOwnership.objects.filter(query = q, relevant = 1).count()
-            nbdoctot += DocOwnership.objects.filter(query = q).count()
-            nbdocrev += DocOwnership.objects.filter(query = q, relevant = 0).count()
+                # Get current step
+                s = q.title.split("_")[2]
+                if s > step:
+                    step = s
 
-            cnt += 1 
+                # Update total counts
+                #nbdoctot += DocOwnership.objects.filter(query = q, user=request.user).count()
+                #nbdocsel += DocOwnership.objects.filter(query = q, user=request.user, relevant = 1).count()
+                #nbdocrev += DocOwnership.objects.filter(query = q, user=request.user, relevant = 2).count()
+                #nbdoctot += Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
+                nbdocsel += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
+                nbdocrem += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
+                nbdoctot += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count() + Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
 
-        sb_info_tmp['ns'] = step
-        sb_info_tmp['lq'] = sb_qs.last().id
-        sb_info_tmp['rc'] = sb_qs.last().r_count
+                # Update iterator
+                cnt += 1 
+
+        # Update info of current SB session
+        sb_info_tmp['ns']    = step
+        sb_info_tmp['lq']    = sb_qs.last().id
+        sb_info_tmp['rc']    = sb_qs.last().r_count
         sb_info_tmp['ndsel'] = str(nbdocsel)
         sb_info_tmp['ndtot'] = str(nbdoctot)
-        sb_info_tmp['ndrev'] = str(nbdocrev)
+        sb_info_tmp['ndrem'] = str(nbdocrem)
 
+        # Add SB session info to container
         sb_info.append(sb_info_tmp)
+
 
     context = {
         'user': request.user,
@@ -892,7 +962,7 @@ def doclist(request,qid):
     docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
 
     print(len(docs))
-    print(docs)
+    #print(docs)
 
 
     fields = []
@@ -956,11 +1026,12 @@ def doclistsbs(request,sbsid):
     all_docs = []
     queries = Query.objects.filter(snowball=sbsid)
 
+    # Loop over queries
     for q in queries:
         # Filter out non-reference queries
         tmp = str.split(q.title,"_")
         if tmp[len(tmp)-1] == "2":
-            qdocs = Doc.objects.filter(query__id=q.id)
+            qdocs    = Doc.objects.filter(query__id=400,docownership__relevant=1,docownership__query=400) 
 #            all_docs.append(qdocs.values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
             qdocs2 = qdocs.values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py')
             for d in qdocs2:

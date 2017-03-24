@@ -19,7 +19,7 @@ def get(r, k):
 
 def add_doc(r):
 
-    DEBUG    = True
+    DEBUG = True
 
     if DEBUG:
         print("  >> Entering add_doc() with document id: "+str(r['UT']))
@@ -75,7 +75,7 @@ def add_doc(r):
                         dai.save()
                         a_added = True
                 except:
-                    pass # Fix this later, these errors are caused by multiline institutions
+                    pass #TODO Fix this later, these errors are caused by multiline institutions
             if a_added == False:
                 dai = DocAuthInst(doc=doc)
                 dai.AU = au
@@ -219,9 +219,9 @@ def add_doc(r):
 
         if DEBUG:
             print("      > Number of references              : "+str(len(refs)))
-            print("      > Number of discarded references (%): "+str(skip)+" ("+str(skip/len(refs)*100)+"%)")
             print("      > Number of references in DB (%)    : "+str(refindb)+" ("+str(skip/len(refs)*100)+"%)")
             print("      > Number of references to scrape (%): "+str(len(doi_lookups_loc))+" ("+str(len(doi_lookups_loc)/len(refs)*100)+"%)")
+            print("      > Number of discarded references (%): "+str(skip)+" ("+str(skip/len(refs)*100)+"%)")
 
             # We can access a documents references by doc.references.all()
             # And get its citations by doc.doc_set.all()
@@ -239,7 +239,7 @@ def add_doc(r):
 
 def main():
     
-    DEBUG = True
+    DEBUG    = True
     DOI_ONLY = True
 
     if DEBUG:
@@ -325,7 +325,6 @@ def main():
     
     django.db.connections.close_all()
     q.r_count = n_records
-    q.save()
 
     ############ When happy with the script we can uncomment and delete the files again
 
@@ -337,6 +336,11 @@ def main():
     print("  > Total Number of references in DB (%)    : "+str(totnbrefsindb)+" ("+str(totnbrefsindb/totnbrefs*100)+"%)")
     print("  > Total Number of references to scrape (%): "+str(len(doi_lookups))+" ("+str(len(doi_lookups)/totnbrefs*100)+"%)")
     print("  > Total Number of discarded references (%): "+str(totnbskips)+" ("+str(totnbskips/totnbrefs*100)+"%)")
+
+    q.reftotlen   = totnbrefs
+    q.refdblen    = totnbrefsindb
+    q.refscraplen = len(doi_lookups)
+    q.save()
 
     # Get list of references to look up
     doiset = set(doi_lookups)     # unique values
