@@ -81,6 +81,9 @@ class Doc(models.Model):
     def __str__(self):
       return self.UT
 
+    def ti_word_count(self):
+        return len(str(self.title).split())
+
     def word_count(self):
         return len(str(self.content).split())
 
