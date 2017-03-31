@@ -26,6 +26,7 @@ class SnowballingSession(models.Model):
                          db_index     = True,
                          verbose_name = "SB Status")
     users          = models.ManyToManyField(User)
+    database       = models.CharField(max_length=6,null=True, verbose_name="Query database")
 
     def __str__(self):
       return self.name
