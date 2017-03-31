@@ -344,17 +344,18 @@ import sys
 def do_snowballing(request,qid,q2id):
 
     #ssh_test()
- 
+   
+    curdate = timezone.now()
+
     # Backward query
     # Get current query
-    query = Query.objects.get(id=qid)
+    query_b = Query.objects.get(id=qid)
     
-    qtitle  = str.split(query.title,"_")[0] 
+    qtitle  = str.split(query_b.title,"_")[0] 
     qtype   = 'backward'
-    qstep   = query.step
+    qstep   = query_b.step
     qdb     = "WoS"
-    curdate = timezone.now()
-    sbsid   = query.snowball 
+    sbsid   = query_b.snowball 
 
     # Generate query from selected documents
     #TODO: Tag?
@@ -371,7 +372,7 @@ def do_snowballing(request,qid,q2id):
         print(qtext)
 
         #  create a new query record in the database
-        q = Query(
+        q_b = Query(
             title=qtitle+"_backward_"+str(qstep+1)+"_1",
             database=qdb,
             type=qtype,
@@ -381,23 +382,27 @@ def do_snowballing(request,qid,q2id):
             step=qstep+1,
             substep=1
         )
-        q.save()
+        q_b.save()
+
+        qid = q_b.id
 
         # write the query into a text file
-        fname = "/queries/"+str(q.id)+".txt"
+        fname = "/queries/"+str(q_b.id)+".txt"
         with open(fname,"w") as qfile:
             qfile.write(qtext)
 
         time.sleep(1)
 
         # run "scrapeQuery.py" on the text file in the background
-        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
+        p_b = subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
 
-        return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1, 'docadded': 0, 'q2id': 0}))
+        #return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1, 'docadded': 0, 'q2id': 0}))
 
     else :
-        print("No document selected. Select at least one document before snowballing.")
-        return HttpResponseRedirect(reverse('scoping:query', kwargs={'qid': q.id}))
+        p_b = subprocess.Popen(["ls"])
+        qid = 0
+        print("No document to do backward query.")
+        #return HttpResponseRedirect(reverse('scoping:query', kwargs={'qid': q.id}))
       
 
     # Forward query
@@ -425,7 +430,7 @@ def do_snowballing(request,qid,q2id):
         print(qtext)
 
         #  create a new query record in the database
-        q = Query(
+        q_f = Query(
             title=qtitle+"_forward_"+str(qstep+1)+"_2",
             database=qdb,
             type=qtype,
@@ -435,24 +440,29 @@ def do_snowballing(request,qid,q2id):
             step=qstep+1,
             substep=1
         )
-        q.save()
+        q_f.save()
+
 
         # write the query into a text file
-        fname = "/queries/"+str(q.id)+".txt"
+        fname = "/queries/"+str(q_f.id)+".txt"
         with open(fname,"w") as qfile:
             qfile.write(qtext)
 
         time.sleep(1)
 
         # run "scrapeQuery.py" on the text file in the background
-        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
+        p_f = subprocess.Popen(["python3", "/home/hilj/python_apsis_libs/scrapeWoS/bin/snowball_fast.py","-s", qdb, fname])
 
-        return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1, 'docadded': 0, 'q2id': 0}))
-
+        q2id = q_f.id
+    
     else :
+        p_f = subprocess.Popen(["ls"])
+        q2id = 0
         print("No document to do forward query.")
 
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1, 'docadded': 0, 'q2id': 0}))
+    exit_codes = [p.wait() for p in [p_b, p_f]]
+
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': 1, 'docadded': 0, 'q2id': q2id}))
 
 
 
@@ -514,6 +524,10 @@ def delete_sbs(request, sbsid):
 @login_required
 def dodocadd(request):
     qid = request.GET.get('qid',None)
+    if 'q2id' != 0 or 'q2id' != '0':
+        q2id = request.GET.get('q2id',None)
+    else:
+        q2id = 0
     db  = request.GET.get('db',None)
 
     q = Query.objects.get(pk=qid)
@@ -534,7 +548,7 @@ def dodocadd(request):
         substep = 2
 
     #return HttpResponse(upload)
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': substep, 'docadded': 1, 'q2id': 0}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': substep, 'docadded': 1, 'q2id': q2id}))
 
 
 
@@ -615,11 +629,12 @@ def querying(request, qid, substep, docadded, q2id):
 
     template = loader.get_template('scoping/query_progress.html')
 
-    query = Query.objects.get(pk=qid)
+    #== SCOPING ===================================================================================
+    if request.session['appmode']=='scoping':
 
-    if query.type == "default":
+        query = Query.objects.get(pk=qid)
 
-    # How many docs are there already added?
+        # How many docs are there already added?
         docs      = Doc.objects.filter(query__id=qid)
         doclength = len(docs)
 
@@ -653,78 +668,154 @@ def querying(request, qid, substep, docadded, q2id):
             'substep': substep
         }
 
+    #== SNOWBALLING ===============================================================================
     else:
+        do_backward_query = False
+        do_forward_query  = False
 
-        query2 = Query.objects.get(pk=q2id)
+        # Query 1: Backward / References
+        # Check if query is defined
+        if qid != 0 or qid != '0':
+            do_backward_query = True
 
-        # How many docs are associated to the query?
-        docs      = Doc.objects.filter(query__id=qid)
-        doclength = len(docs)
+            query_b = Query.objects.get(pk=qid)
 
-        doclength = 0  # force it for now
+            # How many docs are associated to the query?
+            docs      = Doc.objects.filter(query__id=qid)
+            doclength = len(docs)
 
-        reftotlen   = query.reftotlen
-        refdblen    = query.refdblen
-        refscraplen = query.refscraplen
+            doclength = 0  # force it for now
 
-        logfile = "/queries/"+str(qid)+".log"
-        rstfile = "/queries/"+str(qid)+"/results.txt"
+            logfile_b = "/queries/"+str(qid)+".log"
+            rstfile_b = "/queries/"+str(qid)+"/results.txt"
+        else:
+            query_b = 0
  
-        logfile2 = "/queries/"+str(q2id)+".log"
-        rstfile2 = "/queries/"+str(q2id)+"/results.txt"
+        # Query 2: Forward / Citations
+        if q2id != 0 or q2id != '0':
+            do_forward_query  = True
 
-        log = False
-        log2 = False
+            query_f = Query.objects.get(pk=q2id)
 
-        if not os.path.isfile(rstfile):
-            wait = True
-            # wait up to 15 seconds for the log file, then go to a page which displays its contents
-            for i in range(15):
-                try:
-                    with open(logfile,"r") as lfile:
-                        log = lfile.readlines()
-                    break
-                except:
-                    log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
-                    time.sleep(1)
-            #        time.sleep(1)
-            if query2.dlstat == "done":
-                log2 = ["Citations were all captured in the first substep."]
-            else :
+            docs      = Doc.objects.filter(query__id=qid)
+            doclength = len(docs)
+
+            doclength = 0  # force it for now
+
+            logfile_f = "/queries/"+str(q2id)+".log"
+            rstfile_f = "/queries/"+str(q2id)+"/results.txt"
+        else:
+            query_f = 0
+
+        if do_backward_query and do_forward_query: 
+
+            # Display log file content by default
+            log_b = True
+            log_f = True
+
+            finished_f = False
+            finished_f = False
+
+            if not os.path.isfile(rstfile_b) and not os.path.isfile(rstfile_f):
+                wait = True
+                # wait up to 15 seconds for the log file, then go to a page which displays its contents
                 for i in range(15):
                     try:
-                        with open(logfile2,"r") as lfile:
-                            log2 = lfile.readlines()
+                        with open(logfile_b,"r") as lfile:
+                            log_b = lfile.readlines()
                         break
                     except:
-                        log2 = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
+                        log_b = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
                         time.sleep(1)
 
-            finished = False
-            if "done!" in log[-1]:
+                if query_f.dlstat == "done":
+                    log_f = ["Citations were all captured in the first substep."]
+                else :
+                    for i in range(15):
+                        try:
+                            with open(logfile_f,"r") as lfile:
+                                log_f = lfile.readlines()
+                            break
+                        except:
+                            log_f = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
+                            time.sleep(1)
+
+                finished = False
+
+                # Check log messages 
+                if "done!" in log_b[-1]:
+                    finished_b = True
+                    query_b.dlstat = "done"
+                    query_b.save()
+
+                if "WoS couldn't find any records... exiting..." in log_b[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if "done!" in log_f[-1]:
+                    finished_f = True
+                    query_f.dlstat = "done"
+                    query_f.save()
+
+                if finished_b == True and finished_f == True:
+                    finished = True
+            else:
                 finished = True
-                query.dlstat = ""
-                query.save()
-            if "WoS couldn't find any records... exiting..." in log[-1]:
+
+        if do_backward_query and not do_forward_query:
+
+            # Display log file content by default
+            log_b = True
+            log_f = True
+
+            log_f = ["No forward query will be done for this step."]
+        
+            finished_f = False
+            finished_f = True
+
+            if not os.path.isfile(rstfile_b):
+                wait = True
+                # wait up to 15 seconds for the log file, then go to a page which displays its contents
+                for i in range(15):
+                    try:
+                        with open(logfile_b,"r") as lfile:
+                            log_b = lfile.readlines()
+                        break
+                    except:
+                        log_b = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
+                        time.sleep(1)
+
+                finished = False
+
+                # Check log messages
+                if "done!" in log_b[-1]:
+                    finished_b = True
+                    query_b.dlstat = "done"
+                    query_b.save()
+
+                if "WoS couldn't find any records... exiting..." in log_b[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if finished_b == True and finished_f == True:
+                    finished = True
+            else:
                 finished = True
-                query.dlstat = "NOREC"
-                query.save()
-        else:
-            #og=False
-            #og2=False
-            finished=True
+
+        if not do_backward_query and not do_forward_query:
+            print("No documents to perform backward or forward queries. Going back to snowball home page...")
+            return HttpResponseRedirect(reverse('scoping:snowball'))
 
         context = {
-            'log': log,
-            'log2': log2,
+            'log_b': log_b,
+            'log_f': log_f,
             'finished': finished,
             'docs': docs,
             'doclength': doclength,
-            'reftotlen': reftotlen,
-            'refdblen' : refdblen,
-            'refscraplen' : refscraplen,
-            'query': query,
-            'query2': query2,
+            'query_b': query_b,
+            'query_f': query_f,
             'substep':substep,
             'docadded':docadded
         }

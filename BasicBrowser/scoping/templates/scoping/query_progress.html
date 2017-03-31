@@ -16,7 +16,7 @@
         {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
         <div id="main">
             <div id="graph">
-                {% if query.type == "default" %}
+                {% if appmode == 'scoping' %}
                   <h1> Scoping Review Helper</h1>
                 {% else %}
                   <h1> Snowballing - Query Helper</h1>
@@ -24,7 +24,7 @@
                 <br/>
 
                 <!-- Query manager -->
-                {% if query.type == "default" %}
+                {% if appmode == 'scoping' %}
                   <h2> Query Progress </h2>
                 {% else %}
                     {% if substep == "1" %}
@@ -35,7 +35,7 @@
                 {% endif %}
 
                 {% if log %}
-                    {% if query.type == "default" %}
+                    {% if appmode == 'scoping' %}
                       <br/>
                         (Refresh page to update progress)
                       <br/><br/>
@@ -75,14 +75,14 @@
                 <br/>
                 {% if finished %}
 <!-- Scoping review -->
-                    {% if query.type == "default" %}
+                    {% if appmode == 'scoping' %}
                         <p>Looks like it's done!</p>
                         {% if doclength == 0 %}
                             <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now?
                             <br/>
-                            <a href="/scoping/dodocadd?qid={{query.id}}&db={{query.database}}"><button>Add Documents</button></a>
+                            <a href="/scoping/dodocadd?qid={{query_b.id}}&db={{query_b.database}}"><button>Add Documents</button></a>
                         {% else %}
-                            <p><a href="../../../docs/{{query.id}}">View the documents</a>
+                            <p><a href="../../../docs/{{query_b.id}}">View the documents</a>
                         {% endif %}
                     {% else %}
 <!-- Snowballing session -->
@@ -91,16 +91,16 @@
                             {% if doclength == 0 %}
                                 <p id="doc_adder2">{{reftotlen}} references were identified in the submitted documents. {{refdblen}} of them are already in the database. {{refscraplen}} need to be scraped to get additional information (authors, abstract ...). Would you like to do this now?
                                 <br/>
-                                <a href="/scoping/dodocrefadd?qid={{query.id}}&q2id={{query2.id}}&db={{query.database}}"><button>Add citations and scrape References</button></a>
+                                <a href="/scoping/dodocrefadd?qid={{query_b.id}}&q2id={{query_f.id}}&db={{query_b.database}}"><button>Add citations and scrape References</button></a>
                             {% endif %}
                         {% else %}
                             <p>Looks like it's done!</p>
                             {% if docadded != "1" and query.dlstat != "NOREC" %}
                                 <p id="doc_adder1">{{doclength}} references were correctly retrieved. Would you like to add them to the database?
                                 <br/>
-                                <a href="/scoping/dodocadd?qid={{query.id}}&db={{query.database}}"><button>Add missing information</button></a>
+                                <a href="/scoping/dodocadd?qid={{query_b.id}}&q2id={{query_f.id}}&db={{query_b.database}}"><button>Add missing information</button></a>
                             {% else %}
-                                <p><a href="../../../../sbs_allocateDocsToUser/{{query.id}}/{{query2.id}}">View the references and citations</a>
+                                <p><a href="../../../../sbs_allocateDocsToUser/{{query_b.id}}/{{query_f.id}}">View the references and citations</a>
                             {% endif %}
                         {% endif %}
                     {% endif %}

@@ -81,7 +81,7 @@
       {% if query.type != "default" %}
         <div id="sidebar">
           <ul>
-            <li><a href="/scoping/do_snowballing/{{ query.id }}"><button type="button">Snowball the selected documents</button></a></li>
+            <li><a href="/scoping/do_snowballing/{{ query.id }}/{{ query2.id }}"><button type="button">Snowball the selected documents</button></a></li>
             <li><a href="/scoping/sbs_setAllQDocsToIrrelevant/{{ query.id }}/{{ query2.id }}/{{ sbsid }}"><button type="button">Discard all documents</button></a></li>
             <li><a href=""><button type="button">Allocate documents to another user</button></a></li>
           </ul>
@@ -128,7 +128,7 @@
       </table>
 
       {% if query.type != "default" %}
-        <div><a href="/scoping/do_snowballing/{{ query.id }}"><button type="button">Snowball the selected documents</button></a></div>
+        <div><a href="/scoping/do_snowballing/{{ query.id }}/{{ query2.id }}"><button type="button">Snowball the selected documents</button></a></div>
       {% endif %}
 
       <br/><hr/><br/>
