@@ -1,6 +1,7 @@
 import django, os, sys, time, resource, re, gc, shutil
 from multiprocess import Pool
 from functools import partial
+from urllib.parse import urlparse, parse_qsl
 
 from django.utils import timezone
 import subprocess
@@ -10,6 +11,9 @@ django.setup()
 
 from scoping.models import *
 
+def shingle(text):
+    return set(s for s in ngrams(text.lower().split(),2))
+
 def get(r, k):
     try:
         x = r[k]
@@ -17,7 +21,41 @@ def get(r, k):
         x = ""
     return(x)
 
+def jaccard(s1,s2):
+    try:
+        return len(s1.intersection(s2)) / len(s1.union(s2))
+    except:
+        return 0
+
 def add_doc(r):
+
+    scopus2WoSFields = {
+        'TY': 'dt',
+        'TI': 'ti',
+        'T2': '',
+        'C3': '',
+        'J2': 'so',
+        'VL': 'vl',
+        'IS': '',
+        'SP': 'bp',
+        'EP': 'ep',
+        'PY': 'py',
+        'DO': 'di',
+        'SN': 'sn',
+        'AU': 'au',
+        'AD': 'ad',
+        'AB': 'ab',
+        'KW': 'kwp',
+        'Y2': '',
+        'CY': '',
+        #N1 means we need to read the next bit as key
+        'Correspondence Address': '',
+        'References': '',
+        'UR': 'UT', # use url as ut, that's the only unique identifier...
+        'PB': ''
+        #'ER': , #End record
+
+    }
 
     DEBUG    = True
 
@@ -25,71 +63,109 @@ def add_doc(r):
         print("  >> Entering add_doc() with document id: "+str(r['UT']))
 
     django.db.connections.close_all()
-    try: # if this doc is in the database, just add to query
+    if Doc.objects.filter(UT=r['UT']).count() == 1:
+        doc = Doc.objects.get(UT=r['UT'])
         if DEBUG:
             print("     > Document is already in the DB. Add to query table only.")
-        doc = Doc.objects.get(UT=r['UT'])
+        return
         doc.query.add(q)
         doc.save()
-    except: # otherwise, add it!
+    else:   #look for nonexact matches!
         if DEBUG:
-            print("     > Document is new. Add to doc, query and WoSArticle tables.")
-        doc         = Doc(UT=r['UT'])
-        doc.title   = get(r,'TI')
-        doc.content = get(r,'AB')
-        doc.PY      = get(r,'PY')
-        doc.save()
-        doc.query.add(q)
-        article = WoSArticle(doc=doc)
-        for field in r:
-            f = field.lower()
-            try:
-                article.f = r[field]
-                setattr(article,f,r[field])
-                #article.save()
-                #print(r[field])
-            except:
-                print(field)
-                print(r[field])
+            print("     > Looking for nonexact matches.")
+        try:
+            did = r['DO']    
+            if DEBUG:
+                print("     > Found a doi!: %s" % did) 
+        except:
+            did = 'NA'
+            pass
 
-        article.save()
+        if did=='NA':
+            docs = Doc.objects.filter(
+                    wosarticle__ti=get(r,'ti')).filter(PY=get(r,'PY')
+            )
+        else: 
+            docs = Doc.objects.filter(wosarticle__di=did)
 
-        ## Add authors
-        for a in range(len(r['AF'])):
-            af = r['AF'][a]
-            au = r['AU'][a]
-            if 'C1' not in r:               
-                r['C1'] = [""]
-            a_added = False
-            for inst in r['C1']:
-                inst = inst.split('] ',1)
-                iauth = inst[0]
+        if len(docs)==1:
+            doc = docs.first()
+            doc.query.add(q)
+            if DEBUG:
+                print("     > Found an exact match!.") 
+        if len(docs)>1:
+            if DEBUG:
+                print("     > Found more than one match (uhoh) Here they are!.") 
+            for d in docs:
+                print(d.title)
+                print(d.UT)
+        if len(docs)==0:
+            #print("no matching docs")
+            if DEBUG:
+                print("     > Found no exact matches, computing jaccard similarity for wos docs from same year") 
+            s1 = shingle(get(r,'ti'))
+            py_docs = Doc.objects.filter(PY=get(r,'PY'))
+            docs = []
+            for d in py_docs:
+                j = jaccard(s1,d.shingle())
+                if j > 0.51:
+                    d.query.add(q)
+                    return
+        if len(docs)==0:
+            doc = Doc(UT=r['UT'])
+            #print(doc)
+            doc.title=get(r,'TI')
+            doc.content=get(r,'AB')
+            doc.PY=get(r,'PY')
+            doc.save()
+            doc.query.add(q)
+            doc.save()
+            article = WoSArticle(doc=doc)
+
+
+            for field in r:
+                f = scopus2WoSFields(field)
                 try:
-                    institute = inst[1]
-                    if af in iauth:
-                        dai = DocAuthInst(doc=doc)
-                        dai.AU = au
-                        dai.AF = af
-                        dai.institution = institute
-                        dai.position = a+1
-                        dai.save()
-                        a_added = True
+                    article.f = r[field]
+                    setattr(article,f,r[field])
+                    #article.save()
+                    #print(r[field])
                 except:
-                    pass # Fix this later, these errors are caused by multiline institutions
-            if a_added == False:
-                dai = DocAuthInst(doc=doc)
-                dai.AU = au
-                dai.AF = af
-                dai.position = a
-                dai.save()
+                    print(field)
+                    print(r[field])
+
+            try:
+                article.save()
+                
+            except:
+                pass
+
+        
+            ## Add authors
+            try:
+                dais = []
+                for a in range(len(r['au'])):
+                    #af = r['AF'][a]
+                    au = r['au'][a]  
+                    dai = DocAuthInst(doc=doc)
+                    dai.AU = au
+                    dai.position = a
+                    dais.append(dai)
+                    #dai.save()
+                DocAuthInst.objects.bulk_create(dais)
+            except:
+                print("couldn't add authors")
+
 
 ############################################################################
 ############################################################################
 ## NEW PART TO DEAL WITH REFERENCES
 
+    print(dir(doc))
+
     # Now that the article's saved, we can look at the references....
     # these are in a list accessible by get(r,'CR')
-    refs = get(r,'CR')
+    refs = get(r,'References')
     if len(refs) > 0:
         if DEBUG:
             print("     > The document has the following references:")
@@ -113,9 +189,13 @@ def add_doc(r):
                 continue
 
             # Try to get DOI
-            try: # try and get the doi if it's there
-                doi = re.search(", DOI ([^ ]*)",r).group(1)
-                doi = re.sub('^\[','',doi) ## This is to deal with lists !! of dois
+            if re.match('(.*)DOI:? (.*)',r):
+                DOI = re.search('DOI:? (.*)',r)
+                doi = DOI.group(1)
+            elif re.match('.*, doi:([^ ]*)',r):
+                DOI = re.search(", doi:([^ ]*)",r)
+                doi = DOI.group(1)
+
                 dr.refdoi=doi
                 if DEBUG:
                     print("         . DOI: "+str(doi))
@@ -138,19 +218,28 @@ def add_doc(r):
                         print("         . DOI not in DB! Add to lookup list.")
                     doi_lookups.append(doi)
                     doi_lookups_loc.append(doi)                 
-            except: 
+            else: 
                 if DEBUG:
                     print("         . No DOI found for this record. Skipping...")
                 skip+=1
                 pass 
-            dr.save() #uncomment this when we want to actually save these
 
+            continue
             # Try to get AU, PY & TI
             try: # try and get the fields
-                au = str.split(r, ",")[0].strip()
-                py = str.split(r, ",")[1].strip()
-                so = str.split(r, ",")[2].strip()
-    
+                ypat = '(.*?)\(([0-9]{4})[a-z]{0,1}\)(.*)'
+                if re.match(ypat,r):
+                    s = re.search('(.*?)\(([0-9]{4})[a-z]{0,1}\)(.*)',str(r))
+                    tiau = re.split('([A-Z]\.), ',s.group(1))
+                    ti = tiau[-1].strip()
+                    aul = tiau[0:-1]
+                    au = [ ''.join(x) for x in zip(aul[0::2], aul[1::2]) ]
+                    py = s.group(2)
+                    extra = s.group(3)
+                    so = extra.split(',')[0]
+
+                au = ""
+                print(ti)    
                 flag_problem = False
   
                 # Check validity of fields
@@ -274,9 +363,11 @@ def add_doc_text(r):
             else:
                 record[key] += line.strip()
 
+    record['UT'] = dict(parse_qsl(urlparse(record['UR']).query))['eid'] 
+    add_doc(record)
     try:
-        record['scopus_id'] = dict(parse_qsl(urlparse(record['UR']).query))['eid'] 
-        add_doc(record)
+        record['UT'] = dict(parse_qsl(urlparse(record['UR']).query))['eid'] 
+        #add_doc(record)
     except:
         print("don't want to add this record, it has no id!")
         print(record)
@@ -340,23 +431,24 @@ def main():
 
     title = str(q.id)
 
+    record = []
     # Open results file and loop over lines
-    with open("/queries/"+title+"/results.txt", encoding="utf-8") as res:
+    with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue
 ###############################
 #### Don't do this parellely anymore, just one at a time is easier here.
-             if 'ER  -' in line:   # end of record - save it and start a new one              
-                record['scopus_id'] = dict(parse_qsl(urlparse(record['UR']).query))['eid']                 
+            if 'ER  -' in line:   # end of record - save it and start a new one                               
                 n_records +=1            
                 add_doc_text(record)
-                record = {}
+                record = []
                 continue
             if re.match("^EF",line): #end of file
                 #done!
                 #break # We added files together, so there will be multiple EFs
                 continue 
+            record.append(line)
     
     django.db.connections.close_all()
     q.r_count = n_records
