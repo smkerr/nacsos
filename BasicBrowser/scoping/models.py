@@ -27,6 +27,7 @@ class SnowballingSession(models.Model):
                          verbose_name = "SB Status")
     users          = models.ManyToManyField(User)
     database       = models.CharField(max_length=6,null=True, verbose_name="Query database")
+    technology     = models.ForeignKey('Technology', null=True)
 
     def __str__(self):
       return self.name
