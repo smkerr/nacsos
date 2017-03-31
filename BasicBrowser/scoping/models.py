@@ -26,6 +26,7 @@ class SnowballingSession(models.Model):
                          db_index     = True,
                          verbose_name = "SB Status")
     users          = models.ManyToManyField(User)
+    technology     = models.ForeignKey('Technology', null=True)
 
     def __str__(self):
       return self.name

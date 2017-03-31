@@ -1,7 +1,7 @@
 body {
 	font: 16px Calibri, "Gill Sans", "Trebuchet MS", sans-serif;
 	line-height: 1.25;
-	background: #D5DFF5;
+	background: #FFE5CC;
 	margin: 0;
 	padding: 0;
 }
@@ -16,12 +16,6 @@ a:active {
 	color: #0050FF;
 }
 */
-
-a {
-    color: blue;
-    text-decoration: underline;
-    cursor: pointer;
-}
 
 h1 {
     line-height:0em;
@@ -125,7 +119,7 @@ width: 100%
 }
 
 #main table.dark {
-    background-color: #799FF2;
+    background-color: #f7ab31;
 }
 
 #main table td {
@@ -137,7 +131,7 @@ width: 100%
 
 #main table.dark td {
     text-align: center;
-    background-color: #799FF2;
+    background-color: #f7ab31;
 }
 
 #main table.dark tr.list td:hover {
@@ -169,11 +163,11 @@ width: 100%
 }
 
 #main table.dark tr.title td {
-    background-color: #416DCC;
+    background-color: #fed9a6;
 }
 
 #main table.light tr.title td {
-    background-color: #799FF2;
+    background-color: #f7ab31;
 }
 
 #main table.light td {
@@ -181,7 +175,7 @@ width: 100%
 }
 
 #main table.light_unclickable tr.title td {
-    background-color: #799FF2;
+    background-color: #f7ab31;
 }
 
 #main table.light_unclickable td {
@@ -233,18 +227,18 @@ width: 100%
 }
 
 #terms table table td:hover{
-    background-color: #416DCC;
+    background-color: #fed9a6;
 }
 
 
 
 #terms table table td{
-    background-color: #799FF2;
+    background-color: #f7ab31;
     padding: 5px;
     text-align: center;
 }
 #terms table td.title {
-    background-color: #416DCC;
+    background-color: #fed9a6;
     width: 10%;
 }
 
@@ -288,20 +282,20 @@ border-spacing: 2px 2px;*/
 }
 
 #main table.high-contrast-table td {
-    background-color: #799FF2;
+    background-color: #f7ab31;
     padding: 5px 0px;
 }
 
 .high-contrast-table td:hover {
-    background-color: #416DCC;
+    background-color: #fed9a6;
 }
 
 .high-contrast {
-    background-color: #799FF2;
+    background-color: #f7ab31;
 }
 
 .high-contrast:hover{
-    background-color: #416DCC;
+    background-color: #fed9a6;
     cursor: pointer;
 }
 
@@ -310,7 +304,7 @@ border-spacing: 2px 2px;*/
 }
 
 .dark-hover {
-    background-color: #416DCC;
+    background-color: #fed9a6;
 }
 
 .dark-hover:hover {
@@ -323,7 +317,7 @@ border-spacing: 2px 2px;*/
 }
 
 .medium-hover {
-    background-color: #799FF2;
+    background-color: #f7ab31;
     text-align: center;
 }
 
@@ -353,7 +347,7 @@ border-spacing: 2px 2px;*/
 
 #topics table{
     border-collapse: collapse;
-    background-color: #799FF2;
+    background-color: #f7ab31;
     margin-left: auto;
     margin-right: auto;
 }
@@ -370,7 +364,7 @@ border-spacing: 2px 2px;*/
 
 #topics tr.titles td {
     font-weight: bold;
-    background-color: #416DCC;
+    background-color: #fed9a6;
     padding: 12px;
 }
 
@@ -428,7 +422,7 @@ border-spacing: 2px 2px;*/
     border-style: solid;
     width: 12.5%;
     border-color: #D5DFF5;
-    background-color: #799FF2;
+    background-color: #f7ab31;
     border-width: 0px;
     padding: 5px;
     word-wrap:break-word;
@@ -436,7 +430,7 @@ border-spacing: 2px 2px;*/
 
 #list table td:hover {
     cursor: pointer;
-    background-color: #416DCC;
+    background-color: #fed9a6;
 }
 
 #list table td:active {
@@ -464,10 +458,9 @@ canvas {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    background-color: #799FF2;
+    background-color: #f7ab31;
     margin: 0;
     padding: 0;
-    border-bottom: 1px solid #547DD6;
 }
 
 #navigation table td {
@@ -482,9 +475,9 @@ canvas {
 }
 
 #navigation table td.linked {
-    width: 10%;
+    width: 8%;
     margin-left: 0%;
-    color: #12337A;
+    color: #7a5212;
     padding: 2 0;
     cursor: default;
 }
@@ -540,14 +533,14 @@ canvas {
 }
 
 #navigation td.linked:hover {
-    background-color: #416DCC;
+    background-color: #fed9a6;
     color: #000;
 }
 
 #navigation td:hover ul {
     display: block;
-    border: 2px solid #416DCC;
-    background: #799FF2;
+    border: 2px solid #fed9a6;
+    background: #f7ab31;
     margin-top: 12px;
 }
 
@@ -571,16 +564,16 @@ canvas {
     position: absolute;
     top: 1.1em;
     width: 100%;
-    background-color: none;
+    background-color: #f59905;
     height: 1px;
     border: none;
 }
 
-#navigarion ul {
+ul {
   list-style-type: none;
 }
 
-.hidden, .thidden {
+.hidden {
 	position: fixed;
 	display: none;
 	bottom: 0;
@@ -589,14 +582,12 @@ canvas {
 	background-color: #000;
 }
 
-
-
 .hidden .count {
-	background-color: #416DCC;
+	background-color: #fed9a6;
 }
 
 .hidden .total {
-	background-color: #799FF2;
+	background-color: #f7ab31;
 }
 
 .yearslider {
@@ -765,31 +756,12 @@ tr.active_run {
     font-family: "Courier New";
 }
 
-#logbox_sb {
-    background-color: black;
-    color: white;
-        margin-left: auto;
-        margin-right: auto;
-    padding: 10px;
-    text-align: left;
-    font-family: "Courier New";
-}
-
-.logbox {
-width: 100%;
-    background: #000;
-    color: white;
-    font-size: larger;
-    text-align: center;
-    align-content: center;
-}
-
 #field_container {
     line-height: 200%;
 }
 
 [data-active="true"] {
-    background-color: #fbb4ae !important;
+    background-color: #fbb4ae;
 }
 
 [data-active="false"] {
@@ -799,24 +771,6 @@ width: 100%;
 [data-active="true"], [data-active="false"] {
     cursor:pointer;
     padding: 4px;
-}
-
-.field_name {
-    cursor: pointer;
-    padding: 6px;
-    margin: 6px 2px;
-    white-space:nowrap;
-    background-color: #DCDCDC;
-    border: 1px solid black;
-    border-radius: 2px;
-}
-
-.field_name.active {
-    background-color: #fbb4ae !important;
-}
-
-p#field_container {
- line-height: 220%;
 }
 
 .uparrow, .downarrow {
@@ -1003,28 +957,6 @@ output {
 	margin: 20px;
 	margin-left: auto;
     margin-right: auto;
-    width: 95%;
-	border: 1px solid grey;
-	border-radius: 5px;
-}
-
-div.noteform {
-	background: white;
-	padding: 15px;
-	margin: 20px;
-	margin-left: auto;
-    margin-right: auto;
-    width: 80%;
-	border: 1px solid grey;
-	border-radius: 5px;
-}
-
-div.note {
-	background: white;
-	padding: 15px;
-	margin: 20px;
-	margin-left: auto;
-    margin-right: auto;
     width: 80%;
 	border: 1px solid grey;
 	border-radius: 5px;
@@ -1068,13 +1000,3 @@ span.username {
 }
 
 .waiting * { cursor: 'wait' !important}
-
-div.explanation {
-    width:60%;
-	margin-left: auto;
-    margin-right: auto;
-    border: 3px solid #FFE5CC;
-    border-radius: 5px;
-    background-color: white;
-    padding: 10px;
-}

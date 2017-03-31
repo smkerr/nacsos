@@ -35,15 +35,41 @@
                 {% endif %}
 
                 {% if log %}
-                <br/>
-                (Refresh page to update progress)
-                <br/><br/>
+                    {% if query.type == "default" %}
+                      <br/>
+                        (Refresh page to update progress)
+                      <br/><br/>
 
-                <div id="logbox">
-                    {% for l in log %}
-                        {{l}}<br>
-                    {% endfor %}
-                </div>
+                      <div id="logbox">
+                        {% for l in log %}
+                            {{l}}<br>
+                        {% endfor %}
+                      </div>
+                    {% else %}
+                      <br/>
+                        (Refresh page to update progress)
+                      <br/><br/>
+                      <table>
+                        <tr class="logbox">
+                          <td style="width: 50%">
+                            Backward query
+                            <div id="logbox_sb">
+                              {% for l in log %}
+                                {{l}}<br>
+                              {% endfor %}
+                            </div>
+                          </td>
+                          <td style="width: 50%">
+                            Forward query
+                            <div id="logbox_sb">
+                              {% for l in log2 %}
+                                {{l}}<br>
+                              {% endfor %}
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    {% endif %}
                 {% endif %}
 
                 <br/>
@@ -65,7 +91,7 @@
                             {% if doclength == 0 %}
                                 <p id="doc_adder2">{{reftotlen}} references were identified in the submitted documents. {{refdblen}} of them are already in the database. {{refscraplen}} need to be scraped to get additional information (authors, abstract ...). Would you like to do this now?
                                 <br/>
-                                <a href="/scoping/dodocrefadd?qid={{query.id}}&db={{query.database}}"><button>Scrape References</button></a>
+                                <a href="/scoping/dodocrefadd?qid={{query.id}}&q2id={{query2.id}}&db={{query.database}}"><button>Add citations and scrape References</button></a>
                             {% endif %}
                         {% else %}
                             <p>Looks like it's done!</p>
@@ -74,7 +100,7 @@
                                 <br/>
                                 <a href="/scoping/dodocadd?qid={{query.id}}&db={{query.database}}"><button>Add missing information</button></a>
                             {% else %}
-                                <p><a href="../../../sbs_allocateDocsToUser/{{query.id}}">View the references</a>
+                                <p><a href="../../../../sbs_allocateDocsToUser/{{query.id}}/{{query2.id}}">View the references and citations</a>
                             {% endif %}
                         {% endif %}
                     {% endif %}
