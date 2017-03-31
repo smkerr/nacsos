@@ -20,6 +20,7 @@ class scopus_doc(DynamicDocument):
 def add_doc(r):
     try:
         d = scopus_doc(**r)
+        d.qid = q
         d.save()
     except:
         print("noadd")
@@ -81,6 +82,10 @@ def add_docs(docs):
 
 
 def main():
+    qid = sys.argv[1]
+    global q
+    q = qid
+    title = str(qid)
     very_par = True
     i=0
     n_records = 0
@@ -123,11 +128,11 @@ def main():
 
     }
 
-    
+    #scopus_doc.objects.delete()
 
-    #with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
+    with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
     #with open("/home/max/Desktop/353/1_scopus.ris", encoding="utf-8") as res:
-    with open("/queries/411/s_results.txt", encoding="utf-8") as res:
+    #with open("/queries/411/s_results.txt", encoding="utf-8") as res:
         for line in res:
             if n_records > 1000000000:
                 break

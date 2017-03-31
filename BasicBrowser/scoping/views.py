@@ -273,18 +273,19 @@ import sys
 @login_required
 def start_snowballing(request):
 
-    ssh_test()
+    #ssh_test()
 
     qtitle = request.POST['sbs_name']
     qtype  = 'backward'
     qtext  = request.POST['sbs_initialpearls']
 
-    qdb = "WoS"
+    qdb = request.POST['qdb']
 
     curdate = timezone.now()
 
     sbs = SnowballingSession(
       name = qtitle,
+      database = qdb,
       initial_pearls = qtext,
       date=curdate,
       status=0
