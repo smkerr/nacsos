@@ -714,7 +714,7 @@ def querying(request, qid, substep, docadded, q2id):
             log_b = True
             log_f = True
 
-            finished_f = False
+            finished_b = False
             finished_f = False
 
             if not os.path.isfile(rstfile_b) and not os.path.isfile(rstfile_f):
@@ -1177,7 +1177,7 @@ def sbsExcludeDoc(request,qid,did):
 ##################################################
 ## View all docs
 @login_required
-def doclist(request,qid,q2id,sbsid):
+def doclist(request,qid,q2id='0',sbsid='0'):
 
     template = loader.get_template('scoping/docs.html')
   
