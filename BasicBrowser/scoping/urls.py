@@ -27,6 +27,7 @@ urlpatterns = [
     url(r'^delete_query/(?P<qid>[0-9]+)$', views.delete_query, name='delete'),
     url(r'^delete_sbs/(?P<sbsid>[0-9]+)$', views.delete_sbs, name='delete'),
     url(r'^query/(?P<qid>[0-9]+)$', views.query, name='query'),
+    url(r'^docs/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
     url(r'^docs/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<sbsid>[0-9]+)$', views.doclist, name='doclist'),
     url(r'^docssbs/(?P<sbsid>[0-9]+)$', views.doclistsbs, name='doclistsbs'),
     url(r'^sort_docs$', views.sortdocs, name='sortdocs'),
