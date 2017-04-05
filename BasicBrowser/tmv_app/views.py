@@ -326,8 +326,8 @@ def doc_detail(request, doc_id):
     for word in doc.content.split():
         wt = ""
         for t in range(1,ntopic+1):
-            #if snowball_stemmer.stem(word) in topicwords[t]:
-            if word in topicwords[t]:
+            if snowball_stemmer.stem(word) in topicwords[t] or word in topicwords[t]:
+            #if word in topicwords[t]:
                 wt = t
         words.append({'title': word, 'topic':"t"+str(wt)})
     
