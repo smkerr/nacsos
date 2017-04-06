@@ -1241,6 +1241,50 @@ def doclist(request,qid,q2id='0',sbsid='0'):
     return HttpResponse(template.render(context, request))
 
 
+###########################################################
+## Manual docadd form
+def add_doc_form(request,qid):
+    query = Query.objects.get(pk=qid)
+
+    template = loader.get_template('scoping/doc_add.html')
+
+    basic_fields = [
+        {"path": "UT", "name": "Url", "ab": "UT","note": "This is used to uniquely identify the document"},
+        {"path": "title", "name": "Title", "ab": "TI", "note": "Enter the document's title"},
+        {"path": "PY", "name": "Publishing Year", "ab": "PY", "note": "Enter the year the document was published"},
+        {"path": "content", "name": "Abstract", "ab": "AB","note": "Enter the abstract of the document, or if it does not have an abstract, the first paragraph"},
+
+    ]
+
+    author_fields = []
+    for a in range(1,11):
+        author_fields.append({"path": "author__"+str(a), "name": "Author "+str(a)})
+
+
+    fields = []
+    for f in WoSArticle._meta.get_fields():
+        path = "wosarticle__"+f.name
+        if f.name !="doc" and f.name.upper() not in [x['ab'] for x in basic_fields]:
+            fields.append({"path": path, "name": f.verbose_name, "ab": f.name.upper()})
+
+    
+
+    context = {
+        'fields': fields,
+        'query': query,
+        'basic_fields': basic_fields,
+        'author_fields': author_fields,
+        'techs': Technology.objects.all()
+    }
+    return HttpResponse(template.render(context, request))
+
+## Manual docadd form HANDLER
+def do_add_doc(request):
+
+    d = request.POST
+    
+    return HttpResponse(template.render(context, request))
+
 
 from django.db.models.aggregates import Aggregate
 class StringAgg(Aggregate):
@@ -1898,5 +1942,7 @@ def highlight_words(s,query):
         else:
             abstract.append(word)
     return(" ".join(abstract))
+
+
 
 
