@@ -144,7 +144,11 @@ var user = $("[name='docownership__{{user.username}}'")
 console.log(user)
 
 var qid = {{ query.id }}
-var q2id = {{ query2.id }}
+{% if q2id %}
+    var q2id = {{ query2.id }}
+{% else %}
+    var q2id = 0
+{% endif %}
 var qtype = "{{ query.type }}"
 
 console.log(qid)

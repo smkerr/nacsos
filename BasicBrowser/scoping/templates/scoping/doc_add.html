@@ -4,7 +4,8 @@
 {% load scoping_extras %}
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
-<script language="JavaScript" src="https://code.jquery.com/jquery-1.6.4.js"></script>
+<script src="{% static 'scoping/js/jquery-3.2.0.min.js' %}"></script>
+
 <title>Scoping</title>
 <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
 
@@ -19,7 +20,7 @@
 <h2> Manual Document Adder</h2>
 <p> Use this form to manually enter documents to the database. Before you do this, 
 please check whether the document exists on WoS or Scopus, and can be added simply 
-by querying for it.
+by querying for it, otherwise we may end up with duplicate records.
 </div>
 <form action="{% url 'scoping:do_add_doc' %}" method="post">
       {% csrf_token %}
@@ -106,15 +107,25 @@ $(function() {
    });
 });
 
-$('*[data-mandatory="true"]').change(function(){
+function check() {
     empty = false
     $('*[data-mandatory="true"]').map(function(){
        if ($(this).val().trim() =="") {empty = true};
     });
+    PY = $($('textarea[name=PY]')).val().trim()
+    if (isNaN(PY)) {
+        empty = false
+    }
     if (empty==false) {
         $("#addbutton").prop("disabled", false)
     } else {
         $("#addbutton").prop("disabled", true)
     }
+}
+
+$('*[data-mandatory="true"]').change(function(){
+    check()
 })
+
+check()
 </script>
