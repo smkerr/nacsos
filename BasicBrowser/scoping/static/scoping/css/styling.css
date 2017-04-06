@@ -758,8 +758,8 @@ tr.active_run {
     width: 40%;
     background-color: black;
     color: white;
-	margin-left: auto;
-	margin-right: auto;
+    margin-left: auto;
+    margin-right: auto;
     padding: 10px;
     text-align: left;
     font-family: "Courier New";
@@ -768,11 +768,12 @@ tr.active_run {
 #logbox_sb {
     background-color: black;
     color: white;
-        margin-left: auto;
-        margin-right: auto;
+    margin-left: auto;
+    margin-right: auto;
     padding: 10px;
     text-align: left;
     font-family: "Courier New";
+    font-size: small;
 }
 
 .logbox {

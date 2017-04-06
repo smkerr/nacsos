@@ -16,7 +16,7 @@
         {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
         <div id="main">
             <div id="graph">
-                {% if appmode == 'scoping' %}
+                {% if request.session.appmode == 'scoping' %}
                   <h1> Scoping Review Helper</h1>
                 {% else %}
                   <h1> Snowballing - Query Helper</h1>
@@ -24,18 +24,18 @@
                 <br/>
 
                 <!-- Query manager -->
-                {% if appmode == 'scoping' %}
+                {% if request.session.appmode == 'scoping' %}
                   <h2> Query Progress </h2>
                 {% else %}
                     {% if substep == "1" %}
-                      <h2> Query Progress - SB substep {{ substep }} (Identifying references in submitted documents)</h2>
+                      <h2> Query Progress - SB substep {{ substep }} (Identifying references and scraping citations)</h2>
                     {% else %}
                       <h2> Query Progress - SB substep {{ substep }} (Obtaining information for all identified references)</h2>
                     {% endif %}
                 {% endif %}
 
                 {% if log %}
-                    {% if appmode == 'scoping' %}
+                    {% if request.session.appmode == 'scoping' %}
                       <br/>
                         (Refresh page to update progress)
                       <br/><br/>
@@ -51,20 +51,24 @@
                       <br/><br/>
                       <table>
                         <tr class="logbox">
-                          <td style="width: 50%">
+                          <td style="width: 50%; border: 1px solid white;">
                             Backward query
                             <div id="logbox_sb">
-                              {% for l in log %}
-                                {{l}}<br>
-                              {% endfor %}
+                              {% if log_b %}
+                                {% for l in log_b %}
+                                  {{l}}<br>
+                                {% endfor %}
+                              {% endif %}
                             </div>
                           </td>
-                          <td style="width: 50%">
+                          <td style="width: 50%; border: 1px solid white;">
                             Forward query
                             <div id="logbox_sb">
-                              {% for l in log2 %}
-                                {{l}}<br>
-                              {% endfor %}
+                              {% if log_f %}
+                                {% for l in log_f %}
+                                  {{l}}<br>
+                                {% endfor %}
+                              {% endif %}
                             </div>
                           </td>
                         </tr>
@@ -75,7 +79,7 @@
                 <br/>
                 {% if finished %}
 <!-- Scoping review -->
-                    {% if appmode == 'scoping' %}
+                    {% if request.session.appmode == 'scoping' %}
                         <p>Looks like it's done!</p>
                         {% if doclength == 0 %}
                             <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now?
@@ -89,16 +93,30 @@
                         {% if substep == "1" %}
                             <p>Looks like it's done! (Another query might be needed in case references are not yet in the database) </p>
                             {% if doclength == 0 %}
-                                <p id="doc_adder2">{{reftotlen}} references were identified in the submitted documents. {{refdblen}} of them are already in the database. {{refscraplen}} need to be scraped to get additional information (authors, abstract ...). Would you like to do this now?
+                                <p>You will be automatically redirected to the next substep in a few seconds. You may also click the button below to accelerate the process.</p>
                                 <br/>
                                 <a href="/scoping/dodocrefadd?qid={{query_b.id}}&q2id={{query_f.id}}&db={{query_b.database}}"><button>Add citations and scrape References</button></a>
                             {% endif %}
                         {% else %}
                             <p>Looks like it's done!</p>
-                            {% if docadded != "1" and query.dlstat != "NOREC" %}
-                                <p id="doc_adder1">{{doclength}} references were correctly retrieved. Would you like to add them to the database?
+                            {% if docadded == 0 %} 
+                              {% if query.dlstat != "NOREC" %}
+                                <p id="doc_adder1">References have been found in {{query_b.database}}. We will add them to the database and check for those that were not.</p>
                                 <br/>
-                                <a href="/scoping/dodocadd?qid={{query_b.id}}&q2id={{query_f.id}}&db={{query_b.database}}"><button>Add missing information</button></a>
+                                <a href="/scoping/dodocadd?qid={{query_b.id}}&q2id={{query_f.id}}&db={{query_b.database}}"><button>Add missing reference information and further checks</button></a>
+                              {% else %}
+                                {% if query_b.database == "WoS" %}
+                                  <p id="doc_adder1">None of the references were in {{query_b.database}}.
+                                  <br/>
+                                  <a href="../../../../sbs_allocateDocsToUser/{{query_b.id}}/{{query_f.id}}">View the references and citations</a>
+                                  <a href="../../../../sbs_allocateDocsToUser/{{query_b.id}}/{{query_f.id}}">Allocate references and citations to several users</a>
+                                {% else %}
+                                  <p id="doc_adder1">None of the references were in {{query_b.database}}.
+                                  <br/>
+                                  <a href="/scoping/dodocadd?qid={{query_b.id}}&q2id={{query_f.id}}&db={{query_b.database}}"><button>Add missing information</button></a>
+                                  <a href="../../../../sbs_allocateDocsToUser/{{query_b.id}}/{{query_f.id}}">Allocate references and citations to several users</a>
+                                {% endif %}
+                              {% endif %}
                             {% else %}
                                 <p><a href="../../../../sbs_allocateDocsToUser/{{query_b.id}}/{{query_f.id}}">View the references and citations</a>
                             {% endif %}

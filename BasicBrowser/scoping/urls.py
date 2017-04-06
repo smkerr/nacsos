@@ -5,28 +5,33 @@ from . import views
 app_name = 'scoping'
 
 urlpatterns = [
+    #### Index pages / query set-up (user input)
     url(r'^$', views.index, name='index'),
+    url(r'^snowball$', views.snowball, name='snowball'),
+    #### Query processing
+    url(r'^start_snowballing$', views.start_snowballing, name='start_snowballing'),
+    url(r'^doquery$', views.doquery, name='doquery'),
+    url(r'^do_snowballing/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)$', views.do_snowballing, name='do_snowballing'),
+    url(r'^dodocadd$', views.dodocadd, name='dodocadd'),
+    url(r'^dodocrefadd$', views.dodocrefadd, name='dodocrefadd'),
+    url(r'^querying/(?P<qid>[0-9]+)/(?P<substep>[0-9]+)/(?P<docadded>[0-9]+)/(?P<q2id>[0-9]+)$', views.querying, name='querying'),
+    #### Manage Query
+    url(r'^query/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<sbsid>[0-9]+)$', views.query, name='query'),
+    #### Manage SBS
+    url(r'^sbs_allocateDocsToUser/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)$', views.sbs_allocateDocsToUser, name='sbs_allocateDocsToUser'),
+    url(r'^sbs_setAllQDocsToIrrelevant/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<sbsid>[0-9]+)$', views.sbs_setAllQDocsToIrrelevant, name='sbs_setAllQDocsToIrrelevant'),    
+    url(r'^sbsKeepDoc/(?P<qid>[0-9]+)/(?P<did>.+)$', views.sbsKeepDoc, name='sbsKeepDoc'),
+    url(r'^sbsExcludeDoc/(?P<qid>[0-9]+)/(?P<did>.+)$', views.sbsExcludeDoc, name='sbsExcludeDoc'),
+    url(r'^delete_query/(?P<qid>[0-9]+)$', views.delete_query, name='delete'),
+    url(r'^delete_sbs/(?P<sbsid>[0-9]+)$', views.delete_sbs, name='delete'),  
+    #### Others
     url(r'^switchmode$', views.switch_mode, name='switch_mode'),
     url(r'^technologies',views.technologies, name='technologies'),
     url(r'^add_tech',views.add_tech, name='add_tech'),
     url(r'^update_tech',views.update_tech, name='update_tech'),   
     url(r'^technology_query',views.technology_query, name='technology_query'),   
     url(r'^user$', views.userpage, name='userpage'),
-    url(r'^snowball$', views.snowball, name='snowball'),
-    url(r'^start_snowballing$', views.start_snowballing, name='start_snowballing'),
-    url(r'^doquery$', views.doquery, name='doquery'),
-    url(r'^do_snowballing/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)$', views.do_snowballing, name='do_snowballing'),
     url(r'^update_criteria$', views.update_criteria, name='update_criteria'),
-    url(r'^dodocadd$', views.dodocadd, name='dodocadd'),
-    url(r'^dodocrefadd$', views.dodocrefadd, name='dodocrefadd'),
-    url(r'^querying/(?P<qid>[0-9]+)/(?P<substep>[0-9]+)/(?P<docadded>[0-9]+)/(?P<q2id>[0-9]+)$', views.querying, name='querying'),
-    url(r'^sbs_allocateDocsToUser/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)$', views.sbs_allocateDocsToUser, name='sbs_allocateDocsToUser'),
-    url(r'^sbs_setAllQDocsToIrrelevant/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<sbsid>[0-9]+)$', views.sbs_setAllQDocsToIrrelevant, name='sbs_setAllQDocsToIrrelevant'),
-    url(r'^sbsKeepDoc/(?P<qid>[0-9]+)/(?P<did>.+)$', views.sbsKeepDoc, name='sbsKeepDoc'),
-    url(r'^sbsExcludeDoc/(?P<qid>[0-9]+)/(?P<did>.+)$', views.sbsExcludeDoc, name='sbsExcludeDoc'),
-    url(r'^delete_query/(?P<qid>[0-9]+)$', views.delete_query, name='delete'),
-    url(r'^delete_sbs/(?P<sbsid>[0-9]+)$', views.delete_sbs, name='delete'),
-    url(r'^query/(?P<qid>[0-9]+)$', views.query, name='query'),
     url(r'^docs/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
     url(r'^docs/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<sbsid>[0-9]+)$', views.doclist, name='doclist'),
     url(r'^docssbs/(?P<sbsid>[0-9]+)$', views.doclistsbs, name='doclistsbs'),
