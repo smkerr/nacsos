@@ -1325,6 +1325,110 @@ def doclist(request,qid,q2id='0',sbsid='0'):
     return HttpResponse(template.render(context, request))
 
 
+###########################################################
+## Manual docadd form
+def add_doc_form(request,qid=0):
+    try:
+        query = Query.objects.get(pk=qid)
+    except:
+        query = Query.objects.last()
+
+    template = loader.get_template('scoping/doc_add.html')
+
+    basic_fields = [
+        {"path": "UT", "name": "Url", "ab": "UT","note": "This is used to uniquely identify the document"},
+        {"path": "title", "name": "Title", "ab": "TI", "note": "Enter the document's title"},
+        {"path": "PY", "name": "Publishing Year", "ab": "PY", "note": "Enter the year the document was published"},
+        {"path": "content", "name": "Abstract", "ab": "AB","note": "Enter the abstract of the document, or if it does not have an abstract, the first paragraph"},
+    ]
+    author_fields = []
+    for a in range(1,11):
+        author_fields.append({"path": "author__"+str(a), "name": "Author "+str(a)})
+
+
+    fields = []
+    for f in WoSArticle._meta.get_fields():
+        path = "wosarticle__"+f.name
+        if f.name !="doc" and f.name.upper() not in [x['ab'] for x in basic_fields]:
+            fields.append({"path": path, "name": f.verbose_name, "ab": f.name.upper()})
+
+    
+
+    context = {
+        'fields': fields,
+        'query': query,
+        'basic_fields': basic_fields,
+        'author_fields': author_fields,
+        'techs': Technology.objects.all()
+    }
+    return HttpResponse(template.render(context, request))
+
+## Manual docadd form HANDLER
+def do_add_doc(request):
+
+    d = request.POST
+
+    t = Technology.objects.get(pk=d['technology'])
+
+    # create new query
+    q = Query(
+        title="Manual add "+d['title'],
+        type="default",
+        text="Manually add "+d['title']+" at "+str(timezone.now()),
+        creator = request.user,
+        date = timezone.now(),
+        database = "manual",
+        r_count = 1,
+        technology=t
+    )
+    q.save()
+
+    Doc.objects.get(UT=d['UT']).delete()
+
+    # create new doc
+    doc = Doc(UT=d['UT'])
+    
+    doc.UT=d['UT']
+    doc.title=d['title']
+    doc.PY=d['PY']
+    doc.content=d['content']
+
+    doc.save()
+    
+    # Add doc to query
+    doc.query.add(q)
+
+    article = WoSArticle(
+        doc=doc
+    )
+
+    article.ti=d['title']
+    article.py=d['PY']
+    article.ab=d['content']
+
+    pos = 0
+    for f in d:
+        # create new docauthors
+        if "author__" in f:
+            if len(d[f].strip()) > 0 :
+                pos+=1
+                if DocAuthInst.objects.filter(doc=doc,position=pos).count() == 1:
+                    dai = DocAuthInst.objects.get(doc=doc,position=pos)
+                else:
+                    dai = DocAuthInst(doc=doc)
+                dai.AU = d[f].strip()
+                dai.position = pos
+                dai.save()
+        # populate new wosarticle 
+        if "wosarticle__" in f:
+            if len(d[f].strip()) > 0 :
+                fn = f.split('__')[1]
+                setattr(article,fn,d[f])
+
+    article.save()    
+    
+    return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': q.id}))
+
 
 from django.db.models.aggregates import Aggregate
 class StringAgg(Aggregate):
@@ -1982,5 +2086,7 @@ def highlight_words(s,query):
         else:
             abstract.append(word)
     return(" ".join(abstract))
+
+
 
 
