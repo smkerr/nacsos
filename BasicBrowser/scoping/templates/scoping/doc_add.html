@@ -1,0 +1,131 @@
+<html>
+<head>
+{% load static %}
+{% load scoping_extras %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
+<script src="{% static 'scoping/js/jquery-3.2.0.min.js' %}"></script>
+
+<title>Scoping</title>
+<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+
+</head>
+  <body>
+{% include 'scoping/nav_bar.html' with user=user qid=query.id appmode='scoping' %}
+<div id="main">
+<div id="graph">
+<h1> Scoping Review Helper</h1>
+<br>
+<div class="explanation">
+<h2> Manual Document Adder</h2>
+<p> Use this form to manually enter documents to the database. Before you do this, 
+please check whether the document exists on WoS or Scopus, and can be added simply 
+by querying for it, otherwise we may end up with duplicate records.
+</div>
+<form action="{% url 'scoping:do_add_doc' %}" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="qid" value="{{query.id}}"></input>
+<table>
+
+
+<td width=33%>
+<div class="addbox">
+<h2>Mandatory Basic Information</h2>
+<p>Enter some basic information about the document
+<p>
+<table>
+    {% for f in basic_fields %}
+        <tr>
+            <td></b> {{f.name}} ({{f.note}})
+            <td><textarea data-mandatory="true" name={{f.path}} rows=2 cols=25>
+            </textarea>
+    {% endfor %}
+</table>
+</div>
+<p>
+<br>
+<div class="addbox">
+<select id="tech" class="tech" name="technology" data-query="{{query.id}}" autocomplete="off">
+{% if not query.technology %}
+<option selected value="None">{{query.technology}}</option>
+{% else %}
+<option value="None">None</option>
+{% endif %}
+{% for t in techs %}
+    {% if t == query.technology %}
+    <option selected value={{t.id}}>{{t.name}}</option>
+    {% else %}
+    <option value={{t.id}}>{{t.name}}</option>
+    {% endif %}
+{% endfor %}
+</select>
+<input type='hidden' id="techname" name="tech" value=""/>
+<input id='addbutton' type="submit" class="addbutton" value="Add Document" disabled/>
+</div>
+
+
+<td width=33%>
+<div class="addbox">
+<h2>Mandatory Author Information</h2>
+<p>Enter at least 1 and up to 10 authors for the document. If the document has not author, enter the institution 
+<p>
+<table>
+    {% for f in author_fields %}
+        <tr>
+            <td></b> {{f.name}}
+            {% if f.name == 'Author 1' %}
+                <td><textarea data-mandatory="true" name={{f.path}} rows=2 cols=25>
+            {% else %}
+                <td><textarea name={{f.path}} rows=2 cols=25>
+            {% endif %}
+            </textarea>
+    {% endfor %}
+</table>
+</div>
+<td width=33%>
+<div class="addbox">
+<h2>Optional Additional Information</h2>
+<p>If you the information is available, please add any additional WoS field information
+<p>
+<table>
+    {% for f in fields %}
+        <tr>
+            <td><b>{{f.ab}}:</b> ({{f.name}}) 
+            <td><textarea name={{f.path}} rows=1 cols=25>
+            </textarea>
+    {% endfor %}
+</table>
+</div>
+</form>
+
+
+<script type="text/javascript" language="javascript">
+$(function() {
+      $("#tech").change(function(){
+        var v= $('option:selected', this).attr('value');
+      $('#techname').val(v);
+   });
+});
+
+function check() {
+    empty = false
+    $('*[data-mandatory="true"]').map(function(){
+       if ($(this).val().trim() =="") {empty = true};
+    });
+    PY = $($('textarea[name=PY]')).val().trim()
+    if (isNaN(PY)) {
+        empty = false
+    }
+    if (empty==false) {
+        $("#addbutton").prop("disabled", false)
+    } else {
+        $("#addbutton").prop("disabled", true)
+    }
+}
+
+$('*[data-mandatory="true"]').change(function(){
+    check()
+})
+
+check()
+</script>
