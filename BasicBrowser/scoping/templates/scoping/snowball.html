@@ -8,7 +8,7 @@
   <body>
   {% include 'scoping/nav_bar.html' with user=user sbsid=sb_session_last.id %}
     <div id="main">
-      <div id="graph">
+      <div id="graph" style="align: center">
 
         <h1>Snowballing Helper</h1>
         <br/>
@@ -17,35 +17,56 @@
         <h2>Start a new snowballing session (SB)</h2>
         <br/>
         <div class="explanation">
-          <p>Start a new snowballing session by using the form below.</p>
+          Start a new snowballing session by using the form below. Queries will be sent to <b>Scopus</b> by default. Should you wish to use Web of Science instead, please contact us.
         </div>
-        <img src="{% static 'scoping/img/monkey.jpg' %}" height="200px"/>
-        <form action="{% url 'scoping:start_snowballing' %}" method="post">
-        {% csrf_token %}
+        <div style="align:center; width:100%; display:flex; margin-top: 20px; margin-left:auto margin-right:auto; border: 1px white solid;">
+          <div style="width:300px; border: 0px solid #000000; margin-top:10px; margin-bottom:10px; margin-left: auto; margin-right: auto; display: block;">
+            <img src="{% static 'scoping/img/monkey.jpg' %}" height="400px"/>
+          </div>
+          <div style="flex-grow:1; border: 0px solid #0000ff; margin-top:10px; margin-bottom:10px;">
+            <form action="{% url 'scoping:start_snowballing' %}" method="post" style="margin: 0 0 0 0">
+            {% csrf_token %}
 
-          <h3> SB session name </h3>
-          <input type="text" name="sbs_name" />
+              <h3> SB session name </h3>
+              <input type="text" name="sbs_name" />
 
+<!--
+ Temporarily deactivated
+        <h3> Query Source </h3>
+          <select name="qdb">
+             <option value="WoS">Web of Science</option> 
+             <option value="scopus">Scopus</option>
+          </select>
+-->
+              <input name="qdb" value="WoS" type="hidden" /> 
 
-      <h3> Query Source </h3>
-        <select name="qdb">
-            <option value="WoS">Web of Science</option>
-            <option value="scopus">Scopus</option>
-        </select>
-
-          <h3> Initial pearls </h3>
-          <p>
-            <i>Provide a list of references to start snowballing from seperated by the operator OR.</i><br/>
-            <i>Accepted formats:<i><br/>
+              <h3> Initial pearls </h3>
+              <p>
+                <i>Provide a list of 5 key references as DOIs.</i><br/>
+<!--            <i>Accepted formats:<i><br/>
             <i>(AU=[author name] AND TI=[Title] AND PY=[Publishing year])</i><br/>
-            <i>(DO=[doi])<i>
-          </p>
-          <textarea rows=10 cols=100 name="sbs_initialpearls"></textarea>
-          <br/><br/>
+            <i>(DO=[doi])<i> 
+-->
+                <i>(e.g. DOI(10.1793/2132.312) OR DOI(10.4313/313213.3213.fd.21) OR ...)<i>
+              </p>
+              <textarea rows=5 cols=60 name="sbs_initialpearls"></textarea>
+              <br/><br/>
 
-          <input type="submit" value="Start snowballing" />
-        </form>
-
+              <h3> Technology </h3>
+              <p>
+                <i>Please select a technology among the list below.</i><br/>
+              </p>
+              <select name="sbs_technology">
+                {% for t in techs %}
+                  <option value="{{t.id}}">{{t.name}}</option>
+                {% endfor %}
+              </select>
+              <br/><br/>
+  
+              <input type="submit" value="Start snowballing" />
+            </form>
+          </div>
+        </div>
 
         <br/>
         <hr/>

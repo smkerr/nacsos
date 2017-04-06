@@ -17,7 +17,7 @@
     {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
     <div id="main">
       <div id="graph">
-        {% if query.type == "default" %}
+        {% if request.session.appmode == "scoping" %}
           <h1> Scoping Review Helper</h1>
         {% else %}
           <h1> Snowballing Document Review Helper</h1>
@@ -26,9 +26,13 @@
         <br/>
 
         <!-- Query manager -->
-        <h2> Document list associated to <a href="/scoping/query/{{query.id}}">{{query.type}} query no. {{query.id}}</a>. 
+        {% if request.session.appmode == "scoping" %}
+          <h2> Document list associated to <a href="/scoping/query/{{query.id}}">{{query.type}} query no. {{query.id}}</a>.</h2>
+        {% else %}
+          <h2> Document list associated to {{query.type}} query no. {{query.id}} and {{query2.type}} query no. {{query2.id}}</a>.</h2>
+        {% endif %}
         <!-- <a href="/scoping/download/{{query.id}}">Download</a> these documents as a csv</h2> -->
-        <a onclick="update_fields(download='true')" id="download">Download</a> these documents as a csv</h2>
+        <h2><a onclick="update_fields(download='true')" id="download">Download</a> these documents as a csv</h2>
         <br/>
 
         <p id="field_container">
@@ -78,13 +82,11 @@
         </p>
       {% endif %}
 
-      {% if query.type != "default" %}
+      {% if request.session.appmode == "snowballing" %}
         <div id="sidebar">
-          <ul>
-            <li><a href="/scoping/do_snowballing/{{ query.id }}/{{ query2.id }}"><button type="button">Snowball the selected documents</button></a></li>
-            <li><a href="/scoping/sbs_setAllQDocsToIrrelevant/{{ query.id }}/{{ query2.id }}/{{ sbsid }}"><button type="button">Discard all documents</button></a></li>
-            <li><a href=""><button type="button">Allocate documents to another user</button></a></li>
-          </ul>
+          <a href="/scoping/do_snowballing/{{ query.id }}/{{ query2.id }}"><button type="button">Snowball the selected documents</button></a><br/>
+          <a href="/scoping/sbs_setAllQDocsToIrrelevant/{{ query.id }}/{{ query2.id }}/{{ sbsid }}"><button type="button">Discard all documents</button></a><br/>
+          <a href=""><button type="button">Allocate documents to other user(s)</button></a><br/>
         </div>
       {% endif %}
 
@@ -127,7 +129,7 @@
         {% endfor %}
       </table>
 
-      {% if query.type != "default" %}
+      {% if request.session.appmode == "snowballing" %}
         <div><a href="/scoping/do_snowballing/{{ query.id }}/{{ query2.id }}"><button type="button">Snowball the selected documents</button></a></div>
       {% endif %}
 

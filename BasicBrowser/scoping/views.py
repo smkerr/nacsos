@@ -23,7 +23,7 @@ def super_check(user):
 def switch_mode(request):
 
     if request.session['appmode']=='scoping':
-        request.session['appmode']='snoballing'
+        request.session['appmode']='snowballing'
         return HttpResponseRedirect(reverse('scoping:snowball'))
     else:
         request.session['appmode']='scoping'
@@ -157,10 +157,14 @@ def snowball(request):
          
         sb_info.append(sb_info_tmp)
 
+    # Get technologies
+    technologies = Technology.objects.all()
+
     context = {
         'sb_sessions'    : sb_sessions,
         'sb_session_last': sb_session_last,
-        'sb_info'        : sb_info
+        'sb_info'        : sb_info,
+        'techs'          : technologies
     }
     return HttpResponse(template.render(context, request))
 
@@ -275,20 +279,24 @@ def start_snowballing(request):
 
     #ssh_test()
 
+    # Get form content
     qtitle = request.POST['sbs_name']
-    qtype  = 'backward'
     qtext  = request.POST['sbs_initialpearls']
-
-    qdb = request.POST['qdb']
+    qdb    = request.POST['qdb']
+    qtech  = request.POST['sbs_technology']
 
     curdate = timezone.now()
 
+    t = Technology.objects.get(pk=qtech)
+
+    # Create new snowballing session
     sbs = SnowballingSession(
       name = qtitle,
       database = qdb,
       initial_pearls = qtext,
       date=curdate,
-      status=0
+      status=0,
+      technology=t
     )
     sbs.save()
 
@@ -296,12 +304,13 @@ def start_snowballing(request):
     q = Query(
         title=qtitle+"_backward_1_1",
         database=qdb,
-        type=qtype,
+        type='backward',
         text=qtext,
         date=curdate,
         snowball=sbs.id,
         step=1,
-        substep=1
+        substep=1,
+        technology=t
     )
     q.save()
 
@@ -321,7 +330,8 @@ def start_snowballing(request):
         date=curdate,
         snowball=sbs.id,
         step=1,
-        substep=2
+        substep=2,
+        technology=t
     )
     q2.save()
 
@@ -711,8 +721,8 @@ def querying(request, qid, substep, docadded, q2id):
         if do_backward_query and do_forward_query: 
 
             # Display log file content by default
-            log_b = True
-            log_f = True
+            log_b = False
+            log_f = False 
 
             finished_b = False
             finished_f = False
@@ -762,7 +772,11 @@ def querying(request, qid, substep, docadded, q2id):
                 if finished_b == True and finished_f == True:
                     finished = True
             else:
+                #TODO check if queries have delivered results
                 finished = True
+
+            if query_b.dlstat == "done" and query_f.dlstat == "done":
+                return HttpResponseRedirect(reverse('scoping:dodocrefadd', kwargs={'qid': query_b.id, 'q2id': query_f.id, 'db': query_b.database}))
 
         if do_backward_query and not do_forward_query:
 
@@ -805,11 +819,15 @@ def querying(request, qid, substep, docadded, q2id):
             else:
                 finished = True
 
+            if query_b.dlstat == "done":
+                return HttpResponseRedirect(reverse('scoping:dodocrefadd', kwargs={'qid': query_b.id, 'q2id': query_f.id, 'db': query_b.database}))
+
         if not do_backward_query and not do_forward_query:
             print("No documents to perform backward or forward queries. Going back to snowball home page...")
             return HttpResponseRedirect(reverse('scoping:snowball'))
 
         context = {
+            'log': True,
             'log_b': log_b,
             'log_f': log_f,
             'finished': finished,
@@ -923,74 +941,139 @@ def sbs_setAllQDocsToIrrelevant(request,qid,q2id,sbsid):
 ## Query homepage - manage tags and user-doc assignments
 
 @login_required
-def query(request,qid):
+def query(request,qid,q2id='0',sbsid='0'):
     template = loader.get_template('scoping/query.html')
-    query = Query.objects.get(pk=qid)
 
-    tags = Tag.objects.filter(query=query)
+    if request.session['appmode'] == "scoping":
 
-    tags = tags.values()
+        query = Query.objects.get(pk=qid)
 
-    for tag in tags:
-        tag['docs'] = Doc.objects.filter(tag=tag['id']).distinct().count()
-        tag['a_docs'] = Doc.objects.filter(docownership__tag=tag['id']).distinct().count()
-        tag['seen_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant__gt=0).count()
-        tag['rel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()
-        tag['irrel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=2).count()
-        try:
-            tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
-        except:
-            tag['relevance'] = 0
+        tags = Tag.objects.filter(query=query)
 
-    fields = ['id','title']
+        tags = tags.values()
+ 
+        for tag in tags:
+            tag['docs']       = Doc.objects.filter(tag=tag['id']).distinct().count()
+            tag['a_docs']     = Doc.objects.filter(docownership__tag=tag['id']).distinct().count()
+            tag['seen_docs']  = DocOwnership.objects.filter(doc__tag=tag['id'],relevant__gt=0).count()
+            tag['rel_docs']   = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()
+            tag['irrel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=2).count()
+            try:
+                tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
+            except:
+                tag['relevance'] = 0
 
-    untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
+        fields = ['id','title']
 
-    users = User.objects.all()
+        untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
 
-    proj_users = users.query
+        users = User.objects.all()
 
-    user_list = []
+        proj_users = users.query
 
-    for u in users:
-        user_docs = {}
-        tdocs = DocOwnership.objects.filter(query=query,user=u)
-        user_docs['tdocs'] = tdocs.count()
-        if user_docs['tdocs']==0:
-            user_docs['tdocs'] = False
-        else:
-            user_docs['reldocs'] = tdocs.filter(relevant=1).count()
-            user_docs['irreldocs'] = tdocs.filter(relevant=2).count()
-            user_docs['maybedocs'] = tdocs.filter(relevant=3).count()
-            user_docs['yesbuts'] = tdocs.filter(relevant=4).count()
-            user_docs['checked_percent'] = round((user_docs['reldocs'] + user_docs['irreldocs'] + user_docs['maybedocs']) / user_docs['tdocs'] * 100)
-        if query in u.query_set.all():
-            user_list.append({
-                'username': u.username,
-                'email': u.email,
-                'onproject': True,
-                'user_docs': user_docs
-            })
-        else:
-            user_list.append({
-                'username': u.username,
-                'email': u.email,
-                'onproject': False,
-                'user_docs': user_docs
-            })
+        user_list = []
 
-    context = {
-        'query': query,
-        'tags': list(tags),
-        'fields': fields,
-        'untagged': untagged,
-        'users': user_list,
-        'user': request.user
-    }
+        for u in users:
+            user_docs = {}
+            tdocs = DocOwnership.objects.filter(query=query,user=u)
+            user_docs['tdocs'] = tdocs.count()
+            if user_docs['tdocs']==0:
+                user_docs['tdocs'] = False
+            else:
+                user_docs['reldocs']         = tdocs.filter(relevant=1).count()
+                user_docs['irreldocs']       = tdocs.filter(relevant=2).count()
+                user_docs['maybedocs']       = tdocs.filter(relevant=3).count()
+                user_docs['yesbuts']         = tdocs.filter(relevant=4).count()
+                user_docs['checked_percent'] = round((user_docs['reldocs'] + user_docs['irreldocs'] + user_docs['maybedocs']) / user_docs['tdocs'] * 100)
+            if query in u.query_set.all():
+                user_list.append({
+                    'username': u.username,
+                    'email': u.email,
+                    'onproject': True,
+                    'user_docs': user_docs
+                })
+            else:
+                user_list.append({
+                    'username': u.username,
+                    'email': u.email,
+                    'onproject': False,
+                    'user_docs': user_docs
+                })
 
-    #add_manually()
+        context = {
+            'query': query,
+            'tags': list(tags),
+            'fields': fields,
+            'untagged': untagged,
+            'users': user_list,
+            'user': request.user
+        }
+    else:
+        sbs    = SnowballingSession.objects.get(pk=sbsid)
+        query  = Query.objects.get(pk=qid)
+        query2 = Query.objects.get(pk=q2id)
 
+        tags = Tag.objects.filter(query=query) | Tag.objects.filter(query=query2)
+       
+        tags = tags.values()
 
+        for tag in tags:
+            tag['docs']       = Doc.objects.filter(tag=tag['id']).distinct().count()
+            tag['a_docs']     = Doc.objects.filter(docownership__tag=tag['id']).distinct().count()
+            tag['seen_docs']  = DocOwnership.objects.filter(doc__tag=tag['id'],relevant__gt=0).count()
+            tag['rel_docs']   = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()
+            tag['irrel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=2).count()
+            try:
+                tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
+            except:
+                tag['relevance'] = 0
+
+        fields = ['id','title']
+
+        untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count() + Doc.objects.filter(query=query2).count() - Doc.objects.filter(query=query2,tag__query=query2).distinct().count()
+
+        users = User.objects.all()
+
+        proj_users = users.query
+
+        user_list = []
+
+        for u in users:
+            user_docs = {}
+            tdocs = DocOwnership.objects.filter(query=query,user=u) | DocOwnership.objects.filter(query=query2,user=u)
+            user_docs['tdocs'] = tdocs.count()
+            if user_docs['tdocs']==0:
+                user_docs['tdocs'] = False
+            else:
+                user_docs['reldocs']         = tdocs.filter(relevant=1).count()
+                user_docs['irreldocs']       = tdocs.filter(relevant=2).count()
+                user_docs['checked_percent'] = round((user_docs['reldocs'] + user_docs['irreldocs']) / user_docs['tdocs'] * 100)
+            if query in u.query_set.all():
+                user_list.append({
+                    'username': u.username,
+                    'email': u.email,
+                    'onproject': True,
+                    'user_docs': user_docs
+                })
+            else:
+                user_list.append({
+                    'username': u.username,
+                    'email': u.email,
+                    'onproject': False,
+                    'user_docs': user_docs
+                })
+
+        context = {
+            'sbs': sbs,
+            'query': query,
+            'query2': query2,
+            'tags': list(tags),
+            'fields': fields,
+            'untagged': untagged,
+            'users': user_list,
+            'user': request.user
+        }
+    
 
     return HttpResponse(template.render(context, request))
 
@@ -1191,11 +1274,12 @@ def doclist(request,qid,q2id='0',sbsid='0'):
     qdocs = Doc.objects.filter(query__id=qid)
 
     if q2id != '0' and sbsid != '0':
+        #TODO: Select categories B2, B4 and F2
+        query_b = Query.objects.get(pk=qid)
         query_f = Query.objects.get(pk=q2id)
-        print(query_f)
+        qdocs_b = Doc.objects.filter(query__id=qid)
         qdocs_f = Doc.objects.filter(query__id=q2id)
-        print(qdocs_f)
-        all_docs = qdocs | qdocs_f
+        all_docs = qdocs_b | qdocs_f
     else:
         query_f  = False
         all_docs = qdocs

@@ -48,6 +48,8 @@ class Query(models.Model):
     reftotlen   = models.IntegerField(null=True, verbose_name="Snowball Number of references")
     refdblen    = models.IntegerField(null=True, verbose_name="Snowball Number of references in the DB")
     refscraplen = models.IntegerField(null=True, verbose_name="Snowball Number of references to be scraped")
+#    cittotlen   = models.IntegerField(null=True, verbose_name="Snowball Number of citations")
+#    citdblen    = models.IntegerField(null=True, verbose_name="Snowball Number of citations in the DB")
     dlstat      = models.CharField(max_length=6,null=True, verbose_name="Query download status")
     technology  = models.ForeignKey('Technology', null=True)
 
@@ -57,6 +59,13 @@ class Query(models.Model):
 class Technology(models.Model):
     name = models.TextField(null = True, verbose_name="Technology Name")
     description = models.TextField(null=True, verbose_name="Technology Description")
+
+    def __str__(self):
+      return self.name
+
+class SBSDocCategory(models.Model):
+    name        = models.TextField(null=True, verbose_name="SBS Document Category Name")
+    description = models.TextField(null=True, verbose_name="SBS Document Category Description")
 
     def __str__(self):
       return self.name
@@ -79,6 +88,7 @@ class Doc(models.Model):
     users = models.ManyToManyField(User, through='DocOwnership')
     references = models.ManyToManyField("self", symmetrical=False)
     technology = models.ManyToManyField('Technology')
+    category = models.ManyToManyField('SBSDocCategory')
     
     def __str__(self):
       return self.UT
