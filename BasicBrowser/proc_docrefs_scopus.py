@@ -400,6 +400,27 @@ def matchref(dr):
         
 
 def main():
+
+    index_kws = False
+
+    if index_kws:
+        KW.objects.all().delete()
+        i = 0
+        for d in Doc.objects.filter(wosarticle__de__isnull=False):
+            i+=1
+            if i > 100000000000000:
+                break
+            if len(d.wosarticle.de.split('; ')) > 0:
+                for k in d.wosarticle.de.split('; '):
+                    k = k.lower()
+                    try:
+                        kw = KW.objects.get(text=k)
+                    except:
+                        kw = KW(text=k)
+                        kw.save()
+                    kw.doc.add(d)
+                    kw.ndocs+=1
+                    kw.save() 
     
     DEBUG = True
     DOI_ONLY = True
@@ -530,10 +551,32 @@ def main():
     refdois = drs.filter(hasdoi=True)
     
     # Look for the no dois in the database
+    # Match them with a referent and see if they match the tech
     nodois = drs.filter(hasdoi=False,title__isnull=False)
     pool = Pool(processes=4)
-    pool.map(partial(matchref,),nodois)
-            
+    #pool.map(partial(matchref,),nodois)
+    pool.terminate()
+    django.db.connections.close_all()
+
+    ## Look for the title in notechmatches
+    ## 
+    # kws is a list of keywords that are the keywords of the seed documents
+    kws = [x.text for x in [item for sublist in [x.kw_set.all() for x in q.doc_set.all()] for item in sublist]]
+    for dr in DocRel.objects.filter(referent__isnull=False):
+        kmatch = False
+        # Get a list of keywords for the doc
+        dkws = [x.text for x in dr.referent.kw_set.all()]
+        for kw in kws:
+            if kw in dr.referent.title or kw in dr.referent.content or kw in dkws:
+                kmatch = True
+                dr.docmatch_q=True
+                dr.sametech=2
+        dr.save()
+
+    ##############################################################
+    ## Write Q2 query
+    ldocs = DocRel.objects.filter(indb=False)
+    print(ldocs.count())
     
     if DEBUG:
         print("<< Exiting main() function in upload_docrefs.py")

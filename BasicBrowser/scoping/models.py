@@ -102,6 +102,12 @@ class Doc(models.Model):
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
 
+class KW(models.Model):
+    text = models.TextField()
+    doc = models.ManyToManyField(Doc)
+    ndocs = models.IntegerField(default=0)
+
+
 class DocRel(models.Model):
     seed = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="parent")
     seedquery = models.ForeignKey(Query, on_delete=models.CASCADE, null=True)
