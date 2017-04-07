@@ -57,7 +57,10 @@ def add_doc(r):
 
     }
 
-    DEBUG    = True
+#    if request.session.get('DEBUG', None) == None:
+        DEBUG = True
+#    else:
+#        DEBUG = request.session['DEBUG'] 
 
     if DEBUG:
         print("  >> Entering add_doc() with document id: "+str(r['UT']))
@@ -410,6 +413,7 @@ def main():
     # Get query ID from kwargs
     qid  = sys.argv[1] # Query containing list of documents
     q2id = sys.argv[2] # Query containing list of references
+    q3id = sys.argv[3] # Query containing list of citations
 
     if DEBUG:
         print("  - The document query has the following ID: "+str(qid))
@@ -420,6 +424,8 @@ def main():
     q = Query.objects.get(pk=qid)
     global q2
     q2 = Query.objects.get(pk=q2id)
+    global q3 
+    q3 = Query.objects.get(pk=q3id)
 
     #Doc.objects.filter(query=qid).delete() # doesn't seem like a good idea
 

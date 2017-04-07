@@ -693,7 +693,7 @@ def do_procQueries1(request,qid=0,q2id=0,db='scopus'):
 
     if request.session['DEBUG']:
         print("do_procQueries1: starting proc_docrefs_scopus.py")
-    subprocess.Popen(["python3", upload, query_b.id, query_b2.id, query_f.id]).wait()
+    subprocess.Popen(["python3", upload, str(query_b.id), str(query_b2.id), str(query_f.id)]).wait()
     if request.session['DEBUG']:
         print("do_procQueries1: proc_docrefs_scopus.py done")
 
@@ -809,14 +809,10 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
 
             query_b = Query.objects.get(pk=qid)
 
-            # How many docs are associated to the query?
-            docs_b      = Doc.objects.filter(query__id=qid)
-            doclength_b = len(docs_b)
-
-            doclength = 0  # force it for now
-
             logfile_b = "/queries/"+str(qid)+".log"
             rstfile_b = "/queries/"+str(qid)+"/results.txt"
+            if request.session['DEBUG']:
+                print("querying: (backward query) logfile -> "+str(logfile_b)+", result file -> "+str(rstfile_b))
         else:
             query_b = 0
  
@@ -826,27 +822,26 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
 
             query_f = Query.objects.get(pk=q2id)
 
-            docs_f      = Doc.objects.filter(query__id=q2id)
-            doclength_f = len(docs_f)
-
-            doclength = 0  # force it for now
-
             logfile_f = "/queries/"+str(q2id)+".log"
             rstfile_f = "/queries/"+str(q2id)+"/results.txt"
+            if request.session['DEBUG']:
+                print("querying: (forward query) logfile -> "+str(logfile_f)+", result file -> "+str(rstfile_f))
         else:
             query_f = 0
 
+        finished   = False
         finished_b = False
         finished_f = False
 
         if do_backward_query and do_forward_query: 
             if request.session['DEBUG']:
                 print("querying: Default case with backward query #"+str(query_b.id)+" and forward query #"+str(query_f.id))
-            # Display log file content by default
-            log_b = False
-            log_f = False 
 
             # Check if query result files exist
+            if request.session['DEBUG']:
+                print("querying: check existence of result files:")
+                print("querying:   - backward query rstfile_b -> "+str(os.path.isfile(rstfile_b)))
+                print("querying:   - forward query rstfile_f -> "+str(os.path.isfile(rstfile_f)))
             if not os.path.isfile(rstfile_b) and not os.path.isfile(rstfile_f):
                 if request.session['DEBUG']:
                     print("querying: waiting for query processes to finish.")
@@ -861,7 +856,7 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
                         log_b = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
                         time.sleep(1)
 
-                if query_f.dlstat == "done":
+                if str(substep) == '2' and query_f.dlstat == "done":
                     log_f = ["Citations were all captured in the first substep."]
                 else :
                     for i in range(5):
@@ -872,8 +867,6 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
                         except:
                             log_f = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
                             time.sleep(1)
-
-                finished = False
 
                 # Check log messages 
                 if "done!" in log_b[-1]:
@@ -906,15 +899,54 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
                     query_b.dlstat = "NOREC"
                     query_b.save()
 
+                if request.session['DEBUG']:
+                    print("querying: finished_b -> "+str(finished_b)+", finished_f -> "+str(finished_f))
+
                 if finished_b == True and finished_f == True:
                     finished = True
             else:
                 if request.session['DEBUG']:
                     print("querying: query result files have already been created.")
-                finished   = True
+
+                # Check log messages
+                if "done!" in log_b[-1]:
+                    finished_b = True
+                    query_b.dlstat = "done"
+                    query_b.save()
+
+                if "WoS couldn't find any records... exiting..." in log_b[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if "Scopus couldn't find any records... exiting..." in log_b[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if "done!" in log_f[-1]:
+                    finished_f = True
+                    query_f.dlstat = "done"
+                    query_f.save()
+
+                if "WoS couldn't find any records... exiting..." in log_f[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if "Scopus couldn't find any records... exiting..." in log_f[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if request.session['DEBUG']:
+                    print("querying: finished_b -> "+str(finished_b)+", finished_f -> "+str(finished_f))
+
+                if finished_b == True and finished_f == True:
+                    finished = True
 
             # If queries have finished properly then go to next substep directly
-            if query_b.dlstat == "done" and query_f.dlstat == "done":
+            if finished:
                 return HttpResponseRedirect(reverse('scoping:do_procQueries1', kwargs={'qid': query_b.id, 'q2id': query_f.id, 'db': query_b.database}))
 
         if not do_backward_query or not do_forward_query:
@@ -926,9 +958,8 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
             'log': True,
             'log_b': log_b,
             'log_f': log_f,
+            'doclength': 0,
             'finished': finished,
-            'docs': docs,
-            'doclength': doclength,
             'query_b': query_b,
             'query_f': query_f,
             'substep':substep,

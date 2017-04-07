@@ -91,16 +91,14 @@
                     {% else %}
 <!-- Snowballing session -->
                         {% if substep == "1" %}
-                            <p>Looks like it's done! (Another query might be needed in case references are not yet in the database) </p>
-                            {% if doclength == 0 %}
-                                <p>You will be automatically redirected to the next substep in a few seconds. You may also click the button below to accelerate the process.</p>
-                                <br/>
-                                <a href="/scoping/dodocrefadd?qid={{query_b.id}}&q2id={{query_f.id}}&db={{query_b.database}}"><button>Add citations and scrape References</button></a>
-                            {% endif %}
+                            <p>Looks like it's done! (Another query might be needed in case references are not yet in the database)</p>
+                            <p>You will now be automatically redirected to the next substep in a few seconds. You may also click the button below to accelerate the process.</p>
+                            <br/>
+                            <a href="/scoping/dodocrefadd?qid={{query_b.id}}&q2id={{query_f.id}}&db={{query_b.database}}"><button>Add citations and scrape References</button></a>
                         {% else %}
                             <p>Looks like it's done!</p>
                             {% if docadded == 0 %} 
-                              {% if query.dlstat != "NOREC" %}
+                              {% if query_b.dlstat != "NOREC" %}
                                 <p id="doc_adder1">References have been found in {{query_b.database}}. We will add them to the database and check for those that were not.</p>
                                 <br/>
                                 <a href="/scoping/dodocadd?qid={{query_b.id}}&q2id={{query_f.id}}&db={{query_b.database}}"><button>Add missing reference information and further checks</button></a>
