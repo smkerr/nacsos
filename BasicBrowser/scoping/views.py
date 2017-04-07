@@ -577,6 +577,9 @@ def dodocrefadd(request,qid=0,q2id=0,db='scopus'):
     qf.dlstat = "done"
     qf.save()
 
+
+    #########################################################
+    ## This bit is for the forward query
     db = qf.database
 
     if db=="WoS":
@@ -589,10 +592,8 @@ def dodocrefadd(request,qid=0,q2id=0,db='scopus'):
 
     print("upload_docs.py done (citations have been included in the database)")
 
-    #db = request.GET.get('db',None)
-
+    # Create a new query for 
     q = Query.objects.get(pk=qid)
-
     db = q.database
 
     # Create reference query
