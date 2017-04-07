@@ -36,12 +36,8 @@ def switch_mode(request):
 
 @login_required
 def index(request):
-
-    if request.session.get('appmode', None) == None: 
-        request.session['appmode']='scoping'
-#        request.session['scoping']=True
-
-    print("Session variable (appmode): "+str(request.session['appmode']))
+    request.session['DEBUG'] = False
+    request.session['appmode']='scoping'
 
     template = loader.get_template('scoping/index.html')
 
@@ -62,7 +58,6 @@ def index(request):
         #print(q.tech)
 
     context = {
-      
       'queries'      : queries,
       'query'        : query,
       'users'        : users,
@@ -123,9 +118,14 @@ def technology_query(request):
 ## Snowballing homepage
 @login_required
 def snowball(request):
+    request.session['DEBUG'] = True
+    request.session['appmode']='snowballing'
+
     template        = loader.get_template('scoping/snowball.html')
 
+    # Get SBS information
     sb_sessions     = SnowballingSession.objects.all().order_by('-id')
+
     # Get latest step associated with each SB sessions
     sb_session_last = sb_sessions.last()
     sb_info = [] 
@@ -277,8 +277,6 @@ import sys
 @login_required
 def start_snowballing(request):
 
-    #ssh_test()
-
     # Get form content
     qtitle = request.POST['sbs_name']
     qtext  = request.POST['sbs_initialpearls']
@@ -287,6 +285,7 @@ def start_snowballing(request):
 
     curdate = timezone.now()
 
+    # Get technology
     t = Technology.objects.get(pk=qtech)
 
     # Create new snowballing session
@@ -299,6 +298,9 @@ def start_snowballing(request):
       technology=t
     )
     sbs.save()
+    if request.session['DEBUG']:
+        print("start_snowballing: New SBS successfully created.")
+
 
     #  create 2 new query records in the database (one for the bakward search and one for the forward search)
     q = Query(
@@ -313,6 +315,8 @@ def start_snowballing(request):
         technology=t
     )
     q.save()
+    if request.session['DEBUG']:
+        print("start_snowballing: New backward query #"+str(q.id)+" successfully created.")
 
     # write the query into a text file
     fname = "/queries/"+str(q.id)+".txt"
@@ -320,6 +324,8 @@ def start_snowballing(request):
         qfile.write(qtext)
 
     # run "scrapeQuery.py" on the text file in the background
+    if request.session['DEBUG']:
+        print("start_snowballing: starting scraping process on "+q.database+" (backward query).")
     subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
 
     q2 = Query(
@@ -334,6 +340,8 @@ def start_snowballing(request):
         technology=t
     )
     q2.save()
+    if request.session['DEBUG']:
+        print("start_snowballing: New forward query #"+str(q2.id)+" successfully created.")
 
     # write the query into a text file
     fname = "/queries/"+str(q2.id)+".txt"
@@ -343,6 +351,8 @@ def start_snowballing(request):
     time.sleep(1)
 
     # run "scrapeQuery.py" on the text file in the background
+    if request.session['DEBUG']:
+        print("start_snowballing: starting scraping process on "+q2.database+" (forward query).")
     subprocess.Popen(["python3", "/home/hilj/python_apsis_libs/scrapeWoS/bin/snowball_fast.py", "-s", qdb, fname])
 
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1, 'docadded': 0, 'q2id': q2.id}))
@@ -637,8 +647,113 @@ def dodocrefadd(request,qid=0,q2id=0,db='scopus'):
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q2.id, 'substep': 2, 'docadded': adddocs, 'q2id': qf.id}))
 
 #########################################################
-## Page views progress of query scraping
+## Add the documents and their references to the database
+@login_required
+def do_procQueries1(request,qid=0,q2id=0,db='scopus'):
+    if request.session['DEBUG']:
+        if qid==0:
+            print("do_procQueries1: Backward query did not yield any result. It will not be processed.")
+        else:
+            print("do_procQueries1: Backward query #"+str(qid)+" will be processed.")
+        if q2id==0:
+            print("do_procQueries1: Forward query did not yield any result. It will not be processed.")
+        else:
+            print("do_procQueries1: Forward query #"+str(q2id)+" will be processed.")
+ 
+    # Process queries
+    if qid!=0:
+        query_b = Query.objects.get(pk=qid)
 
+        # Create additional backward query to get reference information
+        query_b2 = Query(
+            title=str.split(query_b.title, "_")[0]+"_backward_"+str(query_b.step)+"_2",
+            database=query_b.database,
+            type="backward",
+            text="",
+            date=timezone.now(),
+            snowball=query_b.snowball,
+            step=query_b.step,
+            substep=2
+        )
+        query_b2.save()        
+    else:
+        query_b  = 0
+        query_b2 = 0
+
+    if q2id!=0:
+        query_f = Query.objects.get(pk=q2id)        
+    else:
+        query_f = 0
+
+    if db=="WoS":
+        if request.session['DEBUG']:
+            print("do_procQueries1: Not yet implemented. Back to index page....")
+        return HttpResponseRedirect(reverse('scoping:snowball'))            
+    if db.lower()=="scopus":
+        upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','proc_docrefs_scopus.py'))
+
+    if request.session['DEBUG']:
+        print("do_procQueries1: starting proc_docrefs_scopus.py")
+    subprocess.Popen(["python3", upload, str(query_b.id), str(query_b2.id), str(query_f.id)]).wait()
+    if request.session['DEBUG']:
+        print("do_procQueries1: proc_docrefs_scopus.py done")
+
+    if request.session['DEBUG']:
+        print("do_procQueries1: Check if references need to be scraped from "+query_b2.database)
+
+    fname = "/queries/"+str(query_b2.id)+".txt"
+
+    adddocs = 1
+    if os.path.isfile(fname):
+        if request.session['DEBUG']:
+            print("do_procQueries1: Check if references need to be scraped from "+query_b2.database)
+
+        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", "-s", query_b2.database, fname])
+
+        time.sleep(2)
+
+        adddocs = 0
+
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': query_b2.id, 'substep': 2, 'docadded': adddocs, 'q2id': query_f.id}))
+
+#########################################################
+## Add the documents and their references to the database
+@login_required
+def do_procQueries2(request,qid=0,q2id=0,db='scopus'):
+    if request.session['DEBUG']:
+        if qid==0:
+            print("do_procQueries2: Backward query submitted.")
+        else:
+            print("do_procQueries2: Backward query #"+str(qid)+" will be processed.")
+        if q2id==0:
+            print("do_procQueries2: Forward query submitted.")
+        else:
+            print("do_procQueries2: Forward query #"+str(q2id)+" will be processed.")
+
+    # Process queries
+    if qid!=0:
+        query_b = Query.objects.get(pk=qid)
+    else:
+        query_b  = 0
+
+    if q2id!=0:
+        query_f = Query.objects.get(pk=q2id)
+    else:
+        query_f = 0
+
+    if request.session['DEBUG']:
+        print("do_procQueries2: Uploading missing information for references in local database.")
+    if db=="WoS":
+        upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
+    if db.lower()=="scopus":
+        upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','proc_docrefs_scopus.py'))
+
+    subprocess.Popen(["python3", upload, qid]).wait()
+
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': query_b.id, 'substep': 2, 'docadded': 1, 'q2id': query_f.id}))
+
+#########################################################
+## Page views progress of query scraping
 @login_required
 def querying(request, qid, substep=0, docadded=0, q2id=0):
 
@@ -695,14 +810,10 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
 
             query_b = Query.objects.get(pk=qid)
 
-            # How many docs are associated to the query?
-            docs      = Doc.objects.filter(query__id=qid)
-            doclength = len(docs)
-
-            doclength = 0  # force it for now
-
             logfile_b = "/queries/"+str(qid)+".log"
             rstfile_b = "/queries/"+str(qid)+"/results.txt"
+            if request.session['DEBUG']:
+                print("querying: (backward query) logfile -> "+str(logfile_b)+", result file -> "+str(rstfile_b))
         else:
             query_b = 0
  
@@ -712,32 +823,32 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
 
             query_f = Query.objects.get(pk=q2id)
 
-            docs      = Doc.objects.filter(query__id=qid)
-            doclength = len(docs)
-
-            doclength = 0  # force it for now
-
             logfile_f = "/queries/"+str(q2id)+".log"
             rstfile_f = "/queries/"+str(q2id)+"/results.txt"
+            if request.session['DEBUG']:
+                print("querying: (forward query) logfile -> "+str(logfile_f)+", result file -> "+str(rstfile_f))
         else:
             query_f = 0
 
+        finished   = False
         finished_b = False
         finished_f = False
 
         if do_backward_query and do_forward_query: 
+            if request.session['DEBUG']:
+                print("querying: Default case with backward query #"+str(query_b.id)+" and forward query #"+str(query_f.id))
 
-            # Display log file content by default
-            log_b = False
-            log_f = False 
-
-            finished_b = False
-            finished_f = False
-
+            # Check if query result files exist
+            if request.session['DEBUG']:
+                print("querying: check existence of result files:")
+                print("querying:   - backward query rstfile_b -> "+str(os.path.isfile(rstfile_b)))
+                print("querying:   - forward query rstfile_f -> "+str(os.path.isfile(rstfile_f)))
             if not os.path.isfile(rstfile_b) and not os.path.isfile(rstfile_f):
+                if request.session['DEBUG']:
+                    print("querying: waiting for query processes to finish.")
                 wait = True
                 # wait up to 15 seconds for the log file, then go to a page which displays its contents
-                for i in range(15):
+                for i in range(5):
                     try:
                         with open(logfile_b,"r") as lfile:
                             log_b = lfile.readlines()
@@ -746,10 +857,10 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
                         log_b = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
                         time.sleep(1)
 
-                if query_f.dlstat == "done":
+                if str(substep) == '2' and query_f.dlstat == "done":
                     log_f = ["Citations were all captured in the first substep."]
                 else :
-                    for i in range(15):
+                    for i in range(5):
                         try:
                             with open(logfile_f,"r") as lfile:
                                 log_f = lfile.readlines()
@@ -757,8 +868,6 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
                         except:
                             log_f = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
                             time.sleep(1)
-
-                finished = False
 
                 # Check log messages 
                 if "done!" in log_b[-1]:
@@ -771,44 +880,34 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
                     query_b.dlstat = "NOREC"
                     query_b.save()
 
+                if "Scopus couldn't find any records... exiting..." in log_b[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
                 if "done!" in log_f[-1]:
                     finished_f = True
                     query_f.dlstat = "done"
                     query_f.save()
 
+                if "WoS couldn't find any records... exiting..." in log_f[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if "Scopus couldn't find any records... exiting..." in log_f[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if request.session['DEBUG']:
+                    print("querying: finished_b -> "+str(finished_b)+", finished_f -> "+str(finished_f))
+
                 if finished_b == True and finished_f == True:
                     finished = True
             else:
-                #TODO check if queries have delivered results
-                finished = True
-
-            if query_b.dlstat == "done" and query_f.dlstat == "done":
-                return HttpResponseRedirect(reverse('scoping:dodocrefadd', kwargs={'qid': query_b.id, 'q2id': query_f.id, 'db': query_b.database}))
-
-        if do_backward_query and not do_forward_query:
-
-            # Display log file content by default
-            log_b = True
-            log_f = True
-
-            log_f = ["No forward query will be done for this step."]
-        
-            finished_f = False
-            finished_f = True
-
-            if not os.path.isfile(rstfile_b):
-                wait = True
-                # wait up to 15 seconds for the log file, then go to a page which displays its contents
-                for i in range(15):
-                    try:
-                        with open(logfile_b,"r") as lfile:
-                            log_b = lfile.readlines()
-                        break
-                    except:
-                        log_b = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
-                        time.sleep(1)
-
-                finished = False
+                if request.session['DEBUG']:
+                    print("querying: query result files have already been created.")
 
                 # Check log messages
                 if "done!" in log_b[-1]:
@@ -821,25 +920,47 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
                     query_b.dlstat = "NOREC"
                     query_b.save()
 
+                if "Scopus couldn't find any records... exiting..." in log_b[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if "done!" in log_f[-1]:
+                    finished_f = True
+                    query_f.dlstat = "done"
+                    query_f.save()
+
+                if "WoS couldn't find any records... exiting..." in log_f[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if "Scopus couldn't find any records... exiting..." in log_f[-1]:
+                    finished_b = True
+                    query_b.dlstat = "NOREC"
+                    query_b.save()
+
+                if request.session['DEBUG']:
+                    print("querying: finished_b -> "+str(finished_b)+", finished_f -> "+str(finished_f))
+
                 if finished_b == True and finished_f == True:
                     finished = True
-            else:
-                finished = True
 
-            if query_b.dlstat == "done":
-                return HttpResponseRedirect(reverse('scoping:dodocrefadd', kwargs={'qid': query_b.id, 'q2id': query_f.id, 'db': query_b.database}))
+            # If queries have finished properly then go to next substep directly
+            if finished:
+                return HttpResponseRedirect(reverse('scoping:do_procQueries1', kwargs={'qid': query_b.id, 'q2id': query_f.id, 'db': query_b.database}))
 
-        if not do_backward_query and not do_forward_query:
-            print("No documents to perform backward or forward queries. Going back to snowball home page...")
+        if not do_backward_query or not do_forward_query:
+            if request.session['DEBUG']:
+                print("querying: No documents to perform backward or forward queries. Going back to snowball home page...")
             return HttpResponseRedirect(reverse('scoping:snowball'))
 
         context = {
             'log': True,
             'log_b': log_b,
             'log_f': log_f,
+            'doclength': 0,
             'finished': finished,
-            'docs': docs,
-            'doclength': doclength,
             'query_b': query_b,
             'query_f': query_f,
             'substep':substep,
