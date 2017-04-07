@@ -102,6 +102,27 @@ class Doc(models.Model):
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
 
+class DocRel(models.Model):
+    seed = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="parent")
+    relation = models.IntegerField()
+    text = models.TextField(null=True)
+    title = models.TextField(null=True)
+    au = models.TextField(null=True)
+    PY = models.IntegerField(null=True)
+    journal =  models.TextField(null=True)
+    link = models.TextField(null=True)
+    url = models.URLField(null=True) 
+    doi = models.TextField(null=True)
+    hasdoi = models.BooleanField(default=False)
+    docmatch_q = models.BooleanField(default=False)
+    timatch_q = models.BooleanField(default=False)
+    indb = models.IntegerField(null=True)
+    sametech = models.IntegerField(null=True)
+    referent = models.ForeignKey(Doc, null=True, on_delete=models.CASCADE, related_name="document")
+
+    class Meta:
+        unique_together = ('seed', 'text',)
+
 
 class Note(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
