@@ -566,9 +566,12 @@ def dodocadd(request):
 #########################################################
 ## Add the documents and their references to the database
 @login_required
-def dodocrefadd(request):
-    qid  = request.GET.get('qid',None)
-    qfid = request.GET.get('q2id',None) 
+def dodocrefadd(request,qid=0,q2id=0,db='scopus'):
+    if qid==0:
+        qid  = request.GET.get('qid',None)
+        qfid = request.GET.get('q2id',None) 
+    else:
+        qfid = q2id
 
     qf = Query.objects.get(pk=qfid)
     qf.dlstat = "done"
@@ -578,11 +581,11 @@ def dodocrefadd(request):
 
     if db=="WoS":
         upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
-    if db=="scopus":
+    if db.lower()=="scopus":
         print("Not yet implemented")
-        exit()
+        #return HttpResponseRedirect(reverse('scoping:snowball'))
 
-    subprocess.Popen(["python3", upload, qfid]).wait()
+    #subprocess.Popen(["python3", upload, qfid]).wait()
 
     print("upload_docs.py done (citations have been included in the database)")
 
@@ -610,8 +613,8 @@ def dodocrefadd(request):
     if db=="WoS":
         upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docrefs.py'))
     if db=="scopus":
-        print("Not yet implemented")
-        exit()
+        upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','proc_docrefs_scop.py'))
+        #exit()
 
     subprocess.Popen(["python3", upload, qid, str(q2.id)]).wait()
 
@@ -636,7 +639,7 @@ def dodocrefadd(request):
 ## Page views progress of query scraping
 
 @login_required
-def querying(request, qid, substep, docadded, q2id):
+def querying(request, qid, substep=0, docadded=0, q2id=0):
 
     template = loader.get_template('scoping/query_progress.html')
 
@@ -686,7 +689,7 @@ def querying(request, qid, substep, docadded, q2id):
 
         # Query 1: Backward / References
         # Check if query is defined
-        if qid != 0 or qid != '0':
+        if qid != 0 and qid != '0':
             do_backward_query = True
 
             query_b = Query.objects.get(pk=qid)
@@ -703,7 +706,7 @@ def querying(request, qid, substep, docadded, q2id):
             query_b = 0
  
         # Query 2: Forward / Citations
-        if q2id != 0 or q2id != '0':
+        if q2id != 0 and q2id != '0':
             do_forward_query  = True
 
             query_f = Query.objects.get(pk=q2id)
@@ -717,6 +720,9 @@ def querying(request, qid, substep, docadded, q2id):
             rstfile_f = "/queries/"+str(q2id)+"/results.txt"
         else:
             query_f = 0
+
+        finished_b = False
+        finished_f = False
 
         if do_backward_query and do_forward_query: 
 
@@ -1341,18 +1347,16 @@ def add_doc_form(request,qid=0):
         {"path": "PY", "name": "Publishing Year", "ab": "PY", "note": "Enter the year the document was published"},
         {"path": "content", "name": "Abstract", "ab": "AB","note": "Enter the abstract of the document, or if it does not have an abstract, the first paragraph"},
     ]
+
     author_fields = []
     for a in range(1,11):
         author_fields.append({"path": "author__"+str(a), "name": "Author "+str(a)})
-
 
     fields = []
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
         if f.name !="doc" and f.name.upper() not in [x['ab'] for x in basic_fields]:
-            fields.append({"path": path, "name": f.verbose_name, "ab": f.name.upper()})
-
-    
+            fields.append({"path": path, "name": f.verbose_name, "ab": f.name.upper()})    
 
     context = {
         'fields': fields,
