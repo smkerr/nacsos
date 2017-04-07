@@ -180,9 +180,9 @@ def add_doc(r):
             #print(r)
             # Add them to a table of docs to references (a simple table of just the dois)
             try:
-                dr = DocRel.objects.get(seed=doc,text=r)
+                dr = DocRel.objects.get(seed=doc,text=r,seedquery=q)
             except:
-                dr = DocRel(seed=doc,text=r)
+                dr = DocRel(seed=doc,text=r,seedquery=q)
                 dr.relation = -1
                 dr.save()
 
@@ -320,6 +320,8 @@ def add_doc(r):
 #############################################################################
 ##
 
+
+
 def add_doc_text(r):
     record = {}
     mfields = ['au','AF','CR','C1','References']
@@ -368,6 +370,29 @@ def add_doc_text(r):
         print("don't want to add this record, it has no id!")
         print(record)
         return
+
+
+#############################################################################
+##
+def matchref(dr):
+    django.db.connections.close_all()
+    if len(dr.title)>10:
+        r = Doc.objects.filter(title__icontains=dr.title)
+        if r.count() > 1:
+            print(r.values('title','UT'))
+            print(r.count())
+            print(dr.title)
+            print(dr.au)
+        if r.count()==1:
+            d = r.first()
+            dr.referent = d
+            dtechs = [x.technology for x in d.query.all()] + list(d.technology.all())
+            if q.technology in dtechs:
+                dr.sametech = 1
+            else:
+                dr.sametech = 0
+            dr.save()
+
         
 #############################################################################
 #############################################################################
@@ -500,21 +525,14 @@ def main():
 
     drs = DocRel.objects.filter(seed__query=q)
     
+
+    # Process docs with dois
     refdois = drs.filter(hasdoi=True)
     
     # Look for the no dois in the database
     nodois = drs.filter(hasdoi=False,title__isnull=False)
-    for dr in nodois:
-        if len(dr.title)>10:
-            r = Doc.objects.filter(title__icontains=dr.title)
-            if r.count() > 1:
-                print(r.values('title','UT'))
-                print(r.count())
-                print(dr.title)
-                print(dr.au)
-            if r.count()==1:
-                dr.referent = r.first()
-                dr.save()
+    pool = Pool(processes=4)
+    pool.map(partial(matchref,),nodois)
             
     
     if DEBUG:

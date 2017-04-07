@@ -104,6 +104,7 @@ class Doc(models.Model):
 
 class DocRel(models.Model):
     seed = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="parent")
+    seedquery = models.ForeignKey(Query, on_delete=models.CASCADE, null=True)
     relation = models.IntegerField()
     text = models.TextField(null=True)
     title = models.TextField(null=True)
@@ -121,7 +122,7 @@ class DocRel(models.Model):
     referent = models.ForeignKey(Doc, null=True, on_delete=models.CASCADE, related_name="document")
 
     class Meta:
-        unique_together = ('seed', 'text',)
+        unique_together = ('seed', 'seedquery', 'text',)
 
 
 class Note(models.Model):
