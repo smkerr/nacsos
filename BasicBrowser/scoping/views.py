@@ -587,9 +587,6 @@ def dodocrefadd(request,qid=0,q2id=0,db='scopus'):
     qf.dlstat = "done"
     qf.save()
 
-
-    #########################################################
-    ## This bit is for the forward query
     db = qf.database
 
     if db=="WoS":
@@ -602,8 +599,10 @@ def dodocrefadd(request,qid=0,q2id=0,db='scopus'):
 
     print("upload_docs.py done (citations have been included in the database)")
 
-    # Create a new query for 
+    #db = request.GET.get('db',None)
+
     q = Query.objects.get(pk=qid)
+
     db = q.database
 
     # Create reference query
@@ -1450,6 +1449,146 @@ def doclist(request,qid,q2id='0',sbsid='0'):
         'ndocs': ndocs,
         'sbsid': sbsid,
     }
+    return HttpResponse(template.render(context, request))
+
+
+
+###########################################################
+## List documents related to a Snowballing session
+@login_required
+def docrellist(request,sbsid,qid=0,q2id=0,q3id=0):
+
+    request.session['appmode'] == "snowballing"
+
+    template = loader.get_template('scoping/docrels.html')
+
+    # Get snowballing session info
+    sbs = SnowballingSession.objects.get(pk=sbsid)
+
+    # Get the backward and forward queries associated with the the current SBS
+    if qid == 0 or qid == '0':
+        query_b1 = Query.objects.filter(type="backward", snowball=sbs.id, substep=1).last()
+    else:
+        query_b1 = Query.objects.get(pk=qid)
+    if q2id == 0 or q2id == '0':
+        query_b2 = Query.objects.filter(type="backward", snowball=sbs.id, substep=2).last()
+    else:
+        query_b2 = Query.objects.get(pk=q2id)
+    if q3id == 0 or q3id == '0':
+        query_f = Query.objects.filter(type="forward", snowball=sbs.id).last()
+    else:
+        query_f = Query.objects.get(pk=q3id)
+
+    # Get all document relationships 
+    docrels = DocRel.objects.filter(seedquery=query_b1).order_by("relation")
+    print(docrels.values("relation")[400:406])
+ 
+    docs = []
+    count = {}
+    count['TOTAL'] = 0
+    count['category1']  = 0
+    count['category2']  = 0
+    count['optional']  = 0
+    count['discarded']  = 0
+    count['B1']  = 0
+    count['B2']  = 0
+    count['B3']  = 0
+    count['B4']  = 0
+    count['B5']  = 0
+    count['F1']  = 0
+    count['F2']  = 0
+    count['F3']  = 0
+
+    for dr in docrels:
+        count['TOTAL'] += 1
+        if "a" == "a":
+            tmp = {}
+            tmp['title']      = dr.title
+            tmp['author']     = dr.au
+            tmp['py']         = dr.PY
+            tmp['doi']        = dr.doi
+            tmp['hasdoi']     = dr.hasdoi
+            tmp['docmatch_q'] = dr.docmatch_q
+            tmp['timatch_q']  = dr.timatch_q
+            tmp['indb']       = dr.indb
+            tmp['sametech']   = dr.sametech
+            if dr.relation == -1:
+                tmp['querytype']  = 'B'
+            if dr.relation == 1:
+                tmp['querytype']  = 'F'
+            if dr.relation == 0:
+                tmp['querytype']  = 'Undef'
+
+            # Specific document category
+            if (dr.relation == -1 and dr.indb == 1 and dr.sametech == 1):
+                tmp['category'] = "B1"
+                tmp['user_category'] = "optional"
+                count['B1']  += 1
+                count['optional'] += 1
+            if (dr.relation == -1 and dr.indb == 1 and dr.sametech != 1 and dr.docmatch_q):
+                tmp['category'] = "B2"
+                tmp['user_category'] = "Category 1"
+                count['B2']  += 1
+                count['category1'] += 1
+            if (dr.relation == -1 and dr.indb == 1 and dr.sametech != 1 and not dr.docmatch_q):
+                tmp['category'] = "B3"
+                tmp['user_category'] = "discarded"
+                count['B3']  += 1
+                count['discarded'] += 1
+            if (dr.relation == -1 and dr.indb == 2 and dr.docmatch_q):
+                tmp['category'] = "B4"
+                tmp['user_category'] = "Category 2"
+                count['B4']  += 1
+                count['category2'] += 1
+            if (dr.relation == -1 and dr.indb == 2 and not dr.docmatch_q):
+                tmp['category'] = "B5"
+                tmp['user_category'] = "discarded"
+                count['B5']  += 1
+                count['discarded'] += 1
+            if (dr.relation == 1 and dr.indb == 1 and dr.sametech == 1 ):
+                tmp['category'] = "F1"
+                tmp['user_category'] = "optional"
+                count['F1']  += 1
+                count['optional'] += 1
+            if (dr.relation == 1 and dr.indb > 0 and dr.docmatch_q):
+                tmp['category'] = "F2"
+                tmp['user_category'] = "Category 1"
+                count['F2']  += 1
+                count['category1'] += 1
+            if (dr.relation == 1 and dr.indb > 0 and not dr.docmatch_q):
+                tmp['category'] = "F3"
+                tmp['user_category'] = "discarded"
+                count['F3']  += 1
+                count['discarded'] += 1
+
+            # Get abstract when possible
+            try:
+                d = dr.referent 
+                tmp['abstract']   = d.content[0:10]
+            except:
+                tmp['abstract']   = "None"
+#            tmp['abstract']   = "None"
+ 
+            # Get document relevance when possible
+            try:
+                r = DocOwnership.objects.get(doc = dr.referent)
+                tmp['relevant']   = r.relevant
+            except:
+                tmp['relevant']   = "NA"
+
+            docs.append(tmp)
+        else:
+            print("you should not be there...")
+
+    context = {
+        'docs': docs,
+        'count': count,
+        'sbsid': sbsid,
+        'query_b1': query_b1, 
+        'query_b2': query_b2,
+        'query_f': query_f
+    }
+
     return HttpResponse(template.render(context, request))
 
 

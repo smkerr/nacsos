@@ -1,0 +1,124 @@
+<html>
+  <head>
+    {% load static %}
+    {% load scoping_extras %}
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
+    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
+    <title>Snowballing - Reviewing documents</title>
+    <link href="{% static 'scoping/css/stylingsbs.css' %}" rel="stylesheet" type="text/css">
+  </head>
+  <body>
+    {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
+    <div id="main">
+      <div id="graph">
+        <h1> Snowballing Document Review Helper</h1>
+        <p>Quickly exclude irrelevant documents by clicking on the Exclude button</p>
+        <br/>
+
+        <!-- Query manager -->
+        <h2> Document list associated to {{query_b1.type}} queries no. {{query_b1.id}}, {{query_b2.id}}, and {{query_f.type}} query no. {{query_f.id}}</a>.</h2>
+        <!-- <a href="/scoping/download/{{query.id}}">Download</a> these documents as a csv</h2> -->
+        <h2><a onclick="update_fields(download='true')" id="download">Download</a> these documents as a csv</h2>
+        <br/><br/>
+
+        <h3>Summary statistics</h3>
+
+        <table class="light">
+          <tr class="title">
+            <td>B1</td>
+            <td>B2</td>
+            <td>B3</td>
+            <td>B4</td>
+            <td>B5</td>
+            <td>F1</td>
+            <td>F2</td>
+            <td>F3</td>
+            <td>Category 1</td>
+            <td>Category 2</td>
+            <td>Optional</td>
+            <td>Discarded</td>
+            <td>Total</td>
+          </tr>
+          <tr>
+            <td>{{ count.B1 }}</td>
+            <td>{{ count.B2 }}</td>
+            <td>{{ count.B3 }}</td>
+            <td>{{ count.B4 }}</td>
+            <td>{{ count.B5 }}</td>
+            <td>{{ count.F1 }}</td>
+            <td>{{ count.F2 }}</td>
+            <td>{{ count.F3 }}</td>
+            <td>{{ count.category1 }}</td>
+            <td>{{ count.category2 }}</td>
+            <td>{{ count.optional }}</td>
+            <td>{{ count.discarded }}</td>
+            <td>{{ count.TOTAL }}</td>
+          </tr>
+        </table>
+
+        <br/><br/>
+
+        <h3>List of documents</h3>
+
+        <table class="light" style="width:100%">
+	  <tr class="title">
+            <td>Q. Type</td>
+            <td>Author</td>
+            <td>PY</td>
+            <td>Title</td>
+            <td>DOI</td>
+            <td>Abstract</td>
+            <td>DOI?</td>
+            <td>DMq</td>
+            <td>TiMa</td>
+            <td>InDB</td>
+            <td>Tech</td>
+            <td>Category</td>
+            <td>User category</td>
+            <td>Relevance</td>
+          </tr>
+          {% for doc in docs %}
+          <tr class="datarow">
+            <td class="data">{{doc.querytype}}</td>
+            <td class="data">{{doc.au}}</td>                
+            <td class="data">{{doc.PY}}</td>
+            <td class="data">{{doc.title}}</td>
+            <td class="data">{{doc.doi}}</td>
+            <td class="data">{{doc.abstract}}</td>
+            <td class="data">
+              {% if doc.hasdoi %}
+                T
+              {% else %}
+                F
+              {% endif %}
+            </td>
+            <td class="data">
+              {% if doc.docmatch_q %}
+                T
+              {% else %}
+                F
+              {% endif %}
+            </td>
+            <td class="data">
+              {% if doc.timatch_q %}
+                T
+              {% else %}
+                F
+              {% endif %}
+            </td>
+            <td class="data">{{ doc.indb }}</td>
+            <td class="data">{{ doc.sametech }}</td>
+            <td class="data">{{doc.category}}</td>
+            <td class="data">{{doc.user_category}}</td>
+            <td class="data">{{doc.relevance}}</td>
+          </tr>
+        {% endfor %}
+      </table>
+
+      <br/><hr/><br/>
+
+    </div>
+  </div>
+</body>
+</html>
