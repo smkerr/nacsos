@@ -632,6 +632,8 @@ def dodocrefadd(request,qid=0,q2id=0,db='scopus'):
     print("upload_docrefs.py done")
 
     fname = "/queries/"+str(q2.id)+".txt"
+    with open(fname,"w") as qfile:
+        qfile.write(q2.text)
 
     print("Check if "+fname+" exists...")
     adddocs = 1
