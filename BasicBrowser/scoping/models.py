@@ -42,14 +42,10 @@ class Query(models.Model):
     creator     = models.ForeignKey(User,null=True, verbose_name="Query Creator", related_name="user_creations")
     users       = models.ManyToManyField(User)
     criteria    = models.TextField(null=True)
-    snowball    = models.IntegerField(null=True, verbose_name="Snowball ID")
+    #snowball    = models.IntegerField(null=True, verbose_name="Snowball ID")
+    snowball    = models.ForeignKey(SnowballingSession, null=True, verbose_name="Snowball ID")
     step        = models.IntegerField(null=True, verbose_name="Snowball steps")
     substep     = models.IntegerField(null=True, verbose_name="Snowball query substeps")
-    reftotlen   = models.IntegerField(null=True, verbose_name="Snowball Number of references")
-    refdblen    = models.IntegerField(null=True, verbose_name="Snowball Number of references in the DB")
-    refscraplen = models.IntegerField(null=True, verbose_name="Snowball Number of references to be scraped")
-#    cittotlen   = models.IntegerField(null=True, verbose_name="Snowball Number of citations")
-#    citdblen    = models.IntegerField(null=True, verbose_name="Snowball Number of citations in the DB")
     dlstat      = models.CharField(max_length=6,null=True, verbose_name="Query download status")
     technology  = models.ForeignKey('Technology', null=True)
 
@@ -123,8 +119,8 @@ class DocRel(models.Model):
     hasdoi = models.BooleanField(default=False)
     docmatch_q = models.BooleanField(default=False)
     timatch_q = models.BooleanField(default=False)
-    indb = models.IntegerField(null=True)
-    sametech = models.IntegerField(null=True)
+    indb = models.IntegerField(null=True,default=0)
+    sametech = models.IntegerField(null=True,default=0)
     referent = models.ForeignKey(Doc, null=True, on_delete=models.CASCADE, related_name="document")
 
     class Meta:
