@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
     <title>Scoping</title>
-    {% if request.session.snowball == False %}
+    {% if request.session.appmode == "scoping" %}
       <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css" />
     {% else %}
       <link href="{% static 'scoping/css/stylingsbs.css' %}" rel="stylesheet" type="text/css" />
