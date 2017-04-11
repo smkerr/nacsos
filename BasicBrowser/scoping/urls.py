@@ -13,12 +13,9 @@ urlpatterns = [
     url(r'^doquery$', views.doquery, name='doquery'),
     url(r'^do_snowballing/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)$', views.do_snowballing, name='do_snowballing'),
     url(r'^dodocadd$', views.dodocadd, name='dodocadd'),
-    url(r'^dodocrefadd$', views.dodocrefadd, name='dodocrefadd'),
-    url(r'^dodocrefadd/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<db>[a-zA-Z]+)$', views.dodocrefadd, name='dodocrefadd'),
-    url(r'^do_procQueries1/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<db>[a-zA-Z]+)$', views.do_procQueries1, name='do_procQueries1'),
-    url(r'^do_procQueries2/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<db>[a-zA-Z]+)$', views.do_procQueries2, name='do_procQueries2'),
     url(r'^querying/(?P<qid>[0-9]+)/(?P<substep>[0-9]+)/(?P<docadded>[0-9]+)/(?P<q2id>[0-9]+)$', views.querying, name='querying'),
     url(r'^querying/(?P<qid>[0-9]+)/$', views.querying, name='querying'),
+    url(r'^snowball_progress/(?P<sbs>[0-9]+)/$', views.snowball_progress, name='snowball_progress'),
     #### Manage Query
     url(r'^query/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<sbsid>[0-9]+)$', views.query, name='query'),
     #### Manage SBS

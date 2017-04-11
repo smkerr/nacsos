@@ -1,0 +1,12 @@
+<table class="light">
+  <tr class="title">
+    {% for v in summary_stats %}
+    <td>{{v.0}}</td>
+    {% endfor %}
+  </tr>
+  <tr>
+    {% for v in summary_stats %}
+    <td>{{v.1}}</td>
+    {% endfor %}
+  </tr>
+</table>
