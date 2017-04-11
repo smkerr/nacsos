@@ -1,6 +1,7 @@
 from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 from itertools import chain
+from django.db.models import Max
 
 # Create your views here.
 
@@ -128,35 +129,21 @@ def snowball(request):
 
     # Get latest step associated with each SB sessions
     sb_session_last = sb_sessions.last()
-    sb_info = [] 
+    
     for sbs in sb_sessions:
         try:
-            sb_info_tmp = {}
-            sb_info_tmp['id']     = sbs.id
-            sb_info_tmp['name']   = sbs.name
-            sb_info_tmp['ip']     = sbs.initial_pearls
-            sb_info_tmp['date']   = sbs.date
-            sb_info_tmp['status'] = sbs.status
-            sb_qs = sbs.query_set.all()
+            sb_qs = sbs.query_set.all().order_by('id')
+            seedquery = sb_qs.first()
             step  = "1"
             nbdocsel = 0
             nbdoctot = 0
             nbdocrev = 0
-            for q in sb_qs:
-                s = q.title.split("_")[2]
-                if s > step:
-                    step = s
-                nbdocsel += DocOwnership.objects.filter(query = q, relevant = 1).count()
-                nbdoctot += DocOwnership.objects.filter(query = q).count()
-                nbdocrev += DocOwnership.objects.filter(query = q, relevant = 0).count()
-            sb_info_tmp['ns'] = step
-            sb_info_tmp['lq'] = sb_qs.last().id 
-            sb_info_tmp['rc'] = sb_qs.last().r_count 
-            sb_info_tmp['ndsel'] = str(nbdocsel)
-            sb_info_tmp['ndtot'] = str(nbdoctot)
-            sb_info_tmp['ndrev'] = str(nbdocrev)
-             
-            sb_info.append(sb_info_tmp)
+            sbs.ns = sb_qs.aggregate(Max('step'))['step__max']
+            sbs.lq = sb_qs.last().id 
+            sbs.rc = sb_qs.last().r_count 
+            sbs.ndsel = DocOwnership.objects.filter(query__snowball=sbs,relevant=1).count()
+            sbs.ndtot = DocRel.objects.filter(seedquery=seedquery).count()
+            sbs.ndrev = DocOwnership.objects.filter(query__snowball=sbs,relevant=0).count()
         except:
             pass
 
@@ -166,7 +153,6 @@ def snowball(request):
     context = {
         'sb_sessions'    : sb_sessions,
         'sb_session_last': sb_session_last,
-        'sb_info'        : sb_info,
         'techs'          : technologies
     }
     return HttpResponse(template.render(context, request))
@@ -201,7 +187,7 @@ def add_tech(request):
     return HttpResponseRedirect(reverse('scoping:technologies'))
 
 ########################################################
-## Add the technology
+## update the technology
 @login_required
 def update_tech(request):
 
@@ -359,7 +345,7 @@ def start_snowballing(request):
     # run "scrapeQuery.py" on the text file in the background
     if request.session['DEBUG']:
         print("start_snowballing: starting scraping process on "+q2.database+" (forward query).")
-    subprocess.Popen(["python3", "/home/hilj/python_apsis_libs/scrapeWoS/bin/snowball_fast.py", "-s", qdb, fname])
+    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/snowball_fast.py", "-s", qdb, fname])
 
     return HttpResponseRedirect(reverse('scoping:snowball_progress', kwargs={'sbs': sbs.id}))
 
@@ -629,9 +615,10 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
     return HttpResponse(template.render(context, request))
 
 def snowball_progress(request,sbs):
-    template = loader.get_template('scoping/query_progress.html')
+    template = loader.get_template('scoping/snowball_progress.html')
     do_backward_query = False
     do_forward_query  = False
+    stop = False
 
     sbs = SnowballingSession.objects.get(id=sbs)
 
@@ -672,6 +659,8 @@ def snowball_progress(request,sbs):
     finished_b = False
     finished_f = False
 
+    request.session['DEBUG'] = True
+
     if do_backward_query and do_forward_query: 
         print("DOING QUERIY")
         if request.session['DEBUG']:
@@ -687,7 +676,7 @@ def snowball_progress(request,sbs):
                 print("querying: waiting for query processes to finish.")
             wait = True
             # wait up to 15 seconds for the log file, then go to a page which displays its contents
-            for i in range(5):
+            for i in range(2):
                 try:
                     with open(logfile_b,"r") as lfile:
                         log_b = lfile.readlines()
@@ -699,7 +688,7 @@ def snowball_progress(request,sbs):
             if query_f.dlstat == "done":
                 log_f = ["Citations were all captured in the first substep."]
             else :
-                for i in range(5):
+                for i in range(2):
                     try:
                         with open(logfile_f,"r") as lfile:
                             log_f = lfile.readlines()
@@ -742,7 +731,8 @@ def snowball_progress(request,sbs):
 
         # If queries have finished properly then go to next substep directly
         if finished:
-            if sqs.count() % 2 == 0:
+            if sqs.count() == 2:
+                print("Creating a new query")
                 # Create query '2' the next backwards one
                 query_b2 = Query(
                     title=str.split(query_b.title, "_")[0]+"_backward_"+str(query_b.step)+"_"+str(query_b.substep+1),
@@ -769,18 +759,52 @@ def snowball_progress(request,sbs):
                 sbs.save()
         
 
-        if query_b.text !='' and sbs.working == True and not os.path.isfile("/queries/"+str(query_b.id)+"/s_results.txt") and query_b.doc_set.all().count() == 0: # if we have scraped all the refs
+        if query_b.text !='' and sbs.working == True and os.path.isfile("/queries/"+str(query_b.id)+"/s_results.txt") and query_b.doc_set.all().count() == 0: # if we have scraped all the refs
             log_b = ["Busy checking the references of {} against the database and keywords".format(query_b.title)]
             background = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','proc_docrefs_scopus.py'))
             subprocess.Popen(["python3", background, str(seed_query.id), str(query_b.id), str(0)])
             sbs.working = True  
-            sbs.save()  
+            sbs.save() 
 
+        if sbs.working_pb2:
+            log_b = ["Busy checking the references of {} against the database and keywords".format(query_b.title)] 
+
+        qsum = None
+        t = None
+        #sqs.filter(type='step_summary').delete()
         if query_b.doc_set.all().count() > 0 and sbs.working==False:
             log_b = ["FINISHED"]      
+            stop = True
+            if sqs.filter(type='step_summary').count() == 0:
+                qsum = Query(
+                    title=str.split(query_b.title, "_")[0]+"_summary_"+str(query_b.step),
+                    database=query_b.database,
+                    type="step_summary",
+                    text="",
+                    date=timezone.now(),
+                    snowball=query_b.snowball,
+                    step=query_b.step
+                )
+                qsum.save()
+                t = Tag(
+                    title = str.split(query_b.title, "_")[0]+"_summary_"+str(query_b.step),
+                    text = "",
+                    query = qsum
+                )
+                t.save()
+                B2docs = Doc.objects.filter(document__seedquery=seed_query, document__relation=-1,document__indb=1,document__docmatch_q=True).exclude(document__sametech=1)
+                F2docs = Doc.objects.filter(document__seedquery=seed_query, document__relation=1,document__indb__gt=0,document__docmatch_q=True)
+                C1docs = B2docs | F2docs
+                for doc in C1docs:
+                    doc.query.add(qsum)
+                    doc.tag.add(t)
+            else:
+                qsum = sqs.filter(type='step_summary').first()
+                t = qsum.tag_set.all()[0]
+                
 
     ## Scrape a query if it needs to be scraped
-    if sqs.count() % 2 > 0:
+    if sqs.count() == 3:
         query_b2 = query_b
         if query_b2.text != '': # if the text has been written
             if not os.path.isfile("/queries/"+str(query_b2.id)+"/s_results.txt"): # and there's no file
@@ -808,12 +832,55 @@ def snowball_progress(request,sbs):
         ('B5', drs.filter(relation=-1,indb=2,docmatch_q=False).count()),
         ('F1', drs.filter(relation=1,indb=1,sametech=1).count()),
         ('F2', drs.filter(relation=1,indb__gt=0,docmatch_q=True).count()),
-        ('F3', drs.filter(relation=1,indb__gt=0,docmatch_q=False).count())
+        ('F3', drs.filter(relation=1,indb__gt=0,docmatch_q=False).count()),
     ]
+
+    summary_stats.append(('C1',summary_stats[1][1]+summary_stats[6][1]))
+    summary_stats.append(('C2',summary_stats[3][1]))
 
     print(summary_stats)
 
+    fqs = sqs.filter(type='forward')
+    for f in fqs:
+        f.r_count = f.doc_set.all().count()
 
+    users = User.objects.all().order_by('username')
+
+    proj_users = users.query
+
+    user_list = []
+
+    if qsum is not None:
+
+        for u in users:
+            user_docs = {}
+            tdocs = DocOwnership.objects.filter(query=qsum,tag=t,user=u)
+            print(tdocs)
+            user_docs['tdocs'] = tdocs.count()
+            if user_docs['tdocs']==0:
+                user_docs['tdocs'] = False
+            else:
+                user_docs['reldocs']         = tdocs.filter(relevant=1).count()
+                user_docs['irreldocs']       = tdocs.filter(relevant=2).count()
+                user_docs['maybedocs']       = tdocs.filter(relevant=3).count()
+                user_docs['yesbuts']         = tdocs.filter(relevant=4).count()
+                user_docs['checked_percent'] = round((user_docs['reldocs'] + user_docs['irreldocs'] + user_docs['maybedocs']) / user_docs['tdocs'] * 100)
+            if qsum in u.query_set.all():
+                user_list.append({
+                    'username': u.username,
+                    'email': u.email,
+                    'onproject': True,
+                    'user_docs': user_docs
+                })
+            else:
+                user_list.append({
+                    'username': u.username,
+                    'email': u.email,
+                    'onproject': False,
+                    'user_docs': user_docs
+                })
+
+        print(user_list)
 
     context = {
         'log': True,
@@ -825,7 +892,13 @@ def snowball_progress(request,sbs):
         'query_f': query_f,
         'substep':1,
         'docadded': 0,
-        'summary_stats': summary_stats
+        'summary_stats': summary_stats,
+        'fqs': fqs,
+        'bqs': sqs.filter(type='backward'),
+        'query': qsum,
+        'tag': t,
+        'users': user_list,
+        'stop': stop
     }
 
     return HttpResponse(template.render(context, request))

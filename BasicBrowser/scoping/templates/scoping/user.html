@@ -37,7 +37,7 @@
             <td>Yes buts</td>
           </tr>
           {% for q in queries %}
-            {% if q.type == "default" %}
+            {% if q.type == "default" or q.type == "step_summary" %}
               <tr>
                 <td><a href="/scoping/query/{{q.id}}">{{q.id}}</td>
                 <td>{{q.title}}</td>

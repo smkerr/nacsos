@@ -1,0 +1,282 @@
+<html>
+    <head>
+        {% load static %}
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
+        <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
+        <title>Scoping</title>
+        {% if query.type == "default" %}
+          <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
+        {% else %}
+          <link href="{% static 'scoping/css/stylingsbs.css' %}" rel="stylesheet" type="text/css">
+        {% endif %}
+    </head>
+    <body>
+        {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
+        <div id="main">
+            <div id="graph">
+              <h1> Snowballing - Query Helper</h1>
+                <br/>
+                    {% if substep == "1" %}
+                      <h2> Query Progress - SB substep {{ substep }} (Identifying references and scraping citations)</h2>
+                    {% else %}
+                      <h2> Query Progress - SB substep {{ substep }} (Obtaining information for all identified references)</h2>
+                    {% endif %}
+                <br/>
+                        (This page will automatically refresh every 5 seconds to update progress)
+                    <br/>
+                    <p>
+                    <table>
+                        <td width=50%>
+                            <table class="light">
+                                <tr class="title">
+                                    <td width=>Backward Query</td>
+                                    <td width=>Backward Query Docs</td>
+                                {% for q in bqs %}
+                                    <tr><td>{{q.id}}</td>
+                                    <td>{{q.r_count}}</td>
+                                {% endfor %}
+                            </table>
+                        <td width=50%>
+                            <table class="light">
+                                <tr class="title">
+                                    <td >Forward Query
+                                    <td >Forward Query Docs
+                                {% for q in fqs %}
+                                    <tr><td>{{q.id}}</td>
+                                        <td >{{q.r_count}}</td>
+                                {% endfor %}
+                            </table>
+                    </table>
+                    <p>
+                      <table>
+                        <tr class="logbox">
+                          <td style="width: 50%; border: 1px solid white;">
+                            Backward query
+                            <div id="logbox_sb">
+                              {% if log_b %}
+                                {% for l in log_b %}
+                                  {{l}}<br>
+                                {% endfor %}
+                              {% endif %}
+                            </div>
+                          </td>
+                          <td style="width: 50%; border: 1px solid white;">
+                            Forward query
+                            <div id="logbox_sb">
+                              {% if log_f %}
+                                {% for l in log_f %}
+                                  {{l}}<br>
+                                {% endfor %}
+                              {% endif %}
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    <p></p>
+                        {% include 'scoping/docrel_table.html' with summary_stats=summary_stats %}
+                    <p>
+
+<h2> Users </h2>
+          <table class="light" style="width:100%">
+            <tr class="title">
+              <td>Username</td>
+              <td>Email</td>
+              <td>Active</td>
+              <td>Docs Assigned</td>
+              <td>Relevant Docs</td>
+              <td>Irrelevant Docs</td>
+              <td>Maybe Docs</td>
+            </tr>
+            {% for u in users %}
+              <tr>
+                <td>{{ u.username }}</td>
+                <td>{{ u.email }}</td>
+                {% if u.onproject %}
+                  <td>
+                    <label class="switch">
+                      <input type="checkbox" class="user_active" data-user="{{u.username}}" onchange="activate_user(this)" checked>
+                      <div class="slider round"></div>
+                    </label>
+                  </td>
+                {% else %}
+                  <td>
+                    <label class="switch">
+                      <input type="checkbox" class="user_active" data-user="{{u.username}}" onchange="activate_user(this)"></input>
+                      <div class="slider round"></div>
+                    </label>
+                  </td>
+                {% endif %}
+
+                {% if u.user_docs.tdocs %}
+                  <td>{{ u.user_docs.tdocs }} ({{ u.user_docs.checked_percent }}% checked)</td>
+                  <td>{{ u.user_docs.reldocs }}</td>
+                  <td>{{ u.user_docs.irreldocs }}</td>
+                  <td>{{ u.user_docs.maybedocs }}</td>
+                {% else %}
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                {% endif %}
+        
+              </tr>      
+            {% endfor %}
+          </table>
+          <p style="text-align:left">
+            <div class="assignment_box">
+              <p>
+                <table id="split_table">
+                  <tr>
+                      <td>Double Check Documents
+                    <td>
+                      <label class="switch">
+                        <input type="checkbox" id="split" onclick="updateAssignment()" checked />
+                        <div class="slider round"></div>
+                      </label>
+                    </td>
+                    <td>Split Documents</td>
+                  </tr>
+                </table>
+              </p>
+              <p>Assign a total of <span id="docUserTotal">{{summary_stats.8.1}}</span> documents each to <span id="userTotal"></span> users? <button onclick="do_assignment()">Assign</button></p>
+  
+              <p>Clear all document-user assignments from this query? WARNING: This cannot be undone <button onclick="remove_assignments({{ query.id }})">Remove</button></p>
+
+            </div>
+
+
+            </div>
+        </div>
+
+        <script>
+        {% if stop %}
+
+        {% else %}
+            setTimeout(function(){
+               window.location.reload(1);
+            }, 5000);
+        {% endif %}
+
+
+var qid = {{ query.id }}
+
+var total_docs = 0
+
+var total_users = 0
+var docsplit = $("#split").is(':checked')
+
+$(".user_active").each(function() {
+    if ($(this).is(':checked')) {
+        total_users+=1
+    }
+})
+
+$(".tag_assignment").each(function(){
+    total_docs += parseInt($(this).text())
+})
+
+updateAssignment()
+
+function inputUpdate(x,t) {
+    $('#out_'+t).val(x)
+    updateAssignment()
+}
+
+
+function updateAssignment() {
+    var active_users = []
+    var tags = ['{{tag.id}}']
+    var total_docs = [{{summary_stats.8.1}}]
+    var docsplit = $("#split").is(':checked')
+    
+    $(".user_active").each(function() {
+        if ($(this).is(':checked')) {
+            active_users.push($(this).attr("data-user") )
+        }  
+    })
+
+    $(".tag_assignment").each(function() {
+        tags.push($(this).attr("data-tagid") ) 
+        tagdocs.push($(this).val()) 
+            total_docs += parseInt($(this).val())
+    })    
+    if (docsplit==true) {
+        docs_each = Math.ceil(total_docs/active_users.length)
+    } else {
+        docs_each = Math.ceil(total_docs)
+    }
+    $("#docUserTotal").text(docs_each)
+    $("#userTotal").text(total_users)
+}
+
+function activate_user(element) {
+    checked = element.checked
+    user = element.dataset.user
+    console.log(user)
+    $.ajax({
+        url: '/scoping/activate_user',
+        data: {
+            'qid': qid,
+            'user': user,
+            'checked': checked
+        },
+        success: function(data) {
+			if (typeof data == "string") {
+				alert("Looks like you don't have permission to do this")
+				element.checked = !checked
+			} else {
+		        total_users+=data
+		        updateAssignment()
+			}
+        },
+		error: function() {
+			alert("Looks like you don't have permission to do this")
+			element.checked = !checked
+		}
+    })
+}
+
+function do_assignment() {
+    console.log("assign")
+    var active_users = []
+	var tags = ['{{tag.id}}']
+    var tagdocs = [{{summary_stats.8.1}}]
+    $(".user_active").each(function() {
+        if ($(this).is(':checked')) {
+            active_users.push($(this).attr("data-user") )
+        }  
+    })
+    var proportion = $("#sample").val()
+	console.log(active_users)
+    console.log(tags)
+    console.log(tagdocs)
+    console.log(qid)
+    var docsplit = $("#split").is(':checked')
+    $.ajax({
+        url: '/scoping/assign_docs',
+        data : {
+            'qid': qid,
+            'users': active_users,
+            'tags': tags,
+            'tagdocs': tagdocs,
+            'docsplit': docsplit
+        },
+        success: function() {
+            location.reload()
+        }
+    })
+}
+
+function remove_assignments(qid) {
+	$.ajax({
+		url: '/scoping/remove_assignments',
+		data: {'qid':qid},
+		success: function() {
+			location.reload()
+		}
+	})
+}
+        </script>
+    </body>
+</html>
