@@ -680,6 +680,7 @@ def main():
 
     sbs = q1.snowball
     sbs.working = False
+    sbs.working_pb2 = False
     sbs.save()
 
 
