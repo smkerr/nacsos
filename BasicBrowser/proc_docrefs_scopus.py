@@ -58,7 +58,7 @@ def add_doc(r):
     }
 
 #    if request.session.get('DEBUG', None) == None:
-    DEBUG = False
+    DEBUG = True
 #    else:
 #        DEBUG = request.session['DEBUG'] 
 
@@ -203,7 +203,7 @@ def add_doc(r):
             dr = r.first()
             dr.referent=doc
             dr.indb = 2
-            dr.save
+            dr.save()
         if r.count() > 1:
             print(r.values())
     elif q == q1:
@@ -427,8 +427,7 @@ def matchref(dr):
     if r.count() > 1:
         print(r.values('title','UT'))
         print(r.count())
-        print(dr.title)
-        print(dr.au)
+        print(dr.text)
     if r.count()==1:
         d = r.first()
         dr.referent = d
@@ -555,37 +554,52 @@ def main():
     q.r_count = n_records
     q.save()
 
-    ############ When happy with the script we can uncomment and delete the files again
-
-    #shutil.rmtree("/queries/"+title)
-    #os.remove("/queries/"+title+".txt")
-    #os.remove("/queries/"+title+".log")
-
-    print("  > Total Number of references processed    : "+str(totnbrefs))
-    print("  > Total Number of references in DB (%)    : "+str(totnbrefsindb)+" ("+str(totnbrefsindb/totnbrefs*100)+"%)")
-    print("  > Total Number of references to scrape (%): "+str(len(doi_lookups))+" ("+str(len(doi_lookups)/totnbrefs*100)+"%)")
-    print("  > Total Number of discarded references (%): "+str(totnbskips)+" ("+str(totnbskips/totnbrefs*100)+"%)")
-
 
     ####################
     ## These are the backwards docref objects
-    drs = DocRel.objects.filter(seed__query=q,relation=-1)  
+    drs = DocRel.objects.filter(seedquery=q1,relation=-1)  
 
-    if q3 == 0:
-        drs = drs.filter(indb=2)  
+    print(drs)
 
-    # Process docs with dois
-    refdois = drs.filter(seedquery=q,hasdoi=True)
-    
-    # Look for the no dois in the database
-    # Match them with a referent and see if they match the tech
-    nodois = drs.filter(seedquery=q,hasdoi=False,title__isnull=False,relation=-1)
-    pool = Pool(processes=4)
-    #pool.map(partial(matchref,),drs)
-    pool.terminate()
-    django.db.connections.close_all()
+    if q3id == '0':
+        drs = drs.filter(referent__query=q2) | drs.filter(referent__isnull=True)
+        print(drs)
+        # kws is a list of keywords that are the keywords of the seed documents
+        kws = [x.text for x in [item for sublist in [x.kw_set.all() for x in q1.doc_set.all()] for item in sublist]]
+        for dr in drs:
+            kmatch = False
+            # Get a list of keywords for the doc
+            if dr.referent is not None:
+                dkws = [x.text for x in dr.referent.kw_set.all()]
+                for kw in kws:
+                    if kw in dr.referent.title or kw in dr.referent.content or kw in dkws:
+                        print("newdocmatch")
+                        kmatch = True
+                        dr.docmatch_q=True
+                        dr.sametech=2
+                dr.save()
+            else:
+                print(dr.text)
+                for kw in kws:
+                    if kw in dr.text:
+                        print("timatch")
+                        kmatch = True
+                        dr.timatch_q=True
+                        dr.sametech=2
+                dr.save()
 
-    if q3id != '0':
+    else:
+
+        # Process docs with dois
+        refdois = drs.filter(seedquery=q,hasdoi=True)
+        
+        # Look for the no dois in the database
+        # Match them with a referent and see if they match the tech
+        nodois = drs.filter(seedquery=q,hasdoi=False,title__isnull=False,relation=-1)
+        pool = Pool(processes=4)
+        pool.map(partial(matchref,),drs)
+        pool.terminate()
+        django.db.connections.close_all()
 
         ##############################################################
         ## Write Q2 query
@@ -645,24 +659,28 @@ def main():
         ##
         ###############################################################
 
-    ## Look for the title in notechmatches
-    ## 
-    # kws is a list of keywords that are the keywords of the seed documents
-    kws = [x.text for x in [item for sublist in [x.kw_set.all() for x in q1.doc_set.all()] for item in sublist]]
-    for dr in DocRel.objects.filter(seedquery=q1,referent__isnull=False).exclude(sametech=1):
-        kmatch = False
-        # Get a list of keywords for the doc
-        dkws = [x.text for x in dr.referent.kw_set.all()]
-        for kw in kws:
-            if kw in dr.referent.title or kw in dr.referent.content or kw in dkws:
-                kmatch = True
-                dr.docmatch_q=True
-                dr.sametech=2
-        dr.save()
+        ## Look for the title in notechmatches
+        ## 
+        # kws is a list of keywords that are the keywords of the seed documents
+        kws = [x.text for x in [item for sublist in [x.kw_set.all() for x in q1.doc_set.all()] for item in sublist]]
+        for dr in DocRel.objects.filter(seedquery=q1,referent__isnull=False).exclude(sametech=1):
+            kmatch = False
+            # Get a list of keywords for the doc
+            dkws = [x.text for x in dr.referent.kw_set.all()]
+            for kw in kws:
+                if kw in dr.referent.title or kw in dr.referent.content or kw in dkws:
+                    kmatch = True
+                    dr.docmatch_q=True
+                    dr.sametech=2
+            dr.save()
 
 
     if DEBUG:
         print("<< Exiting main() function in upload_docrefs.py")
+
+    sbs = q1.snowball
+    sbs.working = False
+    sbs.save()
 
 
 if __name__ == '__main__':

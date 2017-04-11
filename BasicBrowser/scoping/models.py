@@ -25,6 +25,7 @@ class SnowballingSession(models.Model):
                          default      = 0,
                          db_index     = True,
                          verbose_name = "SB Status")
+    working        = models.BooleanField(default=False)
     users          = models.ManyToManyField(User)
     database       = models.CharField(max_length=6,null=True, verbose_name="Query database")
     technology     = models.ForeignKey('Technology', null=True)
