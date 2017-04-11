@@ -263,8 +263,8 @@ def doquery(request):
     else:
         # write the query into a text file
         fname = "/queries/"+str(q.id)+".txt"
-        with open(fname,"w") as qfile:
-            qfile.write(qtext)
+        with open(fname,encoding='utf-8',mode="w") as qfile:
+            qfile.write(qtext.encode("utf-8").decode("utf-8"))
 
         time.sleep(1)
 
@@ -575,7 +575,7 @@ def dodocadd(request):
         substep = 2
 
     #return HttpResponse(upload)
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid, 'substep': substep, 'docadded': 1, 'q2id': q2id}))
+    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
 
 #########################################################
 ## Page views progress of query scraping
@@ -1114,109 +1114,109 @@ def userpage(request):
 
 
     # Snowballing sesseions
-    sb_sessions     = SnowballingSession.objects.all().order_by('-id')
+   # sb_sessions     = SnowballingSession.objects.all().order_by('-id')
     
     # Get latest step associated with each SB sessions
     # Initialise variable that will contain the information to be sent to the webpage (context)
-    sb_info = []   
+    #sb_info = []   
 
     # Loop over SB sessions
-    for sbs in sb_sessions:
-        sb_info_tmp = {}
-        sb_info_tmp['id']     = sbs.id
-        sb_info_tmp['name']   = sbs.name
-        sb_info_tmp['ip']     = sbs.initial_pearls
-        sb_info_tmp['date']   = sbs.date
-        sb_info_tmp['status'] = sbs.status
+    #for sbs in sb_sessions:
+    #    sb_info_tmp = {}
+    #    sb_info_tmp['id']     = sbs.id
+    #    sb_info_tmp['name']   = sbs.name
+    #    sb_info_tmp['ip']     = sbs.initial_pearls
+    #    sb_info_tmp['date']   = sbs.date
+    #    sb_info_tmp['status'] = sbs.status
 
         # Get queries associated with the current SB session
-        sb_qs    = Query.objects.filter(snowball = sbs.id).order_by('-id')
+    #    sb_qs    = Query.objects.filter(snowball = sbs.id).order_by('-id')
 
         # Initialise step, count and query_info variables
-        step     = "1"
-        nbdocsel = 0
-        nbdoctot = 0
-        nbdocrem = 0
-        sb_info_tmp['q_info'] = []
+    #    step     = "1"
+    #    nbdocsel = 0
+    #    nbdoctot = 0
+    #    nbdocrem = 0
+    #    sb_info_tmp['q_info'] = []
 
         # Loop over queries associated with the current SB session
-        cnt = 0 # Query iterator to capture last query (There must be a better way to do that)
-        for q in sb_qs:
+    #    cnt = 0 # Query iterator to capture last query (There must be a better way to do that)
+    #    for q in sb_qs:
             # Select reference queries only (sub-step == 2)
-            if q.title.split("_")[3] == "2":
+    #        if q.title.split("_")[3] == "2":
                 # For old queries
-                try: 
-                    q_info_tmp             = {} 
-                    q_info_tmp['id']       = q.id
-                    q_info_tmp['title']    = q.title
-                    q_info_tmp['type']     = q.type
+    #            try: 
+    #                q_info_tmp             = {} 
+    #                q_info_tmp['id']       = q.id
+    #                q_info_tmp['title']    = q.title
+    #                q_info_tmp['type']     = q.type
                     #q_info_tmp['nbdoctot'] = DocOwnership.objects.filter(query = q, user=request.user).count()
                     #q_info_tmp['nbdocsel'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 1).count()
                     #q_info_tmp['nbdocrev'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 0).count()
                     #q_info_tmp['nbdoctot'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
-                    q_info_tmp['nbdocsel'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
-                    q_info_tmp['nbdocrem'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
-                    q_info_tmp['nbdoctot'] = q_info_tmp['nbdocsel'] + q_info_tmp['nbdocrem']
+    #                q_info_tmp['nbdocsel'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
+    #                q_info_tmp['nbdocrem'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
+    #                q_info_tmp['nbdoctot'] = q_info_tmp['nbdocsel'] + q_info_tmp['nbdocrem']
 
-                    if cnt == 0:
-                        q_info_tmp['last'] = "True"
-                    else:
-                        q_info_tmp['last'] = "False"
-
-                    sb_info_tmp['q_info'].append(q_info_tmp)
-                except:
-                    q_info_tmp             = {}
-                    q_info_tmp['id']       = q.id
-                    q_info_tmp['title']    = q.title
-                    q_info_tmp['type']     = q.type
+    #                if cnt == 0:
+    #                    q_info_tmp['last'] = "True"
+    #                else:
+    #                    q_info_tmp['last'] = "False"##
+#
+#                    sb_info_tmp['q_info'].append(q_info_tmp)
+#                except:
+#                    q_info_tmp             = {}
+#                    q_info_tmp['id']       = q.id
+#                    q_info_tmp['title']    = q.title
+#                    q_info_tmp['type']     = q.type
                     #q_info_tmp['nbdoctot'] = DocOwnership.objects.filter(query = q, user=request.user).count()
                     #q_info_tmp['nbdocsel'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 1).count()
                     #q_info_tmp['nbdocrev'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 0).count()
-                    q_info_tmp['nbdoctot'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
-                    q_info_tmp['nbdocsel'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
-                    q_info_tmp['nbdocrem'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
+#                    q_info_tmp['nbdoctot'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
+#                    q_info_tmp['nbdocsel'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
+#                    q_info_tmp['nbdocrem'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
  
-                    if cnt == 0:
-                        q_info_tmp['last'] = "True"
-                    else:
-                        q_info_tmp['last'] = "False"
+#                    if cnt == 0:
+#                        q_info_tmp['last'] = "True"
+#                    else:
+#                        q_info_tmp['last'] = "False"
 
-                    sb_info_tmp['q_info'].append(q_info_tmp)
+   #                 sb_info_tmp['q_info'].append(q_info_tmp)
 
                 # Get current step
-                s = q.title.split("_")[2]
-                if s > step:
-                    step = s
+#                s = q.title.split("_")[2]
+#                if s > step:
+#                    step = s
 
                 # Update total counts
                 #nbdoctot += DocOwnership.objects.filter(query = q, user=request.user).count()
                 #nbdocsel += DocOwnership.objects.filter(query = q, user=request.user, relevant = 1).count()
                 #nbdocrev += DocOwnership.objects.filter(query = q, user=request.user, relevant = 2).count()
                 #nbdoctot += Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
-                nbdocsel += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
-                nbdocrem += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
-                nbdoctot += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count() + Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
+ #               nbdocsel += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
+ #               nbdocrem += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
+ #               nbdoctot += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count() + Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
 
                 # Update iterator
-                cnt += 1 
+  #              cnt += 1 
 
         # Update info of current SB session
-        sb_info_tmp['ns']    = step
-        sb_info_tmp['lq']    = sb_qs.last().id
-        sb_info_tmp['rc']    = sb_qs.last().r_count
-        sb_info_tmp['ndsel'] = str(nbdocsel)
-        sb_info_tmp['ndtot'] = str(nbdoctot)
-        sb_info_tmp['ndrem'] = str(nbdocrem)
+   #     sb_info_tmp['ns']    = step
+    #    sb_info_tmp['lq']    = sb_qs.last().id
+    #    sb_info_tmp['rc']    = sb_qs.last().r_count
+    #    sb_info_tmp['ndsel'] = str(nbdocsel)
+    #    sb_info_tmp['ndtot'] = str(nbdoctot)
+    #    sb_info_tmp['ndrem'] = str(nbdocrem)
 
         # Add SB session info to container
-        sb_info.append(sb_info_tmp)
+     #   sb_info.append(sb_info_tmp)
 
 
     context = {
         'user': request.user,
         'queries': query_list,
-        'query': query,
-        'sbsessions': sb_info
+        'query': query
+#        'sbsessions': sb_info
     }
     return HttpResponse(template.render(context, request))
 

@@ -84,9 +84,9 @@
                         {% if doclength == 0 %}
                             <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now?
                             <br/>
-                            <a href="/scoping/dodocadd?qid={{query_b.id}}&db={{query_b.database}}"><button>Add Documents</button></a>
+                            <a href="/scoping/dodocadd?qid={{query.id}}&db={{query.database}}"><button>Add Documents</button></a>
                         {% else %}
-                            <p><a href="../../../docs/{{query_b.id}}">View the documents</a>
+                            <p><a href="/scoping/docs/{{query.id}}">View the documents</a>
                         {% endif %}
                     {% else %}
 <!-- Snowballing session -->
@@ -129,7 +129,7 @@
         <script>
             function docadd(qid) {
 
-              /*
+              
                 $.ajax({
                   url: '/scoping/dodocadd',
                   data: {
@@ -140,7 +140,7 @@
                     $("#doc_adder1").html('<p><a href="../docs/'+qid+'">View the documents</a>')
                   }
                 })
-              */
+              
             }
 
             function docrefadd(qid) {
