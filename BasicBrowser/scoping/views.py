@@ -141,9 +141,9 @@ def snowball(request):
             sbs.ns = sb_qs.aggregate(Max('step'))['step__max']
             sbs.lq = sb_qs.last().id 
             sbs.rc = sb_qs.last().r_count 
-            sbs.ndsel = DocOwnership.objects.filter(query__snowball=sbs,relevant=1).count()
+            sbs.ndsel = Doc.objects.filter(docownership__query__snowball=sbs,docownership__relevant=1).distinct().count()
             sbs.ndtot = DocRel.objects.filter(seedquery=seedquery).count()
-            sbs.ndrev = DocOwnership.objects.filter(query__snowball=sbs,relevant=0).count()
+            sbs.ndrev = Doc.objects.filter(docownership__query__snowball=sbs,docownership__relevant=0).distinct().count()
         except:
             pass
 
@@ -792,7 +792,7 @@ def snowball_progress(request,sbs):
                     query = qsum
                 )
                 t.save()
-                B2docs = Doc.objects.filter(document__seedquery=seed_query, document__relation=-1,document__indb=1,document__docmatch_q=True).exclude(document__sametech=1)
+                B2docs = Doc.objects.filter(document__seedquery=seed_query, document__relation=-1,document__indb__gt=0,document__docmatch_q=True).exclude(document__sametech=1)
                 F2docs = Doc.objects.filter(document__seedquery=seed_query, document__relation=1,document__indb__gt=0,document__docmatch_q=True)
                 C1docs = B2docs | F2docs
                 for doc in C1docs:
@@ -826,14 +826,19 @@ def snowball_progress(request,sbs):
 
     summary_stats = [
         ('B1', drs.filter(relation=-1,indb=1,sametech=1).count()),
-        ('B2', drs.filter(relation=-1,indb=1,docmatch_q=True).exclude(sametech=1).count()),
-        ('B3', drs.filter(relation=-1,indb=1,docmatch_q=False).exclude(sametech=1).count()),
-        ('B4', drs.filter(relation=-1,indb=2,docmatch_q=True).count()),
-        ('B5', drs.filter(relation=-1,indb=2,docmatch_q=False).count()),
+        ('B2', drs.filter(relation=-1,indb__gt=0,docmatch_q=True).exclude(sametech=1).count()),
+        ('B3', drs.filter(relation=-1,indb__gt=0,docmatch_q=False).exclude(sametech=1).count()),
+        ('B4', drs.filter(relation=-1,indb=0,timatch_q=True).count()),
+        ('B5', drs.filter(relation=-1,indb=0,timatch_q=False).count()),
         ('F1', drs.filter(relation=1,indb=1,sametech=1).count()),
         ('F2', drs.filter(relation=1,indb__gt=0,docmatch_q=True).count()),
         ('F3', drs.filter(relation=1,indb__gt=0,docmatch_q=False).count()),
     ]
+
+    # DocRel.objects.filter(seedquery=599,relation=-1,indb=2,docmatch_q=True)
+
+    C2docs = DocRel.objects.filter(seedquery=seed_query,relation=-1,indb=0,timatch_q=True).order_by('au')
+    #C2docs = DocRel.objects.filter(seedquery=seed_query,relation=-1,indb=0).order_by('au')
 
     summary_stats.append(('C1',summary_stats[1][1]+summary_stats[6][1]))
     summary_stats.append(('C2',summary_stats[3][1]))
@@ -893,6 +898,7 @@ def snowball_progress(request,sbs):
         'substep':1,
         'docadded': 0,
         'summary_stats': summary_stats,
+        'C2docs': C2docs,
         'fqs': fqs,
         'bqs': sqs.filter(type='backward'),
         'query': qsum,
@@ -2035,17 +2041,20 @@ def assign_docs(request):
 
     query = Query.objects.get(pk=qid)
 
-    user_list = []
-
-    for user in users:
-        user_list.append(User.objects.get(username=user))
-
     print(tags)
 
     dos = []
 
     for tag in range(len(tags)):
         t = Tag.objects.get(pk=tags[tag])
+
+        user_list = []
+
+        for user in users:
+            if DocOwnership.objects.filter(query=query,user__username=user,tag=t).count() == 0:
+                user_list.append(User.objects.get(username=user))
+
+
         docs = Doc.objects.filter(query=query,tag=t)
         l= len(docs)
         ssize = int(tagdocs[tag])

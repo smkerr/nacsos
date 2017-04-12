@@ -89,7 +89,6 @@
             <td># Docs to review</td>
             <td># Selected docs</td>
             <td># Total docs</td>
-            <td>Status</td>
             <td>Delete</td>
           </tr>
           {% for value in sb_sessions %} 
@@ -107,7 +106,6 @@
             <td>{{ value.ndrev }}</td>
             <td>{{ value.ndsel }}</td>
             <td>{{ value.ndtot }}</td>
-            <td>{{ value.status }}</td>
             <td><a href="delete_sbs/{{value.id}}"><button type="button" onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button></a></td> 
           </tr>
           {% endfor %}

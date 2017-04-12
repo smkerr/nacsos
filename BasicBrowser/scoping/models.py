@@ -125,6 +125,9 @@ class DocRel(models.Model):
     sametech = models.IntegerField(null=True,default=0)
     referent = models.ForeignKey(Doc, null=True, on_delete=models.CASCADE, related_name="document")
 
+    def shingle(self):
+        return set(s for s in ngrams(self.title.lower().split(),2))
+
     class Meta:
         unique_together = ('seed', 'seedquery', 'text',)
 
