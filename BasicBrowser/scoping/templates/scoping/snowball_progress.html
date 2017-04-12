@@ -77,6 +77,7 @@
                         {% include 'scoping/docrel_table.html' with summary_stats=summary_stats %}
                     <p>
 
+{% if users %}
 <h2> Users </h2>
           <table class="light" style="width:100%">
             <tr class="title">
@@ -145,6 +146,16 @@
 
             </div>
 
+            {% endif %}
+            <table>
+            {% for d in C2docs %}
+            <tr>
+            <td>{{d.text}}
+            <td>{{d.title}}
+            <td>{{d.au}}
+            {% endfor %}
+            </table>
+
 
             </div>
         </div>
@@ -159,124 +170,127 @@
         {% endif %}
 
 
-var qid = {{ query.id }}
+{% if query.id %}
 
-var total_docs = 0
+    var qid = {{ query.id }}
 
-var total_users = 0
-var docsplit = $("#split").is(':checked')
+    var total_docs = 0
 
-$(".user_active").each(function() {
-    if ($(this).is(':checked')) {
-        total_users+=1
-    }
-})
-
-$(".tag_assignment").each(function(){
-    total_docs += parseInt($(this).text())
-})
-
-updateAssignment()
-
-function inputUpdate(x,t) {
-    $('#out_'+t).val(x)
-    updateAssignment()
-}
-
-
-function updateAssignment() {
-    var active_users = []
-    var tags = ['{{tag.id}}']
-    var total_docs = [{{summary_stats.8.1}}]
+    var total_users = 0
     var docsplit = $("#split").is(':checked')
-    
+
     $(".user_active").each(function() {
         if ($(this).is(':checked')) {
-            active_users.push($(this).attr("data-user") )
-        }  
-    })
-
-    $(".tag_assignment").each(function() {
-        tags.push($(this).attr("data-tagid") ) 
-        tagdocs.push($(this).val()) 
-            total_docs += parseInt($(this).val())
-    })    
-    if (docsplit==true) {
-        docs_each = Math.ceil(total_docs/active_users.length)
-    } else {
-        docs_each = Math.ceil(total_docs)
-    }
-    $("#docUserTotal").text(docs_each)
-    $("#userTotal").text(total_users)
-}
-
-function activate_user(element) {
-    checked = element.checked
-    user = element.dataset.user
-    console.log(user)
-    $.ajax({
-        url: '/scoping/activate_user',
-        data: {
-            'qid': qid,
-            'user': user,
-            'checked': checked
-        },
-        success: function(data) {
-			if (typeof data == "string") {
-				alert("Looks like you don't have permission to do this")
-				element.checked = !checked
-			} else {
-		        total_users+=data
-		        updateAssignment()
-			}
-        },
-		error: function() {
-			alert("Looks like you don't have permission to do this")
-			element.checked = !checked
-		}
-    })
-}
-
-function do_assignment() {
-    console.log("assign")
-    var active_users = []
-	var tags = ['{{tag.id}}']
-    var tagdocs = [{{summary_stats.8.1}}]
-    $(".user_active").each(function() {
-        if ($(this).is(':checked')) {
-            active_users.push($(this).attr("data-user") )
-        }  
-    })
-    var proportion = $("#sample").val()
-	console.log(active_users)
-    console.log(tags)
-    console.log(tagdocs)
-    console.log(qid)
-    var docsplit = $("#split").is(':checked')
-    $.ajax({
-        url: '/scoping/assign_docs',
-        data : {
-            'qid': qid,
-            'users': active_users,
-            'tags': tags,
-            'tagdocs': tagdocs,
-            'docsplit': docsplit
-        },
-        success: function() {
-            location.reload()
+            total_users+=1
         }
     })
-}
 
-function remove_assignments(qid) {
-	$.ajax({
-		url: '/scoping/remove_assignments',
-		data: {'qid':qid},
-		success: function() {
-			location.reload()
-		}
-	})
-}
+    $(".tag_assignment").each(function(){
+        total_docs += parseInt($(this).text())
+    })
+
+    updateAssignment()
+
+    function inputUpdate(x,t) {
+        $('#out_'+t).val(x)
+        updateAssignment()
+    }
+
+
+    function updateAssignment() {
+        var active_users = []
+        var tags = ['{{tag.id}}']
+        var total_docs = [{{summary_stats.8.1}}]
+        var docsplit = $("#split").is(':checked')
+        
+        $(".user_active").each(function() {
+            if ($(this).is(':checked')) {
+                active_users.push($(this).attr("data-user") )
+            }  
+        })
+
+        $(".tag_assignment").each(function() {
+            tags.push($(this).attr("data-tagid") ) 
+            tagdocs.push($(this).val()) 
+                total_docs += parseInt($(this).val())
+        })    
+        if (docsplit==true) {
+            docs_each = Math.ceil(total_docs/active_users.length)
+        } else {
+            docs_each = Math.ceil(total_docs)
+        }
+        $("#docUserTotal").text(docs_each)
+        $("#userTotal").text(total_users)
+    }
+
+    function activate_user(element) {
+        checked = element.checked
+        user = element.dataset.user
+        console.log(user)
+        $.ajax({
+            url: '/scoping/activate_user',
+            data: {
+                'qid': qid,
+                'user': user,
+                'checked': checked
+            },
+            success: function(data) {
+			    if (typeof data == "string") {
+				    alert("Looks like you don't have permission to do this")
+				    element.checked = !checked
+			    } else {
+		            total_users+=data
+		            updateAssignment()
+			    }
+            },
+		    error: function() {
+			    alert("Looks like you don't have permission to do this")
+			    element.checked = !checked
+		    }
+        })
+    }
+
+    function do_assignment() {
+        console.log("assign")
+        var active_users = []
+	    var tags = ['{{tag.id}}']
+        var tagdocs = [{{summary_stats.8.1}}]
+        $(".user_active").each(function() {
+            if ($(this).is(':checked')) {
+                active_users.push($(this).attr("data-user") )
+            }  
+        })
+        var proportion = $("#sample").val()
+	    console.log(active_users)
+        console.log(tags)
+        console.log(tagdocs)
+        console.log(qid)
+        var docsplit = $("#split").is(':checked')
+        $.ajax({
+            url: '/scoping/assign_docs',
+            data : {
+                'qid': qid,
+                'users': active_users,
+                'tags': tags,
+                'tagdocs': tagdocs,
+                'docsplit': docsplit
+            },
+            success: function() {
+                location.reload()
+            }
+        })
+    }
+
+    function remove_assignments(qid) {
+	    $.ajax({
+		    url: '/scoping/remove_assignments',
+		    data: {'qid':qid},
+		    success: function() {
+			    location.reload()
+		    }
+	    })
+    }
+{% endif %}
         </script>
     </body>
 </html>

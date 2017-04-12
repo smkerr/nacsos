@@ -199,13 +199,23 @@ def add_doc(r):
                     dr.save()
     elif q == q2:
         r = DocRel.objects.filter(seedquery=q1,text__icontains=doc.title)
-        if r.count() == 1:
+        if r.count() > 0:
+            print("MATCH")
+            print(r.values())
             dr = r.first()
             dr.referent=doc
             dr.indb = 2
             dr.save()
-        if r.count() > 1:
-            print(r.values())
+        if r.count() == 0:
+            fw = doc.title.split(" ")[0]
+            # Here we need to get a new list compare the jaccard similarity
+            fuzzy_r = DocRel.objects.filter(seedquery=q1,title__icontains=fw)
+            for fr in fuzzy_r:
+                j = jaccard(fr.shingle(),doc.shingle())
+                if j > 0.55:
+                    fr.referent=doc
+                    fr.indb = 2
+                    fr.save()
     elif q == q1:
         refs = get(r,'References')
         if len(refs) > 0:
@@ -428,7 +438,7 @@ def matchref(dr):
         print(r.values('title','UT'))
         print(r.count())
         print(dr.text)
-    if r.count()==1:
+    if r.count()>0:
         d = r.first()
         dr.referent = d
         dr.indb = 1
@@ -529,6 +539,7 @@ def main():
     q = q1
     if q3id == '0':
         q = q2
+        # compute the shingle of unreferented documents
     title = str(q.id)
     dorefs = True
     record = []
@@ -560,6 +571,7 @@ def main():
     drs = DocRel.objects.filter(seedquery=q1,relation=-1)  
 
     print(drs)
+
 
     if q3id == '0':
         drs = drs.filter(referent__query=q2) | drs.filter(referent__isnull=True)
@@ -610,6 +622,9 @@ def main():
 
         qtext = ""
         i = 0
+
+        if ldocs.count() == 0:
+            qtext+=q1.text
         for l in ldocs:
             if l.hasdoi:
                 if i > 0:
