@@ -659,10 +659,9 @@ def snowball_progress(request,sbs):
     finished_b = False
     finished_f = False
 
-    request.session['DEBUG'] = True
+    request.session['DEBUG'] = False
 
     if do_backward_query and do_forward_query: 
-        print("DOING QUERIY")
         if request.session['DEBUG']:
             print("querying: Default case with backward query #"+str(query_b.id)+" and forward query #"+str(query_f.id))
 
@@ -813,7 +812,7 @@ def snowball_progress(request,sbs):
                     sbs.working = True
                     sbs.save()
                     fname = "/queries/"+str(query_b2.id)+".txt"
-                    with open(fname,"w") as qfile:
+                    with open(fname,encoding='utf-8',mode='w') as qfile:
                         qfile.write(query_b2.text)
                         subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", "-s", query_b2.database, fname])
 
@@ -843,7 +842,6 @@ def snowball_progress(request,sbs):
     summary_stats.append(('C1',summary_stats[1][1]+summary_stats[6][1]))
     summary_stats.append(('C2',summary_stats[3][1]))
 
-    print(summary_stats)
 
     fqs = sqs.filter(type='forward')
     for f in fqs:
