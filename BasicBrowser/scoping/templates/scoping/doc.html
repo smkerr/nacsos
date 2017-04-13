@@ -175,6 +175,7 @@ var docid = "{{ doc.UT }}"
 function review(d) {
 	console.log(qid)
 	console.log(docid)
+    console.log({{back}})
 	$.ajax({
 		url: '/scoping/do_review',
 		data: {
@@ -186,11 +187,17 @@ function review(d) {
 		success: function() {
             if ({{ctype}}>1) {
                 var doc = {{d}}
-                url = 'scoping/screen/{{query.id}}/{{tag.id}}/{{ctype}}/'+(doc+1)
+                url = '/scoping/screen/{{query.id}}/{{tag.id}}/{{ctype}}/'+(doc+1)
                 window.location.href = url
+            } else if ({{back}} == -1)   {
+                console.log({{d}})
+                var doc = {{d}}
+                url = '/scoping/user'
+                window.location.href = url                
             } else {            
 			    location.reload()
             }
+            
 		}
 	})
 console.log({{page}})
