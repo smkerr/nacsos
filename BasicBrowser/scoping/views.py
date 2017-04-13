@@ -2290,10 +2290,14 @@ def add_manually():
 def highlight_words(s,query):
     qwords = re.findall('\w+',query)
     nots = ["TS","AND","NOT","NEAR","OR","and"]
-    qwords = set([x for x in qwords if x not in nots])
+    qwords = set([x.split('*')[0] for x in qwords if x not in nots])
     abstract = []
     for word in s.split(" "):
-        if word in qwords:
+        h = False
+        for q in qwords:
+            if q in word:
+                h = True
+        if h:
             abstract.append('<span class="t1">'+word+'</span>')
         else:
             abstract.append(word)
