@@ -2086,6 +2086,9 @@ def screen(request,qid,tid,ctype,d=0):
     tag = Tag.objects.get(pk=tid)
     user = request.user
 
+
+    back = 0
+
     docs = DocOwnership.objects.filter(
             doc__wosarticle__isnull=False,
             query=query,
@@ -2098,6 +2101,7 @@ def screen(request,qid,tid,ctype,d=0):
         docs = docs.filter(relevant=ctype)
     if d < 0:
         d = docs.count() - 1
+        back = -1
 
     docs = docs.order_by('date')
 
@@ -2138,7 +2142,8 @@ def screen(request,qid,tid,ctype,d=0):
         'qtechs': qtechs,
         'ntechs': ntechs,
         'tag': tag,
-        'd': d
+        'd': d,
+        'back': back
     }
 
     return HttpResponse(template.render(context, request))
