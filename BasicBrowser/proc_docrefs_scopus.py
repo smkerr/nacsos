@@ -58,7 +58,7 @@ def add_doc(r):
     }
 
 #    if request.session.get('DEBUG', None) == None:
-    DEBUG = True
+    DEBUG = False
 #    else:
 #        DEBUG = request.session['DEBUG'] 
 
