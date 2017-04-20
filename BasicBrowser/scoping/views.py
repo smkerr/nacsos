@@ -129,7 +129,7 @@ def snowball(request):
 
     # Get latest step associated with each SB sessions
     sb_session_last = sb_sessions.last()
-    
+
     for sbs in sb_sessions:
         try:
             sb_qs = sbs.query_set.all().order_by('id')
@@ -139,8 +139,8 @@ def snowball(request):
             nbdoctot = 0
             nbdocrev = 0
             sbs.ns = sb_qs.aggregate(Max('step'))['step__max']
-            sbs.lq = sb_qs.last().id 
-            sbs.rc = sb_qs.last().r_count 
+            sbs.lq = sb_qs.last().id
+            sbs.rc = sb_qs.last().r_count
             sbs.ndsel = Doc.objects.filter(docownership__query__snowball=sbs,docownership__relevant=1).distinct().count()
             sbs.ndtot = DocRel.objects.filter(seedquery=seedquery).count()
             sbs.ndrev = Doc.objects.filter(docownership__query__snowball=sbs,docownership__relevant=0).distinct().count()
@@ -161,7 +161,7 @@ def snowball(request):
 ## Test the SSH connection
 def ssh_test():
 
-    NoSSHTest = False 
+    NoSSHTest = False
 
     if NoSSHTest :
       ssh_working = True
@@ -339,7 +339,7 @@ def start_snowballing(request):
     fname = "/queries/"+str(q2.id)+".txt"
     with open(fname,"w") as qfile:
         qfile.write(qtext)
-  
+
     time.sleep(1)
 
     # run "scrapeQuery.py" on the text file in the background
@@ -357,18 +357,18 @@ import sys
 def do_snowballing(request,qid,q2id):
 
     #ssh_test()
-   
+
     curdate = timezone.now()
 
     # Backward query
     # Get current query
     query_b = Query.objects.get(id=qid)
-    
-    qtitle  = str.split(query_b.title,"_")[0] 
+
+    qtitle  = str.split(query_b.title,"_")[0]
     qtype   = 'backward'
     qstep   = query_b.step
     qdb     = "WoS"
-    sbsid   = query_b.snowball 
+    sbsid   = query_b.snowball
 
     # Generate query from selected documents
     #TODO: Tag?
@@ -380,7 +380,7 @@ def do_snowballing(request,qid,q2id):
     doiset  = set(docdois)
     if (len(doiset) > 0):
         # Generate query
-        qtext   = 'DO = ("' + '" OR "'.join(doiset) + '")' 
+        qtext   = 'DO = ("' + '" OR "'.join(doiset) + '")'
 
         print(qtext)
 
@@ -416,7 +416,7 @@ def do_snowballing(request,qid,q2id):
         qid = 0
         print("No document to do backward query.")
         #return HttpResponseRedirect(reverse('scoping:query', kwargs={'qid': q.id}))
-      
+
 
     # Forward query
     # Get current query
@@ -467,7 +467,7 @@ def do_snowballing(request,qid,q2id):
         p_f = subprocess.Popen(["python3", "/home/hilj/python_apsis_libs/scrapeWoS/bin/snowball_fast.py","-s", qdb, fname])
 
         q2id = q_f.id
-    
+
     else :
         p_f = subprocess.Popen(["ls"])
         q2id = 0
@@ -552,7 +552,7 @@ def dodocadd(request):
             upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_scopus_docs.py'))
 
         subprocess.Popen(["python3", upload, qid])
- 
+
         time.sleep(2)
 
     if q.type == "default":
@@ -661,7 +661,7 @@ def snowball_progress(request,sbs):
 
     request.session['DEBUG'] = False
 
-    if do_backward_query and do_forward_query: 
+    if do_backward_query and do_forward_query:
         if request.session['DEBUG']:
             print("querying: Default case with backward query #"+str(query_b.id)+" and forward query #"+str(query_f.id))
 
@@ -709,7 +709,7 @@ def snowball_progress(request,sbs):
             finished_b = True
             query_b.dlstat = "done"
         elif "done!" in log_b[-1]:
-            finished_b = True   
+            finished_b = True
             query_b.dlstat = "NOREC"
         query_b.save()
 
@@ -718,10 +718,10 @@ def snowball_progress(request,sbs):
             finished_f = True
             query_f.dlstat = "done"
         elif "done!" in log_f[-1]:
-            finished_f = True   
+            finished_f = True
             query_f.dlstat = "NOREC"
         query_f.save()
-            
+
         if request.session['DEBUG']:
             print("querying: finished_b -> "+str(finished_b)+", finished_f -> "+str(finished_f))
 
@@ -743,7 +743,7 @@ def snowball_progress(request,sbs):
                     step=query_b.step,
                     substep=query_b.substep+1
                 )
-                query_b2.save()  
+                query_b2.save()
                 sbs.working = False
 
         if query_b.text == '':
@@ -756,23 +756,23 @@ def snowball_progress(request,sbs):
                 subprocess.Popen(["python3", background, str(seed_query.id), str(query_b.id), str(query_f.id)])
                 sbs.working = True
                 sbs.save()
-        
+
 
         if query_b.text !='' and sbs.working == True and os.path.isfile("/queries/"+str(query_b.id)+"/s_results.txt") and query_b.doc_set.all().count() == 0: # if we have scraped all the refs
             log_b = ["Busy checking the references of {} against the database and keywords".format(query_b.title)]
             background = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','proc_docrefs_scopus.py'))
             subprocess.Popen(["python3", background, str(seed_query.id), str(query_b.id), str(0)])
-            sbs.working = True  
-            sbs.save() 
+            sbs.working = True
+            sbs.save()
 
         if sbs.working_pb2:
-            log_b = ["Busy checking the references of {} against the database and keywords".format(query_b.title)] 
+            log_b = ["Busy checking the references of {} against the database and keywords".format(query_b.title)]
 
         qsum = None
         t = None
         #sqs.filter(type='step_summary').delete()
         if query_b.doc_set.all().count() > 0 and sbs.working==False:
-            log_b = ["FINISHED"]      
+            log_b = ["FINISHED"]
             stop = True
             if sqs.filter(type='step_summary').count() == 0:
                 qsum = Query(
@@ -800,7 +800,7 @@ def snowball_progress(request,sbs):
             else:
                 qsum = sqs.filter(type='step_summary').first()
                 t = qsum.tag_set.all()[0]
-                
+
 
     ## Scrape a query if it needs to be scraped
     if sqs.count() == 3:
@@ -912,13 +912,13 @@ def snowball_progress(request,sbs):
 
 @login_required
 def sbs_allocateDocsToUser(request,qid,q2id):
-    
-    DEBUG = False 
+
+    DEBUG = False
 
     #Get queries
     query_b = Query.objects.get(pk=qid)
     query_f = Query.objects.get(pk=q2id)
- 
+
     if DEBUG:
         print("Getting references query: "+str(query_b.title)+" ("+str(qid)+")")
         print("Getting citations query: " +str(query_f.title)+" ("+str(q2id)+")")
@@ -1017,7 +1017,7 @@ def query(request,qid,q2id='0',sbsid='0'):
         tags = Tag.objects.filter(query=query)
 
         tags = tags.values()
- 
+
         for tag in tags:
             tag['docs']       = Doc.objects.filter(tag=tag['id']).distinct().count()
             tag['a_docs']     = Doc.objects.filter(docownership__tag=tag['id']).distinct().count()
@@ -1080,7 +1080,7 @@ def query(request,qid,q2id='0',sbsid='0'):
         query2 = Query.objects.get(pk=q2id)
 
         tags = Tag.objects.filter(query=query) | Tag.objects.filter(query=query2)
-       
+
         tags = tags.values()
 
         for tag in tags:
@@ -1139,7 +1139,7 @@ def query(request,qid,q2id='0',sbsid='0'):
             'users': user_list,
             'user': request.user
         }
-    
+
 
     return HttpResponse(template.render(context, request))
 
@@ -1192,10 +1192,10 @@ def userpage(request):
 
     # Snowballing sesseions
    # sb_sessions     = SnowballingSession.objects.all().order_by('-id')
-    
+
     # Get latest step associated with each SB sessions
     # Initialise variable that will contain the information to be sent to the webpage (context)
-    #sb_info = []   
+    #sb_info = []
 
     # Loop over SB sessions
     #for sbs in sb_sessions:
@@ -1222,8 +1222,8 @@ def userpage(request):
             # Select reference queries only (sub-step == 2)
     #        if q.title.split("_")[3] == "2":
                 # For old queries
-    #            try: 
-    #                q_info_tmp             = {} 
+    #            try:
+    #                q_info_tmp             = {}
     #                q_info_tmp['id']       = q.id
     #                q_info_tmp['title']    = q.title
     #                q_info_tmp['type']     = q.type
@@ -1252,7 +1252,7 @@ def userpage(request):
 #                    q_info_tmp['nbdoctot'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
 #                    q_info_tmp['nbdocsel'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
 #                    q_info_tmp['nbdocrem'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
- 
+
 #                    if cnt == 0:
 #                        q_info_tmp['last'] = "True"
 #                    else:
@@ -1275,7 +1275,7 @@ def userpage(request):
  #               nbdoctot += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count() + Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
 
                 # Update iterator
-  #              cnt += 1 
+  #              cnt += 1
 
         # Update info of current SB session
    #     sb_info_tmp['ns']    = step
@@ -1317,9 +1317,9 @@ def sbsExcludeDoc(request,qid,did):
 
     #Set doc review to 0
     docs = DocOwnership.objects.all(doc=did, query=qid, user=request.user)
- 
+
     print(docs)
-    
+
 
     return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': qid, 'q2id': q2id, 'sbsid': sbsid}))
 
@@ -1329,7 +1329,7 @@ def sbsExcludeDoc(request,qid,did):
 def doclist(request,qid,q2id='0',sbsid='0'):
 
     template = loader.get_template('scoping/docs.html')
-  
+
     print(str(qid))
     print(str(q2id))
 
@@ -1361,23 +1361,40 @@ def doclist(request,qid,q2id='0',sbsid='0'):
 
 
     fields = []
+    basic_fields = []
+    author_fields = []
+    relevance_fields = []
+    wos_fields = []
+    basic_field_names = ['Title', 'Abstract', 'Year'] #, str(request.user)]
+
+    relevance_fields.append({"path": "relevance_netrelevant", "name": "NETs relevant"})
+    relevance_fields.append({"path": "relevance_techrelevant", "name": "Technology relevant"})
 
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
+
+        if f.verbose_name in basic_field_names:
+            print(f.name)
+            basic_fields.append({"path": path, "name": f.verbose_name})
         fields.append({"path": path, "name": f.verbose_name})
+        wos_fields.append({"path": path, "name": f.verbose_name})
 
     for u in User.objects.all():
         path = "docownership__"+u.username
         fields.append({"path": path, "name": u.username})
+        relevance_fields.append({"path": path, "name": u.username})
 
     for f in DocAuthInst._meta.get_fields():
         path = "docauthinst__"+f.name
-        if f.name !="doc" and f.name !="query":
+        if f.name !="doc" and f.name !="query" and f.name!="id":
             fields.append({"path": path, "name": f.verbose_name})
+            author_fields.append({"path": path, "name": f.verbose_name})
 
     fields.append({"path": "tag__title", "name": "Tag name"})
 
-    basic_fields = ['Title', 'Abstract', 'Year'] #, str(request.user)]
+
+
+
 
     context = {
         'query': query,
@@ -1385,8 +1402,12 @@ def doclist(request,qid,q2id='0',sbsid='0'):
         'docs': docs,
         'fields': fields,
         'basic_fields': basic_fields,
+        'author_fields': author_fields,
+        'relevance_fields': relevance_fields,
+        'wos_fields': wos_fields,
         'ndocs': ndocs,
         'sbsid': sbsid,
+        'basic_field_names': basic_field_names
     }
     return HttpResponse(template.render(context, request))
 
@@ -1418,10 +1439,10 @@ def docrellist(request,sbsid,qid=0,q2id=0,q3id=0):
     else:
         query_f = Query.objects.get(pk=q3id)
 
-    # Get all document relationships 
+    # Get all document relationships
     docrels = DocRel.objects.filter(seedquery=query_b1).order_by("relation")
     print(docrels.values("relation")[400:406])
- 
+
     docs = []
     count = {}
     count['TOTAL'] = 0
@@ -1502,12 +1523,12 @@ def docrellist(request,sbsid,qid=0,q2id=0,q3id=0):
 
             # Get abstract when possible
             try:
-                d = dr.referent 
+                d = dr.referent
                 tmp['abstract']   = d.content[0:10]
             except:
                 tmp['abstract']   = "None"
-#            tmp['abstract']   = "None"
- 
+            #tmp['abstract']   = "None"
+
             # Get document relevance when possible
             try:
                 r = DocOwnership.objects.get(doc = dr.referent)
@@ -1523,7 +1544,7 @@ def docrellist(request,sbsid,qid=0,q2id=0,q3id=0):
         'docs': docs,
         'count': count,
         'sbsid': sbsid,
-        'query_b1': query_b1, 
+        'query_b1': query_b1,
         'query_b2': query_b2,
         'query_f': query_f
     }
@@ -1556,7 +1577,7 @@ def add_doc_form(request,qid=0):
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
         if f.name !="doc" and f.name.upper() not in [x['ab'] for x in basic_fields]:
-            fields.append({"path": path, "name": f.verbose_name, "ab": f.name.upper()})    
+            fields.append({"path": path, "name": f.verbose_name, "ab": f.name.upper()})
 
     context = {
         'fields': fields,
@@ -1591,14 +1612,14 @@ def do_add_doc(request):
 
     # create new doc
     doc = Doc(UT=d['UT'])
-    
+
     doc.UT=d['UT']
     doc.title=d['title']
     doc.PY=d['PY']
     doc.content=d['content']
 
     doc.save()
-    
+
     # Add doc to query
     doc.query.add(q)
 
@@ -1623,14 +1644,14 @@ def do_add_doc(request):
                 dai.AU = d[f].strip()
                 dai.position = pos
                 dai.save()
-        # populate new wosarticle 
+        # populate new wosarticle
         if "wosarticle__" in f:
             if len(d[f].strip()) > 0 :
                 fn = f.split('__')[1]
                 setattr(article,fn,d[f])
 
-    article.save()    
-    
+    article.save()
+
     return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': q.id}))
 
 
@@ -1670,8 +1691,8 @@ def doclistsbs(request,sbsid):
         # Filter out non-reference queries
         tmp = str.split(q.title,"_")
         if tmp[len(tmp)-1] == "2":
-            qdocs    = Doc.objects.filter(query__id=400,docownership__relevant=1,docownership__query=400) 
-#            all_docs.append(qdocs.values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
+            qdocs    = Doc.objects.filter(query__id=400,docownership__relevant=1,docownership__query=400)
+            #all_docs.append(qdocs.values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
             qdocs2 = qdocs.values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py')
             for d in qdocs2:
                 all_docs.append(d)
@@ -1684,7 +1705,7 @@ def doclistsbs(request,sbsid):
     print(ndocs)
 
     docs = all_docs
-#    docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
+    #docs = list(all_docs[:100].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
 
     print(len(docs))
     print(docs)
@@ -1692,24 +1713,24 @@ def doclistsbs(request,sbsid):
 
     fields = []
 
- #   for f in Doc._meta.get_fields():
- #       if f.is_relation:
- #           for rf in f.related_model._meta.get_fields():
- #               if not rf.is_relation:
- #                   path = f.name+"__"+rf.name
- #                   fields.append({"path": path, "name": rf.verbose_name})
+   # for f in Doc._meta.get_fields():
+   #     if f.is_relation:
+   #         for rf in f.related_model._meta.get_fields():
+   #             if not rf.is_relation:
+   #                 path = f.name+"__"+rf.name
+   #                 fields.append({"path": path, "name": rf.verbose_name})
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
         if f.name !="doc":
             fields.append({"path": path, "name": f.verbose_name})
 
-#    for f in DocOwnership._meta.get_fields():
-#        if f.name == "user":
-#            path = "docownership__user__username"
-#        else:
-#            path = "docownership__"+f.name
-#        if f.name !="doc" and f.name !="query":
-#            fields.append({"path": path, "name": f.verbose_name})
+   # for f in DocOwnership._meta.get_fields():
+   #     if f.name == "user":
+   #         path = "docownership__user__username"
+   #     else:
+   #         path = "docownership__"+f.name
+   #     if f.name !="doc" and f.name !="query":
+   #         fields.append({"path": path, "name": f.verbose_name})
 
     for u in User.objects.all():
         path = "docownership__"+u.username
@@ -1738,8 +1759,6 @@ def doclistsbs(request,sbsid):
 ##################################################
 ## Ajax function, to return sorted docs
 
-
-
 @login_required
 def sortdocs(request):
 
@@ -1759,12 +1778,12 @@ def sortdocs(request):
     sort_fields = request.GET.getlist('sort_fields[]',None)
 
     tag_title = request.GET.get('tag_title',None)
-    download = request.GET.get('download',None)   
+    download = request.GET.get('download',None)
 
     # get the query
     query = Query.objects.get(pk=qid)
-     
-    # filter the docs according to the query 
+
+    # filter the docs according to the query
     if q2id != '0':
         query_f = Query.objects.get(pk=q2id)
         qdocs_f = Doc.objects.filter(query__id=q2id)
@@ -1774,9 +1793,50 @@ def sortdocs(request):
         query_f  = False
         all_docs = Doc.objects.filter(query__id=qid)
         filt_docs = Doc.objects.filter(query__id=qid)
- 
+
     #if "tag__title" in fields:
     #    filt_docs = filt_docs.filter(tag__query__id=qid)
+
+    fields = tuple(fields)
+
+    single_fields = ['UT']
+    mult_fields = []
+    users = []
+    rfields = []
+    for f in fields:
+        if "docauthinst" in f or "tag__" in f:
+            mult_fields.append(f)
+            #single_fields.append(f)
+        elif "docownership" in f:
+            users.append(f)
+        elif "relevance_" in f:
+            rfields.append(f)
+            single_fields.append(f)
+        else:
+            single_fields.append(f)
+    single_fields = tuple(single_fields)
+    mult_fields_tuple = tuple(mult_fields)
+
+    tech = query.technology
+
+    # annotate with relevance
+    if "relevance_netrelevant" in rfields:
+        filt_docs = filt_docs.annotate(relevance_netrelevant=models.Sum(
+            models.Case(
+                models.When(docownership__relevant=1,then=1),
+                default=0,
+                output_field=models.IntegerField()
+            )
+        ))
+    if "relevance_techrelevant" in rfields:
+        filt_docs = filt_docs.annotate(relevance_techrelevant=models.Sum(
+            models.Case(
+                models.When(docownership__relevant=1,docownership__query__technology=tech,then=1),
+                default=0,
+                output_field=models.IntegerField()
+            )
+        ))
+
 
     tag_text = ""
     # filter the docs according to the currently active filter
@@ -1801,9 +1861,9 @@ def sortdocs(request):
                 if q2id != '0':
                     filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i]) | filt_docs.filter(tag__query__id=q2id,tag__title__icontains=f_text[i])
                 else:
-                    filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i]) 
+                    filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i])
                 tag_filter = f_text[i]
-            else: 
+            else:
                 kwargs = {
                     '{0}__{1}'.format(f_fields[i],op): f_text[i]
                 }
@@ -1836,26 +1896,7 @@ def sortdocs(request):
     if sortdir=="+":
         sortdir=""
 
-    fields = tuple(fields)
-
-    single_fields = ['UT']
-    mult_fields = []
-    users = []
-    for f in fields:
-        if "docauthinst" in f or "tag__" in f:
-            mult_fields.append(f)
-            #single_fields.append(f)
-        elif "docownership" in f:
-            users.append(f)
-        else:
-            single_fields.append(f)
-    single_fields = tuple(single_fields)
-    mult_fields_tuple = tuple(mult_fields)
-
-    #print(mult_fields)
-
-    #mult_fields=[]
-
+    # filter documents with user ratings
     if len(users) > 0:
         uname = users[0].split("__")[1]
         user = User.objects.get(username=uname)
@@ -1908,6 +1949,10 @@ def sortdocs(request):
                     d[mult_fields[m]] = "; <br>".join(str(x) for x in (list(itertools.chain(*adoc))))
 
     for d in docs:
+        # work out total relevance
+        if "relevance__netrelevantasdfasdf" in rfields:
+            d["relevance__netrelevant"] = DocOwnership.objects.filter(doc_id=d['UT'],relevant__gt=0).count()
+        # Get the user relevance rating for each doc (if asked)
         if len(users) > 0:
             for u in users:
                 uname = u.split("__")[1]
@@ -1942,11 +1987,11 @@ def sortdocs(request):
 
         for d in docs:
             row = [d[x] for x in fields]
-            writer.writerow(row)         
+            writer.writerow(row)
 
         return response
 
-    #x = zu 
+    #x = zu
     response = {
         'data': list(docs),
         'n_docs': filt_docs.count()
@@ -1987,7 +2032,7 @@ def cycle_score(request):
         else:
             new_score = score+1
 
-        # Check 
+        # Check
         docown = DocOwnership.objects.filter(query__id=qid, doc__UT=doc_id, user__id=user, tag__id=tag).first()
         if (docown == None):
             docown = DocOwnership.objects.filter(query__id=q2id, doc__UT=doc_id, user__id=user, tag__id=tag).first()
@@ -2204,7 +2249,7 @@ def add_note(request):
         text=text
     )
     note.save()
-        
+
 
     return HttpResponseRedirect(reverse('scoping:screen', kwargs={
         'qid': qid,
@@ -2242,14 +2287,14 @@ def download(request, qid):
     fields = [x['path'] for x in headers]
 
     writer.writerow(hrow)
-    
+
     q = Query.objects.get(pk=qid)
     docs = Doc.objects.filter(query=q)
     docvals = docs.values(*fields)
     for d in docvals:
         row = [d[x] for x in fields]
         writer.writerow(row)
-        
+
 
     return response
 
@@ -2302,7 +2347,3 @@ def highlight_words(s,query):
         else:
             abstract.append(word)
     return(" ".join(abstract))
-
-
-
-

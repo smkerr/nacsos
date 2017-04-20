@@ -785,7 +785,7 @@ width: 100%;
     align-content: center;
 }
 
-#field_container {
+.field_container, #field_container {
     line-height: 200%;
 }
 
@@ -816,7 +816,7 @@ width: 100%;
     background-color: #fbb4ae !important;
 }
 
-p#field_container {
+p.field_container, p#field_container {
  line-height: 220%;
 }
 

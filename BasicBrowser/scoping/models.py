@@ -87,6 +87,9 @@ class Doc(models.Model):
     references = models.ManyToManyField("self", symmetrical=False)
     technology = models.ManyToManyField('Technology')
     category = models.ManyToManyField('SBSDocCategory')
+    source = models.TextField(null=True)
+    uploader = models.ForeignKey(User, null=True, related_name="uploaded_docs", on_delete=models.CASCADE, verbose_name="Uploader")
+    date = models.DateTimeField(null=True)
     
     def __str__(self):
       return self.UT
