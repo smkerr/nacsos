@@ -22,7 +22,7 @@
         {% else %}
           <h1> Snowballing Document Review Helper</h1>
           <p>Quickly exclude irrelevant documents by clicking on the Exclude button</p>
-        {% endif %} 
+        {% endif %}
         <br/>
 
         <!-- Query manager -->
@@ -35,20 +35,29 @@
         <h2><a onclick="update_fields(download='true')" id="download">Download</a> these documents as a csv</h2>
         <br/>
 
-        <p id="field_container">
-          {% for f in fields %}
-            {% if f.name in basic_fields %}
-              <span class="field_name" data-active="true" name="{{f.path}}">{{ f.name }} <button class="filter" onclick="button_filter(event,this)">filter</button></span>, 
-            {% else %}
-              <span class="field_name" data-active="false" name="{{f.path}}">{{ f.name }}</span>, 
-            {% endif %}
+        <p class="field_container">
+        <p class="field_container"><h2>Basic Fields</h2><p class="field_container">
+            {% for f in basic_fields %}
+                <span class="field_name" data-active="true" name="{{f.path}}">{{ f.name }} <button class="filter" onclick="button_filter(event,this)">filter</button></span>,
+            {% endfor %}
+        <p class="field_container"><h2>Author Fields</h2><p class="field_container">
+          {% for f in author_fields %}
+              <span class="field_name" data-active="false" name="{{f.path}}">{{ f.name }}</span>,
+          {% endfor %}
+        <p class="field_container"><h2>Meta Fields</h2><p class="field_container">
+          {% for f in wos_fields %}
+              <span class="field_name" data-active="false" name="{{f.path}}">{{ f.name }}</span>,
+          {% endfor %}
+        <p class="field_container"><h2>Relevance Fields</h2><p class="field_container">
+          {% for f in relevance_fields %}
+              <span class="field_name" data-active="false" name="{{f.path}}">{{ f.name }}</span>,
           {% endfor %}
         </p>
 
         <p style="text-align:left">
           Filter these results...
           <table id="filtertable">
-            <tr>    
+            <tr>
               <td>
                 <input class="f_field" type="text">
               </td>
@@ -90,13 +99,13 @@
         </div>
       {% endif %}
 
-        <p style="text-align:left">Showing documents 1-100 of <span id="doc_count">{{ ndocs }}</span></p> 
+        <p style="text-align:left">Showing documents 1-<span id="doc_max">100</span> of <span id="doc_count">{{ ndocs }}</span></p>
         <br/>
 
         <table class="light" style="width:100%">
 	  <tr class="title">
             {% for f in fields %}
-              {% if f.name in basic_fields %}
+              {% if f.name in basic_field_names %}
                 <td class="field" name="{{f.path}}">{{f.name}}<span class="uparrow sort">&uarr;</span><span class="downarrow sort">&darr;</span></td>
               {% endif %}
             {% endfor %}
@@ -110,8 +119,8 @@
           {% for doc in docs %}
           <tr class="datarow">
             {% for f in fields %}
-              {% if f.name in basic_fields %}
-                <td class="data">{{doc|keyvalue:f.path}}</td>                
+              {% if f.name in basic_field_names %}
+                <td class="data">{{doc|keyvalue:f.path}}</td>
               {% endif %}
             {% endfor %}
 <!--
@@ -161,6 +170,7 @@ $(".field").data("sortdir","-")
 
 $(".uparrow").click(function() {
     field = $(this).parent()
+    console.log(field)
 })
 $(".downarrow").click(function() {
     field = $(this).parent()
@@ -241,7 +251,7 @@ function join_filter(element) {
 
 function update_fields(download="false") {
     console.log(download)
-    
+
     $('body').toggleClass('waiting');
     // get arrays of all the filter columns
     var fields = []
@@ -287,19 +297,19 @@ function update_fields(download="false") {
         }
         for (i =0 ; i<fields.length; i++) {
             url += '&f_fields[]='+fields[i]
-        }       
+        }
         for (i =0 ; i<operators.length; i++) {
             url += '&f_operators[]='+operators[i]
-        }  
+        }
         for (i =0 ; i<joins.length; i++) {
             url += '&_join[]='+joins[i]
-        }  
+        }
         for (i =0 ; i<sortfields.length; i++) {
             url += '&sort_fields[]='+sortfields[i]
-        }  
+        }
         for (i =0 ; i<sortdirs.length; i++) {
             url += '&sort_dirs[]='+sortdirs[i]
-        }  
+        }
         url += '&f_text='+text
         url += '&download='+download
         window.location=url
@@ -323,6 +333,9 @@ function update_fields(download="false") {
             success: function(data) {
                 var n_docs = data.n_docs
                 $("#doc_count").text(n_docs)
+                if (n_docs < 100) {
+                  $("#doc_max").text(n_docs)
+                }
                 data = data.data
                 console.log(data)
                 nfields = active_field_paths.length
@@ -332,27 +345,27 @@ function update_fields(download="false") {
                 for (f=0;f<active_field_paths.length;f++) {
                     fpath = active_field_paths[f]
                     fname = active_field_names[f]
-		    i = sortfields.indexOf(fpath)
-		    up = ""
-		    down = ""
-		    if (i > -1) {
-      		    console.log(sortdirs[i])
-		        if (sortdirs[i]=="+") {
-		            up = "sort_active"
-		        } else {
-		            down = "sort_active"
-		        }		
-		    }
+		            i = sortfields.indexOf(fpath)
+		            up = ""
+		            down = ""
+		            if (i > -1) {
+              		    console.log(sortdirs[i])
+		                if (sortdirs[i]=="+") {
+		                    up = "sort_active"
+		                } else {
+		                    down = "sort_active"
+		                }
+		            }
                     $("table.light tr:first").append('<td class="field" name="'+fpath+'">'+fname+' <span class="uparrow sort '+ up +'">&uarr;</span><span class="downarrow sort '+ down +'">&darr;</span></td>');
                     $("table.light tr:not(:first)").append('<td class="data">');
                 }
-                
+
                 fields.push(fname.replace(".","__"))
                 $(".data").each(function( i ) {
                     r = Math.floor(i/nfields)
                     c = i % nfields
                     f = active_field_paths[c]
-                    if (r+1 > n_docs) {
+                    if (r >= n_docs | r>=100) {
                         var text = ""
                     } else {
                         var text = data[r][f]
@@ -371,7 +384,7 @@ function update_fields(download="false") {
                   $("table.light tr:first").append('<td class="field" name="sbsexclude">Exclude</td>');
                   $("table.light tr:not(:first)").append('<td class="data"><a href=""><button type="button">Exclude</button></a></td>');
                 }
-                */ 
+                */
 	        $('body').toggleClass('waiting');
             }
         })
@@ -419,6 +432,6 @@ $(function() {
     };
   });
 });
-*/  
+*/
 </script>
 </html>
