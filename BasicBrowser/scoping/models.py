@@ -39,7 +39,7 @@ class Query(models.Model):
     title       = models.TextField(null=True, verbose_name="Query Title")
     text        = models.TextField(null=True, verbose_name="Query Text")
     database    = models.CharField(max_length=6,null=True, verbose_name="Query database")
-    date        = models.DateTimeField(verbose_name="Query Date")
+    date        = models.DateTimeField(auto_now_add=True,verbose_name="Query Date")
     r_count     = models.IntegerField(null=True, verbose_name="Query Results Count")
     creator     = models.ForeignKey(User,null=True, verbose_name="Query Creator", related_name="user_creations")
     users       = models.ManyToManyField(User)
@@ -50,6 +50,7 @@ class Query(models.Model):
     substep     = models.IntegerField(null=True, verbose_name="Snowball query substeps")
     dlstat      = models.CharField(max_length=6,null=True, verbose_name="Query download status")
     technology  = models.ForeignKey('Technology', null=True)
+    innovation  = models.ForeignKey('Innovation', null=True)
 
     def __str__(self):
       return self.title
@@ -57,6 +58,13 @@ class Query(models.Model):
 class Technology(models.Model):
     name = models.TextField(null = True, verbose_name="Technology Name")
     description = models.TextField(null=True, verbose_name="Technology Description")
+
+    def __str__(self):
+      return self.name
+
+class Innovation(models.Model):
+    name = models.TextField(null = True, verbose_name="Innovation Name")
+    description = models.TextField(null=True, verbose_name="Innovation Description")
 
     def __str__(self):
       return self.name
@@ -81,7 +89,7 @@ class Doc(models.Model):
     query = models.ManyToManyField('Query')
     tag = models.ManyToManyField('Tag')
     title = models.TextField(null=True)
-    content = models.TextField(null=True) 
+    content = models.TextField(null=True)
     PY = models.IntegerField(null=True,db_index=True)
     users = models.ManyToManyField(User, through='DocOwnership')
     references = models.ManyToManyField("self", symmetrical=False)
@@ -90,7 +98,7 @@ class Doc(models.Model):
     source = models.TextField(null=True)
     uploader = models.ForeignKey(User, null=True, related_name="uploaded_docs", on_delete=models.CASCADE, verbose_name="Uploader")
     date = models.DateTimeField(null=True)
-    
+
     def __str__(self):
       return self.UT
 
@@ -119,7 +127,7 @@ class DocRel(models.Model):
     PY = models.IntegerField(null=True)
     journal =  models.TextField(null=True)
     link = models.TextField(null=True)
-    url = models.URLField(null=True) 
+    url = models.URLField(null=True)
     doi = models.TextField(null=True)
     hasdoi = models.BooleanField(default=False)
     docmatch_q = models.BooleanField(default=False)
@@ -168,8 +176,8 @@ class DocOwnership(models.Model):
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
     relevant = models.IntegerField(
         choices=Status,
-        default=0, 
-        db_index=True, 
+        default=0,
+        db_index=True,
         verbose_name="Relevance"
     )
     date     = models.DateTimeField(null=True,default=timezone.now,verbose_name="Rating Date")
@@ -209,8 +217,8 @@ class WoSArticle(models.Model):
         verbose_name='Document ID'
     )
     ti = models.TextField(null=True, verbose_name="Title")
-    ab = models.TextField(null=True, verbose_name="Abstract")   
-    py = models.IntegerField(null=True, verbose_name="Year") 
+    ab = models.TextField(null=True, verbose_name="Abstract")
+    py = models.IntegerField(null=True, verbose_name="Year")
     ar = models.CharField(null=True, max_length=100, verbose_name="Article Number") # Article number
     bn = models.CharField(null=True, max_length=100, verbose_name="ISBN") # ISBN
     bp = models.CharField(null=True, max_length=50, verbose_name="Beginning Page") # beginning page
@@ -220,7 +228,7 @@ class WoSArticle(models.Model):
     de = models.TextField(null=True, verbose_name="Author Keywords") # keywords - separate table?
     di = models.CharField(null=True, db_index=True, max_length=250, verbose_name="DOI") # DOI
     dt = models.CharField(null=True, max_length=50, verbose_name="Document Type") # doctype
-    em = models.TextField(null=True, verbose_name="E-mail Address") #email 
+    em = models.TextField(null=True, verbose_name="E-mail Address") #email
     ep = models.CharField(null=True, max_length=50, verbose_name="Ending Page") # last page
     fn = models.CharField(null=True, max_length=250, verbose_name="File Name") # filename?
     fu = models.TextField(null=True, verbose_name="Funding Agency and Grant Number") #funding agency + grant number
@@ -251,8 +259,6 @@ class WoSArticle(models.Model):
     su = models.TextField(null=True, verbose_name="Supplement") # supplement
     tc = models.IntegerField(null=True, verbose_name="Times Cited") # times cited
     vl = models.CharField(null=True, max_length=50, verbose_name="Volume")
-    
+
     def __str__(self):
       return self.ar
-
-
