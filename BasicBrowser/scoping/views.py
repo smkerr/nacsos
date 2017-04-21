@@ -2190,8 +2190,8 @@ def screen(request,qid,tid,ctype,d=0):
 
     doc = Doc.objects.filter(UT=doc_id).first()
     authors = DocAuthInst.objects.filter(doc=doc)
-    abstract = highlight_words(doc.content,query.text)
-    title = highlight_words(doc.wosarticle.ti,query.text)
+    abstract = highlight_words(doc.content,query)
+    title = highlight_words(doc.wosarticle.ti,query)
 
     qtechs = Technology.objects.filter(query__doc=doc) | Technology.objects.filter(doc=doc)
     qtechs = qtechs.distinct()
@@ -2359,7 +2359,14 @@ def add_manually():
     return HttpResponse("")
 
 def highlight_words(s,query):
-    qwords = re.findall('\w+',query)
+    if query.database == "intern":
+        args = query.text.split(" ")
+        q1 = Query.objects.get(id=args[0])
+        q2 = Query.objects.get(id=args[2])
+        qwords = [re.findall('\w+',query.text) for query in [q1,q2]]
+        qwords = [item for sublist in qwords for item in sublist]
+    else:
+        qwords = re.findall('\w+',query.text)
     nots = ["TS","AND","NOT","NEAR","OR","and"]
     qwords = set([x.split('*')[0] for x in qwords if x not in nots])
     abstract = []
