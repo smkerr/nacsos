@@ -18,7 +18,7 @@
 <h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}}, your progress: </h2>
 <div id="progress"></div>
 <!-- Query manager -->
-<p><a href="/scoping/screen/{{query.id}}/{{tag.id}}/1/-1">Back</a>
+<p><a href="/scoping/screen/{{query.id}}/{{tag.id}}/5/-1">Back</a>
 
 <p>Is the document below (one of {{ ndocs }} remaining) relevant?
 
@@ -127,7 +127,7 @@ var height = 40
 
 var graph = d3.select("#progress")
     .append("svg")
-    .attr("width", width) 
+    .attr("width", width)
     .attr("height", height);
 
 graph.append("rect")
@@ -166,8 +166,8 @@ graph.selectAll("line")
 	.attr("x2", function(d) { return xscale(d.value)})
     .attr("y1", 0)
     .attr("y2", height);
-    
-	
+
+
 var qid = {{ query.id }}
 var docid = "{{ doc.UT }}"
 
@@ -193,11 +193,11 @@ function review(d) {
                 console.log({{d}})
                 var doc = {{d}}
                 url = '/scoping/user'
-                window.location.href = url                
-            } else {            
+                window.location.href = url
+            } else {
 			    location.reload()
             }
-            
+
 		}
 	})
 console.log({{page}})
