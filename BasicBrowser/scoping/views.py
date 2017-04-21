@@ -570,8 +570,10 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
 
     template = loader.get_template('scoping/query_progress.html')
 
+    if 'appmode' not in request.session:
+        request.session['appmode'] = "scoping"
     #== SCOPING ===================================================================================
-    if request.session['appmode']=='scoping':
+    if request.session['appmode']!='snowballing':
 
         query = Query.objects.get(pk=qid)
 
@@ -1010,7 +1012,10 @@ def sbs_setAllQDocsToIrrelevant(request,qid,q2id,sbsid):
 def query(request,qid,q2id='0',sbsid='0'):
     template = loader.get_template('scoping/query.html')
 
-    if request.session['appmode'] == "scoping":
+    if 'appmode' not in request.session:
+        request.session['appmode'] = "scoping"
+
+    if request.session['appmode'] != "snowballing":
 
         query = Query.objects.get(pk=qid)
 
