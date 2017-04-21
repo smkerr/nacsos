@@ -15,7 +15,7 @@
     {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
     <div id="main">
       <div id="graph">
-    
+
         {% if request.session.appmode == "scoping" %}
         <h1> Scoping Review Helper</h1>
         <br/>
@@ -33,7 +33,9 @@
             <td># Documents</td>
             <td>! To review</td>
             <td>Reviewed</td>
-            <td>Unknowns</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Maybe</td>
             <td>Yes buts</td>
           </tr>
           {% for q in queries %}
@@ -45,7 +47,9 @@
                 <td>{{q.ndocs}}</td>
                 {% if q.revdocs > 0 %}
                   <td class="review{{q.unreviewed_docs}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/0/0">{{q.unreviewed_docs}}</a></td>
-                  <td class="review{{q.revieweddocs}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/1/0">{{q.revieweddocs}}</a> ({{q.relevance}}% relevant)</td>
+                  <td class="review{{q.revieweddocs}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/5/0">{{q.revieweddocs}}</a> ({{q.relevance}}% relevant)</td>
+                  <td class="review{{q.reldocs}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/1/0">{{q.reldocs}}</a></td>
+                  <td class="review{{q.irreldocs}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/2/0">{{q.irreldocs}}</a></td>
                   <td class="review{{q.maybedocs}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/3/0">{{q.maybedocs}}</a></td>
                   <td class="review{{q.yesbuts}} review"><a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/4/0">{{q.yesbuts}}</a></td>
                 {% else %}
@@ -59,7 +63,7 @@
           {% endfor %}
         </table>
 
-        {% else %} 
+        {% else %}
         <h4>My snowballing sessions and associated queries</h4>
         <br/>
 
@@ -87,7 +91,7 @@
                 <td></td>
                 <td><button type="button">Expand</button></td>
             </tr>
-            <tr class="sbsquery" style="color: #999999; font-style: italic; font-weight: bold;"> 
+            <tr class="sbsquery" style="color: #999999; font-style: italic; font-weight: bold;">
                 <td></td>
                 <td>QID</td>
                 <td>Q. Type</td>
@@ -97,8 +101,8 @@
                 <td>Action</td>
             </tr>
             {% for q in sbs.q_info %}
-              <tr class="sbsquery">  
-                <td></td>              
+              <tr class="sbsquery">
+                <td></td>
                 <td><a href="/scoping/docs/{{ q.id }}">{{ q.id }}</td>
                 <td>{{ q.type }}</td>
                 <td>{{ q.nbdoctot }}</td>
@@ -110,7 +114,7 @@
                   <td></td>
                 {% endif %}
               </tr>
-            {% endfor %}  
+            {% endfor %}
           {% endfor %}
         </table>
 

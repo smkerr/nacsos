@@ -1172,20 +1172,23 @@ def userpage(request):
             relevance = round(reldocs/(reldocs+irreldocs)*100)
         except:
             relevance = 0
-        query_list.append({
-            'id': q.id,
-            'tag': tag,
-            'type': q.type,
-            'title': q.title,
-            'ndocs': ndocs,
-            'revdocs': revdocs,
-            'revieweddocs': reviewed_docs,
-            'unreviewed_docs': unreviewed_docs,
-            'reldocs': reldocs,
-            'maybedocs': maybedocs,
-            'yesbuts': yesbuts,
-            'relevance': relevance
-        })
+        if revdocs > 0:
+            query_list.append({
+                'id': q.id,
+                'tag': tag,
+                'type': q.type,
+                'title': q.title,
+                'ndocs': ndocs,
+                'revdocs': revdocs,
+                'revieweddocs': reviewed_docs,
+                'unreviewed_docs': unreviewed_docs,
+                'reldocs': reldocs,
+                'maybedocs': maybedocs,
+                'yesbuts': yesbuts,
+                'relevance': relevance,
+                'reldocs': reldocs,
+                'irreldocs': irreldocs
+            })
 
     query = queries.last()
 
@@ -1915,6 +1918,8 @@ def sortdocs(request):
                 print(reldocs)
             reldocs = reldocs.values("UT")
             filt_docs = filt_docs.filter(UT__in=reldocs)
+        for u in users:
+            x = u
 
     #print(len(filt_docs))
 
@@ -2140,8 +2145,8 @@ def screen(request,qid,tid,ctype,d=0):
             user=user.id,
             tag=tag
     )
-    if ctype==1:
-        docs = docs.filter(relevant__gte=ctype)
+    if ctype==5:
+        docs = docs.filter(relevant__gte=1)
     else:
         docs = docs.filter(relevant=ctype)
     if d < 0:
@@ -2160,7 +2165,7 @@ def screen(request,qid,tid,ctype,d=0):
     except:
         return HttpResponseRedirect(reverse('scoping:userpage'))
 
-    pages = ["check","review","review","maybe","yesbut"]
+    pages = ["check","review","review","maybe","yesbut","review"]
 
     doc = Doc.objects.filter(UT=doc_id).first()
     authors = DocAuthInst.objects.filter(doc=doc)
