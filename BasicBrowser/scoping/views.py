@@ -1845,6 +1845,37 @@ def sortdocs(request):
             )
         ))
 
+    # filter documents with user ratings
+    if len(users) > 0:
+        uname = users[0].split("__")[1]
+        user = User.objects.get(username=uname)
+        null_filter = 'docownership__relevant__isnull'
+        if q2id!='0':
+            reldocs = filt_docs.filter(docownership__user=user,docownership__query=query) | filt_docs.filter(docownership__user=user,docownership__query=query_f)
+            if "tag__title" in f_fields:
+                reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter) | filt_docs.filter(docownership__user=user,docownership__query=query_f, docownership__tag__title__icontains=tag_filter)
+                print(reldocs)
+            reldocs = reldocs.values("UT")
+            filt_docs = filt_docs.filter(UT__in=reldocs)
+        else:
+            reldocs = filt_docs.filter(docownership__user=user,docownership__query=query)
+            if "tag__title" in f_fields:
+                reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter)
+                print(reldocs)
+            reldocs = reldocs.values("UT")
+            filt_docs = filt_docs.filter(UT__in=reldocs)
+        for u in users:
+            uname = u.split("__")[1]
+            user = User.objects.get(username=uname)
+            #uval = reldocs.filter(docownership__user=user).docownership
+            filt_docs = filt_docs.annotate(**{
+                u: models.Case(
+                        models.When(docownership__user=user,then='docownership__relevant'),
+                        default=0,
+                        output_field=models.IntegerField()
+                )
+            })
+
 
     tag_text = ""
     # filter the docs according to the currently active filter
@@ -1872,6 +1903,11 @@ def sortdocs(request):
                     filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i])
                 tag_filter = f_text[i]
             else:
+                if "docownership__" in f_fields[i]:
+                    print("FILTERRR")
+                    f_text[i] = getattr(DocOwnership,f_text[i].upper())
+                    print("FILTERR")
+                    print(f_text[i])
                 kwargs = {
                     '{0}__{1}'.format(f_fields[i],op): f_text[i]
                 }
@@ -1904,27 +1940,7 @@ def sortdocs(request):
     if sortdir=="+":
         sortdir=""
 
-    # filter documents with user ratings
-    if len(users) > 0:
-        uname = users[0].split("__")[1]
-        user = User.objects.get(username=uname)
-        null_filter = 'docownership__relevant__isnull'
-        if q2id!='0':
-            reldocs = filt_docs.filter(docownership__user=user,docownership__query=query) | filt_docs.filter(docownership__user=user,docownership__query=query_f)
-            if "tag__title" in f_fields:
-                reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter) | filt_docs.filter(docownership__user=user,docownership__query=query_f, docownership__tag__title__icontains=tag_filter)
-                print(reldocs)
-            reldocs = reldocs.values("UT")
-            filt_docs = filt_docs.filter(UT__in=reldocs)
-        else:
-            reldocs = filt_docs.filter(docownership__user=user,docownership__query=query)
-            if "tag__title" in f_fields:
-                reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter)
-                print(reldocs)
-            reldocs = reldocs.values("UT")
-            filt_docs = filt_docs.filter(UT__in=reldocs)
-        for u in users:
-            x = u
+
 
     #print(len(filt_docs))
 
