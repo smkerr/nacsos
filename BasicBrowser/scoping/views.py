@@ -1399,6 +1399,7 @@ def doclist(request,qid,q2id='0',sbsid='0'):
             author_fields.append({"path": path, "name": f.verbose_name})
 
     fields.append({"path": "tag__title", "name": "Tag name"})
+    relevance_fields.append({"path": "tag__title", "name": "Tag name"})
 
 
 
