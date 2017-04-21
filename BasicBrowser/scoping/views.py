@@ -2358,6 +2358,7 @@ def add_manually():
 
     return HttpResponse("")
 
+import string
 def highlight_words(s,query):
     if query.database == "intern":
         args = query.text.split(" ")
@@ -2367,8 +2368,10 @@ def highlight_words(s,query):
         qwords = [item for sublist in qwords for item in sublist]
     else:
         qwords = re.findall('\w+',query.text)
-    nots = ["TS","AND","NOT","NEAR","OR","and"]
-    qwords = set([x.split('*')[0] for x in qwords if x not in nots])
+    nots = ["TS","AND","NOT","NEAR","OR","and","W"]
+    transtable = {ord(c): None for c in string.punctuation + string.digits}
+    qwords = set([x.split('*')[0].translate(transtable) for x in qwords if x not in nots and len(x.translate(transtable)) > 0])
+    print(qwords)
     abstract = []
     for word in s.split(" "):
         h = False
