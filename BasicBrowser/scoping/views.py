@@ -1958,7 +1958,10 @@ def sortdocs(request):
             order_by.append(sortdir+field)
             filt_docs = filt_docs.filter(**{null_filter:False})
         #print(order_by) COMMENTED BECAUSE OF 500 ERROR
-        docs = filt_docs.order_by(*order_by).values(*single_fields)[:100]
+        if download != "true":
+            docs = filt_docs.order_by(*order_by).values(*single_fields)[:100]
+        else:
+            docs = filt_docs.order_by(*order_by).values(*single_fields)
 
 
         if len(mult_fields) > 0:

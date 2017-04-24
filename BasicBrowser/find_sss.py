@@ -27,4 +27,5 @@ for d in ylubdocs:
             if "SSS" in n.text:
                 break
     if d.relevant==1:
-        d.doc.tag.add(t)
+        d.relevant=0
+        #d.save()
