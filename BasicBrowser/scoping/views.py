@@ -1156,14 +1156,13 @@ def userpage(request):
     template = loader.get_template('scoping/user.html')
 
     # Queries
-    queries = Query.objects.filter(users=request.user).values('id','type','tag')
+    queries = Tag.objects.filter(query__users=request.user).values('query__id','query__type','id')
 
     query_list = []
 
     for qt in queries:
-        print(qt['type'])
-        q = Query.objects.get(pk=qt['id'])
-        tag = Tag.objects.get(pk=qt['tag'])
+        q = Query.objects.get(pk=qt['query__id'])
+        tag = Tag.objects.get(pk=qt['id'])
         ndocs           = Doc.objects.filter(query=q).count()
         dos = DocOwnership.objects.filter(query=q,user=request.user,tag=tag)
         revdocs         = dos.count()
