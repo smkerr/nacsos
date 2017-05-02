@@ -105,7 +105,7 @@ def main():
     n_records = 0
     records=[]
     record = {}
-    mfields = ['AU','AF','CR','C1']
+    mfields = ['AU','AF','CR','C1','WC']
 
     max_chunk_size = 2000
     chunk_size = 0
@@ -154,7 +154,10 @@ def main():
                 if key in mfields:
                     record[key].append(line.strip())
                 else:
-                    record[key] += " " + line.strip()
+                    try:
+                        record[key] += " " + line.strip()
+                    except:
+                        pass
     
     django.db.connections.close_all()
     q.r_count = n_records

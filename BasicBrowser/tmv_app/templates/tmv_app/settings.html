@@ -6,7 +6,7 @@
     <script language="JavaScript" src="{% static 'tmv_app/js/search.js' %}"></script>
 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    
+
     <title>Settings</title>
 
     <link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
@@ -25,13 +25,8 @@
     </h1>
 
     <div id="main">
-        <table>
-<<<<<<< Updated upstream
             <form action="/tmv_app/settings/apply" method="post">
-=======
-            <form action="tmv_app/settings/apply" method="post">
->>>>>>> Stashed changes
-                {% csrf_token %} 
+                {% csrf_token %}
                 <label for="id_doc_topic_score_threshold">Doc-Topic score threshold</label>
                   <input type="text" name="doc_topic_score_threshold" id="id_doc_topic_score_threshold" value="{{ settings.doc_topic_score_threshold }}" />
                 <br />
@@ -40,7 +35,6 @@
                 <br />
                 <input type="submit" value="Apply" />
             </form>
-        </table>
     </div>
 
     <div id="footer">

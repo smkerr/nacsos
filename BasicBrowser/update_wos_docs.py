@@ -19,15 +19,18 @@ def update_doc(r):
     doc = Doc.objects.get(UT=r['UT'])
     doc.title = get(r,'TI')
     doc.save()
+    wc = [x.strip() for x in get(r,'WC').split(";")]
     try:
         article = WoSArticle.objects.get(doc=doc)
         article.ti = get(r,'TI')
+        if len(wc) > 0:
+            article.wc=wc
         article.save()
     except:
         print("no article")
     django.db.connections.close_all()
-         
-        
+
+
 
 def main():
     qid = sys.argv[1]
@@ -55,9 +58,9 @@ def main():
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue
-            if line=='ER\n':   
+            if line=='ER\n':
                 # end of record - save it and start a new one
-                n_records +=1            
+                n_records +=1
                 records.append(record)
                 record = {}
                 chunk_size+=1
@@ -67,7 +70,7 @@ def main():
                     pool.map(update_doc, records)
                     #pool.map(partial(add_doc, q=q),records)
                     pool.terminate()
-                    
+
                     records = []
                     chunk_size = 0
                 continue
@@ -93,7 +96,7 @@ def main():
                     record[key].append(line.strip())
                 else:
                     record[key] += " " + line.strip()
-    
+
     django.db.connections.close_all()
     q.r_count = n_records
     q.save()
@@ -105,7 +108,7 @@ def main():
 
 
 if __name__ == '__main__':
-    t0 = time.time()	
+    t0 = time.time()
     main()
     totalTime = time.time() - t0
 

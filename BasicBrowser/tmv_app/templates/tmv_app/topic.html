@@ -4,7 +4,7 @@
     <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
 	<script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
     <script language="JavaScript" src="/static/js/jquery.rightClick.js"></script>
-    
+
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
 <title>{{ topic.title }}</title>
@@ -39,7 +39,7 @@
     <td>words</td></tr>
     {% if terms %}
 	    {% for term in terms %}
-	    <tr class="list" onclick="window.location.href='/tmv_app/term/{{ term.term }}'" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')"><td id="{{ term.title }}_list">{{ term.title }}</td><tr>
+	    <tr class="list" onclick="window.location.href='/tmv_app/term/{{ term.id }}'" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')"><td id="{{ term.title }}_list">{{ term.title }}</td><tr>
 	    {% endfor %}
     {% endif %}
     <tmv-topic-terms-column>
@@ -61,7 +61,7 @@
             <tr>
 	        {% endfor %}
         {% endif %}
-        
+
     </table>
 </td>
 
@@ -89,7 +89,7 @@
 <br>
 <hr noshade>
 
-<script type="text/JavaScript"> 
+<script type="text/JavaScript">
     function highlight(id) {
 	   	var list = document.getElementById(id+'_list');
 	   	var bar = document.getElementById(id+'_bar');
@@ -100,7 +100,7 @@
 			bar.style.backgroundColor='#416DCC';
 		}
 	}
-    
+
     function unhighlight(id) {
 		var list = document.getElementById(id+'_list');
 	   	var bar = document.getElementById(id+'_bar');
@@ -119,11 +119,11 @@
     console.log(data)
 
     var width = $("#pyGraph").parent().width();
-    var height = width /3 
+    var height = width /3
 
     var graph = d3.select("#pyGraph")
 	    .append("svg")
-	    .attr("width", width) 
+	    .attr("width", width)
 	    .attr("height", height);
 
     graph.append("rect")
@@ -198,7 +198,7 @@
         }
     }
 
-    div = graph.append("text")   
+    div = graph.append("text")
 	    .attr("text-anchor", "middle")
 		.attr("fill", "black")
 		.attr("font-size", "16px")
@@ -249,14 +249,14 @@
 		    .attr("font-size", "18px")
 		    .attr("x", function() { return xscale(parseFloat(d.key))})
 		    .attr("y", height*0.97)
-            .text(function() { 
-                if(parseFloat(d.key) % 5==0) { 
+            .text(function() {
+                if(parseFloat(d.key) % 5==0) {
                     return d.key
                 }
             });
     });
 
-    
+
 
 
 
@@ -264,4 +264,3 @@
 </div>
   </body>
 </html>
-

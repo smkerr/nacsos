@@ -16,7 +16,7 @@ urlpatterns = [
     url(r'^author/(?P<author_name>.+)/$', login_required(author_detail)),
     url(r'^institution/(?P<institution_name>.+)/$', login_required(institution_detail)),
     url(r'^topic_list$', login_required(topic_list_detail)),
-    url(r'^topic_presence$', login_required(topic_presence_detail)),
+    url(r'^topic_presence$', login_required(topic_presence_detail),name="topics"),
     url(r'^stats$', login_required(stats)),
     url(r'^settings$', login_required(settings)),
     url(r'^settings/apply$', login_required(apply_settings)),
@@ -41,4 +41,3 @@ urlpatterns = [
 
 #onyl serve static content for development
 #urlpatterns += static(settings.STATIC_URL,document_root='static')
-
