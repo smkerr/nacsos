@@ -14,15 +14,17 @@
 <div id="top"></div>
 <div id="header">
 <h1>Climate Change Topics</h1>
-<h2>Relative Presence of Topics in all Documents</h2> 
+<h2>Relative Presence of Topics in all Documents</h2>
 <hr noshade>
 </div>
-<div id="graph"> 
+<div id="graph">
 <table width="100%">
 {% for topic, topic_score, width in topic_tuples %}
-<tr><td><table width="{{ width|floatformat:1 }}%" ><tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" onclick="window.location.href='topic/{{ topic.topic }}'">{{ topic.title }}</td></tr></table></td></tr>
+<tr><td><table width="{{ width|floatformat:1 }}%" >
+  <tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" >
+    <a href="topic/{{ topic.id }}">{{ topic.title }}</a></td></tr></table></td></tr>
 {% endfor %}
-</table> 
+</table>
 </div>
 
 <div id="footer">
@@ -31,4 +33,3 @@
 </div>
   </body>
 </html>
-

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from nltk import ngrams
+from django.contrib.postgres.fields import ArrayField
 
 # Create your models here.
 
@@ -111,10 +112,45 @@ class Doc(models.Model):
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
 
+class AR(models.Model):
+    ar = models.IntegerField(unique=True)
+    start = models.IntegerField(null=True)
+    end = models.IntegerField(null=True)
+    name = models.TextField(null=True)
+
+    def __str__(self):
+      return str(self.ar)
+
+class WG(models.Model):
+    ar = models.ForeignKey(AR)
+    wg = models.IntegerField()
+
+    def __str__(self):
+      return "AR"+str(self.ar)+" WG"+str(self.wg)
+
+class IPCCRef(models.Model):
+    authors = models.TextField()
+    year = models.IntegerField()
+    text = models.TextField()
+    words = ArrayField(models.TextField(),null=True)
+    ar = models.ManyToManyField('AR')
+    wg = models.ManyToManyField('WG')
+    doc = models.ForeignKey(Doc,null=True)
+
+    def shingle(self):
+        return set(s for s in ngrams(self.text.lower().split(".")[0].split(),2))
+
 class KW(models.Model):
     text = models.TextField()
     doc = models.ManyToManyField(Doc)
     ndocs = models.IntegerField(default=0)
+
+class WC(models.Model):
+    text = models.TextField()
+    doc = models.ManyToManyField(Doc)
+    oecd = models.TextField(null=True)
+    oecd_fos = models.TextField(null=True)
+    oecd_fos_text = models.TextField(null=True)
 
 
 class DocRel(models.Model):
@@ -191,7 +227,7 @@ class DocAuthInst(models.Model):
     position = models.IntegerField(verbose_name="Author Position")
 
     def __str__(self):
-      return self.doc
+      return self.AU
 
 # A simple form of the table below, just to store the dois as we parse them
 class DocReferences(models.Model):
@@ -259,6 +295,7 @@ class WoSArticle(models.Model):
     su = models.TextField(null=True, verbose_name="Supplement") # supplement
     tc = models.IntegerField(null=True, verbose_name="Times Cited") # times cited
     vl = models.CharField(null=True, max_length=50, verbose_name="Volume")
+    wc = ArrayField(models.TextField(),null=True)
 
     def __str__(self):
-      return self.ar
+      return self.ti

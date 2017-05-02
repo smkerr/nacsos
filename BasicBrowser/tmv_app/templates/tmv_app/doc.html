@@ -22,7 +22,7 @@
     function highlight(i) {
         piec.highlight(i);
     }
-    
+
     function unhighlight() {
         piec.unhighlight();
     }
@@ -34,7 +34,7 @@
     </script>
 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    
+
     <title>{{ doc.title }}</title>
 
 <link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
@@ -73,9 +73,9 @@
                 <table class="light">
                 <tr class="doc"><td>
                     <p>
-                       {% for author in doc_authors %}
-                          <a href="/tmv_app/author/{{ author.author }}">{{ author.author }}</a>;
-                       {% endfor %}
+                      {% for author in doc_authors %}
+                         <a href="/tmv_app/author/{{ author.AU }}">{{ author.AU }}</a>;
+                      {% endfor %}
                        {{ doc.PY }}
                     </p>
                     <p>

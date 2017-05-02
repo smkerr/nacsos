@@ -6,7 +6,7 @@
     <script language="JavaScript" src="{% static 'tmv_app/js/search.js' %}"></script>
 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    
+
     <title>Runs</title>
 
     <link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
@@ -37,6 +37,8 @@
 					<th>Documents</td>
 					<th>Terms</td>
 					<th>Error</td>
+          <th>Max Features</td>
+          <th>Ngram size</td>
 					<th>Iterations</td>
                     <th>Duration</th>
                     <th>Actions</td>
@@ -55,6 +57,8 @@
 					<td>{{ stat.docs_seen }}</td>
 					<td>{{ stat.terms }}</td>
 					<td>{{ stat.error|floatformat:3 }}</td>
+					<td>{{ stat.max_features }}</td>
+					<td>{{ stat.ngram }}</td>
 					<td>{{ stat.iterations }}</td>
                     <td>{{ stat.start|timesince:stat.last_update}}</td>
                     <td><button onclick="window.location.href='runs/delete/{{ stat.run_id }}';event.stopImmediatePropagation();">Delete</button></td>
