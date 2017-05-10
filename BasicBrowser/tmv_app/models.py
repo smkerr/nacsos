@@ -51,7 +51,7 @@ class TopicCorr(models.Model):
         return str(self.title)
 
 class Term(models.Model):
-    title = models.CharField(max_length=100)
+    title = models.CharField(max_length=100, db_index=True)
     run_id = models.ManyToManyField('RunStats')
 
     def __unicode__(self):

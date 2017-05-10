@@ -125,7 +125,7 @@ def index(request):
 ###########################################################################
 ## Topic View
 def topic_detail(request, topic_id):
-    #update_year_topic_scores(request.session)
+    update_year_topic_scores(request.session)
     response = ''
     run_id = find_run_id(request.session)
     stat = RunStats.objects.get(run_id=run_id)
@@ -621,8 +621,6 @@ def apply_run_filter(request,new_run_id):
 def delete_run(request,new_run_id):
     stat = RunStats.objects.get(run_id=new_run_id)
     stat.delete()
-    terms = Term.objects.filter(run_id=new_run_id)
-    terms.delete()
     topics = Topic.objects.filter(run_id=new_run_id)
     topics.delete()
     dt = DocTopic.objects.filter(run_id=new_run_id)
@@ -755,7 +753,7 @@ def update_year_topic_scores(session):
             TopicYear.objects.filter(run_id=run_id).delete()
             for ytt in ytts:
                 yttyear = ytt['doc__PY']
-                topic = Topic.objects.get(topic=ytt['topic'])
+                topic = Topic.objects.get(pk=ytt['topic'])
                 for yt in yts:
                     ytyear = yt['doc__PY']
                     if yttyear==ytyear:

@@ -90,6 +90,7 @@ class Doc(models.Model):
     query = models.ManyToManyField('Query')
     tag = models.ManyToManyField('Tag')
     title = models.TextField(null=True)
+    tilength = models.IntegerField(null=True)
     content = models.TextField(null=True)
     PY = models.IntegerField(null=True,db_index=True)
     users = models.ManyToManyField(User, through='DocOwnership')
@@ -104,6 +105,12 @@ class Doc(models.Model):
 
     def __str__(self):
       return self.UT
+
+    def citation(self):
+        used = set()
+        aus = self.docauthinst_set.order_by('position').values_list('AU',flat=True)
+        unique = [x for x in aus if x not in used and (used.add(x) or True)]
+        return ", ".join(unique) + ' (' + str(self.PY) + ') ' + self.title
 
     def ti_word_count(self):
         return len(str(self.title).split())
@@ -138,6 +145,7 @@ class IPCCRef(models.Model):
     ar = models.ManyToManyField('AR')
     wg = models.ManyToManyField('WG')
     doc = models.ForeignKey(Doc,null=True)
+    chapter = models.TextField(null=True)
 
     def shingle(self):
         return set(s for s in ngrams(self.text.lower().split(".")[0].split(),2))

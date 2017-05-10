@@ -31,11 +31,11 @@
             <td>Delete</td>
         </tr>
 		{% for t in techs %}
-            <tr>          
+            <tr>
                 <form action="{% url 'scoping:update_tech' %}" method="post">
                   {% csrf_token %}
                 <input type="text" name="tid" class="hidden" value="{{t.id}}"></input>
-			    <td><a href="query/{{query.id}}">{{ t.id }}</a></td>
+			    <td><a href="technology/{{t.id}}">{{ t.id }}</a></td>
                 <td><textarea name="tname">{{ t.name }}</textarea></td>
                 <td><textarea name="tdesc">{{ t.description }}</textarea></td>
 			    <td>{{ t.queries }}</td>
@@ -43,7 +43,7 @@
 
                 <td><input type="submit" value="Update technology" /></td>
                 </form>
-                <td><a href="delete_tech/{{query.id}}"><button onclick="return confirm('Are you sure you would like to delete this technology?');">Delete</button></a></td>
+                <td><a href="delete_tech/{{t.id}}"><button onclick="return confirm('Are you sure you would like to delete this technology?');">Delete</button></a></td>
 		    </tr>
 
 		{% endfor %}

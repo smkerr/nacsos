@@ -6,6 +6,18 @@ body {
 	padding: 0;
 }
 
+.bar {
+  fill: steelblue;
+}
+
+.bar:hover {
+  fill: brown;
+}
+
+.axis--x path {
+  display: none;
+}
+
 /*
 a {
 	color: #000;
@@ -506,7 +518,7 @@ canvas {
 #navigation td.searchbar input {
     background-image: url('/static/img/search.png');
     background-repeat: no-repeat;
-    padding-right:15px; 
+    padding-right:15px;
     background-position: right center;
     line-height: 1.2;
 }
@@ -904,10 +916,10 @@ input:checked + .slider:before {
 input[type=range] {
     /*removes default webkit styles*/
     -webkit-appearance: none;
-    
+
     /*fix for FF unable to apply focus style bug */
     border: 1px solid white;
-    
+
     /*required for proper track sizing in FF*/
     width: 300px;
 }
@@ -958,10 +970,10 @@ input[type=range]:-moz-focusring{
 input[type=range]::-ms-track {
     width: 300px;
     height: 5px;
-    
+
     /*remove bg colour from the track, we'll use ms-fill-lower and ms-fill-upper instead */
     background: transparent;
-    
+
     /*leave room for the larger thumb to overflow with a transparent border */
     border-color: transparent;
     border-width: 6px 0;
@@ -1034,7 +1046,7 @@ div.note {
 table.spread td {
 	text-align:center;
 	width:25%;
-} 
+}
 
 #split_table td {
 	text-align:center;
@@ -1096,4 +1108,3 @@ div.addbox {
 .tech {
     margin: 60px 40px
 }
-
