@@ -81,10 +81,11 @@ def technologies(request):
 
     users = User.objects.all()
     refresh = False
+    subprocess.Popen(["python3", "/home/galm/software/tmv/BasicBrowser/update_techs.py"], stdout=subprocess.PIPE)
     for t in technologies:
         t.queries = t.query_set.count()
         tdocs = Doc.objects.filter(technology=t)
-        if t.queries != t.nqs or refresh==True:
+        if refresh==True:
             tdocs = Doc.objects.filter(technology=t)
             itdocs = Doc.objects.filter(query__technology=t,query__type="default")
             tdocs = tdocs | itdocs
