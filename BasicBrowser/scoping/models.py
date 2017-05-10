@@ -59,6 +59,8 @@ class Query(models.Model):
 class Technology(models.Model):
     name = models.TextField(null = True, verbose_name="Technology Name")
     description = models.TextField(null=True, verbose_name="Technology Description")
+    ndocs = models.IntegerField(null=True)
+    nqs = models.IntegerField(null=True)
 
     def __str__(self):
       return self.name
