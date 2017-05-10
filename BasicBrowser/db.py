@@ -1,4 +1,5 @@
 import django
+from django.utils import timezone
 import urllib.parse
 import os
 
@@ -11,188 +12,130 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "BasicBrowser.settings")
 django.setup()
 
 from tmv_app.models import *
+from scoping.models import Doc
 
+def init(n_f,n_g):
+    global run_id
+    try:
+        stats = RunStats.objects.all().last()
+        settings = Settings.objects.all().first()
+        run_id = stats.run_id
+    except:
+        settings = Settings(
+            doc_topic_score_threshold=1,
+            doc_topic_scaled_score=True
+        )
+        run_id = 0
 
-class DBManager(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.name = "DB Manager"
-        self.tasks = []
-        self.current = None
-        self.end = False
-        self.task_count = 0
-    def add(self, task):
-        self.tasks.append(task)
-        print ( "* %s %s: added" % (datetime.datetime.now(), task.name) )
-    def add_start(self, task):
-        self.tasks.insert(0, task)
-        print ( "* %s %s: added (to start of queue)" % (datetime.datetime.now(), task.name) )
-    def cancel_task(self, task):
-        self.tasks.remove(task)
-        print ( "* %s %s: canceled" % (datetime.datetime.now(), task.name) )
-    def get_ident(self):
-        self.task_count += 1
-        return self.task_count
-    def run(self):
-        while not self.end or len(self.tasks) != 0:
-            if len(self.tasks) != 0:
-                self.current = self.tasks.pop(0)
-                if self.current and not self.current.cancel:
-                    try:
-                        self.current.run()
-                    except:
-                        self.tasks.insert(0, self.current)
+    run_id +=1
 
-DB_LOCK = threading.Lock()
-DBM = DBManager()
-DBM.start()
-
-def init():
-    stats = RunStats(start=datetime.datetime.now(), batch_count=0, last_update=datetime.datetime.now())
+    stats = RunStats(
+        run_id = run_id,
+        start=timezone.now(),
+        batch_count=0,
+        last_update=timezone.now(),
+        ngram=n_g,
+        max_features=n_f
+    )
     stats.save()
-    
-    settings = Settings(doc_topic_score_threshold=1, doc_topic_scaled_score=True)
+
+    settings.run_id = run_id
     settings.save()
 
-def signal_end():
-    DBM.end = True
+    return(run_id)
 
 def increment_batch_count():
-    DB_LOCK.acquire()
-    stats = RunStats.objects.get(id=1)
+    django.db.connections.close_all()
+    stats = RunStats.objects.get(run_id=run_id)
     stats.batch_count += 1
-    stats.last_update = datetime.datetime.now()
+    stats.last_update = timezone.now()
     stats.topic_titles_current = False
+    stats.topic_scores_current = False
+    stats.topic_year_scores_current = False
     print ( stats.last_update )
     stats.save()
-    DB_LOCK.release()
-
-def print_task_update():
-    print ("** CURRENT TASKS **")
-    tasks = DBM.tasks[:]
-    if DBM.current:
-        tasks.insert(0, DBM.current)
-    for task in tasks:
-        active = "active" if task == DBM.current else "waiting"
-        canceled = task.cancel
-        print ( "   %s %s\t\t%s\t\t%s" % (task.time_created, task.name, canceled, active) )
-    print ( "** END **" )
-
-class DBTask():
-    def __init__(self, name):
-        self.cancel = False
-        self.time_created = datetime.datetime.now()
-        self.ident = DBM.get_ident()
-        self.name = "DB Task-%s (%s)" % (self.ident, name)
-    def safe_cancel(self):
-        self.cancel = True        
-        print ( "* %s %s: canceled" % (datetime.datetime.now(), self.name) )
-    def run(self):
-        print ( "* %s %s: started" % (datetime.datetime.now(), self.name) )
-        DB_LOCK.acquire()
-        print ( "* %s %s: DB lock acquired" % (datetime.datetime.now(), self.name) )
-        self.db_write()
-        DB_LOCK.release()
-        print ( "* %s %s: DB lock released" % (datetime.datetime.now(), self.name) )
-        print ( "* %s %s: ended" % (datetime.datetime.now(), self.name) )
-    def db_write(self):
-        pass
 
 
-def add_term(title):
-    term = Term(title=title)
-    term.save()
-
-class TermsTask(DBTask):
-    def __init__(self, terms):
-        self.terms = terms
-        DBTask.__init__(self, "write all terms")
-    def db_write(self):
-        for t in self.terms:
-            add_term(t.strip())
-
-def add_terms(terms):
-    DBM.add(TermsTask(terms))
+def add_terms(vocab):
+    global term_diff
+    for x in vocab:
+        title = x[1]
+        gid = x[0]
+        term = Term(title=title,run_id=run_id)
+        term.save()
 
 
-def add_topic(title):
-    topic = Topic(title=title)
-    topic.save()
-
-class TopicsTask(DBTask):
-    def __init__(self, no_topics):
-        self.no_topics = no_topics
-        DBTask.__init__(self, "write all topics")
-    def db_write(self):
-        for t in range(self.no_topics):
-            add_topic("Topic " + str(t+1))
+def add_features(vocab):
+    vocab_ids = []
+    for x in range(len(vocab)):
+        title = vocab[x]
+        term, created = Term.objects.get_or_create(title=title)
+        term.run_id.add(run_id)
+        vocab_ids.append(term.pk)
+    return(vocab_ids)
 
 def add_topics(no_topics):
-    DBM.add(TopicsTask(no_topics))
+    global t_diff
+    topic_ids = []
+    for t in range(0,no_topics):
+        title = "Topic " + str(t+1)
+        topicrow = Topic(title=title,run_id=run_id)
+        topicrow.save()
+        topic_ids.append(topicrow.pk)
+    return(topic_ids)
+
+def update_topiccorr(topic_id,corrtopic,score,run_id):
+    topic = Topic.objects.get(topic=topic_id)
+    try:
+        topiccorr = TopicCorr.objects.get(topic=topic, topiccorr=corrtopic, run_id=run_id)
+    except:
+        topiccorr = TopicCorr(topic=topic,topiccorr=corrtopic,run_id=run_id)
+    topiccorr.score = score
+    topiccorr.save()
+
+def update_doccorr(doc_id,corrdoc,score,run_id):
+    doc = Doc.objects.get(UT=topic_id)
+    try:
+        doccorr = DocCorr.objects.get(doc=doc, doccorr=corrdoc, run_id=run_id)
+    except:
+        doccorr = DocCorr(doc=doc, doccorr=corrdoc ,run_id=run_id)
+    doccorr.score = score
+    doccorr.save()
+
+def docdiff(d):
+    django.db.connections.close_all()
+    last_doc = Doc.objects.all().last()
+    doc_diff = last_doc.doc - d
+    return(doc_diff)
 
 
-def add_doc(title, content):
-    DB_LOCK.acquire()
-    doc = Doc(title=urllib.parse.unquote(title), content="")
-    doc.save()
-    DB_LOCK.release()
-    return doc.id
-
-def add_docs(doc_array):
-    doc_ids = []
-    DB_LOCK.acquire()
-    for d in doc_array:
-        doc = Doc(title=urllib.parse.unquote(d[0]), content=urllib.parse.unquote(d[1]))
-        doc.save()
-        doc_ids.append(doc.id)
-    DB_LOCK.release()
-    return doc_ids
 
 
-def add_doc_topic(doc_id, topic_id, score, scaled_score):
-    if score < 1:
+def add_doc_topic_sk(doc_id, topic_id, score, scaled_score):
+    if score < 0.001:
         return
-    dt = DocTopic(doc=doc_id, topic=(topic_id+1), score=score, scaled_score=scaled_score)
+    doc = Doc.objects.get(UT=doc_id)
+    topic = Topic.objects.get(pk=topic_id)
+    dt = DocTopic(doc=doc, topic=topic, score=score, scaled_score=scaled_score,run_id=run_id)
     dt.save()
-
-class DocTopicsTask(DBTask):
-    def __init__(self, doc_topics):
-        self.doc_topics = doc_topics
-        DBTask.__init__(self, "write doc topics")
-    def db_write(self):
-        for dt in self.doc_topics:
-            add_doc_topic(dt[0], dt[1], dt[2], dt[3])
-
-def add_doc_topics(doc_topic_array):
-    DBM.add(DocTopicsTask(doc_topic_array))
 
 
 def clear_topic_terms(topic):
     try:
-        TopicTerm.objects.filter(topic=(topic+1)).delete()
+        TopicTerm.objects.filter(topic=(topic),run_id=run_id).delete()
     except:
         return
 
-def add_topic_term(topic, term, score):
+def add_topic_term(topic_id, term_no, score):
     if score >= .005:
-        tt = TopicTerm(topic=(topic+1), term=(term+1), score=score)
+        topic = Topic.objects.get(topic=topic_id)
+        term = Term.objects.get(term=term_no)
+        tt = TopicTerm(topic=(topic), term=(term), score=score,run_id=run_id)
         tt.save()
 
-class UpdateTopicTermsTask(DBTask):
-    def __init__(self, no_topics, topic_terms):
-        self.no_topics = no_topics
-        self.topic_terms = topic_terms
-        DBTask.__init__(self, "update topic terms")
-    def db_write(self):
-        for topic in range(self.no_topics):
-            clear_topic_terms(topic)
-        for tt in self.topic_terms:
-            add_topic_term(tt[0], tt[1], tt[2])
-
-def update_topic_terms(no_topics, topic_terms):
-    for task in DBM.tasks:
-        if isinstance(task, UpdateTopicTermsTask):
-            task.safe_cancel()
-            DBM.cancel_task(task)
-
-    DBM.add_start(UpdateTopicTermsTask(no_topics, topic_terms))
+def add_topic_term_sk(topic_id, term_no, score):
+    if score >= .0005:
+        topic = Topic.objects.get(pk=topic_id)
+        term = Term.objects.get(pk=term_no)
+        tt = TopicTerm(topic=(topic), term=(term), score=score,run_id=run_id)
+        tt.save()

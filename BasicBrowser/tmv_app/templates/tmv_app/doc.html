@@ -63,7 +63,7 @@
                 </tr>
                 {% if topics %}
 			{% for topic in topics %}
-			<tr class="list"><td id="topic_{{ topic.topic }}" onmouseover="highlight({{ forloop.counter|add:"-1" }})" onmouseout="unhighlight()" onclick="window.location.href='/tmv_app/topic/{{ topic.topic }}'"><span class="{{ topic.ntopic }}">{{ topic.title }}</span></td></tr>
+			<tr class="list"><td id="topic_{{ topic.pk }}" onmouseover="highlight({{ forloop.counter|add:"-1" }})" onmouseout="unhighlight()" onclick="window.location.href='/tmv_app/topic/{{ topic.pk }}'"><span class="{{ topic.ntopic }}">{{ topic.title }}</span></td></tr>
 			{% endfor %}
 		{% endif %}
                 </table>
