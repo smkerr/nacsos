@@ -1,0 +1,86 @@
+{% extends "scoping/base.html" %}
+
+{% block content %}
+<h1> Scoping Review Helper</h1>
+<br>
+
+<!-- Query manager -->
+<h2> Technology Homepage: {{ tech.name }} </h2>
+<br>
+
+
+<p>Number of docs: {{ docinfo.tdocs }}
+<p>Relevant docs: {{docinfo.reldocs}}
+
+<p>
+
+  <a href="{% url 'scoping:authorlist' tech.pk %}">Generate a list of author emails
+    for this technology</a>
+
+<table><tr>
+<td width="100%">
+    <div id="pyGraph" height="600"></div><br>
+</td>
+
+</tr>
+</table>
+
+{% endblock %}
+
+{% block script %}
+<script type="text/JavaScript">
+var data = {{ bypy|safe }};
+var width = $("#pyGraph").parent().width();
+var height = width /2
+
+console.log(data)
+
+var margin = {top: 20, right: 50, bottom: 30, left: 20},
+    width = width - margin.left - margin.right,
+    height = height - margin.top - margin.bottom;
+
+var svg = d3.select("#pyGraph")
+  .append("svg")
+  .attr("width", width)
+  .attr("height", height);
+
+var g = svg.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+
+
+var x = d3.scaleBand()
+    .rangeRound([0, width]);
+
+var y = d3.scale.linear()
+    .rangeRound([height, 0]);
+
+var z = d3.scale.category10();
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+x.domain(data.map(function(d){ return d.PY }))
+y.domain([0, d3.max(data, function(d) { return d.n; })]);
+
+g.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+
+
+
+g.selectAll(".bar")
+   .data(data)
+   .enter().append("rect")
+     .attr("class", "bar")
+     .attr("x", function(d) { return x(d.PY); })
+     .attr("y", function(d) { return y(d.n); })
+     .attr("width", x.bandwidth())
+     .attr("height", function(d) { return height - y(d.n); });
+
+</script>
+{% endblock %}
