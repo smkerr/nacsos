@@ -80,13 +80,20 @@ def technologies(request):
     technologies = Technology.objects.all()
 
     users = User.objects.all()
-
+    refresh = False
     for t in technologies:
-        t.queries = len(t.query_set.all())
+        t.queries = t.query_set.count()
         tdocs = Doc.objects.filter(technology=t)
-        itdocs = Doc.objects.filter(query__technology=t)
-        tdocs = tdocs | itdocs
-        t.docs = tdocs.distinct().count()
+        if t.queries != t.nqs or refresh==True:
+            tdocs = Doc.objects.filter(technology=t)
+            itdocs = Doc.objects.filter(query__technology=t,query__type="default")
+            tdocs = tdocs | itdocs
+            t.docs = tdocs.distinct().count()
+            t.nqs = t.queries
+            t.ndocs = t.docs
+            t.save()
+        else:
+            t.docs = t.ndocs
 
     context = {
       'techs'    : technologies,
