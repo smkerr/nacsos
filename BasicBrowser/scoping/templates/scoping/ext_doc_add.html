@@ -1,12 +1,14 @@
 {% extends "scoping/base.html" %}
 {% block content %}
-<h1> Scoping Review Helper</h1>
+<h1>NETS Systematic Review Project</h1>
 <br>
 <div class="explanation">
-<h2> Manual Document Adder</h2>
-<p> Use this form to manually enter documents to the database. Before you do this,
-please check whether the document exists on WoS or Scopus, and can be added simply
-by querying for it, otherwise we may end up with duplicate records.
+<h2> Manual Document upload</h2>
+<p> Welcome, {{em.initial}}. {{em.sname}}, Please enter the details of any relevant papers on negative
+  emissions that were not present in
+  the email you received.
+<p>Thank you for contributing to our project.
+<p>If you have any questions, please send an email to nets [at] mcc-berlin.net
 </div>
 <form action="{% url 'scoping:do_add_doc' %}" method="post">
       {% csrf_token %}
@@ -14,7 +16,7 @@ by querying for it, otherwise we may end up with duplicate records.
 <table>
 
 
-<td width=33%>
+<td width=50%>
 <div class="addbox">
 <h2>Mandatory Basic Information</h2>
 <p>Enter some basic information about the document
@@ -31,6 +33,10 @@ by querying for it, otherwise we may end up with duplicate records.
 <p>
 <br>
 <div class="addbox">
+  <h2>Technology Selection</h2>
+  <p> Please use the drop-down below to select the appropriate technology to which
+    your document is relevant. Once you have filled out all fields, you may press
+    the "Add Document" button below.
 <select id="tech" class="tech" name="technology" data-query="{{query.id}}" autocomplete="off">
 {% if not query.technology %}
 <option selected value="None">{{query.technology}}</option>
@@ -50,34 +56,21 @@ by querying for it, otherwise we may end up with duplicate records.
 </div>
 
 
-<td width=33%>
+<td width=50%>
 <div class="addbox">
 <h2>Mandatory Author Information</h2>
-<p>Enter at least 1 and up to 10 authors for the document. If the document has not author, enter the institution
+<p>Enter at least 1 author for the document. As you enter authors, more boxes will
+  appear. If the document has no author, enter the institution name.
 <p>
 <table>
     {% for f in author_fields %}
         <tr>
             <td></b> {{f.name}}
             {% if f.name == 'Author 1' %}
-                <td><textarea data-mandatory="true" name={{f.path}} rows=2 cols=25>
+                <td><textarea data-mandatory="true" data-author="true" name={{f.path}} rows=2 cols=25>
             {% else %}
-                <td><textarea name={{f.path}} rows=2 cols=25>
+                <td><textarea name={{f.path}} data-author="true"  rows=2 cols=25>
             {% endif %}
-            </textarea>
-    {% endfor %}
-</table>
-</div>
-<td width=33%>
-<div class="addbox">
-<h2>Optional Additional Information</h2>
-<p>If you the information is available, please add any additional WoS field information
-<p>
-<table>
-    {% for f in fields %}
-        <tr>
-            <td><b>{{f.ab}}:</b> ({{f.name}})
-            <td><textarea name={{f.path}} rows=1 cols=25>
             </textarea>
     {% endfor %}
 </table>
@@ -88,8 +81,10 @@ by querying for it, otherwise we may end up with duplicate records.
 
 {% block script %}
 
-
 <script type="text/javascript" language="javascript">
+
+$("#navigation").addClass("hidden")
+
 $(function() {
       $("#tech").change(function(){
         var v= $('option:selected', this).attr('value');
@@ -113,10 +108,27 @@ function check() {
     }
 }
 
+function checkauthor() {
+  hidden = false
+  console.log("checkingauthor")
+  $('*[data-author="true"]').each(function(index){
+    if (hidden==true) {
+      $(this).parent().parent().addClass('hidden')
+    } else {
+      $(this).parent().parent().removeClass('hidden')
+    }
+    if ($(this).val().trim() =="") {hidden = true};
+  })
+}
+
 $('*[data-mandatory="true"]').change(function(){
     check()
 })
+$('*[data-author="true"]').change(function(){
+    checkauthor()
+})
 
 check()
+checkauthor()
 </script>
 {% endblock %}

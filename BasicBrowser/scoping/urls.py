@@ -53,7 +53,8 @@ urlpatterns = [
     url(r'^download/(?P<qid>[0-9]+)', views.download, name='download'),
     url(r'^delete/(?P<thing>[a-zA-Z]+)/(?P<thingid>[0-9]+)$', views.delete, name='delete'),
     url(r'^manual_add/(?P<qid>[0-9]+)$', views.add_doc_form, name='add_doc_form'),
-    url(r'^manual_add$', views.add_doc_form, name='add_doc_form'),
+    url(r'^manual_add/$', views.add_doc_form, name='add_doc_form'),
+    url(r'^external_add/(?P<authtoken>[0-9a-f-]+)$', views.add_doc_form, name='add_doc_form'),
     url(r'^do_add_doc/$', views.do_add_doc, name='do_add_doc'),
 
 ]

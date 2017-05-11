@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from nltk import ngrams
 from django.contrib.postgres.fields import ArrayField
+import uuid
+
 
 # Create your models here.
 
@@ -97,7 +99,7 @@ class Doc(models.Model):
     PY = models.IntegerField(null=True,db_index=True)
     users = models.ManyToManyField(User, through='DocOwnership')
     references = models.ManyToManyField("self", symmetrical=False)
-    technology = models.ManyToManyField('Technology')
+    technology = models.ManyToManyField('Technology',db_index=True)
     category = models.ManyToManyField('SBSDocCategory')
     source = models.TextField(null=True)
     wos = models.BooleanField(default=False)
@@ -110,8 +112,8 @@ class Doc(models.Model):
 
     def citation(self):
         used = set()
-        aus = self.docauthinst_set.order_by('position').values_list('AU',flat=True)
-        unique = [x for x in aus if x not in used and (used.add(x) or True)]
+        das = self.docauthinst_set.order_by('AU','position').distinct('AU').values_list('id',flat=True)
+        unique = self.docauthinst_set.filter(id__in=das).order_by('position').values_list('AU',flat=True)
         return ", ".join(unique) + ' (' + str(self.PY) + ') ' + self.title
 
     def ti_word_count(self):
@@ -163,6 +165,15 @@ class WC(models.Model):
     oecd = models.TextField(null=True)
     oecd_fos = models.TextField(null=True)
     oecd_fos_text = models.TextField(null=True)
+
+class EmailTokens(models.Model):
+    email = models.TextField()
+    AU = models.TextField()
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4)
+
+    class Meta:
+        unique_together = ["email","AU"]
+        index_together = ["email","AU"]
 
 
 class DocRel(models.Model):
@@ -276,7 +287,7 @@ class WoSArticle(models.Model):
     de = models.TextField(null=True, verbose_name="Author Keywords") # keywords - separate table?
     di = models.CharField(null=True, db_index=True, max_length=250, verbose_name="DOI") # DOI
     dt = models.CharField(null=True, max_length=50, verbose_name="Document Type") # doctype
-    em = models.TextField(null=True, verbose_name="E-mail Address") #email
+    em = models.TextField(null=True, verbose_name="E-mail Address",db_index=True) #email
     ep = models.CharField(null=True, max_length=50, verbose_name="Ending Page") # last page
     fn = models.CharField(null=True, max_length=250, verbose_name="File Name") # filename?
     fu = models.TextField(null=True, verbose_name="Funding Agency and Grant Number") #funding agency + grant number
