@@ -2,7 +2,8 @@ from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 from itertools import chain
 from django.db.models import Max
-
+from django.db.models import Func, F
+from django.db.models.functions import Concat
 # Create your views here.
 
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
@@ -1365,14 +1366,9 @@ def doclist(request,qid,q2id='0',sbsid='0'):
         query_f  = False
         all_docs = qdocs
 
-    print(all_docs)
-
     ndocs = all_docs.count()
 
     docs = list(all_docs[:500].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
-
-    print(len(docs))
-    #print(docs)
 
 
     fields = []
@@ -1384,6 +1380,7 @@ def doclist(request,qid,q2id='0',sbsid='0'):
 
     relevance_fields.append({"path": "relevance_netrelevant", "name": "NETs relevant"})
     relevance_fields.append({"path": "relevance_techrelevant", "name": "Technology relevant"})
+    relevance_fields.append({"path": "note__text", "name": "Notes"})
 
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
@@ -1570,13 +1567,21 @@ def docrellist(request,sbsid,qid=0,q2id=0,q3id=0):
 
 ###########################################################
 ## Manual docadd form
-def add_doc_form(request,qid=0):
+def add_doc_form(request,qid=0,authtoken=0):
     try:
         query = Query.objects.get(pk=qid)
     except:
         query = Query.objects.last()
+    if authtoken!=0:
+        em = EmailTokens.objects.get(pk=authtoken)
+        em.sname, em.initial = em.AU.split(',')
 
-    template = loader.get_template('scoping/doc_add.html')
+        template = loader.get_template('scoping/ext_doc_add.html')
+    else:
+        em = None
+        template = loader.get_template('scoping/doc_add.html')
+
+
 
     basic_fields = [
         {"path": "UT", "name": "Url", "ab": "UT","note": "This is used to uniquely identify the document"},
@@ -1590,17 +1595,19 @@ def add_doc_form(request,qid=0):
         author_fields.append({"path": "author__"+str(a), "name": "Author "+str(a)})
 
     fields = []
-    for f in WoSArticle._meta.get_fields():
-        path = "wosarticle__"+f.name
-        if f.name !="doc" and f.name.upper() not in [x['ab'] for x in basic_fields]:
-            fields.append({"path": path, "name": f.verbose_name, "ab": f.name.upper()})
+    if em is None:
+        for f in WoSArticle._meta.get_fields():
+            path = "wosarticle__"+f.name
+            if f.name !="doc" and f.name.upper() not in [x['ab'] for x in basic_fields]:
+                fields.append({"path": path, "name": f.verbose_name, "ab": f.name.upper()})
 
     context = {
         'fields': fields,
         'query': query,
         'basic_fields': basic_fields,
         'author_fields': author_fields,
-        'techs': Technology.objects.all()
+        'techs': Technology.objects.all(),
+        'em': em
     }
     return HttpResponse(template.render(context, request))
 
@@ -1825,7 +1832,7 @@ def sortdocs(request):
             #single_fields.append(f)
         elif "docownership" in f:
             users.append(f)
-        elif "relevance_" in f:
+        elif "relevance_" in f or "note_" in f:
             rfields.append(f)
             single_fields.append(f)
         else:
@@ -1834,7 +1841,7 @@ def sortdocs(request):
     mult_fields_tuple = tuple(mult_fields)
 
     tech = query.technology
-
+    print(len(filt_docs))
     # annotate with relevance
     if "relevance_netrelevant" in rfields:
         filt_docs = filt_docs.annotate(relevance_netrelevant=models.Sum(
@@ -1853,6 +1860,7 @@ def sortdocs(request):
             )
         ))
 
+    print(len(filt_docs))
     # filter documents with user ratings
     if len(users) > 0:
         uname = users[0].split("__")[1]
@@ -1876,14 +1884,15 @@ def sortdocs(request):
             uname = u.split("__")[1]
             user = User.objects.get(username=uname)
             #uval = reldocs.filter(docownership__user=user).docownership
-            filt_docs = filt_docs.annotate(**{
+            filt_docs = filt_docs.filter(docownership__user=user,docownership__query=query).annotate(**{
                 u: models.Case(
-                        models.When(docownership__user=user,then='docownership__relevant'),
+                        models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
                         default=0,
                         output_field=models.IntegerField()
                 )
             })
-
+    print("LENGTH AFTER len_users block")
+    print(len(filt_docs))
 
     tag_text = ""
     # filter the docs according to the currently active filter
@@ -2042,99 +2051,90 @@ def sortdocs(request):
     return JsonResponse(response,safe=False)
 
 
+def get_tech_docs(tid):
+    if tid=='0':
+        tech = Technology.objects.all().values('id')
+        tobj = Technology(pk=0,name="NETS: All Technologies")
+    else:
+        tech = Technology.objects.filter(pk=tid).values('id')
+        tobj = Technology.objects.get(pk=tid)
+    docs1 = list(Doc.objects.filter(query__technology__in=tech, query__type="default").values_list('UT',flat=True))
+    docs2 = list(Doc.objects.filter(technology__in=tech).values_list('UT',flat=True))
+    dids = list(set(docs2)|set(docs1))
+    docs = Doc.objects.filter(UT__in=dids)
+
+    return [tech,docs,tobj]
+
+
 def technology(request,tid):
     template = loader.get_template('scoping/technology.html')
-    tech = Technology.objects.get(pk=tid)
+    tech, docs, tobj = get_tech_docs(tid)
     docinfo={}
-    docinfo['other_queries'] = Doc.objects.filter(technology=tech).count()
-    docs = Doc.objects.filter(technology=tech) | Doc.objects.filter(query__technology=tech, query__type="default")
-    # just make it shorter for development!
-    docs = docs.filter(query=618)
-    docs = docs.annotate(techrelevant=models.Sum(
-        models.Case(
-            models.When(docownership__relevant=1,
-                docownership__query__technology=tech,
-                then=1
-            ),
-            default=0,
-            output_field=models.IntegerField()
-        )
-    ))
+    docinfo['other_queries'] = Doc.objects.filter(technology__in=tech).count()
 
-    docinfo['tdocs'] = docs.count()
-    docinfo['reldocs'] = docs.filter(techrelevant__gt=0).count()
-
-    print(docs.values('PY','techrelevant'))
+    docinfo['tdocs'] = docs.distinct('UT').count()
+    docinfo['reldocs'] = docs.filter(
+        docownership__relevant=1,
+        docownership__query__technology__in=tech
+    ).distinct('UT').count()
 
     docs = docs.order_by('PY')
 
-    bypy = docs.values('PY','techrelevant').annotate(
-        n=models.Count("UT")
-    )
+    #bypy = docs.values('PY','techrelevant').annotate(
+    #    n=models.Count("UT")
+    #)
 
-    print(len(bypy.values()))
-
-    x = bypy.values()
-
-    #x = z
     context = {
-        'tech': tech,
+        'tech': tobj,
         'docinfo': docinfo,
-        'bypy': list(bypy.values('PY','techrelevant','n'))
+        #'bypy': list(bypy.values('PY','techrelevant','n'))
     }
 
     return HttpResponse(template.render(context, request))
 
 def prepare_authorlist(request,tid):
-    tech = Technology.objects.get(pk=tid)
-    docs = Doc.objects.filter(technology=tech) | Doc.objects.filter(query__technology=tech, query__type="default")
-    d = docs
-    docs = docs.annotate(techrelevant=models.Sum(
-        models.Case(
-            models.When(docownership__relevant=1,
-                docownership__query__technology=tech,
-                then=1
-            ),
-            default=0,
-            output_field=models.IntegerField()
-        )
-    ))
-    docs = docs.filter(techrelevant__gt=0)
-
-
-    print(docs)
-
+    tech, docs, tobj = get_tech_docs(tid)
+    docs = docs.filter(
+        docownership__relevant=1,
+        docownership__query__technology__in=tech
+    )
     docids = docs.values_list('UT',flat=True)
 
-    emails = Doc.objects.filter(UT__in=docids).distinct('wosarticle__em')
+    emails = Doc.objects.filter(UT__in=docids,wosarticle__em__isnull=False).annotate(
+        em_lower=Func(F('wosarticle__em'), function='lower')
+    ).distinct('em_lower')#.values('em_lower').distinct()
+
     ems = []
     em_values = []
-    for em in emails:
-        if em.wosarticle.em is not None:
-            evalue = em.wosarticle.em.split(';')[0]
+    for d in emails.iterator():
+        #d = Doc.objects.filter(wosarticle__em__icontains=em['em_lower']).first()
+        if d.wosarticle.em is not None:
+            evalue = d.wosarticle.em.split(';')[0]
             if evalue not in em_values:
-                au = em.docauthinst_set.order_by('position').first()
+                au = d.docauthinst_set.order_by('position').first()
                 audocs = docs.filter(docauthinst__AU=au)
+                docset = "; ".join([x.citation() for x in audocs])
+                et, created = EmailTokens.objects.get_or_create(email=evalue,AU=au)
+                link = 'https://apsis.mcc-berlin.net/scoping/external_add/{}'.format(et.id)
                 ems.append({
-                    "name": au,
+                    "name": au.AU,
                     "email": evalue,
-                    "docset": "; ".join([x.citation() for x in audocs])
+                    "docset": docset,
+                    "link": link
                 })
                 em_values.append(evalue)
-
-
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="email_list.csv"'
 
     writer = csv.writer(response, delimiter=';')
 
-    writer.writerow(["name","email","docset"])
+    writer.writerow(["name","email","docset","link"])
 
     print(ems)
 
     for em in ems:
-        writer.writerow([em["name"],em["email"],em["docset"]])
+        writer.writerow([em["name"],em["email"],em["docset"],em["link"]])
 
     return response
 
