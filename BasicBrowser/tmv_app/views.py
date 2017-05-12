@@ -125,7 +125,7 @@ def index(request):
 ###########################################################################
 ## Topic View
 def topic_detail(request, topic_id):
-    update_year_topic_scores(request.session)
+
     response = ''
     run_id = find_run_id(request.session)
     stat = RunStats.objects.get(run_id=run_id)
@@ -135,7 +135,9 @@ def topic_detail(request, topic_id):
     topic_template = loader.get_template('tmv_app/topic.html')
 
     topic = Topic.objects.get(pk=topic_id,run_id=run_id)
-    topicterms = Term.objects.filter(topicterm__topic=topic, run_id=run_id, topicterm__score__gt=0.00001).order_by('-topicterm__score')
+
+    topicterms = Term.objects.filter(topicterm__topic=topic, run_id=run_id, topicterm__score__gt=0.00001).order_by('-topicterm__score')[:50]
+
     if Settings.objects.first().doc_topic_scaled_score==True:
         doctopics = Doc.objects.filter(doctopic__topic=topic,doctopic__run_id=run_id).order_by('-doctopic__scaled_score')[:50]
     else:
