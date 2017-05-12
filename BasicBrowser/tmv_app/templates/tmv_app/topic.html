@@ -2,7 +2,7 @@
 <head>
 {% load static %}
     <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-	#<script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>#
+	<script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
   <script src="https://d3js.org/d3.v4.min.js"></script>
     <script language="JavaScript" src="/static/js/jquery.rightClick.js"></script>
 
@@ -113,7 +113,7 @@
 		}
     }
     var data = {{ yts|safe }};
-    var topic = {{ topic.topic|safe }};
+    var topic = {{ topic.pk |safe }};
     var topic_title = '{{ topic.title }}';
     console.log(topic)
     console.log(topic_title)
