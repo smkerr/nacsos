@@ -186,7 +186,7 @@ class DocRel(models.Model):
     PY = models.IntegerField(null=True)
     journal =  models.TextField(null=True)
     link = models.TextField(null=True)
-    url = models.URLField(null=True)
+    url = models.TextField(null=True)
     doi = models.TextField(null=True)
     hasdoi = models.BooleanField(default=False)
     docmatch_q = models.BooleanField(default=False)
