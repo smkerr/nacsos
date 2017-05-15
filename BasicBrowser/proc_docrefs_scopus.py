@@ -60,7 +60,7 @@ def add_doc(r):
 #    if request.session.get('DEBUG', None) == None:
     DEBUG = False
 #    else:
-#        DEBUG = request.session['DEBUG'] 
+#        DEBUG = request.session['DEBUG']
 
     if DEBUG:
         print("  >> Entering add_doc() with document id: "+str(r['UT']))
@@ -72,13 +72,14 @@ def add_doc(r):
             print("     > Document is already in the DB. Add to query table only.")
         doc.query.add(q)
         doc.save()
+
     else:   #look for nonexact matches!
         if DEBUG:
             print("     > Looking for nonexact matches.")
         try:
-            did = r['DO']    
+            did = r['DO']
             if DEBUG:
-                print("     > Found a doi!: %s" % did) 
+                print("     > Found a doi!: %s" % did)
         except:
             did = 'NA'
             pass
@@ -87,24 +88,24 @@ def add_doc(r):
             docs = Doc.objects.filter(
                     wosarticle__ti=get(r,'ti')).filter(PY=get(r,'PY')
             )
-        else: 
+        else:
             docs = Doc.objects.filter(wosarticle__di=did)
 
         if len(docs)==1:
             doc = docs.first()
             doc.query.add(q)
             if DEBUG:
-                print("     > Found an exact match!.") 
+                print("     > Found an exact match!.")
         if len(docs)>1:
             if DEBUG:
-                print("     > Found more than one match (uhoh) Here they are!.") 
+                print("     > Found more than one match (uhoh) Here they are!.")
             for d in docs:
                 print(d.title)
                 print(d.UT)
         if len(docs)==0:
             #print("no matching docs")
             if DEBUG:
-                print("     > Found no exact matches, computing jaccard similarity for wos docs from same year") 
+                print("     > Found no exact matches, computing jaccard similarity for wos docs from same year")
             s1 = shingle(get(r,'ti'))
             py_docs = Doc.objects.filter(PY=get(r,'PY'))
             docs = []
@@ -112,7 +113,7 @@ def add_doc(r):
                 j = jaccard(s1,d.shingle())
                 if j > 0.51:
                     d.query.add(q)
-                    return
+                    #doc =
         if len(docs)==0:
             doc = Doc(UT=r['UT'])
             #print(doc)
@@ -141,17 +142,17 @@ def add_doc(r):
 
             try:
                 article.save()
-                
+
             except:
                 pass
 
-        
+
             ## Add authors
             try:
                 dais = []
                 for a in range(len(r['AU'])):
                     #af = r['AF'][a]
-                    au = r['AU'][a]  
+                    au = r['AU'][a]
                     dai = DocAuthInst(doc=doc)
                     dai.AU = au
                     dai.position = a
@@ -165,9 +166,10 @@ def add_doc(r):
 ############################################################################
 ############################################################################
 ## NEW PART TO DEAL WITH REFERENCES
-
+    if 'doc' not in locals():
+        return
     # Now that the article's saved, we can look at the references....
-    # these are in a list accessible by get(r,'CR') 
+    # these are in a list accessible by get(r,'CR')
     if q == q3: # When we are dealing with citations, we want to check each one's refs for the seed docs.....
         refs = get(r,'References')
         print(len(refs))
@@ -238,7 +240,7 @@ def add_doc(r):
                     dr.relation = -1
                     dr.save()
 
-            
+
                 if r[0] == "*":
                     if DEBUG:
                         print("         > Skipping (special document)")
@@ -266,17 +268,17 @@ def add_doc(r):
                             # Add to query
                             doidoc.query.add(q2)
                             doidoc.save()
-        
+
                         else: # otherwise, add it to a list of docs to lookup
                             if DEBUG:
                                 print("         . DOI not in DB! Add to lookup list.")
                             doi_lookups.append(doi)
-                            doi_lookups_loc.append(doi)                 
-                else: 
+                            doi_lookups_loc.append(doi)
+                else:
                     if DEBUG:
                         print("         . No DOI found for this record. Skipping...")
                     skip+=1
-                    pass 
+                    pass
 
                 if doi:
                     dr.doi=doi
@@ -306,11 +308,11 @@ def add_doc(r):
                         dr.url = re.search(regurl,r).group(1)
 
                     #print(au)
-                    #print(ti)    
+                    #print(ti)
                     print(extra)
                     flag_problem = False
 
-                    
+
 
                     # Check validity of fields
                     test_au = re.match("([a-zA-Z\.\,; ]*$)", au) is not None
@@ -335,7 +337,7 @@ def add_doc(r):
                         print("         . AU: "+str(au)+"("+str(test_au)+"), PY: "+str(py)+" ("+str(py.isdigit())+") and SO:"+str(so)+" ("+str(test_so)+")")
                     if flag_problem:
                         if DEBUG:
-                            print("         . Problem with one of the fields. Skipping...")  
+                            print("         . Problem with one of the fields. Skipping...")
 
                 except:
                     if DEBUG:
@@ -343,9 +345,9 @@ def add_doc(r):
                     skip+=1
                 pass
                 dr.save() #uncomment this when we want to actually save these
-           
-            refindb = len(refs) - skip - len(doi_lookups_loc) 
-     
+
+            refindb = len(refs) - skip - len(doi_lookups_loc)
+
             global totnbrefs
             global totnbrefsindb
             global totnbskips
@@ -387,7 +389,7 @@ def add_doc_text(r):
                 value = s.group(1).strip()
                 nextkey = s.group(2).strip()
                 nextvalue = s.group(4).strip()
-                
+
                 if nextkey in mfields:
                     record[nextkey] = [nextvalue]
                 else:
@@ -401,7 +403,7 @@ def add_doc_text(r):
                 except:
                     print(key)
                     print(value)
-            
+
             if key in mfields:
                 record[key] = [value]
             else:
@@ -413,10 +415,10 @@ def add_doc_text(r):
             else:
                 record[key] += line.strip()
 
-    record['UT'] = dict(parse_qsl(urlparse(record['UR']).query))['eid'] 
+    record['UT'] = dict(parse_qsl(urlparse(record['UR']).query))['eid']
     add_doc(record)
     try:
-        record['UT'] = dict(parse_qsl(urlparse(record['UR']).query))['eid'] 
+        record['UT'] = dict(parse_qsl(urlparse(record['UR']).query))['eid']
         #add_doc(record)
     except:
         print("don't want to add this record, it has no id!")
@@ -428,6 +430,8 @@ def add_doc_text(r):
 ##
 def matchref(dr):
     django.db.connections.close_all()
+    if dr.title is None:
+        dr.title = ""
     if dr.hasdoi:
         r = Doc.objects.filter(wosarticle__di=dr.doi)
     elif len(dr.title)>10:
@@ -450,11 +454,11 @@ def matchref(dr):
             dr.sametech = 0
         dr.save()
 
-        
+
 #############################################################################
 #############################################################################
-#############################################################################           
-        
+#############################################################################
+
 
 def main():
 
@@ -477,8 +481,8 @@ def main():
                         kw.save()
                     kw.doc.add(d)
                     kw.ndocs+=1
-                    kw.save() 
-    
+                    kw.save()
+
     DEBUG = True
     DOI_ONLY = True
 
@@ -490,6 +494,12 @@ def main():
     q2id = sys.argv[2] # Query containing list of references
     q3id = sys.argv[3] # Query containing list of citations
 
+    try:
+        ignore = sys.argv[3] # ignore q3
+        ignoreq3 = True
+    except:
+        ignoreq3 = False
+
     if DEBUG:
         print("  - The document query has the following ID: "+str(qid))
         print("  - The reference query has the following ID: "+str(q2id))
@@ -500,7 +510,7 @@ def main():
         q1 = Query.objects.get(pk=qid)
     global q2
     q2 = Query.objects.get(pk=q2id)
-    global q3 
+    global q3
     if q3id != '0':
         q3 = Query.objects.get(pk=q3id)
     else:
@@ -525,7 +535,7 @@ def main():
     totnbrefs     = 0
     totnbrefsindb = 0
     totnbskips    = 0
- 
+
     doi_lookups   = []
     au_lookups    = []
     py_lookups    = []
@@ -537,7 +547,7 @@ def main():
 
     global q
     q = q1
-    if q3id == '0':
+    if q3id == '0' and ignoreq3==False:
         q = q2
         # compute the shingle of unreferented documents
     title = str(q.id)
@@ -550,17 +560,17 @@ def main():
                 continue
             ###############################
             #### Don't do this parellely anymore, just one at a time is easier here.
-            if 'ER  -' in line:   # end of record - save it and start a new one                               
-                n_records +=1            
+            if 'ER  -' in line:   # end of record - save it and start a new one
+                n_records +=1
                 add_doc_text(record)
                 record = []
                 continue
             if re.match("^EF",line): #end of file
                 #done!
                 #break # We added files together, so there will be multiple EFs
-                continue 
+                continue
             record.append(line)
-    
+
     django.db.connections.close_all()
     q.r_count = n_records
     q.save()
@@ -568,12 +578,12 @@ def main():
 
     ####################
     ## These are the backwards docref objects
-    drs = DocRel.objects.filter(seedquery=q1,relation=-1)  
+    drs = DocRel.objects.filter(seedquery=q1,relation=-1)
 
     print(drs)
 
 
-    if q3id == '0':
+    if q3id == '0' and ignoreq3==False:
         drs = drs.filter(referent__query=q2) | drs.filter(referent__isnull=True)
         print(drs)
         # kws is a list of keywords that are the keywords of the seed documents
@@ -604,7 +614,7 @@ def main():
 
         # Process docs with dois
         refdois = drs.filter(seedquery=q,hasdoi=True)
-        
+
         # Look for the no dois in the database
         # Match them with a referent and see if they match the tech
         nodois = drs.filter(seedquery=q,hasdoi=False,title__isnull=False,relation=-1)
@@ -626,11 +636,15 @@ def main():
         if ldocs.count() == 0:
             qtext+=q1.text
         for l in ldocs:
+            if l.title is None:
+                l.title=""
+            if l.PY is None:
+                l.PY = ""
             if l.hasdoi:
                 if i > 0:
                     qtext+=" OR "
                 i+=1
-                qtext += '(DOI("{}")'.format(l.doi)            
+                qtext += '(DOI("{}")'.format(l.doi)
             elif len(l.title) > 10 and len(str(l.PY)) > 0:
                 if i > 0:
                     qtext+=" OR "
@@ -642,40 +656,42 @@ def main():
 
         print(qtext)
 
-        ###############################################################
-        ## Parse the Citations now!
-        global q
-        q = q3
-        title = str(q.id)
-        print(title)
-        dorefs = False
-        record = []
-        # Open results file and loop over lines
-        with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
-            for line in res:
-                if '\ufeff' in line: # BOM on first line
-                    continue
-                ###############################
-                #### Don't do this parellely anymore, just one at a time is easier here.
-                if 'ER  -' in line:   # end of record - save it and start a new one                               
-                    n_records +=1            
-                    add_doc_text(record)
-                    record = []
-                    continue
-                if re.match("^EF",line): #end of file
-                    #done!
-                    #break # We added files together, so there will be multiple EFs
-                    continue 
-                record.append(line)
-        
-        django.db.connections.close_all()
-        q.r_count = n_records
-        q.save()
-        ##
-        ###############################################################
+
+        if ignoreq3==False:
+            ###############################################################
+            ## Parse the Citations now!
+            global q
+            q = q3
+            title = str(q.id)
+            print(title)
+            dorefs = False
+            record = []
+            # Open results file and loop over lines
+            with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
+                for line in res:
+                    if '\ufeff' in line: # BOM on first line
+                        continue
+                    ###############################
+                    #### Don't do this parellely anymore, just one at a time is easier here.
+                    if 'ER  -' in line:   # end of record - save it and start a new one
+                        n_records +=1
+                        add_doc_text(record)
+                        record = []
+                        continue
+                    if re.match("^EF",line): #end of file
+                        #done!
+                        #break # We added files together, so there will be multiple EFs
+                        continue
+                    record.append(line)
+
+            django.db.connections.close_all()
+            q.r_count = n_records
+            q.save()
+            ##
+            ###############################################################
 
         ## Look for the title in notechmatches
-        ## 
+        ##
         # kws is a list of keywords that are the keywords of the seed documents
         kws = [x.text for x in [item for sublist in [x.kw_set.all() for x in q1.doc_set.all()] for item in sublist]]
         for dr in DocRel.objects.filter(seedquery=q1,referent__isnull=False).exclude(sametech=1):
@@ -693,14 +709,15 @@ def main():
     if DEBUG:
         print("<< Exiting main() function in upload_docrefs.py")
 
-    sbs = q1.snowball
-    sbs.working = False
-    sbs.working_pb2 = False
-    sbs.save()
+    if ignoreq3==False:
+        sbs = q1.snowball
+        sbs.working = False
+        sbs.working_pb2 = False
+        sbs.save()
 
 
 if __name__ == '__main__':
-    t0 = time.time()	
+    t0 = time.time()
     main()
     totalTime = time.time() - t0
 

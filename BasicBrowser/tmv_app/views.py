@@ -136,10 +136,15 @@ def topic_detail(request, topic_id):
 
     topic = Topic.objects.get(pk=topic_id,run_id=run_id)
 
-    topicterms = Term.objects.filter(topicterm__topic=topic, run_id=run_id, topicterm__score__gt=0.00001).order_by('-topicterm__score')[:50]
+    topicterms = Term.objects.filter(
+        topicterm__topic=topic, run_id=run_id,
+        topicterm__score__gt=0.00001
+    ).order_by('-topicterm__score')[:50]
 
     if Settings.objects.first().doc_topic_scaled_score==True:
-        doctopics = Doc.objects.filter(doctopic__topic=topic,doctopic__run_id=run_id).order_by('-doctopic__scaled_score')[:50]
+        doctopics = Doc.objects.filter(
+            doctopic__topic=topic,doctopic__run_id=run_id
+        ).order_by('-doctopic__scaled_score')[:50]
     else:
         doctopics = Doc.objects.filter(doctopic__topic=topic,doctopic__run_id=run_id).order_by('-doctopic__score').exclude(UT__contains='2WOS')[:50]
 
@@ -175,10 +180,10 @@ def topic_detail(request, topic_id):
     ctarray = []
 
     for ct in corrtops:
-        top = Topic.objects.get(topic=ct.topiccorr)
+        top = Topic.objects.get(pk=ct.topiccorr)
         if ct.score < 1:
             score = round(ct.score,2)
-            ctarray.append({"topic": top.topic,"title":top.title,"score":score})
+            ctarray.append({"topic": top.pk,"title":top.title,"score":score})
 
     topic_page_context = Context({'nav_bar': nav_bar, 'topic': topic, 'terms': terms, 'term_bar': term_bar, 'docs': doctopics, 'yts': ytarray, 'corrtops': ctarray})
 
@@ -635,6 +640,8 @@ def delete_run(request,new_run_id):
 
 
     return HttpResponseRedirect('/tmv_app/runs')
+
+
 
 def update_topic_titles(session):
     if isinstance(session, int):

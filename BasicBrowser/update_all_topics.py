@@ -20,6 +20,7 @@
 
 import pickle, string, numpy, getopt, sys, random, time, re, pprint, gc, os
 import pandas as pd
+import subprocess
 import onlineldavb
 import scrapeWoS
 import gensim
@@ -54,3 +55,7 @@ for stat in RunStats.objects.all():
     update_year_topic_scores(run_id)
     update_topic_scores(run_id)
     update_topic_titles(run_id)
+    subprocess.Popen(["python3",
+        "/home/galm/software/tmv/BasicBrowser/corr_topics.py",
+        str(run_id)
+    ]).wait()
