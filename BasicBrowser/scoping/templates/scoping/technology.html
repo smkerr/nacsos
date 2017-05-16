@@ -31,56 +31,131 @@
 <script type="text/JavaScript">
 var data = {{ bypy|safe }};
 var width = $("#pyGraph").parent().width();
-var height = width /2
+var height = width *0.66
+
+vstext = width*0.015+"px"
+stext = width*0.02+"px"
+ltext = width*0.025+"px"
 
 console.log(data)
 
-var margin = {top: 20, right: 50, bottom: 30, left: 20},
+var margin = {top: width*0.08, right: width*0.08, bottom: width*0.08, left: width*0.09}
     width = width - margin.left - margin.right,
     height = height - margin.top - margin.bottom;
 
 var svg = d3.select("#pyGraph")
   .append("svg")
-  .attr("width", width)
-  .attr("height", height);
+  .attr("width", width+margin.right+margin.left)
+  .attr("height", height+margin.top+margin.bottom);
+
+svg.append("rect")
+  .attr("width", width+margin.right+margin.left)
+  .attr("height", height+margin.top+margin.bottom)
+  .style("fill", "white")
+  .style("stroke", "black")
+  .style("stroke-width", 2)
 
 var g = svg.append("g")
   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 
-
-
-var x = d3.scaleBand()
+var x = d3.scale.linear()
     .rangeRound([0, width]);
 
 var y = d3.scale.linear()
     .rangeRound([height, 0]);
 
-var z = d3.scale.category10();
+xmax = d3.max(data,function(d){ return d.PY })
+xmin = d3.min(data,function(d){ return d.PY })
 
-var xAxis = d3.svg.axis()
-    .scale(x)
-    .orient("bottom");
-
-x.domain(data.map(function(d){ return d.PY }))
+x.domain([xmin-1,xmax+1])
 y.domain([0, d3.max(data, function(d) { return d.n; })]);
+
+bwidth = x(xmax) - x(xmax-1)
+
+var color = d3.scale.ordinal().domain(["Not Relevant","Relevant"])
+      .range(['#fbb4ae','#b3cde3']);
+
+var xAxis = d3.axisBottom(x)
+  .tickValues(x.domain().filter(function(d,i){ return !(d%5)}));
 
 g.append("g")
       .attr("class", "axis axis--x")
       .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x));
+      .call(d3.axisBottom(x).ticks(10).tickFormat(d3.format("d")));
 
+g.append("g")
+      .attr("class", "axis axis--y")
+      .call(d3.axisLeft(y).ticks(10).tickFormat(d3.format("d")));
 
+g.selectAll(".axis")
+  .selectAll("text")
+  .style("font-size",vstext)
 
 
 g.selectAll(".bar")
    .data(data)
    .enter().append("rect")
-     .attr("class", "bar")
-     .attr("x", function(d) { return x(d.PY); })
+     //.attr("class", "bar")
+     .attr("x", function(d) {
+       if (d.relevant=="Not Relevant") {
+         return x(d.PY)+bwidth*0.05-+bwidth/2;
+       } else {
+         return x(d.PY)+bwidth*0.05
+       }
+     })
      .attr("y", function(d) { return y(d.n); })
-     .attr("width", x.bandwidth())
-     .attr("height", function(d) { return height - y(d.n); });
+     .attr("fill", function(d) { return color(d.relevant); })
+     .attr("width", bwidth*0.4)
+     .attr("height", function(d) { return height - y(d.n); })
+     .attr("data-legend",function(d) { return d.relevant});
+
+     ldata = [data[0],data[data.length-1]]
+
+     console.log(ldata)
+
+     var legend = svg.selectAll(".legend")
+         .data(ldata)
+         .enter().append("g")
+         .attr("class", "legend")
+         .attr("transform", function(d, i) { return "translate(20," + i * 20 + ")"; });
+
+     legend.append("rect")
+         .attr("x", width*0.1)
+         .attr("y", height*0.1)
+         .attr("width", 18)
+         .attr("height", 18)
+         .style("fill", function(d) { return color(d.relevant); });
+
+     legend.append("text")
+         .attr("x", width*0.1+22)
+         .attr("y", height*0.1+9)
+         .attr("dy", ".35em")
+         .style("font-size",stext)
+         .style("text-anchor", "start")
+         .text(function(d) { return d.relevant; })
+
+      g.append("text")
+        .attr("x",x((xmax+xmin)/2))
+        .attr("y",height*0.05)
+        .attr("text-anchor", "middle")
+        .style("font-size",ltext)
+        .text("{{tech.name}}");
+
+        g.append("text")
+            .attr("text-anchor", "middle")  // this makes it easy to centre the text as the transform is applied to the anchor
+            .attr("transform", "translate("+ (-margin.left/2) +","+(height/2)+")rotate(-90)")  // text is drawn off the screen top left, move down and out and rotate
+            .style("font-size",stext)
+            .text("Number of Papers");
+
+        g.append("text")
+            .attr("text-anchor", "middle")  // this makes it easy to centre the text as the transform is applied to the anchor
+            //.attr("transform", "translate("+ (margin.bottom/2) +","+(height-(margin.bottom/3))+")")  // centre below axis
+            .attr("x",width/2)
+            .attr("y",height+margin.bottom/2)
+            .style("font-size",stext)
+            .attr("alignment-baseline","hanging")
+            .text("Publication Year");
 
 </script>
 {% endblock %}

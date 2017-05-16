@@ -22,7 +22,7 @@ def main():
 
     df = pd.DataFrame(list(dts.values('doc_id','topic_id','scaled_score')))
 
-    df = df.pivot(index='doc_id',columns='topic_id',values='scaled_score')
+    df = df.pivot(index='doc_id',columns='topic_id',values='scaled_score').fillna(0)
     #df = df.pivot(index='topic_id',columns='doc_id',values='scaled_score')
 
     # pseudo code for docwise:
@@ -30,9 +30,12 @@ def main():
     # For each doc, compare with docs that have a topic_score > 0 of the
     # Largest topic in the doc.
 
+
     corr = df.corr()
     values = corr.values
     cols = corr.columns
+
+    TopicCorr.objects.filter(run_id=run_id).delete()
 
     for c in range(len(cols)):
         topic = cols[c]

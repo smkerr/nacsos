@@ -1,0 +1,23 @@
+<html>
+<head>
+{% load static %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Scoping</title>
+<link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
+<script src="{% static 'tmv_app/js/d3.v4.js' %}"></script>
+<script src="{% static 'scoping/js/jquery-3.2.0.min.js' %}"></script>
+
+</head>
+  <body>
+{% include 'tmv_app/nav_bar.html' with user=user qid=query.id %}
+
+
+<div id="main">
+<div id="graph">
+{% block content %} {% endblock %}
+</div>
+</div>
+
+</body>
+{% block script %} {% endblock %}
+</html>
