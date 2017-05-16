@@ -13,6 +13,7 @@ from django.template import loader, RequestContext
 from django.utils import timezone
 from django.urls import reverse
 from django.contrib.auth.decorators import user_passes_test
+import json
 
 
 from .models import *
@@ -2065,6 +2066,7 @@ def get_tech_docs(tid):
 
     return [tech,docs,tobj]
 
+from collections import defaultdict
 
 def technology(request,tid):
     template = loader.get_template('scoping/technology.html')
@@ -2078,7 +2080,34 @@ def technology(request,tid):
         docownership__query__technology__in=tech
     ).distinct('UT').count()
 
-    docs = docs.order_by('PY')
+    docs = docs.order_by('PY').filter(PY__gt=1985)
+
+    rdocids = docs.filter(
+        docownership__relevant=1,
+        docownership__query__technology__in=tech
+    ).values_list('UT',flat=True)
+
+    rdocids = list(rdocids)
+
+    rdocs = docs.filter(UT__in=rdocids).values('PY').annotate(
+        n=models.Count("UT"),
+        relevant=models.Value("Relevant", models.TextField())
+    )
+    nrdocs = docs.exclude(UT__in=rdocids).values('PY').annotate(
+        n=models.Count("UT"),
+        relevant=models.Value("Not Relevant", models.TextField())
+    )
+
+    all = list(nrdocs)+list(rdocs)
+    docjson = json.dumps(all)
+
+    docjson2 = []
+
+    d = defaultdict(dict)
+    for l in (rdocs,nrdocs):
+        for elem in l:
+            d[elem['PY']].update(elem)
+
 
     #bypy = docs.values('PY','techrelevant').annotate(
     #    n=models.Count("UT")
@@ -2087,6 +2116,7 @@ def technology(request,tid):
     context = {
         'tech': tobj,
         'docinfo': docinfo,
+        'bypy': docjson
         #'bypy': list(bypy.values('PY','techrelevant','n'))
     }
 

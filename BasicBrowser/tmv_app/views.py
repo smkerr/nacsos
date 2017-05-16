@@ -9,6 +9,7 @@ import random, sys, datetime
 import urllib.request
 from nltk.stem import SnowballStemmer
 from django.http import JsonResponse
+import json
 
 # the following line will need to be updated to launch the browser on a web server
 TEMPLATE_DIR = sys.path[0] + '/templates/'
@@ -116,8 +117,21 @@ def institution_detail(request, institution_name):
     return HttpResponse(institution_template.render(institution_page_context))
 
 def index(request):
-    ip = request.META['REMOTE_ADDR']
-    return HttpResponse("Hello, " + str(ip) + " You're at the topic browser index.")
+    template = loader.get_template('tmv_app/network.html')
+    run_id = find_run_id(request.session)
+
+    nodes = json.dumps(list(Topic.objects.filter(run_id=run_id).values('id','title','score')),indent=4,sort_keys=True)
+    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1).annotate(
+        source=F('topic'),
+        target=F('topiccorr')
+    )
+    links = json.dumps(list(links.values('source','target','score')),indent=4,sort_keys=True)
+    context = {
+        "nodes":nodes,
+        "links":links
+    }
+
+    return HttpResponse(template.render(context, request))
 
 
 
