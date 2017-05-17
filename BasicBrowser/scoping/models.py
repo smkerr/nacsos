@@ -4,6 +4,7 @@ from django.utils import timezone
 from nltk import ngrams
 from django.contrib.postgres.fields import ArrayField
 import uuid
+from random import randint
 
 
 # Create your models here.
@@ -89,7 +90,18 @@ class Tag(models.Model):
     def __str__(self):
       return self.title
 
+def random_doc():
+    c = Doc.objects.count()
+    return Doc.objects.all()[randint(0,c-1)]
+
+class DocManager(models.Manager):
+    def random(self):
+        count = self.aggregate(count=models.Count('UT'))['count']
+        random_index = randint(0, count - 1)
+        return self.all()[random_index]
+
 class Doc(models.Model):
+    random = DocManager
     UT = models.CharField(max_length=240,db_index=True,primary_key=True, verbose_name='Document ID')
     query = models.ManyToManyField('Query')
     tag = models.ManyToManyField('Tag')
@@ -124,6 +136,7 @@ class Doc(models.Model):
 
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
+
 
 class AR(models.Model):
     ar = models.IntegerField(unique=True)
