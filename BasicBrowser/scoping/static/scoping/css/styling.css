@@ -43,7 +43,7 @@ h1 {
 }
 
 h2 {
-    line-height: 0em;
+    /*line-height: 0em;*/
     font-size: 16px;
     font-style: italic;
 }
@@ -1106,4 +1106,13 @@ div.addbox {
 
 .tech {
     margin: 60px 40px
+}
+
+td.hboxselect {
+	font-weight: bold;
+	cursor: pointer;
+}
+
+div.hidden > table {
+	display:none
 }

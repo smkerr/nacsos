@@ -1,0 +1,121 @@
+{% extends "scoping/base.html" %}
+
+{% block content %}
+<h1> Scoping Review Helper</h1>
+<br>
+
+<!-- Query manager -->
+<h2> Document Homepage: {{ doc.title }} </h2>
+  <div class="explanation" style="text-align:left">
+    <p><b>ID:</b> {{doc.pk}}</p>
+    <p><b>Title:</b> {{doc.title}}</p>
+    <p><b>Year:</b> {{doc.PY}}</p>
+    <p><b>Authors:</b>
+    {% for au in authors %}
+      <span>{{au.AF}} [{{au.institution}}];</span>
+    {% endfor %}
+    <p><b>Abstract:</b> {{doc.content}} <a id="edit">[Edit]</a></p>
+    <div class="hidden edit">
+      <form action="{% url 'scoping:editdoc' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="doc" value="{{doc.pk}}"></input>
+        <input type="hidden" name="field" value="content"></input>
+        <textarea name="value">{{doc.content}}</textarea>
+        <input type="submit" value="Save changes" />
+      </form>
+    </div>
+    <p><b>Keywords:</b>
+      {% for kw in doc.kw_set.all %}
+        {{kw.text}};
+      {% endfor %}
+    </p>
+    <p><b>In WoS:</b> {{doc.wos}}</p>
+    <p><b>In Scopus:</b> {{doc.wos}}</p>
+    <p>Show: </p>
+      <table style="text-align:center">
+        <td class="hboxselect" width=33%>Queries</td>
+        <td class="hboxselect" width=33%>Technologies</td>
+        <td class="hboxselect" width=33%>Ratings</td>
+      </table>
+  </div>
+<br>
+  <div class="explanation hbox hidden" data-type="queries" style="text-align:left">
+    <table>
+      <tr>
+        <th>Query</th>
+        <th>Title</th>
+        <th>Documents</th>
+        <th>Technology</th>
+        <th>User</th>
+        <th>Date</th>
+      </tr>
+    {% for q in queries %}
+    <tr>
+      <td><a href="{% url 'scoping:query' q.pk %}">{{q.pk}}</a></td>
+      <td>{{q.title}}</td>
+      <td><a href="{% url 'scoping:doclist' q.pk %}">{{q.r_count}}</td>
+      <td>
+        {% if q.technology is not None %}
+          <a href="{% url 'scoping:technology' q.technology.pk %}">
+          {% endif %}
+          {{q.technology.name}}</a>
+        </td>
+
+      <td>{{q.creator.username}}</td>
+      <td>{{q.date}}</td>
+    </tr>
+    {% endfor %}
+    </table>
+  </div>
+
+  <div class="explanation hbox hidden" data-type="technologies" style="text-align:left">
+    <table>
+    {% for t in technologies %}
+    <tr>
+      <td width="50%" style="text-align:left">{{t.name}}</td>
+      <td width="50%" style="text-align:right">
+        <a href="{% url 'scoping:remove_tech' doc.pk t.pk %}">Remove technology association</a>
+      </td>
+
+    {% endfor %}
+  </table>
+  </div>
+
+  <div class="explanation hbox hidden"
+  data-type="ratings" style="text-align:left"
+  >
+    <table>
+      <tr>
+      <th>User</th>
+      <th>Rating</th>
+      <th>Query</th>
+      <th>Tag</th>
+      <th>Time</th>
+    </tr>
+      {% for r in ratings %}
+    <tr>
+      <td>{{r.user}}</td>
+      <td>{{r.get_relevant_display}}</td>
+      <td>{{r.query.id}}</td>
+      <td>{{r.tag.title}}</td>
+      <td>{{r.date}}</td>
+    </tr>
+    {% endfor %}
+
+  </table>
+  </div>
+{% endblock %}
+
+{% block script %}
+<script type="text/JavaScript">
+$(".hboxselect").click(function() {
+  $(".hbox").addClass("hidden")
+  var reveal = $(this).text().toLowerCase();
+  console.log(reveal)
+  $('*[data-type="'+reveal+'"]').removeClass("hidden")
+})
+$("#edit").click(function(){
+  $(".edit").toggleClass("hidden")
+})
+</script>
+{% endblock %}

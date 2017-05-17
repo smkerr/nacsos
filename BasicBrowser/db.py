@@ -79,7 +79,7 @@ def add_topics(no_topics):
     topic_ids = []
     for t in range(0,no_topics):
         title = "Topic " + str(t+1)
-        topicrow = Topic(title=title,run_id=run_id)
+        topicrow = Topic(title=title,run_id_id=run_id)
         topicrow.save()
         topic_ids.append(topicrow.pk)
     return(topic_ids)

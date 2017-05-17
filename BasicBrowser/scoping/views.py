@@ -2052,28 +2052,36 @@ def sortdocs(request):
     return JsonResponse(response,safe=False)
 
 
-def get_tech_docs(tid):
+def get_tech_docs(tid,other=False):
     if tid=='0':
         tech = Technology.objects.all().values('id')
         tobj = Technology(pk=0,name="NETS: All Technologies")
     else:
         tech = Technology.objects.filter(pk=tid).values('id')
         tobj = Technology.objects.get(pk=tid)
-    docs1 = list(Doc.objects.filter(query__technology__in=tech, query__type="default").values_list('UT',flat=True))
-    docs2 = list(Doc.objects.filter(technology__in=tech).values_list('UT',flat=True))
+    docs1 = list(Doc.objects.filter(
+        query__technology__in=tech,
+        query__type="default"
+    ).values_list('UT',flat=True))
+    docs2 = list(Doc.objects.filter(
+        technology__in=tech
+    ).values_list('UT',flat=True))
     dids = list(set(docs2)|set(docs1))
     docs = Doc.objects.filter(UT__in=dids)
+    nqdocs = Doc.objects.filter(UT__in=docs2).exclude(UT__in=docs1)
 
-    return [tech,docs,tobj]
+    if other:
+        return [tech,docs,tobj,nqdocs]
+    else:
+        return [tech,docs,tobj]
 
 from collections import defaultdict
 
 def technology(request,tid):
     template = loader.get_template('scoping/technology.html')
-    tech, docs, tobj = get_tech_docs(tid)
+    tech, docs, tobj, nqdocs = get_tech_docs(tid,other=True)
     docinfo={}
-    docinfo['other_queries'] = Doc.objects.filter(technology__in=tech).count()
-
+    docinfo['nqdocs'] = nqdocs.distinct('UT').count()
     docinfo['tdocs'] = docs.distinct('UT').count()
     docinfo['reldocs'] = docs.filter(
         docownership__relevant=1,
@@ -2116,7 +2124,8 @@ def technology(request,tid):
     context = {
         'tech': tobj,
         'docinfo': docinfo,
-        'bypy': docjson
+        'bypy': docjson,
+        'nqdocs': nqdocs
         #'bypy': list(bypy.values('PY','techrelevant','n'))
     }
 
@@ -2168,6 +2177,21 @@ def prepare_authorlist(request,tid):
 
     return response
 
+def document(request,doc_id):
+    template = loader.get_template('scoping/document.html')
+    doc = Doc.objects.get(pk=doc_id)
+    authors = DocAuthInst.objects.filter(doc=doc)
+    queries = Query.objects.filter(doc=doc)
+    technologies = doc.technology.all()
+    ratings = doc.docownership_set.all()
+    context = {
+        'doc': doc,
+        'authors': authors,
+        'technologies': technologies,
+        'ratings': ratings,
+        'queries': queries
+    }
+    return HttpResponse(template.render(context, request))
 
 def cycle_score(request):
 
@@ -2390,10 +2414,32 @@ def remove_assignments(request):
     DocOwnership.objects.filter(query=int(qid)).delete()
     return HttpResponse("")
 
+def editdoc(request):
+    doc_id = request.POST.get('doc',None)
+    field = request.POST.get('field',None)
+    value = request.POST.get('value',None)
+
+    doc = Doc.objects.get(pk=doc_id)
+    if field == "content":
+        doc.content=value
+        doc.wosarticle.ab=value
+        doc.save()
+
+    print(doc_id)
+    print(field)
+    print(value)
+
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 def delete(request,thing,thingid):
     from scoping import models
     getattr(models, thing).objects.get(pk=thingid).delete()
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+def remove_tech(request,doc_id,tid):
+    doc = Doc.objects.get(pk=doc_id)
+    tech = Technology.objects.get(pk=tid)
+    doc.technology.remove(tech)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 def add_note(request):
