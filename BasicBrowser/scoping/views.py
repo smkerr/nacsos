@@ -244,13 +244,15 @@ def doquery(request):
         op = args[1]
         q2 = Doc.objects.filter(query=args[2])
         if op =="AND":
+            combine = q1.filter(query=args[2])
+        if op =="OR":
             combine = q1 | q2
         if op == "NOT":
             combine = q1.exclude(query=args[2])
         for d in combine.distinct('UT'):
             d.query.add(q)
 
-        q.r_count = len(combine.distinct())
+        q.r_count = len(combine.distinct('UT'))
         q.save()
 
         return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': q.id, 'q2id': 0, 'sbsid': 0}))
