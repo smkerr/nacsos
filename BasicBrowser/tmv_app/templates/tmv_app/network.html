@@ -24,12 +24,17 @@
   <p><b>Force:</b>
     <input class="param" id="force" value="-200" type="range" min="-200" max="200"></input>
     <span id="forcev">-200
+  <p>Hover over a node to view topic info, click the background
+    to refresh the graph
 </div>
-<p id="graphinfo">
-  No Topic Selected<br> &nbsp;
-</p>
 <table><tr>
-<td width="100%">
+<td width="30%">
+  <div class="explanation" style="width:90%">
+  <p id="graphinfo">
+    No Topic Selected<br> &nbsp;
+  </p>
+</div>
+<td width="70%">
     <div id="pyGraph" height="600"></div><br>
 </td>
 
@@ -82,12 +87,19 @@ function drawgraph(graph,force) {
     .attr("width", width)
     .attr("height", height);
 
+  $("#graphinfo").html('<h3>Topic Selected:</h3>')
+  $("#graphinfo").height(height-60)
+
+
   svg.append("rect")
     .attr("width", width)
     .attr("height", height)
     .style("fill", "white")
     .style("stroke", "black")
     .style("stroke-width", 2)
+    .on("click", function() {
+      drawgraph(graph,force)
+    });
 
   var color = d3.scaleOrdinal(d3.schemeCategory20);
 
@@ -101,7 +113,6 @@ function drawgraph(graph,force) {
 
   var linkedByIndex = {};
   graph.links.forEach(function(d) {
-    console.log(d)
     linkedByIndex[d.source + "," + d.target] = 1;
   });
 
@@ -124,7 +135,6 @@ function drawgraph(graph,force) {
       .domain([lmin, lmax])
       .range([0.1, 5]);
 
-  console.log(smax)
   var link = svg.append("g")
     .attr("class", "links")
     .selectAll("line")
@@ -191,12 +201,26 @@ function drawgraph(graph,force) {
 
       function fade(opacity) {
           return function(d) {
-              $("#graphinfo").html('<h2>'+d.title+'</h2> <a href="/tmv_app/topic/'+d.id+'">Click</a> to see topic documents')
+              gtext = '<h3>Topic Selected:</h3>'
+              gtext += '<a href="/tmv_app/topic/'+d.id+'"><h2>'+d.title+'</h2></a>'
               node.style("stroke-opacity", function(o) {
                   thisOpacity = isConnected(d, o) ? 1 : opacity;
                   this.setAttribute('fill-opacity', thisOpacity);
                   return thisOpacity;
               });
+              links = graph.links.filter(function(o) {
+                return o.source === d
+              }).sort(function(x,y){
+                return d3.descending(x.score, y.score)
+              })
+              gtext+="<h3>Correlating Topics:</h3>"
+              console.log(links)
+              for (l in links) {
+                gtext+='<p>'
+                gtext+=links[l].target.title
+                gtext+=': '+links[l].score.toPrecision(2)
+              }
+              $("#graphinfo").html(gtext)
 
               link.style("stroke-opacity", opacity).style("stroke-opacity", function(o) {
                   return o.source === d || o.target === d ? 1 : opacity;
