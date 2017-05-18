@@ -43,7 +43,7 @@ from tmv_app.models import *
 session = {}
 
 # Select last run
-for stat in RunStats.objects.all():
+for stat in RunStats.objects.filter(run_id__gt=50):
     run_id = stat.run_id
     print(run_id)
     # Set current sums for run to False (so recalculated)

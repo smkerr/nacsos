@@ -3,13 +3,14 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from tmv_app.views import index, topic_detail, term_detail, doc_detail, topic_list_detail, topic_presence_detail, stats, settings, apply_settings, topic_random, doc_random, term_random, institution_detail, author_detail, runs, apply_run_filter, delete_run, update_run, get_docs
-
+from tmv_app.views import *
 from django.contrib.auth.decorators import login_required
 
 app_name = 'tmv_app'
 
 urlpatterns = [
-    url(r'^$', index, name='index'),
+    url(r'^$', login_required(index), name='index'),
+    url(r'^return_corrs$', login_required(return_corrs), name='return_corrs'),
     url(r'^topic/(?P<topic_id>\d+)/$', login_required(topic_detail), name="topic_detail"),
     url(r'^term/(?P<term_id>\d+)/$', login_required(term_detail), name="term_detail"),
     url(r'^doc/(?P<doc_id>.+)/$', login_required(doc_detail)),
