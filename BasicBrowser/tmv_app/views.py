@@ -129,7 +129,20 @@ def index(request):
 
     return HttpResponse(template.render(context, request))
 
-
+def return_corrs(request):
+    run_id = find_run_id(request.session)
+    cor = request.GET.get('cor',None)
+    nodes = list(Topic.objects.filter(run_id=run_id).values('id','title','score'))
+    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=cor,score__lt=1).annotate(
+        source=F('topic'),
+        target=F('topiccorr')
+    )
+    links = list(links.values('source','target','score'))
+    context = {
+        "nodes":nodes,
+        "links":links
+    }
+    return HttpResponse(json.dumps(context,sort_keys=True))
 
 
 ###########################################################################
