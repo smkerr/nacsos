@@ -11,7 +11,16 @@
 
 <p>Number of docs: {{ docinfo.tdocs }}
 <p>Relevant docs: {{docinfo.reldocs}}
+<p>Documents assigned through other queries: {{docinfo.nqdocs}}
 
+<p>
+<div class="explanation" style="text-align:left">
+  <ul>
+    {% for d in nqdocs %}
+      <li>{{d.title}} <a href="{% url 'scoping:document' d.pk %}">[View more]</a>
+    {% endfor %}
+  </ul>
+</div>
 <p>
 
   <a href="{% url 'scoping:authorlist' tech.pk %}">Generate a list of author emails

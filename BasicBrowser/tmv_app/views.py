@@ -53,24 +53,15 @@ DEBUG_TOOLBAR_CONFIG = {
 def author_detail(request, author_name):
     run_id = find_run_id(request.session)
     response = author_name
-    documents = Doc.objects.filter(docauthors__author=author_name)
+    documents = Doc.objects.filter(docauthinst__AU=author_name)
 
-    topics = {}
-    topics = Topic.objects.all()
-    topics = []
+    dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
 
-    for d in documents:
-        doctopics = d.doctopic_set.values()
-        for dt in doctopics:
-            if dt['scaled_score']*100 > 1 :
-                topic = Topic.objects.get(topic=dt['topic_id'])
-                if topic in topics:
-                    topics[topics.index(topic)].sum += dt['scaled_score']
-                else:
-                    topic.sum = dt['scaled_score']
-                    topics.append(topic)
-
-    topics = DocTopic.objects.filter(doc__docauthors__author=author_name, scaled_score__gt=0.01,run_id=run_id)
+    topics = DocTopic.objects.filter(
+        doc__docauthinst__AU=author_name,
+        scaled_score__gt=dt_threshold/80,
+        run_id=run_id
+    )
 
     topics = topics.annotate(total=(Sum('scaled_score')))
 
@@ -92,13 +83,18 @@ def author_detail(request, author_name):
 ## Institution view
 def institution_detail(request, institution_name):
     run_id = find_run_id(request.session)
-    documents = Doc.objects.filter(docinstitutions__institution__icontains=institution_name).order_by('-PY')
+    documents = Doc.objects.filter(
+        docauthinst__institution__icontains=institution_name
+    ).distinct('UT')
 
     topics = {}
     topics = Topic.objects.all()
     topics = []
 
-    topics = DocTopic.objects.filter(doc__docinstitutions__institution__icontains=institution_name,  scaled_score__gt=0.00002,run_id=run_id)
+    topics = DocTopic.objects.filter(
+        doc__docauthinst__institution__icontains=institution_name,
+        scaled_score__gt=0.00002,run_id=run_id
+    )
 
     topics = topics.annotate(total=(Sum('scaled_score')))
 
@@ -133,7 +129,20 @@ def index(request):
 
     return HttpResponse(template.render(context, request))
 
-
+def return_corrs(request):
+    run_id = find_run_id(request.session)
+    cor = request.GET.get('cor',None)
+    nodes = list(Topic.objects.filter(run_id=run_id).values('id','title','score'))
+    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=cor,score__lt=1).annotate(
+        source=F('topic'),
+        target=F('topiccorr')
+    )
+    links = list(links.values('source','target','score'))
+    context = {
+        "nodes":nodes,
+        "links":links
+    }
+    return HttpResponse(json.dumps(context,sort_keys=True))
 
 
 ###########################################################################
@@ -266,29 +275,12 @@ def term_detail(request, term_id):
     term_template = loader.get_template('tmv_app/term.html')
 
     term = Term.objects.get(pk=term_id,run_id=run_id)
-
-    topics = {}
-    for topic in Topic.objects.filter(run_id=run_id):
-        tt = TopicTerm.objects.filter(topic=topic.pk, term=term_id,run_id=run_id)
-        if len(tt) > 0:
-            topics[topic] = tt[0].score
-
-    sorted_topics = sorted(topics.keys(), key=lambda x: -topics[x])
-    topic_tuples = []
-
-
-    if len(topics.keys()) > 0:
-        max_score = max(topics.values())
-        for topic in sorted_topics:
-            topic_tuples.append((topic, topics[topic], topics[topic]/max_score*100))
-
     topics = TopicTerm.objects.filter(term=term_id,run_id=run_id).order_by('-score')
     if len(topics) > 0:
         topic_tuples = []
         max_score = topics[0].score
         for topic in topics:
-            topic_tuples.append((topic.pk, topic.score, topic.score/max_score*100))
-
+            topic_tuples.append((topic.topic, topic.score, topic.score/max_score*100))
 
     term_page_context = Context({'nav_bar': nav_bar, 'term': term, 'topic_tuples': topic_tuples})
 
@@ -572,15 +564,13 @@ def runs(request):
 
     stats = RunStats.objects.all().order_by('-start')
 
-    for stat in stats:
-        stat_run_id = stat.run_id
-        if stat.get_method_display() == 'hlda':
-            stat.topics = HTopic.objects.filter(run_id=stat_run_id).count()
-        else:
-            stat.topics = Topic.objects.filter(run_id=stat_run_id).count()
-        stat.terms = Term.objects.filter(run_id=stat_run_id).count()
-
-
+    stats = stats.annotate(
+        topics = models.Count('topic')#,
+        #terms = models.Count('term')
+    )
+    for s in stats:
+        s.terms = Term.objects.filter(run_id=s.run_id).count()
+    print(stats)
     runs_page_context = Context({'nav_bar': nav_bar, 'stats':stats, 'run_id':run_id})
 
     #return HttpResponse(runs_template.render(runs_page_context))
@@ -799,7 +789,9 @@ def topic_random(request):
     return HttpResponseRedirect('/tmv_app/topic/' + str(random.randint(1, Topic.objects.count())))
 
 def doc_random(request):
-    return HttpResponseRedirect('/tmv_app/doc/' + str(random.randint(1, Doc.objects.count())))
+    run_id = find_run_id(request)
+    doc = random_doc()
+    return HttpResponseRedirect('/tmv_app/doc/' +  doc.UT)
 
 def term_random(request):
     return HttpResponseRedirect('/tmv_app/term/' + str(random.randint(1, Term.objects.count())))

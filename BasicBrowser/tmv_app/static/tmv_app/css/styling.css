@@ -6,6 +6,16 @@ body {
 	padding: 0;
 }
 
+div.explanation {
+    width:60%;
+	margin-left: auto;
+    margin-right: auto;
+    border: 3px solid #FFE5CC;
+    border-radius: 5px;
+    background-color: white;
+    padding: 10px;
+}
+
 a {
 	color: #000;
 	text-decoration: none;
@@ -24,7 +34,7 @@ h1 {
 }
 
 h2 {
-    line-height: 0em;
+
     font-size: 16px;
     font-style: italic;
 }
@@ -497,7 +507,7 @@ canvas {
 #navigation td.searchbar input {
     background-image: url('/static/img/search.png');
     background-repeat: no-repeat;
-    padding-right:15px; 
+    padding-right:15px;
     background-position: right center;
     line-height: 1.2;
 }
@@ -742,5 +752,3 @@ tr.active_run {
 .doc_box {
     font-size: 12px ;
 }
-
-
