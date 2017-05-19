@@ -32,17 +32,21 @@ data <- get_data(ss)
 ranges <- seq(1,200)
 df <- data.frame(v=ranges)
 
+
 # Get a list of resources, or define it yourself
 resources <- unique(
   data[data$measurement=="max" & data$variable!="cost",]$variable
 )
 resources <- resources[!is.na(resources)]
 
-# Count the studies with a maximum under each range for each resource
 
+# Count the studies with a maximum under each range for each resource
+# Add any additional "Dimension" filters too
 res2050 <- countranges(df,filter(data,year=="2050"),resources)
 
-heatbar(res2050,"pcnt") +
+# pass the dataframe and the measurement (can be) pcnt or value
+# to the plot function, and add some labels.
+heatbar(res2050,"pcnt") + 
   labs(x="Resource",y="Potential [EJ/yr]")
 
 ggsave("heatbar_example.png",width=8,height=5)
