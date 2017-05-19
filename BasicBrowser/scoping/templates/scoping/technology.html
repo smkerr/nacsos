@@ -11,10 +11,11 @@
 
 <p>Number of docs: {{ docinfo.tdocs }}
 <p>Relevant docs: {{docinfo.reldocs}}
-<p>Documents assigned through other queries: {{docinfo.nqdocs}}
+<p>Documents assigned through other queries:
+  <span id="nqdocs" class="link">{{docinfo.nqdocs}}</span>
 
 <p>
-<div class="explanation" style="text-align:left">
+<div class="explanation hidden" id="nqdocsbox" style="text-align:left">
   <ul>
     {% for d in nqdocs %}
       <li>{{d.title}} <a href="{% url 'scoping:document' d.pk %}">[View more]</a>
@@ -38,6 +39,11 @@
 
 {% block script %}
 <script type="text/JavaScript">
+
+$("#nqdocs").click(function(){
+  $("#nqdocsbox").toggleClass("hidden")
+})
+
 var data = {{ bypy|safe }};
 var width = $("#pyGraph").parent().width();
 var height = width *0.66
