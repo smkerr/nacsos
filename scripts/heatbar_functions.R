@@ -52,6 +52,7 @@ countranges <- function(df,data,headers) {
       !is.na(value),
       value>=x
     )
+    data$TI <- if ("TI" %in% names(data)) data$TI else data$UT
     if (length(data$TI) > length(unique(data$TI))) {
       print("warning, some titles seem to be duplicated, do you
             need to filter by a dimension?")
