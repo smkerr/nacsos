@@ -28,7 +28,8 @@ data <- get_data(ss)
 ################################################
 ## Generate a new df of ranges
 
-ranges <- seq(1,1000)
+# Adjust the maximum here to change the scale
+ranges <- seq(1,200)
 df <- data.frame(v=ranges)
 
 # Get a list of resources, or define it yourself
