@@ -44,5 +44,7 @@ res2050 <- countranges(df,filter(data,year=="2050"),resources)
 heatbar(res2050,"pcnt") +
   labs(x="Resource",y="Potential [EJ/yr]")
 
+ggsave("heatbar_example.png",width=8,height=5)
+
 
 
