@@ -33,6 +33,7 @@ urlpatterns = [
     url(r'^switchmode$', views.switch_mode, name='switch_mode'),
     url(r'^technologies',views.technologies, name='technologies'),
     url(r'^technology/(?P<tid>[0-9]+)$',views.technology, name='technology'),
+    url(r'^download_tdocs/(?P<tid>[0-9]+)$',views.download_tdocs, name='download_tdocs'),
     url(r'^authorlist/(?P<tid>[0-9]+)$',views.prepare_authorlist, name='authorlist'),
     url(r'^add_tech',views.add_tech, name='add_tech'),
     url(r'^update_tech',views.update_tech, name='update_tech'),
