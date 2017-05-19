@@ -3,7 +3,7 @@
 {% load static %}
     <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
     <script language="JavaScript" src="/static/js/jquery.rightClick.js"></script>
-    
+
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
 <title>{{ term.title }}</title>
@@ -20,12 +20,15 @@
 <hr noshade>
 </h1>
 
-<div id="graph"> 
+<div id="graph">
 <table width="100%">
 {% for topic, topic_score, width in topic_tuples %}
-<tr><td><table width="{{ width|floatformat:1 }}%" ><tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" onclick="window.location.href='/tmv_app/topic/{{ topic.topic }}'">{{ topic.title }}</td></tr></table></td></tr>
+<tr><td><table width="{{ width|floatformat:1 }}%" >
+  <tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}"
+    onclick="window.location.href='/tmv_app/topic/{{ topic.pk }}'">
+    {{ topic.title }}</td></tr></table></td></tr>
 {% endfor %}
-</table> 
+</table>
 </div>
 
 <div id="footer">
@@ -34,4 +37,3 @@
 </div>
   </body>
 </html>
-

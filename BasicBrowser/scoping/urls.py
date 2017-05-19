@@ -1,5 +1,8 @@
 from django.conf.urls import url
 
+from django.contrib.auth.decorators import login_required
+
+
 from . import views
 
 app_name = 'scoping'
@@ -56,5 +59,8 @@ urlpatterns = [
     url(r'^manual_add/$', views.add_doc_form, name='add_doc_form'),
     url(r'^external_add/(?P<authtoken>[0-9a-f-]+)$', views.add_doc_form, name='add_doc_form'),
     url(r'^do_add_doc/$', views.do_add_doc, name='do_add_doc'),
+    url(r'^editdoc$', views.editdoc, name='editdoc'),
+    url(r'^document/(?P<doc_id>.+)/$', views.document, name='document'),
+    url(r'^remove_tech/(?P<doc_id>.+)/(?P<tid>[0-9]+)$', views.remove_tech, name='remove_tech'),
 
 ]

@@ -36,7 +36,7 @@ class HDocTopic(models.Model):
 class Topic(models.Model):
     title = models.CharField(max_length=80)
     score = models.FloatField(null=True)
-    run_id = models.IntegerField(db_index=True)
+    run_id = models.ForeignKey('RunStats',db_index=True)
 
     def __unicode__(self):
         return str(self.title)
