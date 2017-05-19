@@ -1038,9 +1038,9 @@ def query(request,qid,q2id='0',sbsid='0'):
         for tag in tags:
             tag['docs']       = Doc.objects.filter(tag=tag['id']).distinct().count()
             tag['a_docs']     = Doc.objects.filter(docownership__tag=tag['id']).distinct().count()
-            tag['seen_docs']  = DocOwnership.objects.filter(doc__tag=tag['id'],relevant__gt=0).count()
-            tag['rel_docs']   = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=1).count()
-            tag['irrel_docs'] = DocOwnership.objects.filter(doc__tag=tag['id'],relevant=2).count()
+            tag['seen_docs']  = DocOwnership.objects.filter(tag=tag['id'],relevant__gt=0).count()
+            tag['rel_docs']   = DocOwnership.objects.filter(tag=tag['id'],relevant=1).count()
+            tag['irrel_docs'] = DocOwnership.objects.filter(tag=tag['id'],relevant=2).count()
             try:
                 tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
             except:
