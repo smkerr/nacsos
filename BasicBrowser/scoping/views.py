@@ -2088,7 +2088,7 @@ def technology(request,tid):
     docinfo['reldocs'] = docs.filter(
         docownership__relevant=1,
         docownership__query__technology__in=tech
-    ).distinct('UT').count()
+    ).distinct('UT').count() + nqdocs.distinct('UT').count()
 
     docs = docs.order_by('PY').filter(PY__gt=1985)
 
@@ -2132,6 +2132,28 @@ def technology(request,tid):
     }
 
     return HttpResponse(template.render(context, request))
+
+def download_tdocs(request,tid):
+    tech, docs, tobj, nqdocs = get_tech_docs(tid,other=True)
+    rdocs = docs.filter(
+        docownership__relevant=1,
+        docownership__query__technology__in=tech
+    )
+    trdocs = docs.filter(technology__in=tech)
+    rdocs = rdocs | trdocs
+    rdocs = rdocs.distinct('UT')
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="documents.csv"'
+
+    writer = csv.writer(response)
+
+    writer.writerow(['UT','PY','CITATION'])
+
+    for d in rdocs.iterator():
+        row = [d.UT,d.PY,d.citation()]
+        writer.writerow(row)
+
+    return response
 
 def prepare_authorlist(request,tid):
     tech, docs, tobj = get_tech_docs(tid)
