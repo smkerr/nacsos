@@ -2,7 +2,7 @@ from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 from itertools import chain
 from django.db.models import Max
-from django.db.models import Func, F
+from django.db.models import Func, F, Value as V
 from django.db.models.functions import Concat
 # Create your views here.
 
@@ -1910,6 +1910,11 @@ def sortdocs(request):
         )
         filt_docs = filt_docs.annotate(
             tech_innovation=Concat('qtechnology', 'dtechnology')
+        )
+
+    if "wosarticle__doc" in fields:
+        filt_docs = filt_docs.annotate(
+            wosarticle__doc=Concat(V('<a href="/scoping/document/'),'UT',V('">'),'UT',V('</a>'))
         )
     #x = y
 
