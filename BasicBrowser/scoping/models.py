@@ -112,6 +112,7 @@ class Doc(models.Model):
     users = models.ManyToManyField(User, through='DocOwnership')
     references = models.ManyToManyField("self", symmetrical=False)
     technology = models.ManyToManyField('Technology',db_index=True)
+    innovation = models.ManyToManyField('Innovation',db_index=True)
     category = models.ManyToManyField('SBSDocCategory')
     source = models.TextField(null=True)
     wos = models.BooleanField(default=False)
@@ -233,6 +234,10 @@ class DocOwnership(models.Model):
     NO = 2
     MAYBE = 3
     OTHERTECH = 4
+    YESYES = 5
+    YESNO = 6
+    NOYES = 7
+    NONO = 8
 
     Status = (
         (UNRATED, 'Unrated'),
@@ -240,6 +245,10 @@ class DocOwnership(models.Model):
         (NO, 'No'),
         (MAYBE, 'Maybe'),
         (OTHERTECH, 'Other Technology'),
+        (YESYES, 'Tech Relevant & Innovation Relevant'),
+        (YESNO, 'Tech Relevant & Innovation Irrelevant'),
+        (NOYES, 'Tech Irrelevant & Innovation Relevant'),
+        (NONO, 'Tech Irrelevant & Innovation Irrelevant'),
     )
 
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)

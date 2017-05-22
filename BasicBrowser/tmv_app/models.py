@@ -109,6 +109,7 @@ class DocTerm(models.Model):
 ## RunStats and Settings....
 class RunStats(models.Model):
     run_id = models.IntegerField(primary_key=True)
+    query = models.ForeignKey('scoping.Query', null=True)
     start = models.DateTimeField()
     batch_count = models.IntegerField()
     last_update = models.DateTimeField()

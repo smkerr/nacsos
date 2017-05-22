@@ -22,6 +22,7 @@ urlpatterns = [
     url(r'^settings$', login_required(settings)),
     url(r'^settings/apply$', login_required(apply_settings)),
     url(r'^runs$', login_required(runs), name='runs'),
+    url(r'^queries$', login_required(queries), name='queries'),
     url(r'^update/(?P<run_id>\d+)$', login_required(update_run), name='update'),
     url(r'^runs/apply/(?P<new_run_id>\d+)$', login_required(apply_run_filter)),
     url(r'^runs/delete/(?P<new_run_id>\d+)$', login_required(delete_run)),

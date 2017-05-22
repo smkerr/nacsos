@@ -27,9 +27,9 @@
 
         <!-- Query manager -->
         {% if request.session.appmode != "snowballing" %}
-          <h2> Document list associated to <a href="/scoping/query/{{query.id}}">{{query.type}} query no. {{query.id}}</a>.</h2>
+          <h2> Document list associated with query no. <a href="/scoping/query/{{query.id}}">{{query.id}}</a> ({{query.title}}).</h2>
         {% else %}
-          <h2> Document list associated to {{query.type}} query no. {{query.id}} and {{query2.type}} query no. {{query2.id}}</a>.</h2>
+          <h2> Document list associated with {{query.type}} query no. {{query.id}} and {{query2.type}} query no. {{query2.id}}</a>.</h2>
         {% endif %}
         <!-- <a href="/scoping/download/{{query.id}}">Download</a> these documents as a csv</h2> -->
         <h2><a onclick="update_fields(download='true')" id="download">Download</a> these documents as a csv</h2>
