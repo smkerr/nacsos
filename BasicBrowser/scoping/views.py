@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.urls import reverse
 from django.contrib.auth.decorators import user_passes_test
 import json
-
+from django.apps import apps
 
 from .models import *
 
@@ -60,13 +60,20 @@ def index(request):
             q.tech=q.technology.name
         #print(q.tech)
 
+    if request.user.username in ["galm","roger","nemet"]:
+        extended=True
+    else:
+        extended=False
+
     context = {
       'queries'      : queries,
       'query'        : query,
       'users'        : users,
       'active_users' : users.filter(username=request.user.username),
       'techs'        : technologies,
-      'appmode'      : request.session['appmode']
+      'appmode'      : request.session['appmode'],
+      'extended'     : extended,
+      'innovations'  : Innovation.objects.all()
     }
 
     return HttpResponse(template.render(context, request))
@@ -120,6 +127,23 @@ def technology_query(request):
     else:
         t = Technology.objects.get(pk=tid)
         q.technology = t
+
+    q.save()
+
+    return HttpResponse("")
+
+@login_required
+def innovation_query(request):
+
+    iid = request.GET.get('tid', None)
+    qid = request.GET.get('qid', None)
+
+    q = Query.objects.get(pk=qid)
+    if iid=="None":
+        q.innovation = None
+    else:
+        i = Innovation.objects.get(pk=iid)
+        q.innovation = i
 
     q.save()
 
@@ -1381,6 +1405,8 @@ def doclist(request,qid,q2id='0',sbsid='0'):
     wos_fields = []
     basic_field_names = ['Title', 'Abstract', 'Year'] #, str(request.user)]
 
+    relevance_fields.append({"path": "tech_technology", "name": "Technology"})
+    relevance_fields.append({"path": "tech_innovation", "name": "Innovation"})
     relevance_fields.append({"path": "relevance_netrelevant", "name": "NETs relevant"})
     relevance_fields.append({"path": "relevance_techrelevant", "name": "Technology relevant"})
     relevance_fields.append({"path": "note__text", "name": "Notes"})
@@ -1682,17 +1708,19 @@ def do_add_doc(request):
 
 
 from django.db.models.aggregates import Aggregate
-class StringAgg(Aggregate):
-    function = 'STRING_AGG'
-    template = "%(function)s(%(expressions)s, '%(delimiter)s')"
+# class StringAgg(Aggregate):
+#     function = 'STRING_AGG'
+#     template = "%(function)s(%(expressions)s, '%(delimiter)s')"
+#
+#     def __init__(self, expression, delimiter, **extra):
+#         super(StringAgg, self).__init__(expression, delimiter=delimiter, **extra)
+#
+#     def convert_value(self, value, expression, connection, context):
+#         if not value:
+#             return ''
+#         return value
 
-    def __init__(self, expression, delimiter, **extra):
-        super(StringAgg, self).__init__(expression, delimiter=delimiter, **extra)
-
-    def convert_value(self, value, expression, connection, context):
-        if not value:
-            return ''
-        return value
+from django.contrib.postgres.aggregates import StringAgg
 
 
 ##################################################
@@ -1817,8 +1845,8 @@ def sortdocs(request):
         filt_docs = Doc.objects.filter(query__id=qid) | qdocs_f
     else:
         query_f  = False
-        all_docs = Doc.objects.filter(query__id=qid)
-        filt_docs = Doc.objects.filter(query__id=qid)
+        all_docs = Doc.objects.filter(query__id=qid).values_list('UT',flat=True)
+        filt_docs = Doc.objects.filter(UT__in=all_docs)
 
     #if "tag__title" in fields:
     #    filt_docs = filt_docs.filter(tag__query__id=qid)
@@ -1863,6 +1891,28 @@ def sortdocs(request):
             )
         ))
 
+    # Annotate with technology names
+    if "tech_technology" in fields:
+        filt_docs = filt_docs.annotate(
+            qtechnology=StringAgg('query__technology__name','; ',distinct=True),
+            dtechnology=StringAgg('technology__name','; ',distinct=True),
+            #tech_technology=Concat(F('qtechnology'), F('dtechnology'))
+        )
+        filt_docs = filt_docs.annotate(
+            tech_technology=Concat('qtechnology', 'dtechnology')
+        )
+    # Annotate with innovation names
+    if "tech_innovation" in fields:
+        filt_docs = filt_docs.annotate(
+            qtechnology=StringAgg('query__innovation__name','; ',distinct=True),
+            dtechnology=StringAgg('innovation__name','; ',distinct=True),
+            #tech_technology=Concat(F('qtechnology'), F('dtechnology'))
+        )
+        filt_docs = filt_docs.annotate(
+            tech_innovation=Concat('qtechnology', 'dtechnology')
+        )
+    #x = y
+
     print(len(filt_docs))
     # filter documents with user ratings
     if len(users) > 0:
@@ -1894,8 +1944,7 @@ def sortdocs(request):
                         output_field=models.IntegerField()
                 )
             })
-    print("LENGTH AFTER len_users block")
-    print(len(filt_docs))
+
 
     tag_text = ""
     # filter the docs according to the currently active filter
@@ -2207,13 +2256,20 @@ def document(request,doc_id):
     authors = DocAuthInst.objects.filter(doc=doc)
     queries = Query.objects.filter(doc=doc)
     technologies = doc.technology.all()
+    innovations = doc.innovation.all()
     ratings = doc.docownership_set.all()
+    if request.user.username in ["galm","roger","nemet"]:
+        extended=True
+    else:
+        extended=False
     context = {
         'doc': doc,
         'authors': authors,
         'technologies': technologies,
+        'innovations': innovations,
         'ratings': ratings,
-        'queries': queries
+        'queries': queries,
+        'extended': extended
     }
     return HttpResponse(template.render(context, request))
 
@@ -2382,6 +2438,17 @@ def screen(request,qid,tid,ctype,d=0):
     qtechs = qtechs.distinct()
     ntechs = Technology.objects.exclude(query__doc=doc).exclude(doc=doc)
 
+    qinns = Innovation.objects.filter(query__doc=doc) | Innovation.objects.filter(doc=doc)
+    qinns = qinns.distinct()
+    ninns = Innovation.objects.exclude(query__doc=doc).exclude(doc=doc)
+
+    if query.innovation is not None:
+        innovation=True
+    else:
+        innovation=False
+
+    #x = y
+
     template = loader.get_template('scoping/doc.html')
     context = {
         'query': query,
@@ -2397,6 +2464,9 @@ def screen(request,qid,tid,ctype,d=0):
         'ctype': ctype,
         'qtechs': qtechs,
         'ntechs': ntechs,
+        'innovation': innovation,
+        'qinns': qinns,
+        'ninns': ninns,
         'tag': tag,
         'd': d,
         'back': back
@@ -2460,10 +2530,10 @@ def delete(request,thing,thingid):
     getattr(models, thing).objects.get(pk=thingid).delete()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
-def remove_tech(request,doc_id,tid):
+def remove_tech(request,doc_id,tid,thing='Technology'):
     doc = Doc.objects.get(pk=doc_id)
-    tech = Technology.objects.get(pk=tid)
-    doc.technology.remove(tech)
+    obj = apps.get_model(app_label='scoping',model_name=thing).objects.get(pk=tid)
+    getattr(doc,thing.lower()).remove(obj)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 def add_note(request):
@@ -2537,6 +2607,15 @@ def doc_tech(request):
     doc = Doc.objects.get(pk=did)
     tech = Technology.objects.get(pk=tid)
     doc.technology.add(tech)
+    doc.save()
+    return HttpResponse()
+
+def doc_inn(request):
+    did = request.GET.get('did',None)
+    iid = request.GET.get('tid',None)
+    doc = Doc.objects.get(pk=did)
+    inn = Innovation.objects.get(pk=iid)
+    doc.innovation.add(inn)
     doc.save()
     return HttpResponse()
 

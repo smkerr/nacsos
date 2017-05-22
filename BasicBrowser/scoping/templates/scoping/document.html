@@ -32,11 +32,21 @@
     <p><b>In WoS:</b> {{doc.wos}}</p>
     <p><b>In Scopus:</b> {{doc.wos}}</p>
     <p>Show: </p>
-      <table style="text-align:center">
-        <td class="hboxselect" width=33%>Queries</td>
-        <td class="hboxselect" width=33%>Technologies</td>
-        <td class="hboxselect" width=33%>Ratings</td>
-      </table>
+    {% if extended %}
+    <table style="text-align:center">
+      <td class="hboxselect" width=25%>Queries</td>
+      <td class="hboxselect" width=25%>Technologies</td>
+      <td class="hboxselect" width=25%>Innovations</td>
+      <td class="hboxselect" width=25%>Ratings</td>
+    </table>
+    {% else %}
+    <table style="text-align:center">
+      <td class="hboxselect" width=33%>Queries</td>
+      <td class="hboxselect" width=33%>Technologies</td>
+      <td class="hboxselect" width=33%>Ratings</td>
+    </table>
+    {% endif %}
+
   </div>
 <br>
   <div class="explanation hbox hidden" data-type="queries" style="text-align:left">
@@ -46,6 +56,9 @@
         <th>Title</th>
         <th>Documents</th>
         <th>Technology</th>
+        {% if extended %}
+        <th>Innovation</th>
+        {% endif %}
         <th>User</th>
         <th>Date</th>
       </tr>
@@ -60,6 +73,9 @@
           {% endif %}
           {{q.technology.name}}</a>
         </td>
+      {% if extended %}
+      <td>{{q.innovation.name}}</th>
+      {% endif %}
 
       <td>{{q.creator.username}}</td>
       <td>{{q.date}}</td>
@@ -74,12 +90,26 @@
     <tr>
       <td width="50%" style="text-align:left">{{t.name}}</td>
       <td width="50%" style="text-align:right">
-        <a href="{% url 'scoping:remove_tech' doc.pk t.pk %}">Remove technology association</a>
+        <a href="{% url 'scoping:remove_tech' doc.pk t.pk 'Technology' %}">Remove technology association</a>
       </td>
 
     {% endfor %}
   </table>
   </div>
+
+
+    <div class="explanation hbox hidden" data-type="innovations" style="text-align:left">
+      <table>
+      {% for t in innovations %}
+      <tr>
+        <td width="50%" style="text-align:left">{{t.name}}</td>
+        <td width="50%" style="text-align:right">
+          <a href="{% url 'scoping:remove_tech' doc.pk t.pk 'Innovation' %}">Remove technology association</a>
+        </td>
+
+      {% endfor %}
+    </table>
+    </div>
 
   <div class="explanation hbox hidden"
   data-type="ratings" style="text-align:left"

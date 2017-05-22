@@ -819,7 +819,7 @@ width: 100%;
     padding: 4px;
 }
 
-.field_name {
+.field_name, .inn_name {
     cursor: pointer;
     padding: 6px;
     margin: 6px 2px;
@@ -1110,7 +1110,7 @@ div.addbox {
     padding: 15px;
 }
 
-.tech {
+.tech, . {
     margin: 60px 40px
 }
 

@@ -55,6 +55,8 @@
 	    <span>{{au.AF}} [{{au.institution}}];</span>
     {% endfor %}
     <p style="text-align:left">
+      Document ID: <a href="/scoping/document/{{doc.UT}}">{{doc.UT}}</a>
+    <p style="text-align:left">
     {{ abstract | safe }}
     </div>
     <table class="spread" width="100%">
@@ -63,6 +65,13 @@
 	    <td><button onclick="review(2)">No</button>
 	    <td><button onclick="review(3)">Maybe?</button>
 	    <td><button onclick="review(4)">Yes but not this technology</button>
+        {% if innovation %}
+        <tr>
+      <td><button onclick="review(5)">Yes Technology & Yes Innovation</button>
+	    <td><button onclick="review(6)">Yes Technology & No Innovation</button>
+	    <td><button onclick="review(7)">No Technology & Yes Innovation</button>
+	    <td><button onclick="review(8)">No Technology & No Innovation</button>
+        {% endif %}
 	    </tr>
     </table>
 <p >
@@ -82,6 +91,26 @@ Click on any of the following technologies to add this document to them
 {% endfor %}
 </b>
 </div>
+{% if innovation %}
+<p>
+<div class="explanation" style="text-align:center">
+This document is assigned to the following Innovation Categories:
+<p>
+<b>
+{% for q in qinns %}
+    {{q.name}}
+{% endfor %}
+</b>
+<p>
+Click on any of the following categories to add this document to them
+<p id="field_container">
+{% for t in ninns %}
+    <span class="inn_name" data-inn="{{t.id}}">{{t.name}}</span>
+{% endfor %}
+</b>
+</div>
+{% endif %}
+
 <td width="20%">
 <div class="noteform">
     <form action="{% url 'scoping:add_note' %}" method="post">
@@ -109,6 +138,21 @@ $(".field_name").click(function() {
     doc = "{{doc.UT}}"
     $.ajax({
         url: '/scoping/doc_tech',
+        data: {
+            'did': doc,
+            'tid': tech
+        },
+        success: function(data) {
+            location.reload()
+        }
+    })
+})
+
+$(".inn_name").click(function() {
+    tech = $(this).attr("data-inn")
+    doc = "{{doc.UT}}"
+    $.ajax({
+        url: '/scoping/doc_inn',
         data: {
             'did': doc,
             'tid': tech

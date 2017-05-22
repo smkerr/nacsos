@@ -1,3 +1,4 @@
+
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import Template, Context, RequestContext, loader
 from tmv_app.models import *
@@ -581,6 +582,10 @@ class SettingsForm(ModelForm):
     class Meta:
         model = Settings
         fields = '__all__'
+
+def queries(request):
+
+    return HttpResponse("bla")
 
 def settings(request):
     run_id = find_run_id(request)

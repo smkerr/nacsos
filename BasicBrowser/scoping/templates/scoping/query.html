@@ -24,7 +24,7 @@
           <br/>
 
           <!-- Query manager -->
-          <h2> Query #{{query.id}} Overview - <a href="/scoping/docs/{{query.id}}">View Docs</a></h2>
+          <h2> Query #{{query.id}} ({{query.title}}) Overview - <a href="/scoping/docs/{{query.id}}">View Docs</a></h2>
           <br/>
 
           <table class="light" style="width:100%">
@@ -32,8 +32,8 @@
               {% for f in fields %}
                 <td class="field" name="{{f}}">{{f}} </td>
               {% endfor %}
-              <td class="field" name="docs">Sample </td> 
-              <td>Assignment/Relevance </td> 
+              <td class="field" name="docs">Sample </td>
+              <td>Assignment/Relevance </td>
               <td>Delete</td>
             </tr>
             {% for tag in tags %}
@@ -41,15 +41,15 @@
                 {% for f in fields %}
                   <td class="data">{{tag|keyvalue:f}}</td>
                 {% endfor %}
-    
+
                 {% if tag.a_docs %}
                   <td>{{tag.docs}} ({{tag.a_docs}} assigned for review)</td>
-                
+
                   <td>{{tag.relevance}}%</td>
                 {% else %}
                   <td><input type="range" min="0" max="{{tag.docs}}" oninput="inputUpdate(value, {{tag.id}})" value="{{tag.docs}}" autocomplete="off"></td>
                   <td class="data-ndocs">{{tag.docs}} [Assign <output id="out_{{tag.id}}" class="tag_assignment" data-tagid="{{ tag.id }}">{{tag.docs}}</output> documents for review?]</td>
-                
+
                 {% endif %}
                   <td><a href="/scoping/delete/Tag/{{tag.id}}">Delete</a></td>
               </tr>
@@ -59,7 +59,7 @@
           <p style="text-align:left">{{ untagged }} Documents are not tagged</p>
 
           <br/><hr/><br/>
- 
+
           <h2>Criteria</h2>
 
           <form action='/scoping/update_criteria?qid={{query.id}}' method="post">
@@ -114,8 +114,8 @@
                   <td></td>
                   <td></td>
                 {% endif %}
-        
-              </tr>      
+
+              </tr>
             {% endfor %}
           </table>
           <p style="text-align:left">
@@ -135,7 +135,7 @@
                 </table>
               </p>
               <p>Assign a total of <span id="docUserTotal"></span> documents each to <span id="userTotal"></span> users? <button onclick="do_assignment()">Assign</button></p>
-  
+
               <p>Clear all document-user assignments from this query? WARNING: This cannot be undone <button onclick="remove_assignments({{ query.id }})">Remove</button></p>
 
             </div>
@@ -264,7 +264,7 @@
           </p>
 
 
-        {% endif %}  
+        {% endif %}
 
       </div>
     </div>
@@ -303,18 +303,18 @@ function updateAssignment() {
     var tagdocs = []
     var total_docs = 0
     var docsplit = $("#split").is(':checked')
-    
+
     $(".user_active").each(function() {
         if ($(this).is(':checked')) {
             active_users.push($(this).attr("data-user") )
-        }  
+        }
     })
 
     $(".tag_assignment").each(function() {
-        tags.push($(this).attr("data-tagid") ) 
-        tagdocs.push($(this).val()) 
+        tags.push($(this).attr("data-tagid") )
+        tagdocs.push($(this).val())
             total_docs += parseInt($(this).val())
-    })    
+    })
     if (docsplit==true) {
         docs_each = Math.ceil(total_docs/active_users.length)
     } else {
@@ -359,12 +359,12 @@ function do_assignment() {
     $(".user_active").each(function() {
         if ($(this).is(':checked')) {
             active_users.push($(this).attr("data-user") )
-        }  
+        }
     })
 
     $(".tag_assignment").each(function() {
-        tags.push($(this).attr("data-tagid") ) 
-        tagdocs.push($(this).val()) 
+        tags.push($(this).attr("data-tagid") )
+        tagdocs.push($(this).val())
     })
     var proportion = $("#sample").val()
 	console.log(active_users)

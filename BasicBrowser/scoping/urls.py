@@ -38,6 +38,7 @@ urlpatterns = [
     url(r'^add_tech',views.add_tech, name='add_tech'),
     url(r'^update_tech',views.update_tech, name='update_tech'),
     url(r'^technology_query',views.technology_query, name='technology_query'),
+    url(r'^innovation_query',views.innovation_query, name='innovation_query'),
     url(r'^user$', views.userpage, name='userpage'),
     url(r'^update_criteria$', views.update_criteria, name='update_criteria'),
     url(r'^docs/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
@@ -54,6 +55,7 @@ urlpatterns = [
     url(r'^do_review$', views.do_review, name='do_review'),
     url(r'^add_note', views.add_note, name='add_note'),
     url(r'^doc_tech', views.doc_tech, name='doc_tech'),
+    url(r'^doc_inn', views.doc_inn, name='doc_inn'),
     url(r'^download/(?P<qid>[0-9]+)', views.download, name='download'),
     url(r'^delete/(?P<thing>[a-zA-Z]+)/(?P<thingid>[0-9]+)$', views.delete, name='delete'),
     url(r'^manual_add/(?P<qid>[0-9]+)$', views.add_doc_form, name='add_doc_form'),
@@ -62,6 +64,6 @@ urlpatterns = [
     url(r'^do_add_doc/$', views.do_add_doc, name='do_add_doc'),
     url(r'^editdoc$', views.editdoc, name='editdoc'),
     url(r'^document/(?P<doc_id>.+)/$', views.document, name='document'),
-    url(r'^remove_tech/(?P<doc_id>.+)/(?P<tid>[0-9]+)$', views.remove_tech, name='remove_tech'),
+    url(r'^remove_tech/(?P<doc_id>.+)/(?P<tid>[0-9]+)/(?P<thing>.+)$', views.remove_tech, name='remove_tech'),
 
 ]
