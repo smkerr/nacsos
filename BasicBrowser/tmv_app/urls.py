@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 app_name = 'tmv_app'
 
 urlpatterns = [
-    url(r'^$', login_required(index), name='index'),
+    url(r'^$', login_required(runs), name='index'),
     url(r'^network/(?P<run_id>\d+)$', login_required(network), name='network'),
     url(r'^return_corrs$', login_required(return_corrs), name='return_corrs'),
     url(r'^topic/(?P<topic_id>\d+)/$', login_required(topic_detail), name="topic_detail"),
