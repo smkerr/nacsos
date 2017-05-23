@@ -10,7 +10,7 @@ import random, sys, datetime
 import urllib.request
 from nltk.stem import SnowballStemmer
 from django.http import JsonResponse
-import json
+import json, csv
 
 # the following line will need to be updated to launch the browser on a web server
 TEMPLATE_DIR = sys.path[0] + '/templates/'
@@ -381,6 +381,32 @@ def doc_detail(request, doc_id, run_id):
 
     return HttpResponse(doc_template.render(doc_page_context))
 
+def print_table(request,run_id):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="topic_table.csv"'
+
+    topics = Topic.objects.filter(run_id=run_id).order_by('-score')
+    tsum = topics.aggregate(
+        tsum=Sum('score')
+    )
+
+    for t in topics:
+        termlist= list(Term.objects.filter(
+            topicterm__topic=t, run_id=run_id,
+            topicterm__score__gt=0.00001
+        ).order_by('-topicterm__score')[:5].values_list('title',flat=True))
+        t.terms = "; ".join(termlist)
+        t.mtd = t.score/tsum['tsum']*100
+
+    writer = csv.writer(response)
+
+    writer.writerow(["Topic ID","Topic Name","Stemmed Keywords","Marginal Topic Distribution"])
+
+    for t in topics:
+        row = [t.pk,"",t.terms,t.mtd]
+        writer.writerow(row)
+
+    return response
 
 ############################################################################
 ## for HLDA

@@ -33,7 +33,12 @@ urlpatterns = [
     url(r'^topic/random$', login_required(topic_random)),
     url(r'^doc/random/(?P<run_id>\d+)$', login_required(doc_random)),
     url(r'^term/random$', login_required(term_random)),
-    url(r'^get_docs$', login_required(get_docs), name="get_docs")]
+    url(r'^get_docs$', login_required(get_docs), name="get_docs"),
+    url(r'^print_table/(?P<run_id>\d+)$', login_required(print_table), name="print_table")
+
+    ]
+
+
     # Example:
     # (r'^BasicBrowser/', include('BasicBrowser.foo.urls')),
 
