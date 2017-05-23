@@ -1,16 +1,19 @@
 <div id="navigation">
 
 <table><tr>
+    {% if run_id %}
+    <td class="navtext">Run: {{run_id}}</td>
     <td class="navtext">Browse&nbsp;&#x25B8;</td>
-        <td class="linked"><a href="/tmv_app/topic_presence">Topics</a>
-        <td class="linked"><a href="/tmv_app/">Network</a>
-        <td class="linked"><a href="/tmv_app/doc/random">Random Doc</a>
-        </td>
-        <td class="linked"><a href="/tmv_app/stats">Stats</a>
-        <td class="linked"><a href="/tmv_app/runs">Manage</a>
-        <td class="linked"><a href="/accounts/logout">Logout</a>
-        </td>
-    </td>
+    <td class="linked"><a href="/tmv_app/topic_presence/{{run_id}}">Topics</a>
+    <td class="linked"><a href="/tmv_app/network/{{run_id}}">Network</a>
+    <td class="linked"><a href="/tmv_app/doc/random/{{run_id}}">Random Doc</a></td>
+    <td class="linked"><a href="/tmv_app/stats/{{run_id}}">Stats</a>
+    <td class="linked"><a href="/tmv_app/runs">Manage</a>
+    <td class="linked"><a href="/accounts/logout">Logout</a></td>
     <td></td>
+    {% else %}
+    <td class="navtext linked"><a href="{% url 'tmv_app:runs' %}">Home
+      &nbsp;&#x25B8; Select a run to explore topic models</a></td>
+    {% endif %}
 </tr></table>
 </div>

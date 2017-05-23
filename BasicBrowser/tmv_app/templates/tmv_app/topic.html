@@ -1,19 +1,9 @@
-<html>
-<head>
-{% load static %}
-    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-	<script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
-  <script src="https://d3js.org/d3.v4.min.js"></script>
-    <script language="JavaScript" src="/static/js/jquery.rightClick.js"></script>
+{% extends "tmv_app/base.html" %}
 
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=topic.run_id.pk %} {% endblock %}
 
-<title>{{ topic.title }}</title>
-<link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
+{% block content %}
 
-</head>
-  <body>
-{{ nav_bar|safe }}
 <div id="top"></div>
 <h1 id="header">
 <table><tr>
@@ -56,9 +46,9 @@
         <table class="light">
         {% if docs %}
 	        {% for doc in docs %}
-	        <tr id="{{ doc.title }}" class="list" onclick="window.location.href='/tmv_app/doc/{{ doc.UT }}'">
+	        <tr id="{{ doc.title }}" class="list">
                 <td>{{ doc.PY }}</td>
-                <td>{{ doc.title }}</td>
+                <td><a href="{% url 'tmv_app:doc_detail' doc.pk topic.run_id.pk %}">{{ doc.title }}</a></td>
             <tr>
 	        {% endfor %}
         {% endif %}
@@ -89,6 +79,10 @@
 <div id="footer">
 <br>
 <hr noshade>
+
+{% endblock %}
+
+{% block script %}
 
 <script type="text/JavaScript">
     function highlight(id) {
@@ -154,7 +148,7 @@
 
     max_score = d3.max(data, function(d) { return d.score/d.count })
 
-    yscale = d3.scale.linear()
+    yscale = d3.scaleLinear()
 	    .domain([0, max_score])
 	    .range([height*0.9, height*0.1]);
 
@@ -162,12 +156,12 @@
     max_PY = d3.max(data, function(d) { return d.PY })
 
 
-    xscale = d3.scale.linear()
+    xscale = d3.scaleLinear()
 	    .domain([min_PY, max_PY])
 	    .range([width*0.1, width*0.9]);
 
 
-	var line = d3.svg.line()
+	var line = d3.line()
 		.x(function(d) {
 			return xscale(d.PY);
 		})
@@ -262,6 +256,5 @@
 
 
     </script>
-</div>
-  </body>
-</html>
+
+{% endblock %}

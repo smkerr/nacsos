@@ -18,7 +18,6 @@ TEMPLATE_DIR = sys.path[0] + '/templates/'
 opener = urllib.request.build_opener()
 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 
-nav_bar = loader.get_template('tmv_app/nav_bar.html').render()
 global run_id
 
 def find_run_id(request):
@@ -76,7 +75,7 @@ def author_detail(request, author_name):
 
     author_template = loader.get_template('tmv_app/author.html')
 
-    author_page_context = Context({'nav_bar': nav_bar, 'author': author_name, 'docs': documents, 'topics': topics, 'pie_array': pie_array})
+    author_page_context = Context({'author': author_name, 'docs': documents, 'topics': topics, 'pie_array': pie_array})
 
     return HttpResponse(author_template.render(author_page_context))
 
@@ -109,7 +108,7 @@ def institution_detail(request, institution_name):
 
     institution_template = loader.get_template('tmv_app/institution.html')
 
-    institution_page_context = Context({'nav_bar': nav_bar, 'institution': institution_name, 'docs': documents, 'topics': topics, 'pie_array': pie_array})
+    institution_page_context = Context({'institution': institution_name, 'docs': documents, 'topics': topics, 'pie_array': pie_array})
 
     return HttpResponse(institution_template.render(institution_page_context))
 
@@ -130,9 +129,26 @@ def index(request):
 
     return HttpResponse(template.render(context, request))
 
+def network(request,run_id):
+
+    template = loader.get_template('tmv_app/network.html')
+    nodes = json.dumps(list(Topic.objects.filter(run_id=run_id).values('id','title','score')),indent=4,sort_keys=True)
+    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1).annotate(
+        source=F('topic'),
+        target=F('topiccorr')
+    )
+    links = json.dumps(list(links.values('source','target','score')),indent=4,sort_keys=True)
+    context = {
+        "nodes":nodes,
+        "links":links,
+        "run_id":run_id
+    }
+
+    return HttpResponse(template.render(context, request))
+
 def return_corrs(request):
-    run_id = find_run_id(request.session)
-    cor = request.GET.get('cor',None)
+    cor = float(request.GET.get('cor',None))
+    run_id = int(request.GET.get('run_id',None))
     nodes = list(Topic.objects.filter(run_id=run_id).values('id','title','score'))
     links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=cor,score__lt=1).annotate(
         source=F('topic'),
@@ -150,11 +166,12 @@ def return_corrs(request):
 ## Topic View
 def topic_detail(request, topic_id):
 
-    response = ''
-    run_id = find_run_id(request.session)
-    stat = RunStats.objects.get(run_id=run_id)
-    if stat.get_method_display() == 'hlda':
+    try:
+        topic = Topic.objects.get(pk=topic_id)
+    except:
         return(topic_detail_hlda(request, topic_id))
+    run_id = topic.run_id.pk
+    stat = RunStats.objects.get(run_id=run_id)
 
     topic_template = loader.get_template('tmv_app/topic.html')
 
@@ -170,7 +187,9 @@ def topic_detail(request, topic_id):
             doctopic__topic=topic,doctopic__run_id=run_id
         ).order_by('-doctopic__scaled_score')[:50]
     else:
-        doctopics = Doc.objects.filter(doctopic__topic=topic,doctopic__run_id=run_id).order_by('-doctopic__score').exclude(UT__contains='2WOS')[:50]
+        doctopics = Doc.objects.filter(
+            doctopic__topic=topic,doctopic__run_id=run_id
+        ).order_by('-doctopic__score')[:50]
 
     terms = []
     term_bar = []
@@ -192,24 +211,29 @@ def topic_detail(request, topic_id):
                 remainder_titles += ', ' + term.title
     term_bar.append((False, remainder_titles, remainder*100))
 
-    #update_year_topic_scores()
-
     yts = TopicYear.objects.filter(run_id=run_id)
 
     ytarray = list(yts.values('PY','count','score','topic_id','topic__title'))
-    #ytarray = []
 
     corrtops = TopicCorr.objects.filter(topic=topic_id).order_by('-score')[:10]
 
     ctarray = []
 
     for ct in corrtops:
-        top = Topic.objects.get(pk=ct.topiccorr)
+        top = ct.topiccorr
         if ct.score < 1:
             score = round(ct.score,2)
             ctarray.append({"topic": top.pk,"title":top.title,"score":score})
 
-    topic_page_context = Context({'nav_bar': nav_bar, 'topic': topic, 'terms': terms, 'term_bar': term_bar, 'docs': doctopics, 'yts': ytarray, 'corrtops': ctarray})
+    topic_page_context = Context({
+        'topic': topic,
+        'terms': terms,
+        'term_bar': term_bar,
+        'docs': doctopics,
+        'yts': ytarray,
+        'corrtops': ctarray,
+        'run_id': run_id
+        })
 
     return HttpResponse(topic_template.render(topic_page_context))
 
@@ -262,7 +286,7 @@ def topic_detail_hlda(request, topic_id):
             score = round(ct.score,2)
             ctarray.append({"topic": top.topic,"title":top.title,"score":score})
 
-    topic_page_context = Context({'nav_bar': nav_bar, 'topic': topic, 'terms': terms, 'term_bar': term_bar, 'docs': doctopics, 'yts': ytarray, 'corrtops': ctarray})
+    topic_page_context = Context({'topic': topic, 'terms': terms, 'term_bar': term_bar, 'docs': doctopics, 'yts': ytarray, 'corrtops': ctarray})
 
     return HttpResponse(topic_template.render(topic_page_context))
 
@@ -283,18 +307,18 @@ def term_detail(request, term_id):
         for topic in topics:
             topic_tuples.append((topic.topic, topic.score, topic.score/max_score*100))
 
-    term_page_context = Context({'nav_bar': nav_bar, 'term': term, 'topic_tuples': topic_tuples})
+    term_page_context = Context({'term': term, 'topic_tuples': topic_tuples})
 
     return HttpResponse(term_template.render(term_page_context))
 
 #######################################################################
 ## Doc view
 
-def doc_detail(request, doc_id):
+def doc_detail(request, doc_id, run_id):
 
     snowball_stemmer = SnowballStemmer("english")
 
-    run_id = find_run_id(request.session)
+
     stat = RunStats.objects.get(run_id=run_id)
     if stat.get_method_display() == 'hlda':
         return(doc_detail_hlda(request, doc_id))
@@ -332,9 +356,9 @@ def doc_detail(request, doc_id):
             for tt in terms:
                 topicwords[ntopic].append(tt.title)
             if not dt_thresh_scaled:
-                pie_array.append([dt.score, '/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
+                pie_array.append([dt.score, '/tmv_app/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
             else:
-                pie_array.append([dt.scaled_score, '/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
+                pie_array.append([dt.scaled_score, '/tmv_app/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
 
 
     words = []
@@ -347,12 +371,12 @@ def doc_detail(request, doc_id):
         words.append({'title': word, 'topic':"t"+str(wt)})
 
     doc_page_context = Context({
-        'nav_bar': nav_bar,
         'doc': doc,
         'topics': topics,
         'pie_array': pie_array,
         'doc_authors': doc_authors,
-        'words': words
+        'words': words,
+        'run_id': run_id
     })
 
     return HttpResponse(doc_template.render(doc_page_context))
@@ -406,7 +430,7 @@ def doc_detail_hlda(request, doc_id):
                 wt = t
         words.append({'title': word, 'topic':"t"+str(wt)})
 
-    doc_page_context = Context({'nav_bar': nav_bar, 'doc': doc, 'topics': topics, 'pie_array': pie_array,'doc_authors': doc_authors, 'doc_institutions': doc_institutions , 'words': words })
+    doc_page_context = Context({'doc': doc, 'topics': topics, 'pie_array': pie_array,'doc_authors': doc_authors, 'doc_institutions': doc_institutions , 'words': words })
 
     return HttpResponse(doc_template.render(doc_page_context))
 
@@ -450,14 +474,13 @@ def topic_list_detail(request):
             tops.append(None)
         rows.append((tops, temp))
 
-    list_page_context = Context({'nav_bar': nav_bar, 'rows': rows})
+    list_page_context = Context({'rows': rows})
 
     return HttpResponse(list_template.render(list_page_context))
 
 #################################################################
 ### Main page!
-def topic_presence_detail(request):
-    run_id = find_run_id(request.session)
+def topic_presence_detail(request,run_id):
     stat = RunStats.objects.get(run_id=run_id)
     if stat.get_method_display() == 'hlda':
         return(topic_presence_hlda(request))
@@ -477,7 +500,7 @@ def topic_presence_detail(request):
     for topic in topics:
         topic_tuples.append((topic, topic.score, topic.score/max_score*100))
 
-    presence_page_context = Context({'nav_bar': nav_bar, 'topic_tuples': topic_tuples})
+    presence_page_context = Context({'run_id': run_id, 'topic_tuples': topic_tuples})
 
     return HttpResponse(presence_template.render(presence_page_context))
 
@@ -522,7 +545,7 @@ def topic_presence_hlda(request):
                     topic['children'].append(child)
             root['children'].append(topic)
 
-    presence_page_context = Context({'nav_bar': nav_bar, 'topic_tuples': topic_tuples,'topic_tree': root})
+    presence_page_context = Context({'topic_tuples': topic_tuples,'topic_tree': root})
 
     return HttpResponse(presence_template.render(presence_page_context))
 
@@ -537,10 +560,9 @@ def get_docs(request):
     topic_box_context = Context({'docs':docs, 'topic':t})
     return HttpResponse(topic_box_template.render(topic_box_context))
 
-def stats(request):
-    run_id = find_run_id(request.session)
+def stats(request,run_id):
 
-    stats_template = loader.get_template('tmv_app/stats.html')
+    template = loader.get_template('tmv_app/stats.html')
 
     stats = RunStats.objects.get(run_id=run_id)
 
@@ -550,19 +572,21 @@ def stats(request):
         docs_seen = DocTopic.objects.filter(run_id=run_id).values('doc_id').order_by().distinct().count()
 
     stats.docs_seen = docs_seen
+    stats.num_docs = stats.query.doc_set.count()
 
     stats.save()
 
-    stats_page_context = Context({'nav_bar': nav_bar, 'num_docs': Doc.objects.count(),'topics_seen': docs_seen, 'num_topics': Topic.objects.filter(run_id=run_id).count(), 'num_terms': Term.objects.filter(run_id=run_id).count(), 'start_time': stats.start, 'elapsed_time': stats.start, 'num_batches': stats.batch_count, 'last_update': stats.last_update})
+    context = Context({
+        'stats': stats,
+        'num_topics': Topic.objects.filter(run_id=run_id).count(),
+        'num_terms': Term.objects.filter(run_id=run_id).count(),
+    })
 
-
-    return HttpResponse(stats_template.render(stats_page_context))
+    return HttpResponse(template.render(context))
 
 def runs(request):
 
-    run_id = find_run_id(request.session)
-    runs_template = loader.get_template('tmv_app/runs.html')
-
+    template = loader.get_template('tmv_app/runs.html')
     stats = RunStats.objects.all().order_by('-start')
 
     stats = stats.annotate(
@@ -571,12 +595,10 @@ def runs(request):
     )
     for s in stats:
         s.terms = Term.objects.filter(run_id=s.run_id).count()
-    print(stats)
-    runs_page_context = Context({'nav_bar': nav_bar, 'stats':stats, 'run_id':run_id})
 
-    #return HttpResponse(runs_template.render(runs_page_context))
+    context = Context({'stats':stats})
 
-    return(render(request, 'tmv_app/runs.html', {'nav_bar': nav_bar, 'stats':stats, 'run_id':run_id}))
+    return HttpResponse(template.render(context, request))
 
 class SettingsForm(ModelForm):
     class Meta:
@@ -592,7 +614,7 @@ def settings(request):
 
     settings_template = loader.get_template('tmv_app/settings.html')
 
-    settings_page_context = Context({'nav_bar': nav_bar, 'settings': Settings.objects.get(id=1)})
+    settings_page_context = Context({'settings': Settings.objects.get(id=1)})
 
     return HttpResponse(settings_template.render(settings_page_context,request))
     #return render_to_response('settings.html', settings_page_context, context_instance=RequestContext(request))
@@ -793,9 +815,8 @@ def update_year_topic_scores(session):
 def topic_random(request):
     return HttpResponseRedirect('/tmv_app/topic/' + str(random.randint(1, Topic.objects.count())))
 
-def doc_random(request):
-    run_id = find_run_id(request)
-    doc = random_doc()
+def doc_random(request,run_id):
+    doc = random_doc(RunStats.objects.get(pk=run_id).query)
     return HttpResponseRedirect('/tmv_app/doc/' +  doc.UT)
 
 def term_random(request):

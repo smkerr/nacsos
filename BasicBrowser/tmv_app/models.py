@@ -43,7 +43,7 @@ class Topic(models.Model):
 
 class TopicCorr(models.Model):
     topic = models.ForeignKey('Topic',null=True)
-    topiccorr = models.IntegerField()
+    topiccorr = models.ForeignKey('Topic',null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
     run_id = models.IntegerField(db_index=True)
 

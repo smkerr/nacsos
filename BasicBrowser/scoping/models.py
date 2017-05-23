@@ -90,9 +90,13 @@ class Tag(models.Model):
     def __str__(self):
       return self.title
 
-def random_doc():
-    c = Doc.objects.count()
-    return Doc.objects.all()[randint(0,c-1)]
+def random_doc(q=None):
+    if q is not None:
+        docs = Doc.objects.filter(query=q)
+    else:
+        docs = Doc.objects.all()
+    c = docs.count()
+    return docs[randint(0,c-1)]
 
 class DocManager(models.Manager):
     def random(self):

@@ -10,24 +10,28 @@ app_name = 'tmv_app'
 
 urlpatterns = [
     url(r'^$', login_required(index), name='index'),
+    url(r'^network/(?P<run_id>\d+)$', login_required(network), name='network'),
     url(r'^return_corrs$', login_required(return_corrs), name='return_corrs'),
     url(r'^topic/(?P<topic_id>\d+)/$', login_required(topic_detail), name="topic_detail"),
     url(r'^term/(?P<term_id>\d+)/$', login_required(term_detail), name="term_detail"),
-    url(r'^doc/(?P<doc_id>.+)/$', login_required(doc_detail)),
+    url(r'^doc/(?P<doc_id>.+)/(?P<run_id>\d+)$', login_required(doc_detail), name="doc_detail"),
     url(r'^author/(?P<author_name>.+)/$', login_required(author_detail)),
     url(r'^institution/(?P<institution_name>.+)/$', login_required(institution_detail)),
     url(r'^topic_list$', login_required(topic_list_detail)),
-    url(r'^topic_presence$', login_required(topic_presence_detail),name="topics"),
-    url(r'^stats$', login_required(stats)),
+    # Home page
+    url(r'^topic_presence/(?P<run_id>\d+)$', login_required(topic_presence_detail),name="topics"),
+    url(r'^stats/(?P<run_id>\d+)$', login_required(stats)),
     url(r'^settings$', login_required(settings)),
     url(r'^settings/apply$', login_required(apply_settings)),
     url(r'^runs$', login_required(runs), name='runs'),
+
     url(r'^queries$', login_required(queries), name='queries'),
+
     url(r'^update/(?P<run_id>\d+)$', login_required(update_run), name='update'),
     url(r'^runs/apply/(?P<new_run_id>\d+)$', login_required(apply_run_filter)),
     url(r'^runs/delete/(?P<new_run_id>\d+)$', login_required(delete_run)),
     url(r'^topic/random$', login_required(topic_random)),
-    url(r'^doc/random$', login_required(doc_random)),
+    url(r'^doc/random/(?P<run_id>\d+)$', login_required(doc_random)),
     url(r'^term/random$', login_required(term_random)),
     url(r'^get_docs$', login_required(get_docs), name="get_docs")]
     # Example:

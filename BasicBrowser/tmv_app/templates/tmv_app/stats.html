@@ -1,45 +1,33 @@
-<html>
-<head>
-{% load static %}
-    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-    <script language="JavaScript" src="{% static 'tmv_app/js/pie.js' %}"></script>
-    <script language="JavaScript" src="{% static 'tmv_app/js/search.js' %}"></script>
+{% extends "tmv_app/base.html" %}
 
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    
-    <title>Stats</title>
+{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=stats.run_id %} {% endblock %}
 
-    <link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
-</head>
+{% block content %}
 
-<body>
-{{ nav_bar|safe }}
+<h1 id="header">
+    <table><tr>
+        <td id="title">Topic Modelling Stats </td>
+    </tr></table>
 
+    <hr noshade>
+</h1>
 
-    <h1 id="header">
-        <table><tr>
-            <td id="title">Topic Modelling Stats </td>
-        </tr></table>
+<div id="main">
+    <table>
+        <tr><td width="210px">
+        Model started running at {{ stats.start }}, and has run {{ stats_start|timesince:stats.last_update }}.
+        <br>Last update at {{ stats.last_update }}, or {{ stats.last_update|timesince}} ago.
+        <br>{{ num_batches }} Batches Completed
+        <br>{{ stats.docs_seen }} out of {{ stats.num_docs }} Documents seen
+        <br>{{ num_topics }} Topics
+        <br>{{ num_terms }} Terms
+        </td></tr>
+    </table>
+</div>
 
-        <hr noshade>
-    </h1>
+<div id="footer">
+    <br>
+    <hr noshade>
+</div>
 
-    <div id="main">
-        <table>
-            <tr><td width="210px">
-            Model started running at {{ start_time }}, and has run {{ start_time|timesince:last_update }}.
-            <br>Last update at {{ last_update }}, or {{ last_update|timesince}} ago.
-            <br>{{ num_batches }} Batches Completed
-            <br>{{ topics_seen }} out of {{ num_docs }} Documents seen
-            <br>{{ num_topics }} Topics
-            <br>{{ num_terms }} Terms
-            </td></tr>
-        </table>
-    </div>
-
-    <div id="footer">
-        <br>
-        <hr noshade>
-    </div>
-</body>
-</html>
+{% endblock %}
