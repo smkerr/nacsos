@@ -1,16 +1,8 @@
-<html>
-<head>
-{% load static %}
-    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-    <script language="JavaScript" src="{% static 'tmv_app/js/jquery.rightClick.js' %}"></script>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+{% extends "tmv_app/base.html" %}
 
-<title>Climate Change Topics</title>
-<link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
+{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=run_id %} {% endblock %}
 
-</head>
-  <body>
-{{ nav_bar|safe }}
+{% block content %}
 <div id="top"></div>
 <div id="header">
 <h1>Climate Change Topics</h1>
@@ -22,7 +14,7 @@
 {% for topic, topic_score, width in topic_tuples %}
 <tr><td><table width="{{ width|floatformat:1 }}%" >
   <tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" >
-    <a href="topic/{{ topic.id }}">{{ topic.title }}</a></td></tr></table></td></tr>
+    <a href="{% url 'tmv_app:topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
 {% endfor %}
 </table>
 </div>
@@ -30,6 +22,5 @@
 <div id="footer">
 <br>
 <hr noshade>
-</div>
-  </body>
-</html>
+
+{% endblock %}

@@ -1,104 +1,91 @@
-<html>
-<head>
-{% load static %}
-    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-    <script language="JavaScript" src="{% static 'tmv_app/js/pie.js' %}"></script>
-    <script language="JavaScript" src="/static/js/search.js"></script>
+{% extends "tmv_app/base.html" %}
 
+{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=run_id %} {% endblock %}
 
-    <script type="text/JavaScript">
-    <!--
+{% block content %}
 
-    var array = {{ pie_array|safe }};
-    var elements = generate_pie_elements(array);
-    var piec = null;
-    function init() {
-        // create pie chart
-        piec = new PieChart(elements);
-        piec.initialize();
+<div id="top"></div>
 
-    }
+<h1 id="header">
+    <table><tr>
+        <td id="title">{{ doc.title }}</td>
+    </tr></table>
 
-    function highlight(i) {
-        piec.highlight(i);
-    }
+    <hr noshade>
+</h1>
 
-    function unhighlight() {
-        piec.unhighlight();
-    }
-    console.log(array)
-    for (t=0;t < array.length;t++) {
-        console.log(t)
-    }
-    //-->
-    </script>
+<div id="main">
+    <table><tr>
+        <td width="210px">
+            <table class="dark">
+            <tr><td><canvas id="canvas" width="200" height="200"></canvas></td></tr>
+            <tr class="title">
+                <td>related topics</td>
+            </tr>
+            {% if topics %}
+  {% for topic in topics %}
+  <tr class="list"><td id="topic_{{ topic.pk }}" onmouseover="highlight({{ forloop.counter|add:"-1" }})" onmouseout="unhighlight()" onclick="window.location.href='/tmv_app/topic/{{ topic.pk }}'"><span class="{{ topic.ntopic }}">{{ topic.title }}</span></td></tr>
+  {% endfor %}
+{% endif %}
+            </table>
+        </td>
 
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-
-    <title>{{ doc.title }}</title>
-
-<link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
-</head>
-
-<body onLoad="init()">
-{{ nav_bar|safe }}
-
-    <div id="top"></div>
-
-    <h1 id="header">
-        <table><tr>
-            <td id="title">{{ doc.title }}</td>
-        </tr></table>
-
-        <hr noshade>
-    </h1>
-
-    <div id="main">
-        <table><tr>
-            <td width="210px">
-                <table class="dark">
-                <tr><td><canvas id="canvas" width="200" height="200"></canvas></td></tr>
-                <tr class="title">
-                    <td>related topics</td>
-                </tr>
-                {% if topics %}
-			{% for topic in topics %}
-			<tr class="list"><td id="topic_{{ topic.pk }}" onmouseover="highlight({{ forloop.counter|add:"-1" }})" onmouseout="unhighlight()" onclick="window.location.href='/tmv_app/topic/{{ topic.pk }}'"><span class="{{ topic.ntopic }}">{{ topic.title }}</span></td></tr>
-			{% endfor %}
-		{% endif %}
-                </table>
-            </td>
-
-            <td>
-                <table class="light">
-                <tr class="doc"><td>
-                    <p>
-                      {% for author in doc_authors %}
-                         <a href="/tmv_app/author/{{ author.AU }}">{{ author.AU }}</a>;
-                      {% endfor %}
-                       {{ doc.PY }}
-                    </p>
-                    <p>
-                       {% for inst in doc_institutions %}
-                          <a href="/tmv_app/institution/{{ inst.institution }}">{{ inst.institution }}</a>;
-                       {% endfor %}
-                    </p>
-                    <p>
-			            {% for word in words %}
-								<span class="{{ word.topic }}">{{ word.title }}</span>
-							{% endfor %}
-		            </p>
+        <td>
+            <table class="light">
+            <tr class="doc"><td>
+                <p>
+                  {% for author in doc_authors %}
+                     <a href="/tmv_app/author/{{ author.AU }}">{{ author.AU }}</a>;
+                  {% endfor %}
+                   {{ doc.PY }}
+                </p>
+                <p>
+                   {% for inst in doc_institutions %}
+                      <a href="/tmv_app/institution/{{ inst.institution }}">{{ inst.institution }}</a>;
+                   {% endfor %}
+                </p>
+                <p>
+              {% for word in words %}
+            <span class="{{ word.topic }}">{{ word.title }}</span>
+          {% endfor %}
+            </p>
 <!--		            <p><a href="http://en.wikipedia.org/wiki/{{ doc.title }}">Full article&nbsp;&#x25B8;</a></p>-->
-                </td></tr>
-                </table>
-            </td>
-        </tr></table>
-    </div>
+            </td></tr>
+            </table>
+        </td>
+    </tr></table>
+</div>
 
-    <div id="footer">
-        <br>
-        <hr noshade>
-    </div>
+<div id="footer">
+    <br>
+    <hr noshade>
+</div>
 
-</body>
-</html>
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+
+var array = {{ pie_array|safe }};
+var elements = generate_pie_elements(array);
+var piec = null;
+function init() {
+    // create pie chart
+    piec = new PieChart(elements);
+    piec.initialize();
+}
+
+function highlight(i) {
+    piec.highlight(i);
+}
+
+function unhighlight() {
+    piec.unhighlight();
+}
+console.log(array)
+for (t=0;t < array.length;t++) {
+    console.log(t)
+}
+init()
+
+</script>
+{% endblock %}

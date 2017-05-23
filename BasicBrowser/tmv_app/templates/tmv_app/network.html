@@ -1,8 +1,10 @@
 {% extends "tmv_app/base.html" %}
 
+{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=run_id %} {% endblock %}
+
 {% block content %}
-<!DOCTYPE html>
-<meta charset="utf-8">
+<div id="main">
+<div id="graph">
 <style>
 
 .links line {
@@ -66,7 +68,8 @@ function getgraph(cor, force) {
   $.ajax({
     url: '/tmv_app/return_corrs',
     data: {
-      'cor': cor
+      'cor': cor,
+      'run_id': {{run_id | safe}}
     },
     datatype: 'json',
     success: function(graph) {

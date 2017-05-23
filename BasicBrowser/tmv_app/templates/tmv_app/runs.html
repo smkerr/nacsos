@@ -1,86 +1,72 @@
-<html>
-<head>
-{% load static %}
-    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-    <script language="JavaScript" src="{% static 'tmv_app/js/pie.js' %}"></script>
-    <script language="JavaScript" src="{% static 'tmv_app/js/search.js' %}"></script>
+{% extends "tmv_app/base.html" %}
 
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=run_id %} {% endblock %}
 
-    <title>Runs</title>
+{% block content %}
 
-    <link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
-</head>
+<div id="top"></div>
 
-<body>
-{{ nav_bar|safe }}
+<h1 id="header">
+    <table><tr>
+        <td id="title">Online LDA Runs</td>
+    </tr></table>
 
-    <div id="top"></div>
+    <hr noshade>
+</h1>
 
-    <h1 id="header">
-        <table><tr>
-            <td id="title">Online LDA Runs</td>
-        </tr></table>
+<div id="main">
+<table>
+    <td width="50%">
+    <table>
+		<tr>
+			<th>Run id</th>
+      <th>Method</th>
+      <th>Query ID</th>
+			<th>Started</th>
+			<th>Topics</th>
+			<th>Documents</th>
+			<th>Terms</th>
+			<th>Error</th>
+      <th>Max Features</th>
+      <th>Ngram size</th>
+			<th>Iterations</th>
+      <th>Duration</th>
+      <th>Actions</th>
+      <th>Notes</th>
+    </tr>
+		{% for stat in stats %}
 
-        <hr noshade>
-    </h1>
+      <tr>
+			<td><a href="{% url 'tmv_app:topics' stat.run_id %}">{{ stat.run_id }}</a></td>
+      <td>{{ stat.get_method_display }}</td>
+      <td><a href="{% url 'scoping:doclist' stat.query_id %}">{{ stat.query.id }}</a></td>
+			<td>{{ stat.start }}</td>
+			<td>{{ stat.topics }}</td>
+			<td>{{ stat.docs_seen }}</td>
+			<td>{{ stat.terms }}</td>
+			<td>{{ stat.error|floatformat:3 }}</td>
+			<td>{{ stat.max_features }}</td>
+			<td>{{ stat.ngram }}</td>
+			<td>{{ stat.iterations }}</td>
+      <td>{{ stat.start|timesince:stat.last_update}}</td>
+      <td><button onclick="window.location.href='runs/delete/{{ stat.run_id }}';event.stopImmediatePropagation();">Delete</button></td>
+      <td>
+          <form action="{% url 'tmv_app:update' stat.run_id %}" method="post" >
+          {% csrf_token %}
+          <textarea rows=3 name="notes">{{ stat.notes }}</textarea>
+          <input type="submit" value="save"/>
+          </form>
+      </td>
+		</tr>
+		{% endfor %}
+    </table>
+    </td>
+</table>
+</div>
 
-    <div id="main">
-		<table>
-        <td width="50%">
-        <table>
-				<tr>
-					<th>Run id</th>
-          <th>Method</th>
-          <th>Query ID</th>
-					<th>Started</th>
-					<th>Topics</th>
-					<th>Documents</th>
-					<th>Terms</th>
-					<th>Error</th>
-          <th>Max Features</th>
-          <th>Ngram size</th>
-					<th>Iterations</th>
-          <th>Duration</th>
-          <th>Actions</th>
-          <th>Notes</th>
-        </tr>
-				{% for stat in stats %}
-                    {% if stat.run_id == run_id %}
-                        <tr class="active_run" onclick="window.location.href='runs/apply/{{ stat.run_id }}'">
-                    {% else %}
-                        <tr onclick="window.location.href='runs/apply/{{ stat.run_id }}'">
-                    {% endif %}
-					<td>{{ stat.run_id }}</td>
-          <td>{{ stat.get_method_display }}</td>
-          <td>{{ stat.query.id }}</td>
-					<td>{{ stat.start }}</td>
-					<td>{{ stat.topics }}</td>
-					<td>{{ stat.docs_seen }}</td>
-					<td>{{ stat.terms }}</td>
-					<td>{{ stat.error|floatformat:3 }}</td>
-					<td>{{ stat.max_features }}</td>
-					<td>{{ stat.ngram }}</td>
-					<td>{{ stat.iterations }}</td>
-                    <td>{{ stat.start|timesince:stat.last_update}}</td>
-                    <td><button onclick="window.location.href='runs/delete/{{ stat.run_id }}';event.stopImmediatePropagation();">Delete</button></td>
-                    <td onclick=event.stopImmediatePropagation();>
-                        <form action="{% url 'tmv_app:update' stat.run_id %}" method="post" >
-                        {% csrf_token %}
-                        <textarea rows=3 name="notes">{{ stat.notes }}</textarea>
-                        <input type="submit" value="save"/>
-                        </form>
-                    </td>
-				</tr>
-				{% endfor %}
-        </table>
-        </td>
-		</table>
-    </div>
+<div id="footer">
+    <br>
+    <hr noshade>
+</div>
 
-    <div id="footer">
-        <br>
-        <hr noshade>
-    </div>
-</body>
-</html>
+{% endblock %}

@@ -16,10 +16,6 @@ div.explanation {
     padding: 10px;
 }
 
-a {
-	color: #000;
-	text-decoration: none;
-}
 
 a:active {
 	color: #0050FF;
