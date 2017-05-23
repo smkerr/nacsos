@@ -40,28 +40,15 @@ django.setup()
 from tmv_app.views import *
 from tmv_app.models import *
 
-session = {}
 
-try:
-    f = int(sys.argv[1])
-except:
-    f = 73
+a = int(sys.argv[1])
 
-# Select last run
-for stat in RunStats.objects.filter(run_id__gt=f):
-    run_id = stat.run_id
-    print(run_id)
-    # Set current sums for run to False (so recalculated)
-    stat.topic_titles_current = False
-    stat.topic_year_scores_current = False
-    stat.topic_scores_current = False
-    stat.docs_seen = DocTopic.objects.filter(run_id=run_id).values('doc_id').order_by().distinct().count()
-    stat.save()
+z = int(sys.argv[2])
 
-    update_year_topic_scores(run_id)
-    update_topic_scores(run_id)
-    update_topic_titles(run_id)
-    subprocess.Popen(["python3",
-        "/home/galm/software/tmv/BasicBrowser/corr_topics.py",
-        str(run_id)
-    ]).wait()
+for s in RunStats.objects.filter(run_id__gte=a,run_id__lte=z).iterator():
+    print(s)
+    print(s.pk)
+    Topic.objects.filter(run_id=s).delete()
+    DocTopic.objects.filter(run_id=s.pk).delete()
+    TopicTerm.objects.filter(run_id=s.pk).delete()
+    s.delete()

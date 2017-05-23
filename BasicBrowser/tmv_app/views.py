@@ -637,7 +637,7 @@ def apply_run_filter(request,new_run_id):
 def delete_run(request,new_run_id):
     stat = RunStats.objects.get(run_id=new_run_id)
     stat.delete()
-    topics = Topic.objects.filter(run_id=new_run_id)
+    topics = Topic.objects.filter(run_id_id=new_run_id)
     topics.delete()
     dt = DocTopic.objects.filter(run_id=new_run_id)
     dt.delete()

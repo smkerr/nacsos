@@ -30,20 +30,21 @@
         <td width="50%">
         <table>
 				<tr>
-					<th>Run id</td>
-                    <th>Method</td>
-					<th>Started</td>
-					<th>Topics</td>
-					<th>Documents</td>
-					<th>Terms</td>
-					<th>Error</td>
-          <th>Max Features</td>
-          <th>Ngram size</td>
-					<th>Iterations</td>
-                    <th>Duration</th>
-                    <th>Actions</td>
-                    <th>Notes</td>
-                </tr>
+					<th>Run id</th>
+          <th>Method</th>
+          <th>Query ID</th>
+					<th>Started</th>
+					<th>Topics</th>
+					<th>Documents</th>
+					<th>Terms</th>
+					<th>Error</th>
+          <th>Max Features</th>
+          <th>Ngram size</th>
+					<th>Iterations</th>
+          <th>Duration</th>
+          <th>Actions</th>
+          <th>Notes</th>
+        </tr>
 				{% for stat in stats %}
                     {% if stat.run_id == run_id %}
                         <tr class="active_run" onclick="window.location.href='runs/apply/{{ stat.run_id }}'">
@@ -51,7 +52,8 @@
                         <tr onclick="window.location.href='runs/apply/{{ stat.run_id }}'">
                     {% endif %}
 					<td>{{ stat.run_id }}</td>
-                    <td>{{ stat.get_method_display }}</td>
+          <td>{{ stat.get_method_display }}</td>
+          <td>{{ stat.query.id }}</td>
 					<td>{{ stat.start }}</td>
 					<td>{{ stat.topics }}</td>
 					<td>{{ stat.docs_seen }}</td>
