@@ -16,7 +16,7 @@ with open('OECDWoS.csv') as infile:
     for row in reader:
         owtable[row[2]] = {"OECD": row[3],"OECD_FOS":row[0],"OECD_FOS_TEXT":row[1]}
 
-docs = Doc.objects.filter(wosarticle__wc__isnull=False,query=365)
+docs = Doc.objects.filter(wosarticle__wc__isnull=False,query=1053)
 
 aut = list(Doc.objects.filter(UT__contains='WOS:').values_list('UT',flat=True))
 

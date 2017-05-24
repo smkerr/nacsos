@@ -14,9 +14,10 @@ urlpatterns = [
     url(r'^return_corrs$', login_required(return_corrs), name='return_corrs'),
     url(r'^topic/(?P<topic_id>\d+)/$', login_required(topic_detail), name="topic_detail"),
     url(r'^term/(?P<term_id>\d+)/$', login_required(term_detail), name="term_detail"),
+    url(r'^doc/random/(?P<run_id>\d+)$', login_required(doc_random)),
     url(r'^doc/(?P<doc_id>.+)/(?P<run_id>\d+)$', login_required(doc_detail), name="doc_detail"),
     url(r'^author/(?P<author_name>.+)/$', login_required(author_detail)),
-    url(r'^institution/(?P<institution_name>.+)/$', login_required(institution_detail)),
+    url(r'^institution/(?P<run_id>\d+)/(?P<institution_name>.+)/$', login_required(institution_detail)),
     url(r'^topic_list$', login_required(topic_list_detail)),
     # Home page
     url(r'^topic_presence/(?P<run_id>\d+)$', login_required(topic_presence_detail),name="topics"),
@@ -31,7 +32,6 @@ urlpatterns = [
     url(r'^runs/apply/(?P<new_run_id>\d+)$', login_required(apply_run_filter)),
     url(r'^runs/delete/(?P<new_run_id>\d+)$', login_required(delete_run)),
     url(r'^topic/random$', login_required(topic_random)),
-    url(r'^doc/random/(?P<run_id>\d+)$', login_required(doc_random)),
     url(r'^term/random$', login_required(term_random)),
     url(r'^get_docs$', login_required(get_docs), name="get_docs"),
     url(r'^print_table/(?P<run_id>\d+)$', login_required(print_table), name="print_table")

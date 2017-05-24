@@ -81,8 +81,7 @@ def author_detail(request, author_name):
 
 ###########################################################################
 ## Institution view
-def institution_detail(request, institution_name):
-    run_id = find_run_id(request.session)
+def institution_detail(request, run_id, institution_name):
     documents = Doc.objects.filter(
         docauthinst__institution__icontains=institution_name
     ).distinct('UT')
@@ -511,8 +510,8 @@ def topic_presence_detail(request,run_id):
     if stat.get_method_display() == 'hlda':
         return(topic_presence_hlda(request))
 
-    update_topic_titles(request.session)
-    update_topic_scores(request.session)
+    update_topic_titles(run_id)
+    update_topic_scores(run_id)
     response = ''
 
     get_year_filter(request)
@@ -754,10 +753,10 @@ def update_topic_scores(session):
     else:
         run_id = find_run_id(session)
     stats = RunStats.objects.get(run_id=run_id)
-    #if "a" in "ab":
-    if not stats.topic_scores_current:
+    if "a" in "ab":
+    #if not stats.topic_scores_current:
 
-        topics = Topic.objects.filter(run_id=run_id)
+        topics = Topic.objects.filter(run_id=stats)
         for t in topics:
             t.score=0
             t.save()
@@ -769,6 +768,8 @@ def update_topic_scores(session):
             topic = Topic.objects.get(pk=tscore['topic'])
             topic.score = tscore['total']
             topic.save()
+
+
 
         stats.topic_scores_current = True
         stats.save()
@@ -843,7 +844,7 @@ def topic_random(request):
 
 def doc_random(request,run_id):
     doc = random_doc(RunStats.objects.get(pk=run_id).query)
-    return HttpResponseRedirect('/tmv_app/doc/' +  doc.UT)
+    return HttpResponseRedirect('/tmv_app/doc/' +  doc.UT + '/' + run_id)
 
 def term_random(request):
     return HttpResponseRedirect('/tmv_app/term/' + str(random.randint(1, Term.objects.count())))
