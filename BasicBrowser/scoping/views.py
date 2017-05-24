@@ -262,20 +262,63 @@ def doquery(request):
     )
     q.save()
 
+    # Do internal queries
     if qdb=="intern":
         args = qtext.split(" ")
-        q1 = Doc.objects.filter(query=args[0])
-        op = args[1]
-        q2 = Doc.objects.filter(query=args[2])
-        if op =="AND":
-            combine = q1.filter(query=args[2])
-        if op =="OR":
-            combine = q1 | q2
-        if op == "NOT":
-            combine = q1.exclude(query=args[2])
+        # Original one for combining qs
+        if args[1].strip() in ["AND", "OR", "NOT"]:
+            q1 = Doc.objects.filter(query=args[0])
+            op = args[1]
+            q2 = Doc.objects.filter(query=args[2])
+            if op =="AND":
+                combine = q1.filter(query=args[2])
+            if op =="OR":
+                combine = q1 | q2
+            if op == "NOT":
+                combine = q1.exclude(query=args[2])
+        else:
+            # more complicated filters
+            if args[0].strip()=="*":
+                q1 = Doc.objects.all()
+                q1ids = None
+            else:
+                q1 = Doc.objects.filter(query=args[0])
+                q1ids = q1.values_list('UT',flat=True)
+            for a in range(1,len(args)):
+                parts = args[a].split(":")
+                # Deal WITH tech filters
+                if parts[0] == "TECH":
+                    tech, tdocs, tobj = get_tech_docs(parts[1])
+                    tids = tdocs.values_list('UT',flat=True)
+                    if q1ids is not None:
+                        cids = list(set(q1ids).intersection(set(tids)))
+                    else:
+                        cids = tids
+                    q1ids = cids
+                    combine = Doc.objects.filter(UT__in=cids)
+                # Deal with relevance filters
+                if parts[0] == "IS":
+                    if parts[1] == "RELEVANT":
+                        combine = Doc.objects.filter(
+                            UT__in=cids,
+                            docownership__relevant=1
+                        ) | Doc.objects.filter(
+                            UT__in=cids,
+                            technology__isnull=False
+                        )
+                    if parts[1] == "TRELEVANT":
+                        combine = Doc.objects.filter(
+                            UT__in=cids,
+                            docownership__relevant=1,
+                            docownership__query__technology=tobj
+                        ) | Doc.objects.filter(
+                            UT__in=cids,
+                            technology=tobj
+                        )
+
+
         for d in combine.distinct('UT'):
             d.query.add(q)
-
         q.r_count = len(combine.distinct('UT'))
         q.save()
 

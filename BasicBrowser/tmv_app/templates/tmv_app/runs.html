@@ -39,7 +39,11 @@
       <tr>
 			<td><a href="{% url 'tmv_app:topics' stat.run_id %}">{{ stat.run_id }}</a></td>
       <td>{{ stat.get_method_display }}</td>
-      <td><a href="{% url 'scoping:doclist' stat.query_id %}">{{ stat.query.id }}</a></td>
+      {% if stat.query_id %}
+        <td><a href="{% url 'scoping:doclist' stat.query_id %}">{{ stat.query.id }}</a></td>
+      {% else %}
+      <td>None</td>
+      {% endif %}
 			<td>{{ stat.start }}</td>
 			<td>{{ stat.topics }}</td>
 			<td>{{ stat.docs_seen }}</td>

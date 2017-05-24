@@ -45,7 +45,7 @@ def main():
             corrscore = tcor[tc]
             if corrscore > 0:
                 topiccorr, created = TopicCorr.objects.get_or_create(
-                    topic_id=topic, topiccorr=corrtopic, run_id=run_id
+                    topic_id=topic, topiccorr_id=corrtopic, run_id=run_id
                 )
                 topiccorr.score = corrscore
                 topiccorr.save()

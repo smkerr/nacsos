@@ -101,10 +101,10 @@ def main():
     q.r_count = n_records
     q.save()
 
-    if q.type == "default":
-        shutil.rmtree("/queries/"+title)
-        os.remove("/queries/"+title+".txt")
-        os.remove("/queries/"+title+".log")
+    # if q.type == "default":
+    #     shutil.rmtree("/queries/"+title)
+    #     os.remove("/queries/"+title+".txt")
+    #     os.remove("/queries/"+title+".log")
 
 
 if __name__ == '__main__':
