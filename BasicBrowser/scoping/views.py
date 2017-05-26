@@ -60,7 +60,7 @@ def index(request):
             q.tech=q.technology.name
         #print(q.tech)
 
-    if request.user.username in ["galm","roger","nemet"]:
+    if request.user.username in ["galm","rogers","nemet"]:
         extended=True
     else:
         extended=False
@@ -2490,7 +2490,7 @@ def screen(request,qid,tid,ctype,d=0):
     qinns = qinns.distinct()
     ninns = Innovation.objects.exclude(query__doc=doc).exclude(doc=doc)
 
-    if query.innovation is not None:
+    if request.user.username in ["galm","rogers","nemet"]:
         innovation=True
     else:
         innovation=False
