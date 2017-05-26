@@ -123,6 +123,7 @@ class Doc(models.Model):
     scopus = models.BooleanField(default=False)
     uploader = models.ForeignKey(User, null=True, related_name="uploaded_docs", on_delete=models.CASCADE, verbose_name="Uploader")
     date = models.DateTimeField(null=True)
+    ymentions = ArrayField(models.IntegerField(),null=True)
 
     def __str__(self):
       return self.UT
