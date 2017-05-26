@@ -75,23 +75,6 @@
         {% endif %}
 	    </tr>
     </table>
-<p >
-<div class="explanation" style="text-align:center">
-This document is assigned to the following technologies:
-<p>
-<b>
-{% for t in qtechs %}
-    {{t.name}}
-{% endfor %}
-</b>
-<p>
-Click on any of the following technologies to add this document to them
-<p id="field_container">
-{% for t in ntechs %}
-    <span class="field_name" data-tech="{{t.id}}">{{t.name}}</span>
-{% endfor %}
-</b>
-</div>
 {% if innovation %}
 <p>
 <div class="explanation" style="text-align:center">
@@ -107,6 +90,24 @@ Click on any of the following categories to add this document to them
 <p id="field_container">
 {% for t in ninns %}
     <span class="inn_name" data-inn="{{t.id}}">{{t.name}}</span>
+{% endfor %}
+</b>
+</div>
+{% else %}
+<p >
+<div class="explanation" style="text-align:center">
+This document is assigned to the following technologies:
+<p>
+<b>
+{% for t in qtechs %}
+    {{t.name}}
+{% endfor %}
+</b>
+<p>
+Click on any of the following technologies to add this document to them
+<p id="field_container">
+{% for t in ntechs %}
+    <span class="field_name" data-tech="{{t.id}}">{{t.name}}</span>
 {% endfor %}
 </b>
 </div>
