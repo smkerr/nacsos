@@ -2,8 +2,12 @@ from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 from itertools import chain
 from django.db.models import Max
-from django.db.models import Func, F, Value as V
+from django.db.models import Count, Func, F, Value as V
 from django.db.models.functions import Concat
+from django.core import serializers
+from django.core.serializers import serialize
+
+from cities.models import *
 # Create your views here.
 
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
@@ -2318,6 +2322,48 @@ def document(request,doc_id):
         'ratings': ratings,
         'queries': queries,
         'extended': extended
+    }
+    return HttpResponse(template.render(context, request))
+
+def cities(request,qid):
+    template = loader.get_template('scoping/cities.html')
+    query = Query.objects.get(pk=qid)
+    context = {
+        'query':query
+    }
+    return HttpResponse(template.render(context, request))
+
+def city_data(request,qid):
+    q = Query.objects.get(pk=qid)
+    badcities = ['Metro','Most','Sim','Young','University','Green','Much','Mobile','Federal','Along','Of','Laplace']
+    cities = City.objects.filter(doc__query=qid).exclude(name__in=badcities)
+    cities = cities.annotate(
+        n = Count('doc')
+    ).order_by('-n') #.values('name','country__name','n','location')
+
+    response = {"type": "GeometryCollection"}
+    geometries = []
+
+    for c in cities:
+        geometries.append({
+            "type": "Point","coordinates":list(c.location.coords),
+            "properties": {"name": c.name, "n": c.n}
+        })
+
+    response['geometries'] = geometries
+    return JsonResponse(response, safe=False, content_type="application/json")
+
+def city_docs(request,qid):
+    template = loader.get_template('scoping/city_docs.html')
+    place = request.GET.get('name',None)
+    badcities = ['Metro','Most','Sim','Young','University','Green','Much','Mobile','Federal','Along','Of','Laplace']
+    city = City.objects.filter(
+        alt_names__name__unaccent=place
+    ).order_by('-population').first()
+    cdocs = city.doc_set.all()
+
+    context = {
+        'docs': cdocs
     }
     return HttpResponse(template.render(context, request))
 
