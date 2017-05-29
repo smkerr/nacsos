@@ -5,7 +5,7 @@ from nltk import ngrams
 from django.contrib.postgres.fields import ArrayField
 import uuid
 from random import randint
-
+import cities
 
 # Create your models here.
 
@@ -104,6 +104,7 @@ class DocManager(models.Manager):
         random_index = randint(0, count - 1)
         return self.all()[random_index]
 
+
 class Doc(models.Model):
     random = DocManager
     UT = models.CharField(max_length=240,db_index=True,primary_key=True, verbose_name='Document ID')
@@ -124,6 +125,7 @@ class Doc(models.Model):
     uploader = models.ForeignKey(User, null=True, related_name="uploaded_docs", on_delete=models.CASCADE, verbose_name="Uploader")
     date = models.DateTimeField(null=True)
     ymentions = ArrayField(models.IntegerField(),null=True)
+    cities = models.ManyToManyField('cities.City')
 
     def __str__(self):
       return self.UT

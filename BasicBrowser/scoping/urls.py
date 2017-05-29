@@ -30,6 +30,10 @@ urlpatterns = [
     url(r'^delete_query/(?P<qid>[0-9]+)$', views.delete_query, name='delete'),
     url(r'^delete_sbs/(?P<sbsid>[0-9]+)$', views.delete_sbs, name='delete'),
     #### Others
+    url(r'^cities/(?P<qid>[0-9]+)$',views.cities, name='cities'),
+    url(r'^city_data/(?P<qid>[0-9]+)$',views.city_data, name='city_data'),
+    url(r'^city_docs/(?P<qid>[0-9]+)$',views.city_docs, name='city_docs'),
+
     url(r'^switchmode$', views.switch_mode, name='switch_mode'),
     url(r'^technologies',views.technologies, name='technologies'),
     url(r'^technology/(?P<tid>[0-9]+)$',views.technology, name='technology'),

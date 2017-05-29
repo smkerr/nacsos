@@ -1,0 +1,131 @@
+{% extends "scoping/base.html" %}
+{% load static %}
+
+{% block content %}
+<h1> Scoping Review Helper</h1>
+<br>
+
+<!-- Query manager -->
+<h2> Cities Homepage: {{ query.title }} </h2> {{query.pk}}
+<br>
+
+</tr>
+</table>
+<table><tr>
+<td width="30%">
+  <div class="explanation" style="width:90%">
+    <p id="graphinfo">
+    No City Selected: click on a city to view articles mentioning it.
+  </p>
+</div>
+<td width="70%">
+    <div id="map" height="600"></div><br>
+</td>
+
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'scoping/js/topojson.v1.min.js' %}"></script>
+<script type="text/JavaScript">
+
+div = d3.select("body").append("div")
+  .attr("class","tooltip")
+  .style("opacity",0)
+
+var w = $("#map").parent().width();
+var h = w*0.8
+projection = d3.geo.mercator()
+  .translate([w/2,h/2])
+  .center([0,30])
+  .scale(w*0.16);
+
+path = d3.geo.path()
+  .projection(projection);
+
+mapsvg = d3.select("#map")
+  .append("svg")
+  .attr("class","mapbox")
+  .attr("width", w)
+  .attr("height", h)
+  .call(d3.behavior.zoom()
+    .on("zoom", zoomed)
+  );
+
+g = mapsvg.append("g")
+
+d3.json("{% static 'scoping/js/world-50m.json' %}", function(error, world) {
+
+  console.log(world)
+  console.log(world.objects.countries)
+  countries = topojson.feature(world, world.objects.countries).features;
+  console.log(countries)
+  g.selectAll("path")
+    .data(countries.filter(function(d) {
+      if (d.name == "Antarctica") {
+        return false
+      } else  {
+        return true;
+      }
+    })).enter()
+    .append("path")
+    .attr("d",path)
+    .attr("class","country");
+    d3.json("{% url 'scoping:city_data' query.pk %}", function(error, cities) {
+      //console.log(cities)
+      //cities = JSON.parse(cities)
+      console.log(cities)
+      cities = topojson.feature(cities,cities).features;
+      console.log(cities)
+
+      max=cities[0].properties.n
+      size = d3.scale.sqrt();
+      size.range([0,12])
+      size.domain([0,max])
+
+      g.selectAll("circle")
+      .data(cities).enter()
+      .append("circle")
+      .attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+      .attr("class","city")
+      .on("mouseover", function(d) {
+        div.transition()
+          .duration(200)
+          .style("opacity", .9);
+        div.html(d.properties.name + "<br/>" + d.properties.n + " articles")
+          .style("left", (d3.event.pageX) + "px")
+          .style("top", (d3.event.pageY - 28) + "px");
+        })
+      .on("mouseout", function(d) {
+        div.transition()
+          .duration(500)
+          .style("opacity", 0);
+        })
+      .on("click", function(d) {
+        get_city_papers(d.properties.name)
+      })
+      .attr("r", function(d) {
+        return size(d.properties.n)
+      });
+    })
+})
+
+function get_city_papers(name) {
+  $.ajax({
+    url: "{% url 'scoping:city_docs' query.id %}",
+    data: {
+      'name': name,
+    },
+    datatype: 'json',
+    success: function(text) {
+      console.log(text)
+      $("#graphinfo").html(text)
+    }
+  })
+}
+
+function zoomed() {
+  g.attr("transform","translate("+d3.event.translate+")scale("+d3.event.scale+")");
+}
+
+</script>
+{% endblock %}
