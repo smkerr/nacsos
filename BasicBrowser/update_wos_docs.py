@@ -18,6 +18,7 @@ def update_doc(r):
     django.db.connections.close_all()
     doc = Doc.objects.get(UT=r['UT'])
     doc.title = get(r,'TI')
+    doc.wos = True
     doc.save()
     wc = [x.strip() for x in get(r,'WC').split(";")]
     try:

@@ -84,7 +84,7 @@
                       <td><a href="querying/{{query.id}}/0/0">View progress</a></td>
                     {% endif %}
                     <td>
-                      <select class="tech" data-query="{{query.id}}" autocomplete="off">
+                      <select class="qtag" data-thing="Technology" data-query="{{query.id}}" autocomplete="off">
                         {% if not query.technology %}
                         <option selected value="None">{{query.technology}}</option>
                         {% else %}
@@ -101,7 +101,7 @@
                 </td>
                 {% if extended %}
                 <td>
-                  <select class="innovation" data-query="{{query.id}}" autocomplete="off">
+                  <select class="qtag" data-thing="Innovation" data-query="{{query.id}}" autocomplete="off">
                     {% if not query.innovation %}
                     <option selected value="None">{{query.innovation}}</option>
                     {% else %}
@@ -176,32 +176,21 @@ $(".field_name").click(function() {
     console.log(user)
 })
 
-$(".tech").change(function() {
-    query = $(this).attr("data-query")
-    tech = $(this).val()
-    console.log(query)
-    console.log(tech)
-    $.ajax({
-        url: '/scoping/technology_query',
-        data: {
-            'qid': query,
-            'tid': tech
-        },
-        success: function(data) {
-        }
-    })
-})
 
-$(".innovation").change(function() {
+
+$(".qtag").change(function() {
+    thing = $(this).attr("data-thing")
     query = $(this).attr("data-query")
-    tech = $(this).val()
-    console.log(query)
-    console.log(tech)
+    value = $(this).val()
+
     $.ajax({
-        url: '/scoping/innovation_query',
+        url: "{% url 'scoping:update_thing' %}",
         data: {
-            'qid': query,
-            'tid': tech
+            'thing1': "Query",
+            'id1': query,
+            'thing2': thing,
+            'id2': value,
+            'method': "update"
         },
         success: function(data) {
         }
