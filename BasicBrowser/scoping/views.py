@@ -2,12 +2,13 @@ from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 from itertools import chain
 from django.db.models import Max
-from django.db.models import Count, Func, F, Value as V
+from django.db.models import Count, Func, F, Sum, Value as V
 from django.db.models.functions import Concat
 from django.core import serializers
 from django.core.serializers import serialize
 
 from cities.models import *
+from tmv_app.models import *
 # Create your views here.
 
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
@@ -2372,8 +2373,29 @@ def city_docs(request,qid):
     ).order_by('-population').first()
     cdocs = city.doc_set.all()
 
+    topics = DocTopic.objects.filter(
+        doc__cities=city,
+        scaled_score__gt=0.00002,run_id=96
+    )
+
+    topics = topics.annotate(total=(Sum('scaled_score')))
+
+    topics = topics.values('topic','topic__title').annotate(
+        tprop=Sum('scaled_score')
+    ).order_by('-tprop')
+
+    pie_array = []
+    for t in topics:
+        pie_array.append([t['tprop'], '/tmv_app/topic/' + str(t['topic']), 'topic_' + str(t['topic'])])
+
+    #y = x
+
     context = {
-        'docs': cdocs
+        'docs': cdocs,
+        'city': city,
+        'ndocs': cdocs.count(),
+        'pie_array': pie_array,
+        'topics': topics
     }
     return HttpResponse(template.render(context, request))
 

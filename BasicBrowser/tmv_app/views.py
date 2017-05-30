@@ -107,7 +107,12 @@ def institution_detail(request, run_id, institution_name):
 
     institution_template = loader.get_template('tmv_app/institution.html')
 
-    institution_page_context = Context({'institution': institution_name, 'docs': documents, 'topics': topics, 'pie_array': pie_array})
+    institution_page_context = Context({
+        'institution': institution_name,
+        'docs': documents,
+        'topics': topics,
+        'pie_array': pie_array
+    })
 
     return HttpResponse(institution_template.render(institution_page_context))
 

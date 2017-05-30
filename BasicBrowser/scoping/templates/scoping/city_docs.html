@@ -1,5 +1,55 @@
+{% load static %}
+<script src="{% static 'tmv_app/js/pie.js' %}"></script>
+<link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
+
+<h2>{{city.name}}: {{ndocs}} documents</h2>
+
+<table >
+<tr><td><canvas id="canvas" width="200" height="200"></canvas></td></tr>
+<tr class="title">
+    <td>related topics</td>
+</tr>
+
+{% for topic in topics %}
+  <tr class="list">
+    <td id="topic_{{ topic.topic }}" onmouseover="highlight({{ forloop.counter|add:"-1" }})">
+      <span class="{{ topic.ntopic }}">{{ topic.topic__title }}</span>
+    </td>
+  </tr>
+{% endfor %}
+
+</table>
+</td>
+
 {% for d in docs %}
 <p>
 {{d.title}} [<a href="{% url 'scoping:document' d.pk %}">Link</a>]
 
 {% endfor %}
+
+
+<script type="text/javascript">
+
+var array = {{ pie_array|safe }};
+var elements = generate_pie_elements(array);
+var piec = null;
+function init() {
+    // create pie chart
+    piec = new PieChart(elements);
+    piec.initialize();
+}
+
+function highlight(i) {
+    piec.highlight(i);
+}
+
+function unhighlight() {
+    piec.unhighlight();
+}
+console.log(array)
+for (t=0;t < array.length;t++) {
+    console.log(t)
+}
+init()
+
+</script>
