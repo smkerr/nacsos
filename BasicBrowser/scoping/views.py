@@ -2389,8 +2389,14 @@ def cycle_score(request):
     query = Query.objects.get(id=qid)
 
     if query.type == "default":
-        if score == 4:
-            new_score = 0
+        if request.user.profile.type == "default":
+            max = 4
+            min = 0
+        else:
+            max = 8
+            min = 5
+        if score == max:
+            new_score = min
         else:
             new_score = score+1
         docown = DocOwnership.objects.filter(query__id=qid, doc__UT=doc_id, user__id=user, tag__id=tag).first()
