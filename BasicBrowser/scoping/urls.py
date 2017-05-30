@@ -47,8 +47,8 @@ urlpatterns = [
     url(r'^add_tech',views.add_tech, name='add_tech'),
     url(r'^update_tech',views.update_tech, name='update_tech'),
 
-
     url(r'^user$', views.userpage, name='userpage'),
+
     url(r'^update_criteria$', views.update_criteria, name='update_criteria'),
     url(r'^docs/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
     url(r'^docs/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<sbsid>[0-9]+)$', views.doclist, name='doclist'),
