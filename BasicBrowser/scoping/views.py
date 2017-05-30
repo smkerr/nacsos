@@ -2441,6 +2441,7 @@ def activate_user(request):
 
     return JsonResponse(response,safe=False)
 
+@login_required
 def update_criteria(request):
     qid = request.GET.get('qid',None)
     criteria = request.POST['criteria']
@@ -2451,6 +2452,7 @@ def update_criteria(request):
 
     return HttpResponseRedirect(reverse('scoping:query', kwargs={'qid': qid}))
 
+@login_required
 def assign_docs(request):
     qid = request.GET.get('qid',None)
     users = request.GET.getlist('users[]',None)
@@ -2502,13 +2504,13 @@ def assign_docs(request):
 import re
 
 ## Universal screening function, ctype = type of documents to show
+@login_required
 def screen(request,qid,tid,ctype,d=0):
     d = int(d)
     ctype = int(ctype)
     query = Query.objects.get(pk=qid)
     tag = Tag.objects.get(pk=tid)
     user = request.user
-
 
     back = 0
 
@@ -2518,6 +2520,7 @@ def screen(request,qid,tid,ctype,d=0):
             user=user.id,
             tag=tag
     )
+    sdocs = docs.filter(relevant__gte=1).count()
     if ctype==99:
         docs = docs.filter(relevant__gte=1)
     else:
@@ -2529,7 +2532,7 @@ def screen(request,qid,tid,ctype,d=0):
     docs = docs.order_by('date')
 
     tdocs = docs.count()
-    sdocs = d
+
 
     ndocs = docs.count()
 
@@ -2543,8 +2546,8 @@ def screen(request,qid,tid,ctype,d=0):
     abstract = highlight_words(doc.content,query)
     title = highlight_words(doc.wosarticle.ti,query)
 
+    # Create the tags for clicking on
     tags = {'Technology': {},'Innovation': {}}
-
     for t in tags:
         m = apps.get_model(app_label='scoping',model_name=t)
         ctags = m.objects.filter(query__doc=doc) | m.objects.filter(doc=doc)
@@ -2557,8 +2560,6 @@ def screen(request,qid,tid,ctype,d=0):
         innovation=False
     else:
         innovation=True
-
-    #x = y
 
     template = loader.get_template('scoping/doc.html')
     context = {
@@ -2581,6 +2582,7 @@ def screen(request,qid,tid,ctype,d=0):
 
     return HttpResponse(template.render(context, request))
 
+@login_required
 def do_review(request):
 
     tid = request.GET.get('tid',None)
@@ -2608,6 +2610,7 @@ def do_review(request):
     time.sleep(1)
     return HttpResponse("")
 
+@login_required
 def remove_assignments(request):
     qid = request.GET.get('qid',None)
     query = Query.objects.get(pk=qid)
@@ -2615,6 +2618,7 @@ def remove_assignments(request):
     DocOwnership.objects.filter(query=int(qid)).delete()
     return HttpResponse("")
 
+@login_required
 def editdoc(request):
     doc_id = request.POST.get('doc',None)
     field = request.POST.get('field',None)
@@ -2626,23 +2630,22 @@ def editdoc(request):
         doc.wosarticle.ab=value
         doc.save()
 
-    print(doc_id)
-    print(field)
-    print(value)
-
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
+@login_required
 def delete(request,thing,thingid):
     from scoping import models
     getattr(models, thing).objects.get(pk=thingid).delete()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
+@login_required
 def remove_tech(request,doc_id,tid,thing='Technology'):
     doc = Doc.objects.get(pk=doc_id)
     obj = apps.get_model(app_label='scoping',model_name=thing).objects.get(pk=tid)
     getattr(doc,thing.lower()).remove(obj)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
+@login_required
 def add_note(request):
     doc_id = request.POST.get('docn',None)
     tid = request.POST.get('tag',None)
@@ -2660,7 +2663,6 @@ def add_note(request):
     )
     note.save()
 
-
     return HttpResponseRedirect(reverse('scoping:screen', kwargs={
         'qid': qid,
         'tid': tid,
@@ -2674,7 +2676,7 @@ def add_note(request):
 #########################################################
 ## Download the queryset
 
-
+@login_required
 def download(request, qid):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="documents.csv"'
@@ -2718,6 +2720,7 @@ def logout_view(request):
     #return HttpResponse("logout")
     return HttpResponseRedirect(reverse('scoping:index'))
 
+@login_required
 def add_manually():
 
     qid = 308
