@@ -6,6 +6,8 @@ from django.contrib.postgres.fields import ArrayField
 import uuid
 from random import randint
 import cities
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 # Create your models here.
 
@@ -103,6 +105,19 @@ class DocManager(models.Manager):
         count = self.aggregate(count=models.Count('UT'))['count']
         random_index = randint(0, count - 1)
         return self.all()[random_index]
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    type = models.TextField(null=True,default="default")
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
 
 
 class Doc(models.Model):
