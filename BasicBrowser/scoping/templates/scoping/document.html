@@ -14,6 +14,8 @@
     {% for au in authors %}
       <span>{{au.AF}} [{{au.institution}}];</span>
     {% endfor %}
+    <p><b>Journal:</b> {{ doc.wosarticle.so }}
+    <p><b>DOI</b> <a target="_blank" href="http://dx.doi.org/{{ doc.wosarticle.di }}">{{ doc.wosarticle.di}}</a>
     <p><b>Abstract:</b> {{doc.content}} <a id="edit">[Edit]</a></p>
     <div class="hidden edit">
       <form action="{% url 'scoping:editdoc' %}" method="post">
