@@ -33,10 +33,17 @@
             <td># Documents</td>
             <td>! To review</td>
             <td>Reviewed</td>
+            {% if user.profile.type == "default" %}
             <td>Yes</td>
             <td>No</td>
             <td>Maybe</td>
             <td>Yes buts</td>
+            {% else %}
+            <td>Yes T Yes I</td>
+            <td>Yes T No I</td>
+            <td>No T Yes I</td>
+            <td>No T No I</td>
+            {% endif %}
           </tr>
           {% for q in queries %}
             {% if q.type == "default" or q.type == "step_summary" %}

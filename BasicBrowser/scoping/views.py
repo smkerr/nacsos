@@ -1251,14 +1251,24 @@ def userpage(request):
         revdocs         = dos.count()
         reviewed_docs   = dos.filter(relevant__gt=0).count()
         unreviewed_docs = revdocs - reviewed_docs
-        reldocs   = dos.filter(relevant=1).count()
-        irreldocs = dos.filter(relevant=2).count()
-        maybedocs = dos.filter(relevant=3).count()
-        yesbuts   = dos.filter(relevant=4).count()
+        if request.user.profile.type=="default":
+            doctypes = [1,2,3,4]
+        else:
+            doctypes = [5,6,7,8]
+
+        reldocs   = dos.filter(relevant=doctypes[0]).count()
+        irreldocs = dos.filter(relevant=doctypes[1]).count()
+        maybedocs = dos.filter(relevant=doctypes[2]).count()
+        yesbuts   = dos.filter(relevant=doctypes[3]).count()
         try:
-            relevance = round(reldocs/(reldocs+irreldocs)*100)
+            if request.user.profile.type=="default":
+                relevance = round(reldocs/(reldocs+irreldocs)*100)
+            else:
+                relevance = round( (reldocs+maybedocs) /
+                (reldocs+maybedocs+irreldocs+yesbuts) * 100 )
         except:
             relevance = 0
+
         if revdocs > 0:
             query_list.append({
                 'id': q.id,
