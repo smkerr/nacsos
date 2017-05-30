@@ -1,16 +1,5 @@
-<html>
-<head>
-{% load static %}
-{% load scoping_extras %}
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
-<script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-<title>Scoping</title>
-<link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
-
-</head>
-  <body>
-{% include 'scoping/nav_bar.html' with user=user qid=query.id %}
+{% extends "scoping/base.html" %}
+{% block content %}
 <div id="main">
 <div id="graph">
 <h1> Scoping Review Helper</h1>
@@ -76,41 +65,13 @@
 	    </tr>
     </table>
 {% if innovation %}
-<p>
-<div class="explanation" style="text-align:center">
-This document is assigned to the following Innovation Categories:
-<p>
-<b>
-{% for q in qinns %}
-    {{q.name}}
-{% endfor %}
-</b>
-<p>
-Click on any of the following categories to add this document to them
-<p id="field_container">
-{% for t in ninns %}
-    <span class="inn_name" data-inn="{{t.id}}">{{t.name}}</span>
-{% endfor %}
-</b>
-</div>
+
+{% include 'scoping/doctag_box.html' with t=tags.Innovation %}
+
 {% else %}
-<p >
-<div class="explanation" style="text-align:center">
-This document is assigned to the following technologies:
-<p>
-<b>
-{% for t in qtechs %}
-    {{t.name}}
-{% endfor %}
-</b>
-<p>
-Click on any of the following technologies to add this document to them
-<p id="field_container">
-{% for t in ntechs %}
-    <span class="field_name" data-tech="{{t.id}}">{{t.name}}</span>
-{% endfor %}
-</b>
-</div>
+
+{% include 'scoping/doctag_box.html' with t=tags.Technology %}
+
 {% endif %}
 
 <td width="20%">
@@ -133,16 +94,24 @@ Click on any of the following technologies to add this document to them
 </table>
 <p>
 
+{% endblock %}
+
+{% block script %}
+
 <script>
 
-$(".field_name").click(function() {
-    tech = $(this).attr("data-tech")
-    doc = "{{doc.UT}}"
+$(".thing_name").click(function() {
+    thing2 = $(this).attr("data-thing")
+    id2 = $(this).attr("data-value")
+
     $.ajax({
-        url: '/scoping/doc_tech',
+        url: "{% url 'scoping:update_thing' %}",
         data: {
-            'did': doc,
-            'tid': tech
+          "thing1": "Doc",
+          "id1": "{{doc.UT}}",
+          'thing2': thing2,
+          'id2': id2,
+          "method": "add"
         },
         success: function(data) {
             location.reload()
@@ -150,20 +119,6 @@ $(".field_name").click(function() {
     })
 })
 
-$(".inn_name").click(function() {
-    tech = $(this).attr("data-inn")
-    doc = "{{doc.UT}}"
-    $.ajax({
-        url: '/scoping/doc_inn',
-        data: {
-            'did': doc,
-            'tid': tech
-        },
-        success: function(data) {
-            location.reload()
-        }
-    })
-})
 
 var tdocs = {{ tdocs }}
 var sdocs = {{ sdocs }}
@@ -250,5 +205,4 @@ console.log({{page}})
 }
 </script>
 
-</body>
-</html>
+{% endblock %}

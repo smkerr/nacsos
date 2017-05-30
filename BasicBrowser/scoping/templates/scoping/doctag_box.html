@@ -1,0 +1,17 @@
+<p>
+<div class="explanation" style="text-align:center">
+This document is assigned to the following Innovation Categories:
+<p>
+<b>
+{% for q in t.ctags %}
+    {{q.name}}
+{% endfor %}
+</b>
+<p>
+Click on any of the following categories to add this document to them
+<p id="field_container">
+{% for n in t.ntags %}
+    <span class="thing_name field_name" data-thing="{{t.thing}}" data-value="{{n.id}}">{{n.name}}</span>
+{% endfor %}
+</b>
+</div>

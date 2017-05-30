@@ -35,10 +35,11 @@ def add_doc(r):
         doc.title=get(r,'TI')
         doc.content=get(r,'AB')
         doc.PY=get(r,'PY')
+        doc.wos=True
         doc.save()
         doc.query.add(q)
         article = WoSArticle(doc=doc)
-
+        r['wc'] = [x.strip() for x in get(r,'WC').split(";")]
         r['kwp'] = get(r,'ID')
         r['iss'] = get(r,'IS')
         for field in r:
@@ -54,7 +55,7 @@ def add_doc(r):
 
         article.save()
 
-    
+
         ## Add authors
         try:
             for a in range(len(r['AU'])):
@@ -63,7 +64,7 @@ def add_doc(r):
                 except:
                     af = None
                 au = r['AU'][a]
-                if 'C1' not in r:               
+                if 'C1' not in r:
                     r['C1'] = [""]
                 a_added = False
                 for inst in r['C1']:
@@ -89,8 +90,8 @@ def add_doc(r):
                     dai.save()
         except:
             pass
-            
-        
+
+
 
 def main():
     qid = sys.argv[1]
@@ -118,9 +119,9 @@ def main():
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue
-            if line=='ER\n':   
+            if line=='ER\n':
                 # end of record - save it and start a new one
-                n_records +=1            
+                n_records +=1
                 records.append(record)
                 record = {}
                 chunk_size+=1
@@ -158,7 +159,7 @@ def main():
                         record[key] += " " + line.strip()
                     except:
                         pass
-    
+
     django.db.connections.close_all()
     q.r_count = n_records
     q.save()
@@ -170,7 +171,7 @@ def main():
 
 
 if __name__ == '__main__':
-    t0 = time.time()	
+    t0 = time.time()
     main()
     totalTime = time.time() - t0
 

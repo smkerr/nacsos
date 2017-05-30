@@ -118,41 +118,39 @@ def technologies(request):
     return HttpResponse(template.render(context, request))
 
 ########################################################
-## edit tech query
-
+## edit query technology or innovation
 @login_required
-def technology_query(request):
+def update_thing(request):
+    thing1 = request.GET.get('thing1', None)
+    thing2 = request.GET.get('thing2', None)
+    id1 = request.GET.get('id1', None)
+    id2 = request.GET.get('id2', None)
+    method = request.GET.get('method', None)
 
-    tid = request.GET.get('tid', None)
-    qid = request.GET.get('qid', None)
+    try:
+        t1 = apps.get_model(
+            app_label='scoping',model_name=thing1
+        ).objects.get(pk=id1)
+    except:
+        t1 = None
 
-    q = Query.objects.get(pk=qid)
-    if tid=="None":
-        q.technology = None
+    if id2=="None":
+        t2 = None
     else:
-        t = Technology.objects.get(pk=tid)
-        q.technology = t
+        try:
+            t2 = apps.get_model(
+                app_label='scoping',model_name=thing2
+            ).objects.get(pk=id2)
+        except:
+            t2 = id2
 
-    q.save()
+    if method=="add":
+        getattr(t1,thing2.lower()).add(t2)
+    if method=="update":
+        setattr(t1,thing2.lower(),t2)
 
-    return HttpResponse("")
-
-@login_required
-def innovation_query(request):
-
-    iid = request.GET.get('tid', None)
-    qid = request.GET.get('qid', None)
-
-    q = Query.objects.get(pk=qid)
-    if iid=="None":
-        q.innovation = None
-    else:
-        i = Innovation.objects.get(pk=iid)
-        q.innovation = i
-
-    q.save()
-
-    return HttpResponse("")
+    t1.save()
+    return HttpResponse()
 
 ########################################################
 ## Snowballing homepage
@@ -196,20 +194,6 @@ def snowball(request):
     }
     return HttpResponse(template.render(context, request))
 
-#########################################################
-## Test the SSH connection
-def ssh_test():
-
-    NoSSHTest = False
-
-    if NoSSHTest :
-      ssh_working = True
-    else :
-      ssh_working = subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/check_selenium_ip.py", "-b", "chrome"], stdout=subprocess.PIPE).communicate()[0].strip().decode()
-      print(repr(ssh_working))
-    if ssh_working == "False":
-        subprocess.Popen(["setsid","ssh","-D","1080","minx@aix.pik-potsdam.de"])
-    return(ssh_working)
 
 ########################################################
 ## Add the technology
@@ -1245,47 +1229,42 @@ def userpage(request):
     query_list = []
 
     for qt in queries:
+        docstats = {}
         q = Query.objects.get(pk=qt['query__id'])
         tag = Tag.objects.get(pk=qt['id'])
-        ndocs           = Doc.objects.filter(query=q).count()
+        docstats['ndocs'] = Doc.objects.filter(tag=tag).distinct('UT').count()
         dos = DocOwnership.objects.filter(query=q,user=request.user,tag=tag)
-        revdocs         = dos.count()
-        reviewed_docs   = dos.filter(relevant__gt=0).count()
-        unreviewed_docs = revdocs - reviewed_docs
+        docstats['revdocs']         = dos.count()
+        docstats['reviewed_docs']   = dos.filter(relevant__gt=0).count()
+        docstats['unreviewed_docs'] = dos.filter(relevant=0).count()
         if request.user.profile.type=="default":
             doctypes = [1,2,3,4]
         else:
             doctypes = [5,6,7,8]
-
-        reldocs   = dos.filter(relevant=doctypes[0]).count()
-        irreldocs = dos.filter(relevant=doctypes[1]).count()
-        maybedocs = dos.filter(relevant=doctypes[2]).count()
-        yesbuts   = dos.filter(relevant=doctypes[3]).count()
+        dts = []
+        for i in doctypes:
+            dt = dos.filter(relevant=i).count()
+            dts.append({
+                "r":i,
+                "n":dt
+            })
+        docstats['dts'] = dts
         try:
             if request.user.profile.type=="default":
-                relevance = round(reldocs/(reldocs+irreldocs)*100)
+                docstats['relevance'] = round(dts[0]['n']/(dts[0]['n']+dts[1]['n'])*100)
             else:
-                relevance = round( (reldocs+maybedocs) /
-                (reldocs+maybedocs+irreldocs+yesbuts) * 100 )
+                docstats['relevance'] = round( (dts[0]['n']+dts[2]['n']) /
+                (dts[0]['n']+dts[1]['n']+dts[2]['n']+dts[3]['n']) * 100 )
         except:
-            relevance = 0
+            docstats['relevance'] = 0
 
-        if revdocs > 0:
+        if docstats['revdocs'] > 0:
             query_list.append({
                 'id': q.id,
                 'tag': tag,
                 'type': q.type,
                 'title': q.title,
-                'ndocs': ndocs,
-                'revdocs': revdocs,
-                'revieweddocs': reviewed_docs,
-                'unreviewed_docs': unreviewed_docs,
-                'reldocs': reldocs,
-                'maybedocs': maybedocs,
-                'yesbuts': yesbuts,
-                'relevance': relevance,
-                'reldocs': reldocs,
-                'irreldocs': irreldocs
+                'docstats': docstats
             })
 
     query = queries.last()
@@ -2539,7 +2518,7 @@ def screen(request,qid,tid,ctype,d=0):
             user=user.id,
             tag=tag
     )
-    if ctype==5:
+    if ctype==99:
         docs = docs.filter(relevant__gte=1)
     else:
         docs = docs.filter(relevant=ctype)
@@ -2559,25 +2538,25 @@ def screen(request,qid,tid,ctype,d=0):
     except:
         return HttpResponseRedirect(reverse('scoping:userpage'))
 
-    pages = ["check","review","review","maybe","yesbut","review"]
-
     doc = Doc.objects.filter(UT=doc_id).first()
     authors = DocAuthInst.objects.filter(doc=doc)
     abstract = highlight_words(doc.content,query)
     title = highlight_words(doc.wosarticle.ti,query)
 
-    qtechs = Technology.objects.filter(query__doc=doc) | Technology.objects.filter(doc=doc)
-    qtechs = qtechs.distinct()
-    ntechs = Technology.objects.exclude(query__doc=doc).exclude(doc=doc)
+    tags = {'Technology': {},'Innovation': {}}
 
-    qinns = Innovation.objects.filter(query__doc=doc) | Innovation.objects.filter(doc=doc)
-    qinns = qinns.distinct()
-    ninns = Innovation.objects.exclude(query__doc=doc).exclude(doc=doc)
+    for t in tags:
+        m = apps.get_model(app_label='scoping',model_name=t)
+        ctags = m.objects.filter(query__doc=doc) | m.objects.filter(doc=doc)
+        tags[t]['thing'] = t
+        tags[t]['ctags'] = ctags.distinct()
+        tags[t]['ntags'] = m.objects.exclude(query__doc=doc).exclude(doc=doc)
 
-    if request.user.username in ["galm","rogers","nemet"]:
-        innovation=True
-    else:
+
+    if request.user.profile.type == "default":
         innovation=False
+    else:
+        innovation=True
 
     #x = y
 
@@ -2592,13 +2571,9 @@ def screen(request,qid,tid,ctype,d=0):
         'sdocs': sdocs,
         'abstract': abstract,
         'title': title,
-        'page': pages[ctype],
         'ctype': ctype,
-        'qtechs': qtechs,
-        'ntechs': ntechs,
+        'tags': tags,
         'innovation': innovation,
-        'qinns': qinns,
-        'ninns': ninns,
         'tag': tag,
         'd': d,
         'back': back
@@ -2733,23 +2708,8 @@ def download(request, qid):
 
     return response
 
-def doc_tech(request):
-    did = request.GET.get('did',None)
-    tid = request.GET.get('tid',None)
-    doc = Doc.objects.get(pk=did)
-    tech = Technology.objects.get(pk=tid)
-    doc.technology.add(tech)
-    doc.save()
-    return HttpResponse()
 
-def doc_inn(request):
-    did = request.GET.get('did',None)
-    iid = request.GET.get('tid',None)
-    doc = Doc.objects.get(pk=did)
-    inn = Innovation.objects.get(pk=iid)
-    doc.innovation.add(inn)
-    doc.save()
-    return HttpResponse()
+
 
 from django.contrib.auth import logout
 def logout_view(request):
@@ -2780,12 +2740,15 @@ import string
 def highlight_words(s,query):
     if query.database == "intern":
         args = query.text.split(" ")
+        if args[0]=="*":
+            return(s)
         q1 = Query.objects.get(id=args[0])
         q2 = Query.objects.get(id=args[2])
         qwords = [re.findall('\w+',query.text) for query in [q1,q2]]
         qwords = [item for sublist in qwords for item in sublist]
     else:
         qwords = re.findall('\w+',query.text)
+
     nots = ["TS","AND","NOT","NEAR","OR","and","W"]
     transtable = {ord(c): None for c in string.punctuation + string.digits}
     qwords = set([x.split('*')[0].translate(transtable) for x in qwords if x not in nots and len(x.translate(transtable)) > 0])
