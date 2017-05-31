@@ -20,6 +20,8 @@ from django.urls import reverse
 from django.contrib.auth.decorators import user_passes_test
 import json
 from django.apps import apps
+import difflib
+from sklearn.metrics import cohen_kappa_score
 
 from .models import *
 
@@ -1101,10 +1103,65 @@ def query(request,qid,q2id='0',sbsid='0'):
                 tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
             except:
                 tag['relevance'] = 0
+            tusers = User.objects.filter(docownership__tag=tag['id']).distinct()
+            tag['users'] = tusers.count()
+            scores = []
+            for u in tusers:
+                scores.append([])
+            tdocs = Doc.objects.filter(tag=tag['id']).distinct()
+            for u in tusers:
+                tdocs = tdocs.filter(
+                    docownership__user=u,
+                    docownership__relevant__gt=0,
+                    docownership__tag=tag['id']
+                )
+            i = 0
+            for u in tusers:
+                l = tdocs.filter(
+                    docownership__user=u,
+                    docownership__relevant__gt=0,
+                    docownership__tag=tag['id']
+                ).distinct('UT').order_by('UT').values_list('docownership__relevant', flat=True)
+                scores[i] = list(l)
+                i+=1
+            dscores = [None] + scores
+            tag['ratio'] = round(difflib.SequenceMatcher(*dscores).ratio(),2)
+            if len(scores) == 2:
+                tag['cohen_kappa'] = cohen_kappa_score(*scores)
+            else:
+                tag['cohen_kappa'] = "NA"
 
-        fields = ['id','title']
+            #print(tag['ratio'])
+
+        qusers = User.objects.filter(docownership__query=query).distinct()
+        query.nusers = qusers.count()
+        scores = []
+        for u in qusers:
+            scores.append([])
+        qdocs = Doc.objects.filter(query=query).distinct()
+        for u in qusers:
+            qdocs = qdocs.filter(docownership__user=u,docownership__query=query)
+
+        query.ndocs = qdocs.distinct('UT').count()
+
+        i = 0
+        for u in qusers:
+            l = qdocs.filter(
+                docownership__user=u
+            ).distinct('UT').order_by('UT').values_list('docownership__relevant', flat=True)
+            scores[i] = list(l)
+            i+=1
+        dscores = [None] + scores
+        query.ratio = round(difflib.SequenceMatcher(*dscores).ratio(),2)
+        if len(scores) == 2:
+            query.cohen_kappa = cohen_kappa_score(*scores)
+        else:
+            query.cohen_kappa = "NA"
+
 
         untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
+
+
 
         users = User.objects.all()
 
@@ -1142,7 +1199,6 @@ def query(request,qid,q2id='0',sbsid='0'):
         context = {
             'query': query,
             'tags': list(tags),
-            'fields': fields,
             'untagged': untagged,
             'users': user_list,
             'user': request.user
@@ -1447,6 +1503,7 @@ def doclist(request,qid,q2id='0',sbsid='0'):
     relevance_fields.append({"path": "relevance_netrelevant", "name": "NETs relevant"})
     relevance_fields.append({"path": "relevance_techrelevant", "name": "Technology relevant"})
     relevance_fields.append({"path": "note__text", "name": "Notes"})
+    relevance_fields.append({"path": "relevance_agreement", "name": "Agreement"})
 
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
@@ -1927,6 +1984,30 @@ def sortdocs(request):
                 output_field=models.IntegerField()
             )
         ))
+    if "relevance_agreement" in rfields:
+        filt_docs = filt_docs.annotate(
+            relevance_max=models.Max(
+                models.Case(
+                    models.When(docownership__relevant__gt=0,docownership__query__technology=tech,
+                        then=F('docownership__relevant')
+                    ),
+                    default=0,
+                    output_field=models.IntegerField()
+                )
+            ),
+            relevance_min = models.Min(
+                models.Case(
+                    models.When(docownership__relevant__gt=0,docownership__query__technology=tech,
+                        then=F('docownership__relevant')
+                    ),
+                    default=99,
+                    output_field=models.IntegerField()
+                )
+            )
+        )
+        filt_docs = filt_docs.annotate(
+            relevance_agreement = F('relevance_max') - F('relevance_min')
+        )
 
     # Annotate with technology names
     if "tech_technology" in fields:
@@ -1954,6 +2035,10 @@ def sortdocs(request):
             wosarticle__doc=Concat(V('<a href="/scoping/document/'),'UT',V('">'),'UT',V('</a>'))
         )
     #x = y
+    for i in range(len(f_fields)):
+        if "tag__title" in f_fields[i]:
+            tag_filter = f_text[i]
+
 
     print(len(filt_docs))
     # filter documents with user ratings
@@ -2065,8 +2150,8 @@ def sortdocs(request):
             null_filter = field+'__isnull'
             order_by.append(sortdir+field)
             filt_docs = filt_docs.filter(**{null_filter:False})
-        #print(order_by) COMMENTED BECAUSE OF 500 ERROR
         if download != "true":
+            x = filt_docs.values()
             docs = filt_docs.order_by(*order_by).values(*single_fields)[:100]
         else:
             docs = filt_docs.order_by(*order_by).values(*single_fields)
