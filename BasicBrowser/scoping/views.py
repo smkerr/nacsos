@@ -2349,7 +2349,10 @@ def city_docs(request,qid):
     badcities = ['Metro','Most','Sim','Young','University','Green','Much','Mobile','Federal','Along','Of','Laplace']
     city = City.objects.filter(
         alt_names__name__unaccent=place
-    ).order_by('-population').first()
+    ) | City.objects.filter(
+        name__unaccent=place
+    )
+    city = city.order_by('-population').first()
     cdocs = city.doc_set.all()
 
     topics = DocTopic.objects.filter(
