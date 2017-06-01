@@ -12,7 +12,11 @@ urlpatterns = [
     url(r'^$', login_required(runs), name='index'),
     url(r'^network/(?P<run_id>\d+)$', login_required(network), name='network'),
     url(r'^return_corrs$', login_required(return_corrs), name='return_corrs'),
+
+    # topic page and topic doc loader
     url(r'^topic/(?P<topic_id>\d+)/$', login_required(topic_detail), name="topic_detail"),
+    url(r'^get_topic_docs/(?P<topic_id>\d+)/$', login_required(get_topic_docs), name="get_topic_docs"),
+
     url(r'^term/(?P<term_id>\d+)/$', login_required(term_detail), name="term_detail"),
     url(r'^doc/random/(?P<run_id>\d+)$', login_required(doc_random)),
     url(r'^doc/(?P<doc_id>.+)/(?P<run_id>\d+)$', login_required(doc_detail), name="doc_detail"),

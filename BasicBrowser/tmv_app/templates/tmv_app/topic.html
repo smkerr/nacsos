@@ -38,22 +38,22 @@
 </td>
 
 <td width="50.0%">
-    <table class="light">
-    <tr class="title">
-    <td>related documents</td>
-    </tr>
-    </table>
-        <table class="light">
-        {% if docs %}
-	        {% for doc in docs %}
-	        <tr id="{{ doc.title }}" class="list">
-                <td>{{ doc.PY }}</td>
-                <td><a href="{% url 'tmv_app:doc_detail' doc.pk topic.run_id.pk %}">{{ doc.title }}</a></td>
-            <tr>
-	        {% endfor %}
-        {% endif %}
+  <div class="explanation">
+    <h2>Related Documents</h2>
+    <p>Sort by: <select id="sort">
+      <option value="-doctopic__score">Score (descending)</option>
+      <option value="PY">Year (ascending)</option>
+      <option value="-PY">Year (descending)</option>
+      <option value="wosarticle__tc">Citations (ascending)</option>
+      <option value="-wosarticle__tc">Citations (descending)</option>
+    </select>
+  </div>
+  <p>
+
+    <table class="light" id="doc_table">
 
     </table>
+
 </td>
 
 <td width="25.0%">
@@ -85,7 +85,27 @@
 {% block script %}
 
 <script type="text/JavaScript">
-    function highlight(id) {
+
+$('#sort').on('change', function() {
+  get_docs(this.value)
+})
+
+function get_docs(s) {
+  console.log("getting docs")
+  $.ajax({
+    url: "{% url 'tmv_app:get_topic_docs' topic.pk %}",
+    data: {
+      'sort': s
+    },
+    success: function(response) {
+      $("#doc_table").html(response)
+    }
+  })
+}
+
+get_docs('-doctopic__score')
+
+  function highlight(id) {
 	   	var list = document.getElementById(id+'_list');
 	   	var bar = document.getElementById(id+'_bar');
 		if (list != null) {
@@ -96,7 +116,7 @@
 		}
 	}
 
-    function unhighlight(id) {
+  function unhighlight(id) {
 		var list = document.getElementById(id+'_list');
 	   	var bar = document.getElementById(id+'_bar');
 		if (list != null) {
@@ -105,7 +125,9 @@
 		if (bar != null) {
 			bar.style.backgroundColor='#799FF2';
 		}
-    }
+  }
+
+    // Yt graph
     var data = {{ yts|safe }};
     var topic = {{ topic.pk |safe }};
     var topic_title = '{{ topic.title }}';
