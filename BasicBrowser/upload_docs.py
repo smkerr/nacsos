@@ -16,7 +16,7 @@ def get(r, k):
 
 def add_doc(r):
 
-    DEBUG = True
+    DEBUG = False
 
     if DEBUG:
         print("  >> Entering add_doc() with document id: "+str(r['UT']))
@@ -39,7 +39,10 @@ def add_doc(r):
         doc.save()
         doc.query.add(q)
         article = WoSArticle(doc=doc)
-        r['wc'] = [x.strip() for x in get(r,'WC').split(";")]
+        try:
+            r['wc'] = [x.strip() for x in get(r,'WC').split(";")]
+        except:
+            pass
         r['kwp'] = get(r,'ID')
         r['iss'] = get(r,'IS')
         for field in r:
