@@ -11,6 +11,7 @@ import urllib.request
 from nltk.stem import SnowballStemmer
 from django.http import JsonResponse
 import json, csv
+import decimal
 
 # the following line will need to be updated to launch the browser on a web server
 TEMPLATE_DIR = sys.path[0] + '/templates/'
@@ -195,6 +196,7 @@ def topic_detail(request, topic_id):
             doctopic__topic=topic,doctopic__run_id=run_id
         ).order_by('-doctopic__score')[:50]
 
+    doctopics = doctopics.values('PY','title','pk','doctopic__score')
     terms = []
     term_bar = []
     remainder = 1
@@ -240,6 +242,45 @@ def topic_detail(request, topic_id):
         })
 
     return HttpResponse(topic_template.render(topic_page_context))
+
+def get_topic_docs(request,topic_id):
+
+    template = loader.get_template('tmv_app/topic_docs.html')
+    topic = Topic.objects.get(pk=topic_id)
+    run_id = topic.run_id.pk
+
+    svalue = request.GET.get('sort',None)
+    sortcol = svalue.replace('-','')
+
+
+
+    doctopics = Doc.objects.filter(
+        doctopic__topic=topic,doctopic__run_id=run_id
+    )
+    if sortcol != "doctopic__score":
+        doctopics = doctopics.filter(**{sortcol+'__isnull': False})
+    doctopics = doctopics.order_by(svalue)[:50]
+
+
+    doctopics = doctopics.annotate(
+        svalue=F(sortcol)
+    )
+    doctopics = doctopics.values('PY','title','pk','doctopic__score','svalue')
+
+    d = decimal.Decimal(doctopics[0]['svalue'])
+    float = abs(d.as_tuple().exponent)
+    if float > 3:
+        float=4
+
+    #x = y
+    context = Context({
+        "docs": doctopics,
+        "svalue": sortcol,
+        "topic": topic,
+        "float": float
+    })
+
+    return HttpResponse(template.render(context))
 
 ###########################################################################
 ## Topic View for HLDA
