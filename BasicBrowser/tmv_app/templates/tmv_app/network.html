@@ -41,8 +41,16 @@
 </td>
 
 </tr>
+<td width="30%">
+</td>
+<td width="70%">
+  <table class="light" id="doc_table">
+
+  </table>
+</td>
+<tr>
 </table>
-<table>
+
 <script>
 
 
@@ -75,6 +83,23 @@ function getgraph(cor, force) {
     success: function(graph) {
       graph = JSON.parse(graph)
       drawgraph(graph,force)
+    }
+  })
+}
+
+// Get documents associated with multiple topics
+function get_docs() {
+  topics = [$( "#topic_selected" ).val() ]
+  $( ".tselect:checked" ).each(function() {
+    topics.push((this.value))
+  })
+  $.ajax({
+    url: "{% url 'tmv_app:multi_topic' %}",
+    data: {
+      'topics': topics
+    },
+    success: function(data) {
+      $("#doc_table").html(data)
     }
   })
 }
@@ -119,7 +144,7 @@ function drawgraph(graph,force) {
     linkedByIndex[d.source + "," + d.target] = 1;
   });
 
-  console.log(linkedByIndex)
+
 
   function neighboring(a, b) {
     return linkedByIndex[a.index + "," + b.index];
@@ -206,6 +231,7 @@ function drawgraph(graph,force) {
           return function(d) {
               gtext = '<h3>Topic Selected:</h3>'
               gtext += '<a href="/tmv_app/topic/'+d.id+'"><h2>'+d.title+'</h2></a>'
+              gtext += '<input type="hidden" id="topic_selected" value="'+d.id+'"'
               node.style("stroke-opacity", function(o) {
                   thisOpacity = isConnected(d, o) ? 1 : opacity;
                   this.setAttribute('fill-opacity', thisOpacity);
@@ -217,12 +243,16 @@ function drawgraph(graph,force) {
                 return d3.descending(x.score, y.score)
               })
               gtext+="<h3>Correlating Topics:</h3>"
-              console.log(links)
+              gtext+="<table>"
               for (l in links) {
-                gtext+='<p>'
+                gtext+='<tr><td>'
                 gtext+=links[l].target.title
                 gtext+=': '+links[l].score.toPrecision(2)
+                gtext+='</td><td><input class="tselect" type="checkbox" value='+links[l].target.id+'></tr>'
               }
+              gtext+="</table>"
+              gtext+='<p>Show me documents associated with these topics:&nbsp; '
+              gtext+='<button id="show_docs" onclick="get_docs()">Go</button>'
               $("#graphinfo").html(gtext)
 
               link.style("stroke-opacity", opacity).style("stroke-opacity", function(o) {

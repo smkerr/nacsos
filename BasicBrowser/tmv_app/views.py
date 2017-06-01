@@ -3,7 +3,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import Template, Context, RequestContext, loader
 from tmv_app.models import *
 from scoping.models import *
-from django.db.models import Q, F, Sum, Count, FloatField
+from django.db.models import Q, F, Sum, Count, FloatField, Case, When
 from django.shortcuts import *
 from django.forms import ModelForm
 import random, sys, datetime
@@ -278,6 +278,51 @@ def get_topic_docs(request,topic_id):
         "svalue": sortcol,
         "topic": topic,
         "float": float
+    })
+
+    return HttpResponse(template.render(context))
+
+def multi_topic(request):
+
+    template = loader.get_template('tmv_app/multi_topic_docs.html')
+    topics = request.GET.getlist('topics[]',None)
+
+    doctopics = DocTopic.objects.filter(
+        topic__in=topics,
+        score__gt=0
+    )
+    x = doctopics.values()[:5]
+
+    combine = doctopics.values('doc').annotate(
+        topic_combination = Sum('score'),
+        count = Count('score')
+    ).filter(count__gte=len(topics))
+
+    annotation = {}
+
+    combine2 = combine.values('doc')
+    for t in topics:
+        annotation[t] = Sum(
+            Case(When(topic=t,then=F('score')),
+                #default=0,
+                output_field=models.FloatField()
+            )
+        )
+
+    combine2 = combine2.annotate(**annotation)
+    combine2 = combine2.annotate(topic_combination=F(topics[0]))
+
+    for i in range(1,len(topics)):
+        combine2 = combine2.annotate(
+            topic_combination=F('topic_combination')*F(topics[i])
+        )
+
+    y = combine2.order_by('-topic_combination')[:50]
+    y= y.values('doc__pk','doc__PY','doc__title','topic_combination')
+
+    context = Context({
+        'docs' : y,
+        'topic': Topic.objects.get(pk=topics[0])
     })
 
     return HttpResponse(template.render(context))
