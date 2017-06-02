@@ -135,10 +135,10 @@ def index(request):
     return HttpResponse(template.render(context, request))
 
 def network(request,run_id):
-
+    ar = -1
     template = loader.get_template('tmv_app/network.html')
     nodes = json.dumps(list(Topic.objects.filter(run_id=run_id).values('id','title','score')),indent=4,sort_keys=True)
-    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1).annotate(
+    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1,ar=ar).annotate(
         source=F('topic'),
         target=F('topiccorr')
     )
