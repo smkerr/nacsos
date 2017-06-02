@@ -122,7 +122,7 @@ def index(request):
     run_id = find_run_id(request.session)
 
     nodes = json.dumps(list(Topic.objects.filter(run_id=run_id).values('id','title','score')),indent=4,sort_keys=True)
-    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1).annotate(
+    links = TopicCorr.objects.filter(run_id=run_id,ar=-1).filter(score__gt=0.05,score__lt=1).annotate(
         source=F('topic'),
         target=F('topiccorr')
     )
@@ -154,8 +154,9 @@ def network(request,run_id):
 def return_corrs(request):
     cor = float(request.GET.get('cor',None))
     run_id = int(request.GET.get('run_id',None))
+    ar = -1
     nodes = list(Topic.objects.filter(run_id=run_id).values('id','title','score'))
-    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=cor,score__lt=1).annotate(
+    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=cor,score__lt=1,ar=ar).annotate(
         source=F('topic'),
         target=F('topiccorr')
     )
@@ -414,7 +415,7 @@ def doc_detail(request, doc_id, run_id):
         return(doc_detail_hlda(request, doc_id))
     update_topic_titles(request.session)
     response = ''
-    doc_template = loader.get_template('tmv_app/doc.html')
+    template = loader.get_template('tmv_app/doc.html')
 
     doc = Doc.objects.get(UT=doc_id)
 
@@ -460,7 +461,7 @@ def doc_detail(request, doc_id, run_id):
                 wt = t
         words.append({'title': word, 'topic':"t"+str(wt)})
 
-    doc_page_context = Context({
+    context = RequestContext(request, {
         'doc': doc,
         'topics': topics,
         'pie_array': pie_array,
@@ -469,7 +470,8 @@ def doc_detail(request, doc_id, run_id):
         'run_id': run_id
     })
 
-    return HttpResponse(doc_template.render(doc_page_context))
+
+    return HttpResponse(template.render(context))
 
 def print_table(request,run_id):
     response = HttpResponse(content_type='text/csv')

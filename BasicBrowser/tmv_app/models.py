@@ -46,6 +46,7 @@ class TopicCorr(models.Model):
     topic = models.ForeignKey('Topic',null=True)
     topiccorr = models.ForeignKey('Topic',null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
+    ar = models.IntegerField(default=-1)
     run_id = models.IntegerField(db_index=True)
 
     def __unicode__(self):
