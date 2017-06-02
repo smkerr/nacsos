@@ -26,6 +26,14 @@
   <p><b>Force:</b>
     <input class="param" id="force" value="-200" type="range" min="-200" max="200"></input>
     <span id="forcev">-200
+  <p><b>Time Period: </b>
+    <input class="param" name="ar" value="-1" checked type="radio">All</input>
+    <input class="param" name="ar" value="1" type="radio">AR1</input>
+    <input class="param" name="ar" value="2" type="radio">AR2</input>
+    <input class="param" name="ar" value="3" type="radio">AR3</input>
+    <input class="param" name="ar" value="4" type="radio">AR4</input>
+    <input class="param" name="ar" value="5" type="radio">AR5</input>
+    <input class="param" name="ar" value="6" type="radio">AR6</input>
   <p>Hover over a node to view topic info, click the background
     to refresh the graph
 </div>
@@ -69,15 +77,17 @@ $(".param").change(function(){
   cor = $("#cor").val()
   $("#corv").text(cor)
   $("#forcev").text(force)
-  graph = getgraph(cor,force)
+  ar = $('input[name="ar"]:checked').val();
+  graph = getgraph(cor,force,ar)
 })
 
-function getgraph(cor, force) {
+function getgraph(cor, force, ar) {
   $.ajax({
     url: '/tmv_app/return_corrs',
     data: {
       'cor': cor,
-      'run_id': {{run_id | safe}}
+      'run_id': {{run_id | safe}},
+      'ar': ar
     },
     datatype: 'json',
     success: function(graph) {

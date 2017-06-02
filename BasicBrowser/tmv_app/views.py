@@ -154,7 +154,7 @@ def network(request,run_id):
 def return_corrs(request):
     cor = float(request.GET.get('cor',None))
     run_id = int(request.GET.get('run_id',None))
-    ar = -1
+    ar = int(request.GET.get('ar',None))
     nodes = list(Topic.objects.filter(run_id=run_id).values('id','title','score'))
     links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=cor,score__lt=1,ar=ar).annotate(
         source=F('topic'),

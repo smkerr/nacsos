@@ -3,7 +3,64 @@
   <div id="main">
     <div id="graph">
 
-      {% if request.session.appmode == "scoping" %}
+      {% if request.session.appmode == "snowballing" %}
+
+      <h4>My snowballing sessions and associated queries</h4>
+      <br/>
+
+      <div class="explanation">
+        <p>Click on a row or on the expland button to see the list of queries associated to a snowballing session.</p>
+      </div>
+
+      <table class="light" style="width:80%">
+        <tr  class="title" >
+          <td>SBS ID</td>
+          <td>SBS Title</td>
+          <td># Steps</td>
+          <td># Documents</td>
+          <td># Selected docs</td>
+          <td></td>
+          <td>Next step</td>
+        </tr>
+        {% for sbs in sbsessions %}
+           <tr class="sbsheader expand">
+              <td><a href="/scoping/docssbs/{{ sbs.id }}">{{ sbs.id }}</a></td>
+              <td>{{ sbs.name }}</td>
+              <td>{{ sbs.ns }}</td>
+              <td>{{ sbs.ndtot }}</td>
+              <td>{{ sbs.ndsel }}</td>
+              <td></td>
+              <td><button type="button">Expand</button></td>
+          </tr>
+          <tr class="sbsquery" style="color: #999999; font-style: italic; font-weight: bold;">
+              <td></td>
+              <td>QID</td>
+              <td>Q. Type</td>
+              <td># Docs</td>
+              <td># Doc selected</td>
+              <td></td>
+              <td>Action</td>
+          </tr>
+          {% for q in sbs.q_info %}
+            <tr class="sbsquery">
+              <td></td>
+              <td><a href="/scoping/docs/{{ q.id }}">{{ q.id }}</td>
+              <td>{{ q.type }}</td>
+              <td>{{ q.nbdoctot }}</td>
+              <td>{{ q.nbdocsel }}</td>
+              <td></td>
+              {% if q.last == "True" %}
+                <td><a href=""><button type="button">Snowball</button></a></td>
+              {% else %}
+                <td></td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+        {% endfor %}
+      </table>
+      {% else %}
+
+
       <h1> Scoping Review Helper</h1>
       <br/>
 
@@ -61,61 +118,6 @@
               {% endif %}
             </tr>
           {% endif %}
-        {% endfor %}
-      </table>
-
-      {% else %}
-      <h4>My snowballing sessions and associated queries</h4>
-      <br/>
-
-      <div class="explanation">
-        <p>Click on a row or on the expland button to see the list of queries associated to a snowballing session.</p>
-      </div>
-
-      <table class="light" style="width:80%">
-        <tr  class="title" >
-          <td>SBS ID</td>
-          <td>SBS Title</td>
-          <td># Steps</td>
-          <td># Documents</td>
-          <td># Selected docs</td>
-          <td></td>
-          <td>Next step</td>
-        </tr>
-        {% for sbs in sbsessions %}
-           <tr class="sbsheader expand">
-              <td><a href="/scoping/docssbs/{{ sbs.id }}">{{ sbs.id }}</a></td>
-              <td>{{ sbs.name }}</td>
-              <td>{{ sbs.ns }}</td>
-              <td>{{ sbs.ndtot }}</td>
-              <td>{{ sbs.ndsel }}</td>
-              <td></td>
-              <td><button type="button">Expand</button></td>
-          </tr>
-          <tr class="sbsquery" style="color: #999999; font-style: italic; font-weight: bold;">
-              <td></td>
-              <td>QID</td>
-              <td>Q. Type</td>
-              <td># Docs</td>
-              <td># Doc selected</td>
-              <td></td>
-              <td>Action</td>
-          </tr>
-          {% for q in sbs.q_info %}
-            <tr class="sbsquery">
-              <td></td>
-              <td><a href="/scoping/docs/{{ q.id }}">{{ q.id }}</td>
-              <td>{{ q.type }}</td>
-              <td>{{ q.nbdoctot }}</td>
-              <td>{{ q.nbdocsel }}</td>
-              <td></td>
-              {% if q.last == "True" %}
-                <td><a href=""><button type="button">Snowball</button></a></td>
-              {% else %}
-                <td></td>
-              {% endif %}
-            </tr>
-          {% endfor %}
         {% endfor %}
       </table>
 
