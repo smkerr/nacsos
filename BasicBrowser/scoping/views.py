@@ -2608,7 +2608,7 @@ def screen(request,qid,tid,ctype,d=0):
             user=user.id,
             tag=tag
     )
-    sdocs = docs.filter(relevant__gte=1).count()
+    sdocs = docs.count()
     if ctype==99:
         docs = docs.filter(relevant__gte=1)
     else:
