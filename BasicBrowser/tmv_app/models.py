@@ -38,9 +38,25 @@ class Topic(models.Model):
     score = models.FloatField(null=True)
     size = models.IntegerField(null=True)
     run_id = models.ForeignKey('RunStats',db_index=True)
+    year = models.IntegerField(null=True)
+    primary_dtopic = models.ForeignKey('DynamicTopic',null=True)
 
     def __unicode__(self):
         return str(self.title)
+
+class DynamicTopic(models.Model):
+    title = models.CharField(null=True, max_length=80)
+    score = models.FloatField(null=True)
+    size = models.IntegerField(null=True)
+    run_id = models.ForeignKey('RunStats',db_index=True)
+
+    def __unicode__(self):
+        return str(self.title)
+
+class TopicDTopic(models.Model):
+    topic = models.ForeignKey('Topic', null=True)
+    dynamictopic = models.ForeignKey('DynamicTopic',null=True)
+    score = models.FloatField(null=True)
 
 class TopicCorr(models.Model):
     topic = models.ForeignKey('Topic',null=True)
@@ -94,6 +110,12 @@ class DocTopic(models.Model):
 
 class TopicTerm(models.Model):
     topic = models.ForeignKey('Topic',null=True)
+    term = models.ForeignKey('Term',null=True)
+    score = models.FloatField()
+    run_id = models.IntegerField(db_index=True)
+
+class DynamicTopicTerm(models.Model):
+    topic = models.ForeignKey('DynamicTopic',null=True)
     term = models.ForeignKey('Term',null=True)
     score = models.FloatField()
     run_id = models.IntegerField(db_index=True)

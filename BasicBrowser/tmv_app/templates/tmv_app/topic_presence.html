@@ -14,7 +14,11 @@
 {% for topic, topic_score, width in topic_tuples %}
 <tr><td><table width="{{ width|floatformat:1 }}%" >
   <tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" >
+    {% if stat.method == "DT" %}
+    <a href="{% url 'tmv_app:dynamic_topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
+    {% else %}
     <a href="{% url 'tmv_app:topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
+    {% endif %}
 {% endfor %}
 </table>
 </div>
