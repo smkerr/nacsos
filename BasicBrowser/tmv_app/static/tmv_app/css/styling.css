@@ -16,6 +16,26 @@ div.explanation {
     padding: 10px;
 }
 
+.wtopic {
+    background-color: white;
+		outline: 3px solid #FFE5CC;
+}
+
+tr.wtopic td {
+	padding: 10px !important;
+}
+
+.rotate {
+	-ms-transform: rotate(270deg); /* IE 9 */
+	-webkit-transform: rotate(270deg); /* Chrome, Safari, Opera */
+	transform: rotate(270deg);
+}
+
+
+a.nodec {
+	color: black;
+	text-decoration: none;
+}
 
 a:active {
 	color: #0050FF;

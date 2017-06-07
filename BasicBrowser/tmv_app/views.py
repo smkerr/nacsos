@@ -167,10 +167,44 @@ def return_corrs(request):
     }
     return HttpResponse(json.dumps(context,sort_keys=True))
 
+#######################################################################
+## DynamicTopic View
+def dynamic_topic_detail(request,topic_id):
+    template = loader.get_template('tmv_app/dynamic_topic.html')
+
+    topic = DynamicTopic.objects.get(pk=topic_id)
+    run_id = topic.run_id.run_id
+
+    topicterms = Term.objects.filter(
+        dynamictopicterm__topic=topic, run_id=run_id,
+        dynamictopicterm__score__gt=0.00001
+    ).order_by('-dynamictopicterm__score')[:50]
+
+    wtopics = Topic.objects.filter(
+        run_id=run_id,primary_dtopic=topic
+    ).order_by('year')
+
+    for t in wtopics:
+        t.tts = Term.objects.filter(
+            topicterm__topic=t, run_id=run_id,
+            topicterm__score__gt=0.00001
+        ).order_by('-topicterm__score')[:10]
+
+
+    context = RequestContext(request, {
+        'run_id': run_id,
+        'topic': topic,
+        'topicterms': topicterms,
+        'wtopics': wtopics
+    })
+    return HttpResponse(template.render(context))
+
 
 ###########################################################################
 ## Topic View
 def topic_detail(request, topic_id):
+
+    template = loader.get_template('tmv_app/topic.html')
 
     try:
         topic = Topic.objects.get(pk=topic_id)
@@ -603,22 +637,36 @@ def topic_presence_detail(request,run_id):
     if stat.get_method_display() == 'hlda':
         return(topic_presence_hlda(request))
 
-    update_topic_titles(run_id)
-    update_topic_scores(run_id)
+    if stat.method == "DT":
+        update_dtopics(run_id)
+
+    if stat.method =="nm":
+
+        update_topic_titles(run_id)
+        update_topic_scores(run_id)
+
+
     response = ''
 
     get_year_filter(request)
 
     presence_template = loader.get_template('tmv_app/topic_presence.html')
-
-    topics = Topic.objects.filter(run_id=run_id).order_by('-score')
+    print(stat.method)
+    if stat.method=="DT":
+        topics = DynamicTopic.objects.filter(run_id=run_id).order_by('-score')
+    else:
+        topics = Topic.objects.filter(run_id=run_id).order_by('-score')
     max_score = topics[0].score
 
     topic_tuples = []
     for topic in topics:
+        s = topic.score
         topic_tuples.append((topic, topic.score, topic.score/max_score*100))
 
-    presence_page_context = Context({'run_id': run_id, 'topic_tuples': topic_tuples})
+    presence_page_context = Context({
+        'run_id': run_id, 'topic_tuples': topic_tuples,
+        'stat': stat
+    })
 
     return HttpResponse(presence_template.render(presence_page_context))
 
@@ -814,6 +862,36 @@ def update_topic_titles(session):
             topic.save()
         stats.topic_titles_current = True
         stats.save()
+
+def update_dtopics(run_id):
+    stats = RunStats.objects.get(pk=run_id)
+    if not stats.topic_titles_current:
+        print("UPDATING")
+        for topic in DynamicTopic.objects.filter(run_id=run_id):
+            print("UPDATING")
+            topicterms = Term.objects.filter(
+                dynamictopicterm__topic=topic
+            ).order_by('-dynamictopicterm__score')[:3]
+            new_topic_title = '{'
+            for tt in topicterms:
+                new_topic_title +=tt.title
+                new_topic_title +=', '
+            new_topic_title = new_topic_title[:-2]
+            new_topic_title+='}'
+            topic.title = new_topic_title
+            topic.score = 0
+            score = DocTopic.objects.filter(
+                run_id=run_id,topic__primary_dtopic=topic
+            ).aggregate(
+                t=Sum('score')
+            )['t']
+            if score is not None:
+                topic.score = score
+            topic.save()
+        stats.topic_titles_current = True
+        stats.save()
+
+    return
 
 def update_topic_titles_hlda(session):
     if isinstance(session, int):
