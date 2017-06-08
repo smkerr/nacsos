@@ -6,6 +6,10 @@ body {
 	padding: 0;
 }
 
+body.waiting, body.waiting * {
+	cursor:progress !important;
+}
+
 div.explanation {
     width:60%;
 	margin-left: auto;

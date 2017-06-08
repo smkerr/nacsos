@@ -185,21 +185,37 @@ def dynamic_topic_detail(request,topic_id):
     ).order_by('year')
 
     for t in wtopics:
-        t.tts = Term.objects.filter(
-            topicterm__topic=t, run_id=run_id,
-            topicterm__score__gt=0.00001
-        ).order_by('-topicterm__score')[:10]
+        if t.top_words is not None:
+            t.tts = t.top_words
+        else:
+            t.tts = Term.objects.filter(
+                topicterm__topic=t, run_id=run_id,
+                topicterm__score__gt=0.00001
+            ).order_by('-topicterm__score')[:10]
         score = TopicDTopic.objects.get(
             topic=t,dynamictopic=topic
         ).score
         t.score = round(score,2)
+
+    docs = DocTopic.objects.filter(
+        #topic__primary_dtopic=topic,
+        run_id=run_id,
+        topic__topicdtopic__dynamictopic=topic
+    )
+
+    docs = docs.annotate(
+        topic_combination = F('score') * F('topic__topicdtopic__score')
+    ).order_by('-topic_combination')[:50].values(
+        'doc__pk','doc__PY','doc__title','topic_combination'
+    )
 
 
     context = RequestContext(request, {
         'run_id': run_id,
         'topic': topic,
         'topicterms': topicterms,
-        'wtopics': wtopics
+        'wtopics': wtopics,
+        'docs': docs
     })
     return HttpResponse(template.render(context))
 
@@ -260,15 +276,10 @@ def topic_detail(request, topic_id):
 
     ytarray = list(yts.values('PY','count','score','topic_id','topic__title'))
 
-    corrtops = TopicCorr.objects.filter(topic=topic_id).order_by('-score')[:10]
-
-    ctarray = []
-
-    for ct in corrtops:
-        top = ct.topiccorr
-        if ct.score < 1:
-            score = round(ct.score,2)
-            ctarray.append({"topic": top.pk,"title":top.title,"score":score})
+    corrtops = TopicCorr.objects.filter(topic=topic_id,score__lt=1,ar=-1).order_by('-score')[:10]
+    dtops = TopicDTopic.objects.filter(
+        topic=topic_id
+    ).order_by('-score')[:10]
 
     topic_page_context = Context({
         'topic': topic,
@@ -276,7 +287,8 @@ def topic_detail(request, topic_id):
         'term_bar': term_bar,
         'docs': doctopics,
         'yts': ytarray,
-        'corrtops': ctarray,
+        'corrtops': corrtops,
+        'dtops': dtops,
         'run_id': run_id
         })
 
@@ -644,6 +656,8 @@ def topic_presence_detail(request,run_id):
     if stat.method == "DT":
         update_dtopics(run_id)
 
+    run_id = int(run_id)
+
     update_topic_titles(run_id)
     update_topic_scores(run_id)
 
@@ -848,18 +862,21 @@ def update_topic_titles(session):
         run_id=session
     else:
         run_id = find_run_id(session)
+
     stats = RunStats.objects.get(run_id=run_id)
     if not stats.topic_titles_current:
     #if "a" in "ab":
         for topic in Topic.objects.filter(run_id=run_id):
             #topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')[:3]
-            topicterms = Term.objects.filter(topicterm__topic=topic).order_by('-topicterm__score')[:3]
+            topicterms = Term.objects.filter(topicterm__topic=topic).order_by('-topicterm__score')[:10]
             new_topic_title = '{'
-            for tt in topicterms:
+            for tt in topicterms[:3]:
                 new_topic_title +=tt.title
                 new_topic_title +=', '
             new_topic_title = new_topic_title[:-2]
             new_topic_title+='}'
+
+            topic.top_words = [x.title.lower() for x in topicterms]
 
             topic.title = new_topic_title
             topic.save()
@@ -868,15 +885,16 @@ def update_topic_titles(session):
 
 def update_dtopics(run_id):
     stats = RunStats.objects.get(pk=run_id)
+    #if "a" == "b":
     if not stats.topic_titles_current:
-        print("UPDATING")
+    #if "a" in "ab":
+        #print("UPDATING")
         for topic in DynamicTopic.objects.filter(run_id=run_id):
-            print("UPDATING")
             topicterms = Term.objects.filter(
                 dynamictopicterm__topic=topic
-            ).order_by('-dynamictopicterm__score')[:3]
+            ).order_by('-dynamictopicterm__score')[:10]
             new_topic_title = '{'
-            for tt in topicterms:
+            for tt in topicterms[:3]:
                 new_topic_title +=tt.title
                 new_topic_title +=', '
             new_topic_title = new_topic_title[:-2]
@@ -927,8 +945,8 @@ def update_topic_scores(session):
     else:
         run_id = find_run_id(session)
     stats = RunStats.objects.get(run_id=run_id)
-    if "a" in "ab":
-    #if not stats.topic_scores_current:
+    #if "a" in "ab":
+    if not stats.topic_scores_current:
 
         topics = Topic.objects.filter(run_id=stats)
         for t in topics:
