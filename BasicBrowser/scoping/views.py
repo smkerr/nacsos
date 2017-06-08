@@ -1125,11 +1125,13 @@ def query(request,qid,q2id='0',sbsid='0'):
                 scores[i] = list(l)
                 i+=1
             dscores = [None] + scores
-            tag['ratio'] = round(difflib.SequenceMatcher(*dscores).ratio(),2)
+
             if len(scores) == 2:
+                tag['ratio'] = round(difflib.SequenceMatcher(*dscores).ratio(),2)
                 tag['cohen_kappa'] = cohen_kappa_score(*scores)
             else:
                 tag['cohen_kappa'] = "NA"
+                tag['ratio'] = "NA"
 
             #print(tag['ratio'])
 
@@ -1152,11 +1154,14 @@ def query(request,qid,q2id='0',sbsid='0'):
             scores[i] = list(l)
             i+=1
         dscores = [None] + scores
-        query.ratio = round(difflib.SequenceMatcher(*dscores).ratio(),2)
+
+
         if len(scores) == 2:
+            query.ratio = round(difflib.SequenceMatcher(*dscores).ratio(),2)
             query.cohen_kappa = cohen_kappa_score(*scores)
         else:
             query.cohen_kappa = "NA"
+            query.ratio = "NA"
 
 
         untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
