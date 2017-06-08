@@ -89,6 +89,11 @@ class TopicYear(models.Model):
     count = models.FloatField()
     run_id = models.IntegerField(db_index=True)
 
+class TopicARScores(models.Model):
+    topic = models.ForeignKey('Topic',null=True)
+    ar = models.ForeignKey('scoping.AR',null=True)
+    score = models.FloatField(null=True)
+
 #################################################
 ## Separate topicyear for htopic
 class HTopicYear(models.Model):

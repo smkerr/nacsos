@@ -137,7 +137,12 @@ def index(request):
 def network(request,run_id):
     ar = -1
     template = loader.get_template('tmv_app/network.html')
-    nodes = json.dumps(list(Topic.objects.filter(run_id=run_id).values('id','title','score')),indent=4,sort_keys=True)
+    nodes = Topic.objects.filter(run_id=run_id)
+    nodes = nodes.annotate(
+                arscore = F('score')
+            )
+    nodes = nodes.values('id','title','arscore','score')
+    nodes = json.dumps(list(nodes),indent=4,sort_keys=True)
     links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1,ar=ar).annotate(
         source=F('topic'),
         target=F('topiccorr')
@@ -146,7 +151,8 @@ def network(request,run_id):
     context = {
         "nodes":nodes,
         "links":links,
-        "run_id":run_id
+        "run_id":run_id,
+        "stat": RunStats.objects.get(pk=run_id)
     }
 
     return HttpResponse(template.render(context, request))
@@ -155,7 +161,48 @@ def return_corrs(request):
     cor = float(request.GET.get('cor',None))
     run_id = int(request.GET.get('run_id',None))
     ar = int(request.GET.get('ar',None))
-    nodes = list(Topic.objects.filter(run_id=run_id).values('id','title','score'))
+    nodes = Topic.objects.filter(run_id=run_id)
+    if ar > -1:
+        a = AR.objects.get(ar=ar)
+        nodes = Topic.objects.filter(run_id=run_id)
+        if TopicARScores.objects.filter(topic=nodes[0],ar=a).count() == 0:
+            nodes = nodes.annotate(
+                arscore = Sum(
+                    Case(When(
+                        doctopic__doc__PY__gte=a.start,
+                        doctopic__doc__PY__lte=a.end,
+                        then=F('doctopic__score')),
+                        #default=0,
+                        output_field=models.FloatField()
+                    )
+                )
+            )
+            for node in nodes:
+                tar = TopicARScores(
+                    topic=node,
+                    ar=a,
+                    score=node.arscore
+                )
+                tar.save()
+        else:
+            nodes = nodes.annotate(
+                arscore = Sum(
+                    Case(When(
+                        topicarscores__ar=a,
+                        #doctopic__doc__PY__lte=a.end,
+                        then=F('topicarscores__score')),
+                        #default=0,
+                        output_field=models.FloatField()
+                    )
+                )
+            )
+            for node in nodes:
+                node.arscore = TopicARScores.objects.get(topic=node,ar=a).score
+    else:
+        nodes = nodes.annotate(
+            arscore = F('score')
+        )
+    nodes = list(nodes.values('id','title','score','arscore'))
     links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=cor,score__lt=1,ar=ar).annotate(
         source=F('topic'),
         target=F('topiccorr')
