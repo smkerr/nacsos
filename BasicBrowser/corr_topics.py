@@ -16,7 +16,7 @@ from tmv_app.models import *
 
 def main():
     run_id = sys.argv[1]
-    allys = False
+    allys = True
     if allys:
         print(run_id)
 
