@@ -4,6 +4,13 @@
 
 {% block content %}
 <div id="main">
+  <div id="top"></div>
+  <div id="header">
+  <h1>Climate Change Topics</h1>
+  <h2>Relative Presence of Topics in all Documents</h2>
+  <h3>Run no. {{run_id}} on query: {{stat.query}}
+  <hr noshade>
+  </div>
 <div id="graph">
 <style>
 
@@ -116,6 +123,8 @@ function get_docs() {
 
 function drawgraph(graph,force) {
 
+  console.log(graph)
+
   d3.select("#pyGraph").select("svg").remove()
 
   var width = $("#pyGraph").parent().width();
@@ -162,7 +171,7 @@ function drawgraph(graph,force) {
 
 
 
-  smax=d3.max(graph.nodes, function(d) { return d.score;});
+  smax=d3.max(graph.nodes, function(d) { return d.arscore;});
   lmax=d3.max(graph.links, function(d) { return d.score;});
   lmin=d3.min(graph.links, function(d) { return d.score;});
 
@@ -185,7 +194,7 @@ function drawgraph(graph,force) {
     .selectAll("circle")
     .data(graph.nodes)
     .enter().append("circle")
-    .attr("r", function(d) { return size(d.score)})
+    .attr("r", function(d) { return size(d.arscore)})
     .attr("fill", function(d) { return color(d.title); })
     .on("mouseover", fade(.1))//.on("mouseout", fade(1))
     .call(d3.drag()
