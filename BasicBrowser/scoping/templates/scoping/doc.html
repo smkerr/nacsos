@@ -1,7 +1,6 @@
 {% extends "scoping/base.html" %}
 {% block content %}
-<div id="main">
-<div id="graph">
+
 <h1> Scoping Review Helper</h1>
 <br>
 <h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}}, your progress: </h2>
@@ -17,7 +16,6 @@
 {{ query.criteria | safe}}
 </div>
 
-</div>
 </div>
 
 <table width="100%">
@@ -83,7 +81,7 @@
       <input type="hidden" name="ctype" value="{{ctype}}"></input>
       <input type="hidden" name="tag" value="{{tag.id}}"></input>
       <input type="hidden" name="d" value="{{d}}"></input>
-    <textarea name="note" rows=3 cols=30>
+    <textarea name="note" rows=3 cols=25>
     </textarea>
     <p>
     <input type="submit" value="Add note" />

@@ -10,6 +10,7 @@
 <h3>{{topic.title}}
 <hr noshade>
 </div>
+<div id="main">
 <div id="graph">
 <table width="100%">
   <td width="20%">
@@ -27,16 +28,18 @@
     <a class="nodec" href="{% url 'tmv_app:topic_detail' t.pk %}">
       <tr><td>
     <tr class="wtopic">
+      <td>{{t.score}}
       <td>{{t.year}}</td><td>{{t.title}}</td>
       {% for tt in t.tts %}
       <td>{{tt.title}}
       {% endfor %}
 
-      </div>
     </a>
     </td>
 
     {% endfor %}
   </table>
 </td>
+</div>
+</div>
 {% endblock %}

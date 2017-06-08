@@ -189,6 +189,10 @@ def dynamic_topic_detail(request,topic_id):
             topicterm__topic=t, run_id=run_id,
             topicterm__score__gt=0.00001
         ).order_by('-topicterm__score')[:10]
+        score = TopicDTopic.objects.get(
+            topic=t,dynamictopic=topic
+        ).score
+        t.score = round(score,2)
 
 
     context = RequestContext(request, {
@@ -640,10 +644,8 @@ def topic_presence_detail(request,run_id):
     if stat.method == "DT":
         update_dtopics(run_id)
 
-    if stat.method =="nm":
-
-        update_topic_titles(run_id)
-        update_topic_scores(run_id)
+    update_topic_titles(run_id)
+    update_topic_scores(run_id)
 
 
     response = ''
@@ -834,6 +836,7 @@ def delete_run(request,new_run_id):
     ht = HTopic.objects.filter(run_id=new_run_id)
     ht.delete()
     hd = HDocTopic.objects.filter(run_id=new_run_id)
+    DynamicTopic.objects.filter(run_id=new_run_id).delete()
 
 
     return HttpResponseRedirect('/tmv_app/runs')
@@ -888,8 +891,8 @@ def update_dtopics(run_id):
             if score is not None:
                 topic.score = score
             topic.save()
-        stats.topic_titles_current = True
-        stats.save()
+        #stats.topic_titles_current = True
+        #stats.save()
 
     return
 
