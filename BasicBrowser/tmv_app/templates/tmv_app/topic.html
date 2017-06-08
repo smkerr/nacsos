@@ -57,23 +57,36 @@
 </td>
 
 <td width="25.0%">
-<table class="dark">
-<tr class="title">
-<td>related topics</td>
-</tr>
-<table class="dark">
+
 {% if corrtops %}
+  <table class="dark">
+  <tr class="title">
+  <td>related topics</td><td></tr>
 	{% for corrtop in corrtops %}
-	<tr id="{{ corrtop.title }}" class="list" onclick="window.location.href='/tmv_app/topic/{{ corrtop.topic }}'">
-        <td>{{ corrtop.title }}</td>
-        <td>{{ corrtop.score }}</td>
+	<tr id="{{ corrtop.title }}" class="list" onclick="window.location.href='/tmv_app/topic/{{ corrtop.topiccorr.pk }}'">
+        <td>{{ corrtop.topiccorr.title }}</td>
+        <td>{{ corrtop.score |floatformat:4}}</td>
     <tr>
 	{% endfor %}
+  </table>
 {% endif %}
-</table>
-</td>
 
-</tr></table>
+{% if dtops %}
+  <table class="dark">
+  <tr class="title">
+  <td>Dynamic Topics</td><td></tr>
+	{% for t in dtops %}
+	<tr id="{{ t.pk }}" class="list" onclick="window.location.href='/tmv_app/dynamic_topic/{{ t.dynamictopic.pk }}'">
+        <td>{{ t.dynamictopic.title }}</td>
+        <td>{{ t.score |floatformat:4}}</td>
+    <tr>
+	{% endfor %}
+</table>
+  </table>
+{% endif %}
+
+
+
 </div>
 
 <div id="footer">
@@ -92,6 +105,7 @@ $('#sort').on('change', function() {
 
 function get_docs(s) {
   console.log("getting docs")
+  $("body").toggleClass('waiting')
   $.ajax({
     url: "{% url 'tmv_app:get_topic_docs' topic.pk %}",
     data: {
@@ -99,6 +113,7 @@ function get_docs(s) {
     },
     success: function(response) {
       $("#doc_table").html(response)
+      $("body").toggleClass('waiting')
     }
   })
 }

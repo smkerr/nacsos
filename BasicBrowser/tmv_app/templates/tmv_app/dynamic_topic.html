@@ -11,9 +11,9 @@
 <hr noshade>
 </div>
 <div id="main">
-<div id="graph">
+
 <table width="100%">
-  <td width="20%">
+  <td width="10%">
     <table class="dark">
     <tr class="title">
     <td>words</td></tr>
@@ -22,24 +22,44 @@
       {% endfor %}
     </table>
   </td>
-  <td width="60%">
+  <td width="50%">
     <table>
     {% for t in wtopics %}
-    <a class="nodec" href="{% url 'tmv_app:topic_detail' t.pk %}">
-      <tr><td>
+
     <tr class="wtopic">
+      <td><a class="nodec" href="{% url 'tmv_app:topic_detail' t.pk %}">View</a>
       <td>{{t.score}}
       <td>{{t.year}}</td><td>{{t.title}}</td>
       {% for tt in t.tts %}
-      <td>{{tt.title}}
+      <td class="word" data-word="{{tt.title|lower}}">{{tt.title|lower}}
       {% endfor %}
 
     </a>
     </td>
-
     {% endfor %}
+    </table>
+    <td width=40%>
+      {% include 'tmv_app/multi_topic_docs.html' with docs=docs %}
+    </td>
   </table>
 </td>
 </div>
 </div>
+{% endblock %}
+
+{% block script %}
+
+<script type="text/JavaScript">
+
+$(".word").on("click", function() {
+  word = $(this).text().trim()
+  words = $('[data-word="'+word+'"]')
+  $(".t1").removeClass("t1")
+  words.addClass("t1")
+})
+
+
+
+</script>
+
 {% endblock %}

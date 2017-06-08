@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 import scoping
 
 #################################################
@@ -40,6 +41,7 @@ class Topic(models.Model):
     run_id = models.ForeignKey('RunStats',db_index=True)
     year = models.IntegerField(null=True)
     primary_dtopic = models.ForeignKey('DynamicTopic',null=True)
+    top_words = ArrayField(models.TextField(),null=True)
 
     def __unicode__(self):
         return str(self.title)
