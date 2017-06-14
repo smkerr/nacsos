@@ -118,6 +118,7 @@ class DocTopic(models.Model):
 class TopicTerm(models.Model):
     topic = models.ForeignKey('Topic',null=True)
     term = models.ForeignKey('Term',null=True)
+    PY = models.IntegerField(db_index=True,null=True)
     score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
 
@@ -169,6 +170,7 @@ class RunStats(models.Model):
     iterations = models.IntegerField(null=True)
     max_features = models.IntegerField(null=True)
     ngram = models.IntegerField(null=True)
+    term_count = models.IntegerField(null=True)
 
 class Settings(models.Model):
     run_id = models.IntegerField()

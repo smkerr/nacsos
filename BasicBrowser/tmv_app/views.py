@@ -823,7 +823,9 @@ def runs(request):
         #terms = models.Count('term')
     )
     for s in stats:
-        s.terms = Term.objects.filter(run_id=s.run_id).count()
+        if s.term_count is None:
+            s.term_count = Term.objects.filter(run_id=s.run_id).count()
+            s.save()
 
     context = Context({'stats':stats})
 
