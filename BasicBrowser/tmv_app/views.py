@@ -372,13 +372,21 @@ def get_topic_docs(request,topic_id):
     topic = Topic.objects.get(pk=topic_id)
     run_id = topic.run_id.pk
 
+    stat = RunStats.objects.get(run_id=run_id)
+
+    dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
+    dt_thresh_scaled = Settings.objects.get(id=1).doc_topic_scaled_score
+    if stat.method=="BD":
+        dt_threshold=dt_threshold*100
+
     svalue = request.GET.get('sort',None)
     sortcol = svalue.replace('-','')
 
 
 
     doctopics = Doc.objects.filter(
-        doctopic__topic=topic,doctopic__run_id=run_id
+        doctopic__topic=topic,doctopic__run_id=run_id,
+        doctopic__score__gt=dt_threshold
     )
     if sortcol != "doctopic__score":
         doctopics = doctopics.filter(**{sortcol+'__isnull': False})
