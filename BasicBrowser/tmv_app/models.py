@@ -154,11 +154,13 @@ class RunStats(models.Model):
     HLDA = 'HL'
     DTM = 'DT'
     NMF = 'NM'
+    BDT = 'BD'
     METHOD_CHOICES = (
         (LDA, 'lda'),
         (HLDA, 'hlda'),
         (DTM, 'dtm'),
         (NMF,'nmf'),
+        (BDT,'BleiDTM')
     )
     method = models.CharField(
         max_length=2,
