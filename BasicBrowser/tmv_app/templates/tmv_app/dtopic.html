@@ -1,0 +1,96 @@
+{% extends "tmv_app/base.html" %}
+
+{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=topic.run_id.pk %} {% endblock %}
+
+{% block content %}
+
+<div id="top"></div>
+<h1 id="header">
+<table><tr>
+<td id="title">{{ topic.title }}</td>
+</tr></table></span>
+<hr noshade>
+</h1>
+
+<div id="main">
+
+  <table>
+
+    <td width="50.0%">
+      <div class="explanation">
+        <h2>Related Documents</h2>
+        <p>Sort by: <select id="sort">
+          <option value="-doctopic__score">Score (descending)</option>
+          <option value="PY">Year (ascending)</option>
+          <option value="-PY">Year (descending)</option>
+          <option value="wosarticle__tc">Citations (ascending)</option>
+          <option value="-wosarticle__tc">Citations (descending)</option>
+        </select>
+      </div>
+      <p>
+
+        <table class="light" id="doc_table">
+
+        </table>
+
+    <td width="40%">
+
+      <table>
+
+  {% for y in tterms %}
+  <tr class="wtopic">
+    <td>{{y.0.PY}}
+      {% for tt in y %}
+      <td class="word" data-word="{{tt.term.title|lower}}">
+        {{tt.term.title|lower}}
+      </td>
+      {% endfor %}
+
+  {% endfor %}
+
+  </table>
+</td>
+</table
+
+{% endblock %}
+
+
+
+
+{% block script %}
+
+<script type="text/JavaScript">
+
+$(".word").on("click", function() {
+  word = $(this).text().trim()
+  words = $('[data-word="'+word+'"]')
+  $(".t1").removeClass("t1")
+  words.addClass("t1")
+})
+
+
+$('#sort').on('change', function() {
+  get_docs(this.value)
+})
+
+function get_docs(s) {
+  console.log("getting docs")
+  $("body").toggleClass('waiting')
+  $.ajax({
+    url: "{% url 'tmv_app:get_topic_docs' topic.pk %}",
+    data: {
+      'sort': s
+    },
+    success: function(response) {
+      $("#doc_table").html(response)
+      $("body").toggleClass('waiting')
+    }
+  })
+}
+
+get_docs('-doctopic__score')
+
+
+</script>
+
+{% endblock %}

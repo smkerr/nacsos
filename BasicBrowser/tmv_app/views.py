@@ -266,6 +266,28 @@ def dynamic_topic_detail(request,topic_id):
     })
     return HttpResponse(template.render(context))
 
+def dtopic_detail(request,topic_id):
+    template = loader.get_template('tmv_app/dtopic.html')
+
+    topic = Topic.objects.get(pk=topic_id)
+
+    tterms = []
+    tts = TopicTerm.objects.filter(topic=topic)
+    for py in tts.distinct('PY') \
+        .order_by('PY').values_list('PY',flat=True):
+        ytts = tts.filter(PY=py).order_by('-score')[:10]
+        tterms.append(ytts)
+
+    docs = Doc.objects.filter(doctopic__topic=topic) \
+        .order_by('-doctopic__score')[:50]
+
+    context = Context({
+        "topic":topic,
+        "tterms": tterms,
+        "docs": docs
+    })
+
+    return HttpResponse(template.render(context))
 
 ###########################################################################
 ## Topic View
@@ -277,6 +299,9 @@ def topic_detail(request, topic_id):
         topic = Topic.objects.get(pk=topic_id)
     except:
         return(topic_detail_hlda(request, topic_id))
+
+    if topic.run_id.method=="BD":
+        return(dtopic_detail(request,topic_id))
     run_id = topic.run_id.pk
     stat = RunStats.objects.get(run_id=run_id)
 
@@ -528,6 +553,8 @@ def doc_detail(request, doc_id, run_id):
     pie_array = []
     dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
     dt_thresh_scaled = Settings.objects.get(id=1).doc_topic_scaled_score
+    if stat.method=="BD":
+        dt_threshold=dt_threshold*100
     topicwords = {}
     ntopic = 0
     for dt in doctopics:
@@ -538,7 +565,13 @@ def doc_detail(request, doc_id, run_id):
             ntopic+=1
             topic.ntopic = "t"+str(ntopic)
             topics.append(topic)
-            terms = Term.objects.filter(topicterm__topic=topic.pk).order_by('-topicterm__score')[:10]
+            if stat.method=="BD":
+                terms=Term.objects.filter(
+                    topicterm__topic=topic.pk,
+                    topicterm__PY=doc.PY
+                ).order_by('-topicterm__score')[:10]
+            else:
+                terms = Term.objects.filter(topicterm__topic=topic.pk).order_by('-topicterm__score')[:10]
 
             topicwords[ntopic] = []
             for tt in terms:
@@ -702,6 +735,9 @@ def topic_presence_detail(request,run_id):
 
     if stat.method == "DT":
         update_dtopics(run_id)
+    if stat.method == "BD":
+        update_bdtopics(run_id)
+
 
     run_id = int(run_id)
 
@@ -931,6 +967,26 @@ def update_topic_titles(session):
             topic.save()
         stats.topic_titles_current = True
         stats.save()
+
+def update_bdtopics(run_id):
+    stats = RunStats.objects.get(pk=run_id)
+    if "a"=="a":
+    #if not stats.topic_titles_current:
+        topics = Topic.objects.filter(run_id=run_id)
+        for topic in topics:
+            tts = TopicTerm.objects.filter(topic=topic)
+            at = tts.values('term').annotate(
+                mean = models.Avg('score')
+            ).order_by('-mean')[:3]
+            new_topic_title = '{'
+            for tt in at:
+                term = Term.objects.get(pk=tt['term'])
+                new_topic_title += term.title
+                new_topic_title +=', '
+            new_topic_title = new_topic_title[:-2]
+            new_topic_title+='}'
+            topic.title = new_topic_title
+            topic.save()
 
 def update_dtopics(run_id):
     stats = RunStats.objects.get(pk=run_id)
