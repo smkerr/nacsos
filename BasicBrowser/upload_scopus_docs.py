@@ -73,7 +73,7 @@ def add_doc_text(r):
                     nextkey = scopus2WoSFields[nextkey]
                 except:
                     pass
-                
+
                 if nextkey in mfields:
                     record[nextkey] = [nextvalue]
                 else:
@@ -83,7 +83,7 @@ def add_doc_text(r):
                 key = scopus2WoSFields[key]
             except:
                 pass
-            
+
             if key in mfields:
                 record[key] = [value]
             else:
@@ -96,7 +96,7 @@ def add_doc_text(r):
                 record[key] += line.strip()
 
     try:
-        record['scopus_id'] = dict(parse_qsl(urlparse(record['UT']).query))['eid'] 
+        record['scopus_id'] = dict(parse_qsl(urlparse(record['UT']).query))['eid']
         add_doc(record)
     except:
         print("don't want to add this record, it has no id!")
@@ -105,13 +105,18 @@ def add_doc_text(r):
 def add_doc(r):
     django.db.connections.close_all()
     try:
-        r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid'] 
+        r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid']
     except:
         print(r)
         return
 
+    docs = Doc.objects.filter(UT=r['UT'])
+    if docs.count()==1:
+        docs.first().query.add(q)
+        return
+
     try:
-        did = r['di']     
+        did = r['di']
     except:
         did = 'NA'
         pass
@@ -120,8 +125,9 @@ def add_doc(r):
         docs = Doc.objects.filter(
                 wosarticle__ti=get(r,'ti')).filter(PY=get(r,'py')
         )
-    else: 
+    else:
         docs = Doc.objects.filter(wosarticle__di=did)
+
 
     if len(docs)==1:
         docs.first().query.add(q)
@@ -166,17 +172,17 @@ def add_doc(r):
 
         try:
             article.save()
-            
+
         except:
             pass
 
-    
+
         ## Add authors
         try:
             dais = []
             for a in range(len(r['au'])):
                 #af = r['AF'][a]
-                au = r['au'][a]  
+                au = r['au'][a]
                 dai = DocAuthInst(doc=doc)
                 dai.AU = au
                 dai.position = a
@@ -188,9 +194,9 @@ def add_doc(r):
 
 
 
-        
-            
-        
+
+
+
 
 def main():
     qid = sys.argv[1]
@@ -255,10 +261,10 @@ def main():
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue
-            if 'ER  -' in line:   
+            if 'ER  -' in line:
 
                 # end of record - save it and start a new one
-                n_records +=1            
+                n_records +=1
                 records.append(record)
                 if very_par:
                     record = []
@@ -293,7 +299,7 @@ def main():
                             nextkey = scopus2WoSFields[nextkey]
                         except:
                             pass
-                        
+
                         if nextkey in mfields:
                             record[nextkey] = [nextvalue]
                         else:
@@ -302,7 +308,7 @@ def main():
                         key = scopus2WoSFields[key]
                     except:
                         pass
-                    
+
                     if key in mfields:
                         record[key] = [value]
                     else:
@@ -326,7 +332,7 @@ def main():
         else:
             pool.map(add_doc, records)
         pool.terminate()
-    
+
     django.db.connections.close_all()
     q.r_count = len(Doc.objects.filter(query=q))
     q.save()
@@ -338,7 +344,7 @@ def main():
 
 
 if __name__ == '__main__':
-    t0 = time.time()	
+    t0 = time.time()
     main()
     totalTime = time.time() - t0
 
