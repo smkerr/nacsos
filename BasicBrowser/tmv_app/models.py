@@ -38,6 +38,7 @@ class Topic(models.Model):
     title = models.CharField(max_length=80)
     score = models.FloatField(null=True)
     size = models.IntegerField(null=True)
+    growth = models.FloatField(null=True)
     run_id = models.ForeignKey('RunStats',db_index=True)
     year = models.IntegerField(null=True)
     primary_dtopic = models.ForeignKey('DynamicTopic',null=True)
