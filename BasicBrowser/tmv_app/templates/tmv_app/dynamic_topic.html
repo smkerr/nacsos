@@ -11,6 +11,9 @@
 <hr noshade>
 </div>
 <div id="main">
+    <div id="graph">
+        <div id="pyGraph" height="600"></div><br>
+    </div>
 
 <table width="100%">
   <td width="10%">
@@ -57,6 +60,135 @@ $(".word").on("click", function() {
   $(".t1").removeClass("t1")
   words.addClass("t1")
 })
+
+var data = {{ wtvs|safe }};
+
+div = d3.select("body").append("div")
+  .attr("class","tooltip")
+  .style("opacity",0)
+
+console.log(data)
+
+width=800
+height = 600
+
+var margin = {top: width*0.08, right: width*0.08, bottom: width*0.08, left: width*0.09}
+    width = width - margin.left - margin.right,
+    height = height - margin.top - margin.bottom;
+
+var svg = d3.select("#pyGraph")
+  .append("svg")
+  .attr("width", width+margin.right+margin.left)
+  .attr("height", height+margin.top+margin.bottom);
+
+svg.append("rect")
+  .attr("width", width+margin.right+margin.left)
+  .attr("height", height+margin.top+margin.bottom)
+  .style("fill", "white")
+  .style("stroke", "black")
+  .style("stroke-width", 2)
+
+var g = svg.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var x = d3.scaleLinear()
+    .range([0, width]);
+
+x.domain([d3.min(data, function(d) {return d.year}),d3.max(data, function(d) {return d.year})])
+
+
+
+keys = d3.map(data, function(d) { return d.year }).keys()
+console.log(keys)
+
+nested = d3.nest()
+  .key(function(d) { return d.year; })
+  .entries(data);
+
+var flat_data = []
+
+for (y=0;y<nested.length;y++) {
+    var vals = nested[y].values.sort(function(x,y){
+        return d3.descending(x.dscore,y.dscore)
+    })
+    for (v=0;v<vals.length;v++) {
+        if (v==0) {last=0}
+        vals[v].offset = last
+        last += vals[v].score
+        flat_data.push(vals[v])
+    }
+}
+
+console.log(nested)
+
+
+ysums = d3.max(flat_data, function(d) {
+    return d.offset + d.score
+} )
+
+//console.log("YSUMS")
+//var ysums = {{ ysums|safe }};
+//console.log(ysums)
+
+// ysums = d3.max(ysums, function(d) {
+//     return d.sum
+// } )
+
+
+var y = d3.scaleLinear()
+    .range([height, 0]);
+
+y.domain([0,ysums])
+
+var z = d3.scaleLinear()
+    .range([0.4,1])
+    .domain([0,d3.max(flat_data,function(d) {return d.dscore})]);
+
+var xAxis = d3.axisBottom(x)
+  .tickValues(x.domain().filter(function(d,i){ return !(d%5)}));
+
+
+g.append("g")
+    .attr("class", "axis axis--x")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x).ticks(10).tickFormat(d3.format("d")));
+
+g.append("g")
+    .attr("class", "axis axis--y")
+    .call(d3.axisLeft(y).ticks(10).tickFormat(d3.format("d")));
+
+
+g.append("g")
+    .selectAll("rect")
+    .data(flat_data)
+    .enter().append("rect")
+        .attr("fill", "steelblue" )
+        .attr("stroke", "grey")
+        .attr("stroke-width", 1)
+        .attr("fill-opacity", function(d) {return z(d.dscore)})
+        .on("mouseover", function(d) {
+          div.transition()
+            .duration(200)
+            .style("opacity", .9);
+          div.html(d.title + "<br/>score: " + Math.round(d.dscore*100)/100)
+            .style("left", (d3.event.pageX) + "px")
+            .style("top", (d3.event.pageY - 28) + "px");
+          })
+        .on("mouseout", function(d) {
+          div.transition()
+            .duration(500)
+            .style("opacity", 0);
+          })
+      .attr("x", function(d,i) {
+          return x(d.year);
+      })
+      .attr("y", function(d) {
+          return y(d.offset+d.score);
+      })
+      .attr("height", function(d) { return y(d.offset) - y(d.offset+d.score) ; })
+      .attr("width", 15);
+
+
 
 
 

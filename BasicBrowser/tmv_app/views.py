@@ -256,12 +256,32 @@ def dynamic_topic_detail(request,topic_id):
         'doc__pk','doc__PY','doc__title','topic_combination'
     )
 
+    dtopics = Topic.objects.filter(
+        run_id=run_id,
+        year__lt=2200
+    ).order_by('year').annotate(
+        dscore = Sum(
+            Case(
+                When(topicdtopic__dynamictopic=topic,
+                    then=F('topicdtopic__score')),
+                default=0,
+                output_field=models.FloatField()
+            )
+        )
+    )
+
+    ysums = dtopics.values('year').annotate(
+        sum = Sum('score'),
+    )
+
 
     context = RequestContext(request, {
         'run_id': run_id,
         'topic': topic,
         'topicterms': topicterms,
         'wtopics': wtopics,
+        'wtvs': list(dtopics.values('title','score','year','dscore')),
+        'ysums': list(ysums.values('year','sum')),
         'docs': docs
     })
     return HttpResponse(template.render(context))
@@ -543,7 +563,7 @@ def doc_detail(request, doc_id, run_id):
     stat = RunStats.objects.get(run_id=run_id)
     if stat.get_method_display() == 'hlda':
         return(doc_detail_hlda(request, doc_id))
-    update_topic_titles(request.session)
+    update_topic_titles(int(run_id))
     response = ''
     template = loader.get_template('tmv_app/doc.html')
 
@@ -999,8 +1019,8 @@ def update_bdtopics(run_id):
 def update_dtopics(run_id):
     stats = RunStats.objects.get(pk=run_id)
     #if "a" == "b":
-    if not stats.topic_titles_current:
-    #if "a" in "ab":
+    #if not stats.topic_titles_current:
+    if "a" in "ab":
         #print("UPDATING")
         for topic in DynamicTopic.objects.filter(run_id=run_id):
             topicterms = Term.objects.filter(
