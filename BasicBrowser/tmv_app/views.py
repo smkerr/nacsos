@@ -280,7 +280,7 @@ def dynamic_topic_detail(request,topic_id):
         'topic': topic,
         'topicterms': topicterms,
         'wtopics': wtopics,
-        'wtvs': list(dtopics.values('title','score','year','dscore')),
+        'wtvs': list(dtopics.values('title','score','year','dscore','id')),
         'ysums': list(ysums.values('year','sum')),
         'docs': docs
     })
@@ -1019,8 +1019,8 @@ def update_bdtopics(run_id):
 def update_dtopics(run_id):
     stats = RunStats.objects.get(pk=run_id)
     #if "a" == "b":
-    #if not stats.topic_titles_current:
-    if "a" in "ab":
+    if not stats.topic_titles_current:
+    #if "a" in "ab":
         #print("UPDATING")
         for topic in DynamicTopic.objects.filter(run_id=run_id):
             topicterms = Term.objects.filter(

@@ -160,6 +160,24 @@ class Doc(models.Model):
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
 
+class Citation(models.Model):
+    au = models.TextField(null=True)
+    py = models.IntegerField(null=True)
+    so = models.TextField(null=True)
+    vl = models.IntegerField(null=True)
+    bp = models.IntegerField(null=True)
+    doi = models.TextField(null=True,unique=True,db_index=True)
+    ftext = models.TextField(db_index=True)
+    alt_text = ArrayField(models.TextField(),null=True)
+
+class CDO(models.Model):
+    doc = models.ForeignKey(Doc)
+    citation = models.ForeignKey(Citation)
+
+class BibCouple(models.Model):
+    doc1 = models.ForeignKey(Doc, related_name="node1")
+    doc2 = models.ForeignKey(Doc, related_name="node2")
+    cocites = models.IntegerField(Doc, default=0)
 
 class AR(models.Model):
     ar = models.IntegerField(unique=True)
@@ -327,6 +345,7 @@ class WoSArticle(models.Model):
     bp = models.CharField(null=True, max_length=50, verbose_name="Beginning Page") # beginning page
     c1 = models.TextField(null=True, verbose_name="Author Address") # author address
     cl = models.TextField(null=True, verbose_name="Conference Location") # conf location
+    cr = ArrayField(models.TextField(), null=True)
     ct = models.TextField(null=True, verbose_name="Conference Title") # conf title
     de = models.TextField(null=True, verbose_name="Author Keywords") # keywords - separate table?
     di = models.CharField(null=True, db_index=True, max_length=250, verbose_name="DOI") # DOI

@@ -25,20 +25,21 @@ def add_doc(r):
     try: # if this doc is in the database, do nothing
         doc = Doc.objects.get(UT=r['UT'])
         doc.save()
+        doc = abaldf
         doc.query.add(q)
         if DEBUG:
             print("     > Document is already in the DB. Add to query table only.")
     except: # otherwise, add it!
         if DEBUG:
             print("     > Document is new. Add to doc, query and WoSArticle tables.")
-        doc = Doc(UT=r['UT'])
+        doc, created = Doc.objects.get_or_create(UT=r['UT'])
         doc.title=get(r,'TI')
         doc.content=get(r,'AB')
         doc.PY=get(r,'PY')
         doc.wos=True
         doc.save()
         doc.query.add(q)
-        article = WoSArticle(doc=doc)
+        article, created = WoSArticle.objects.get_or_create(doc=doc)
         try:
             r['wc'] = [x.strip() for x in get(r,'WC').split(";")]
         except:
@@ -76,7 +77,7 @@ def add_doc(r):
                     try:
                         institute = inst[1]
                         if af in iauth:
-                            dai = DocAuthInst(doc=doc)
+                            dai,created = DocAuthInst.objects.get_or_create(doc=doc)
                             dai.AU = au
                             dai.AF = af
                             dai.institution = institute
@@ -86,7 +87,7 @@ def add_doc(r):
                     except:
                         pass # Fix this later, these errors are caused by multiline institutions
                 if a_added == False:
-                    dai = DocAuthInst(doc=doc)
+                    dai,created = DocAuthInst.objects.get_or_create(doc=doc)
                     dai.AU = au
                     dai.AF = af
                     dai.position = a
@@ -137,7 +138,7 @@ def main():
                     records = []
                     chunk_size = 0
                 continue
-            if re.match("^EF",line): #end of file
+            if re.match("^EF",line): #end of file add any remaining docs
                 if chunk_size < max_chunk_size:
                     # parallely add docs
                     pool = Pool(processes=50)
