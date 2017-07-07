@@ -2069,13 +2069,26 @@ def sortdocs(request):
             uname = u.split("__")[1]
             user = User.objects.get(username=uname)
             #uval = reldocs.filter(docownership__user=user).docownership
-            filt_docs = filt_docs.filter(docownership__user=user,docownership__query=query).annotate(**{
-                u: models.Case(
-                        models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
-                        default=0,
-                        output_field=models.IntegerField()
-                )
-            })
+            if "tag__title" in f_fields:
+                filt_docs = filt_docs.filter(
+                        docownership__user=user,
+                        docownership__query=query,
+                        docownership__tag__title__icontains=tag_filter
+                    ).annotate(**{
+                    u: models.Case(
+                            models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
+                            default=0,
+                            output_field=models.IntegerField()
+                    )
+                })
+            else:
+                filt_docs = filt_docs.filter(docownership__user=user,docownership__query=query).annotate(**{
+                    u: models.Case(
+                            models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
+                            default=0,
+                            output_field=models.IntegerField()
+                    )
+                })
 
 
     tag_text = ""
@@ -2575,19 +2588,39 @@ def assign_docs(request):
         l= len(docs)
         ssize = int(tagdocs[tag])
 
+        if ssize == l:
+            full = True
+        else:
+            full = False
+
+        if full == False:
+            for user in user_list:
+                docs = docs.exclude(docownership__user=user,docownership__relevant__gt=0)
+
         my_ids = list(docs.values_list('UT', flat=True))
         rand_ids = random.sample(my_ids, ssize)
         sample = docs.filter(UT__in=rand_ids).all()
+
+
         s = 0
         for doc in sample:
             s+=1
             if docsplit=="true":
                 user = user_list[s % len(user_list)]
-                docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
+                try:
+                    r = Docownership.objects.filter(doc=doc,query=query,user=user).first().relevant
+                except:
+                    r = 0
+                docown = DocOwnership(doc=doc,query=query,user=user,tag=t,relevant=r)
                 dos.append(docown)
             else:
                 for user in user_list:
-                    docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
+                    try:
+                        r = Docownership.objects.filter(doc=doc,query=query,user=user).first().relevant
+                    except:
+                        r = 0
+                    docown = DocOwnership(doc=doc,query=query,user=user,tag=t,relevant=r)
+                    #docown = DocOwnership(doc=doc,query=query,user=user,tag=t)
                     dos.append(docown)
     DocOwnership.objects.bulk_create(dos)
     print("Done")

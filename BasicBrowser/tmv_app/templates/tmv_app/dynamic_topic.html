@@ -91,10 +91,11 @@ svg.append("rect")
 var g = svg.append("g")
   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-var x = d3.scaleLinear()
-    .range([0, width]);
+myear = d3.max(data, function(d) {return d.year})
 
-x.domain([d3.min(data, function(d) {return d.year}),d3.max(data, function(d) {return d.year})])
+var x = d3.scaleLinear()
+    .range([0, width])
+    .domain([d3.min(data, function(d) {return d.year})-1,myear]);
 
 
 
@@ -136,12 +137,16 @@ ysums = d3.max(flat_data, function(d) {
 
 
 var y = d3.scaleLinear()
-    .range([height, 0]);
+    .range([height, 0])
+    .domain([0,Math.log(ysums)]);
 
-y.domain([0,ysums])
+// var y = d3.scaleLog()
+//     .base(Math.E)
+//     .range([height,0])
+//     .domain([Math.exp(0), Math.exp(9)])
 
 var z = d3.scaleLinear()
-    .range([0.4,1])
+    .range([0.2,1])
     .domain([0,d3.max(flat_data,function(d) {return d.dscore})]);
 
 var xAxis = d3.axisBottom(x)
@@ -157,6 +162,7 @@ g.append("g")
     .attr("class", "axis axis--y")
     .call(d3.axisLeft(y).ticks(10).tickFormat(d3.format("d")));
 
+var bwidth = (x(myear)-x(myear-1))*0.75
 
 g.append("g")
     .selectAll("rect")
@@ -166,6 +172,7 @@ g.append("g")
         .attr("stroke", "grey")
         .attr("stroke-width", 1)
         .attr("fill-opacity", function(d) {return z(d.dscore)})
+        .attr("stroke-opacity", function(d) {return z(d.dscore)})
         .on("mouseover", function(d) {
           div.transition()
             .duration(200)
@@ -179,14 +186,34 @@ g.append("g")
             .duration(500)
             .style("opacity", 0);
           })
+          .on("click", function(d) {
+              window.open("/tmv_app/topic/"+d.id)
+          })
       .attr("x", function(d,i) {
-          return x(d.year);
+          return x(d.year)-bwidth/2;
       })
       .attr("y", function(d) {
-          return y(d.offset+d.score);
+          if (d.offset+d.score > 0) {
+              v = Math.log(d.offset+d.score)
+          } else {
+              v = 0
+          }
+          return y(v);
       })
-      .attr("height", function(d) { return y(d.offset) - y(d.offset+d.score) ; })
-      .attr("width", 15);
+      .attr("height", function(d) {
+          if (d.offset > 0) {
+              o = Math.log(d.offset)
+          } else {
+              o = 0
+          }
+          if (d.offset+d.score > 0) {
+              v = Math.log(d.offset+d.score)
+          } else {
+              v = 0
+          }
+          return y(o) - y(v) ;
+      })
+      .attr("width", bwidth);
 
 
 

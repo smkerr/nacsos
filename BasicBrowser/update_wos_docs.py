@@ -46,7 +46,7 @@ def main():
     n_records = 0
     records=[]
     record = {}
-    mfields = ['AU','AF','CR','C1']
+    mfields = ['AU','AF','CR','C1','WC']
 
     max_chunk_size = 2000
     chunk_size = 0
