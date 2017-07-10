@@ -4669,3 +4669,235 @@ scoping.models.MultipleObjectsReturned: get() returned more than one Citation --
 3000
 4000
 5000
+6000
+7000
+8000
+9000
+10000
+11000
+12000
+13000
+14000
+15000
+16000
+17000
+18000
+19000
+20000
+21000
+22000
+23000
+24000
+done! total time: 17 minutes and 40.47 seconds
+a maximum of 436.096 MB was used
+Traceback (most recent call last):
+  File "citation_matrix.py", line 7, in <module>
+    django.setup()
+  File "/usr/local/lib/python3.4/dist-packages/django/__init__.py", line 27, in setup
+    apps.populate(settings.INSTALLED_APPS)
+  File "/usr/local/lib/python3.4/dist-packages/django/apps/registry.py", line 85, in populate
+    app_config = AppConfig.create(entry)
+  File "/usr/local/lib/python3.4/dist-packages/django/apps/config.py", line 116, in create
+    mod = import_module(mod_path)
+  File "/usr/lib/python3.4/importlib/__init__.py", line 109, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 2254, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 2237, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 2226, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1200, in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1129, in _exec
+  File "<frozen importlib._bootstrap>", line 1471, in exec_module
+  File "<frozen importlib._bootstrap>", line 321, in _call_with_frames_removed
+  File "/usr/local/lib/python3.4/dist-packages/debug_toolbar/apps.py", line 12, in <module>
+    from debug_toolbar.middleware import DebugToolbarMiddleware
+  File "/usr/local/lib/python3.4/dist-packages/debug_toolbar/middleware.py", line 17, in <module>
+    from debug_toolbar.toolbar import DebugToolbar
+  File "/usr/local/lib/python3.4/dist-packages/debug_toolbar/toolbar.py", line 151, in <module>
+    urlpatterns = DebugToolbar.get_urls()
+  File "/usr/local/lib/python3.4/dist-packages/debug_toolbar/toolbar.py", line 145, in get_urls
+    for panel_class in cls.get_panel_classes():
+  File "/usr/local/lib/python3.4/dist-packages/debug_toolbar/toolbar.py", line 118, in get_panel_classes
+    mod = import_module(panel_module)
+  File "/usr/lib/python3.4/importlib/__init__.py", line 109, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "/usr/local/lib/python3.4/dist-packages/debug_toolbar/panels/templates/__init__.py", line 1, in <module>
+    from debug_toolbar.panels.templates.panel import TemplatesPanel  # noqa
+  File "/usr/local/lib/python3.4/dist-packages/debug_toolbar/panels/templates/panel.py", line 12, in <module>
+    from django.test.signals import template_rendered
+  File "/usr/local/lib/python3.4/dist-packages/django/test/__init__.py", line 6, in <module>
+    from django.test.testcases import (
+  File "/usr/local/lib/python3.4/dist-packages/django/test/testcases.py", line 28, in <module>
+    from django.core.servers.basehttp import WSGIRequestHandler, WSGIServer
+  File "<frozen importlib._bootstrap>", line 2237, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 2226, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1200, in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1129, in _exec
+  File "<frozen importlib._bootstrap>", line 1467, in exec_module
+  File "<frozen importlib._bootstrap>", line 1570, in get_code
+  File "<frozen importlib._bootstrap>", line 656, in _compile_bytecode
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "bibliographic_coupling_matrix.py", line 6, in <module>
+    from scipy.sparse import coo_matrix, csr_matrix, find, tril
+  File "/usr/lib/python3/dist-packages/scipy/sparse/__init__.py", line 205, in <module>
+    from .base import *
+  File "/usr/lib/python3/dist-packages/scipy/sparse/base.py", line 12, in <module>
+    from scipy.lib.six.moves import xrange
+ImportError: No module named 'scipy.lib.six'
+Traceback (most recent call last):
+  File "bibliographic_coupling_matrix.py", line 7, in <module>
+    import nx
+ImportError: No module named 'nx'
+ROWIDS
+colids
+data
+matrix
+transpose
+multiply
+Traceback (most recent call last):
+  File "bibliographic_coupling_matrix.py", line 189, in <module>
+    main()
+  File "bibliographic_coupling_matrix.py", line 150, in main
+    del x
+UnboundLocalError: local variable 'x' referenced before assignment
+ROWIDS
+colids
+data
+matrix
+transpose
+multiply
+Traceback (most recent call last):
+  File "bibliographic_coupling_matrix.py", line 196, in <module>
+    main()
+  File "bibliographic_coupling_matrix.py", line 139, in main
+    D = nx.from_scipy_sparse_matrix(ltri)
+NameError: name 'ltri' is not defined
+ROWIDS
+colids
+data
+matrix
+transpose
+multiply
+Traceback (most recent call last):
+  File "bibliographic_coupling_matrix.py", line 187, in <module>
+    main()
+  File "bibliographic_coupling_matrix.py", line 144, in main
+    for i in range(D_5.number_of_nodes()):
+NameError: name 'D_5' is not defined
+ROWIDS
+colids
+data
+matrix
+transpose
+multiply
+26267804
+0
+10000
+20000
+30000
+40000
+50000
+60000
+70000
+Process ForkPoolWorker-39:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 254, in _bootstrap
+    self.run()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 93, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 108, in worker
+    task = get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/queues.py", line 354, in get
+    with self._rlock:
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/synchronize.py", line 96, in __enter__
+    return self._semlock.__enter__()
+KeyboardInterrupt
+Process ForkPoolWorker-40:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 254, in _bootstrap
+    self.run()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 93, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 108, in worker
+    task = get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/queues.py", line 354, in get
+    with self._rlock:
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/synchronize.py", line 96, in __enter__
+    return self._semlock.__enter__()
+KeyboardInterrupt
+Process ForkPoolWorker-38:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 254, in _bootstrap
+    self.run()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 93, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 108, in worker
+    task = get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/queues.py", line 354, in get
+    with self._rlock:
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/synchronize.py", line 96, in __enter__
+    return self._semlock.__enter__()
+KeyboardInterrupt
+Process ForkPoolWorker-37:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 254, in _bootstrap
+    self.run()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 93, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 108, in worker
+    task = get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/queues.py", line 354, in get
+    with self._rlock:
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/synchronize.py", line 96, in __enter__
+    return self._semlock.__enter__()
+KeyboardInterrupt
+Process ForkPoolWorker-36:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 254, in _bootstrap
+    self.run()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 93, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 108, in worker
+    task = get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/queues.py", line 355, in get
+    res = self._reader.recv_bytes()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/connection.py", line 216, in recv_bytes
+    buf = self._recv_bytes(maxlength)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/connection.py", line 420, in _recv_bytes
+    return self._recv(size)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/connection.py", line 383, in _recv
+    chunk = read(handle, remaining)
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "bibliographic_coupling_matrix.py", line 187, in <module>
+    main()
+  File "bibliographic_coupling_matrix.py", line 176, in main
+    rev_m_dict=rev_m_dict),chunk))
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 260, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 593, in get
+    self.wait(timeout)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 590, in wait
+    self._event.wait(timeout)
+  File "/usr/lib/python3.4/threading.py", line 553, in wait
+    signaled = self._cond.wait(timeout)
+  File "/usr/lib/python3.4/threading.py", line 290, in wait
+    waiter.acquire()
+KeyboardInterrupt
+Error in atexit._run_exitfuncs:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/util.py", line 252, in _run_finalizers
+    finalizer()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/util.py", line 185, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 526, in _terminate_pool
+    cls._help_stuff_finish(inqueue, task_handler, len(pool))
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 513, in _help_stuff_finish
+    inqueue._reader.recv()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/connection.py", line 250, in recv
+    buf = self._recv_bytes()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/connection.py", line 420, in _recv_bytes
+    return self._recv(size)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/connection.py", line 383, in _recv
+    chunk = read(handle, remaining)
+KeyboardInterrupt

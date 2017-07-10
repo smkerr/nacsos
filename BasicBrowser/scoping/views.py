@@ -7,9 +7,13 @@ from django.db.models.functions import Concat
 from django.core import serializers
 from django.core.serializers import serialize
 
+import datetime
+
 from cities.models import *
 from tmv_app.models import *
 # Create your views here.
+
+from django.utils import formats
 
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -1508,7 +1512,9 @@ def doclist(request,qid,q2id='0',sbsid='0'):
     relevance_fields.append({"path": "relevance_netrelevant", "name": "NETs relevant"})
     relevance_fields.append({"path": "relevance_techrelevant", "name": "Technology relevant"})
     relevance_fields.append({"path": "note__text", "name": "Notes"})
+    relevance_fields.append({"path": "relevance_time", "name": "Time of Rating"})
     relevance_fields.append({"path": "relevance_agreement", "name": "Agreement"})
+    relevance_fields.append({"path": "k", "name": "K Core"})
 
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
@@ -2050,6 +2056,18 @@ def sortdocs(request):
     if len(users) > 0:
         uname = users[0].split("__")[1]
         user = User.objects.get(username=uname)
+        if "relevance_time" in rfields:
+            filt_docs = filt_docs.annotate(
+                relevance_time = models.Max(
+                    models.Case(
+                        models.When(docownership__user=user,
+                            then=F('docownership__date')
+                        )#,
+                        #default=datetime.date(2000,1,2)
+                    )
+                )
+            )
+
         null_filter = 'docownership__relevant__isnull'
         if q2id!='0':
             reldocs = filt_docs.filter(docownership__user=user,docownership__query=query) | filt_docs.filter(docownership__user=user,docownership__query=query_f)
@@ -2191,6 +2209,11 @@ def sortdocs(request):
 
     for d in docs:
         # work out total relevance
+
+        try:
+            d['relevance_time'] = formats.date_format(d['relevance_time'], "SHORT_DATETIME_FORMAT")
+        except:
+            pass
         if "relevance__netrelevantasdfasdf" in rfields:
             d["relevance__netrelevant"] = DocOwnership.objects.filter(doc_id=d['UT'],relevant__gt=0).count()
         # Get the user relevance rating for each doc (if asked)
