@@ -2030,6 +2030,7 @@ def sortdocs(request):
         filt_docs = filt_docs.annotate(
             tech_technology=Concat('qtechnology', 'dtechnology')
         )
+
     # Annotate with innovation names
     if "tech_innovation" in fields:
         filt_docs = filt_docs.annotate(
@@ -2209,6 +2210,8 @@ def sortdocs(request):
 
     for d in docs:
         # work out total relevance
+        if "wosarticle__cr" in fields:
+            d['wosarticle__cr'] = ';<br>'.join(d['wosarticle__cr'])
 
         try:
             d['relevance_time'] = formats.date_format(d['relevance_time'], "SHORT_DATETIME_FORMAT")
