@@ -141,6 +141,7 @@ class Doc(models.Model):
     date = models.DateTimeField(null=True)
     ymentions = ArrayField(models.IntegerField(),null=True)
     cities = models.ManyToManyField('cities.City')
+    k = models.IntegerField(null=True)
 
     def __str__(self):
       return self.UT
