@@ -141,7 +141,10 @@ class Doc(models.Model):
     date = models.DateTimeField(null=True)
     ymentions = ArrayField(models.IntegerField(),null=True)
     cities = models.ManyToManyField('cities.City')
-    k = models.IntegerField(null=True)
+    k = models.IntegerField(null=True,db_index=True)
+    degree = models.FloatField(null=True,db_index=True)
+    eigen_cent = models.FloatField(null=True,db_index=True)
+    citation_objects = models.BooleanField(default=False,db_index=True)
 
     def __str__(self):
       return self.UT
@@ -160,6 +163,13 @@ class Doc(models.Model):
 
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
+
+class NetworkProperties(models.Model):
+    doc = models.ForeignKey(Doc)
+    query = models.ForeignKey(Query)
+    k = models.IntegerField(null=True,db_index=True)
+    degree = models.FloatField(null=True,db_index=True)
+    eigen_cent = models.FloatField(null=True,db_index=True)
 
 class Citation(models.Model):
     au = models.TextField(null=True)
