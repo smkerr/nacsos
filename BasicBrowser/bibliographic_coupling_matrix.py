@@ -85,6 +85,10 @@ def main():
         list(mdocs.values_list('UT',flat=True))
     ))
 
+    for d in mdocs.iterator():
+        d.k=0
+        d.save()
+
     del mdocs
 
 
@@ -137,16 +141,26 @@ def main():
     gc.collect()
 
     ltri = tril(Cmat,k=-1)
-    D = nx.from_scipy_sparse_matrix(ltri)
-    x = nx.core_number(D)
-    fname = '/home/galm/projects/sustainability/networks/1366_5_k_cores.txt'
-    with open(fname,"w") as fh:
-        for i in range(D.number_of_nodes()):
-            fh.write("{} {}\n".format(str(i),str(x[i])))
+    G = nx.from_scipy_sparse_matrix(ltri)
 
+    deg = nx.degree_centrality(G)
+    ecent = nx.eigenvector_centrality(G)
+
+    x = nx.core_number(G)
+
+
+
+    for i in range(G.number_of_nodes()):
+        d = Doc.objects.get(pk=rev_m_dict[i])
+        d.k = x[i]
+        d.degree = deg[i]
+        d.eigen_cent = ecent[i]
+        d.save()
 
     del x
-    del D
+    del G
+    del deg
+    del ecent
     gc.collect()
 
     bcmatrix = find(tril(Cmat,k=-1))
@@ -156,7 +170,7 @@ def main():
     bcrange = list(range(N))
     print(N)
 
-    chunk_size = 10000
+    chunk_size = 5000
 
     BibCouple.objects.all().delete()
 

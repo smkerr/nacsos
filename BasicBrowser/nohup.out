@@ -4901,3 +4901,40 @@ Traceback (most recent call last):
   File "/usr/local/lib/python3.4/dist-packages/multiprocess/connection.py", line 383, in _recv
     chunk = read(handle, remaining)
 KeyboardInterrupt
+ROWIDS
+colids
+data
+matrix
+transpose
+multiply
+Traceback (most recent call last):
+  File "bibliographic_coupling_matrix.py", line 201, in <module>
+    main()
+  File "bibliographic_coupling_matrix.py", line 88, in main
+    for d in modcs.iterator():
+NameError: name 'modcs' is not defined
+ROWIDS
+colids
+data
+matrix
+transpose
+multiply
+Traceback (most recent call last):
+  File "bibliographic_coupling_matrix.py", line 201, in <module>
+    main()
+  File "bibliographic_coupling_matrix.py", line 146, in main
+    deg = nx.degree_centrality(G)
+NameError: name 'G' is not defined
+ROWIDS
+colids
+data
+matrix
+transpose
+multiply
+29928222
+0
+5000
+10000
+15000
+20000
+25000

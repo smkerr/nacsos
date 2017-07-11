@@ -1515,6 +1515,8 @@ def doclist(request,qid,q2id='0',sbsid='0'):
     relevance_fields.append({"path": "relevance_time", "name": "Time of Rating"})
     relevance_fields.append({"path": "relevance_agreement", "name": "Agreement"})
     relevance_fields.append({"path": "k", "name": "K Core"})
+    relevance_fields.append({"path": "degree", "name": "Degree"})
+    relevance_fields.append({"path": "eigen_cent", "name": "Eigenvector centrality"})
 
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
@@ -2020,6 +2022,7 @@ def sortdocs(request):
             relevance_agreement = F('relevance_max') - F('relevance_min')
         )
 
+
     # Annotate with technology names
     if "tech_technology" in fields:
         filt_docs = filt_docs.annotate(
@@ -2155,6 +2158,9 @@ def sortdocs(request):
                 tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
         except:
             break
+
+    if "k" in fields:
+        filt_docs = filt_docs.filter(citation_objects=True)
 
     print(len(filt_docs))
 
