@@ -63,16 +63,25 @@ def print_top_topics(t):
 
 def main():
     qid = sys.argv[1]
-    q = Query.objects.get(pk=qid)
 
-    cdos = CDO.objects.filter(
-        doc__query=q
-    )
+    time.sleep(14400)
+
+    q = Query.objects.get(pk=qid)
 
     mdocs = Doc.objects.filter(
         query=q,
         wosarticle__cr__isnull=False
     )
+
+    cdos = CDO.objects.filter(
+        doc__query=q
+    )
+
+    # cdos = CDO.objects.filter(
+    #     doc__in=mdocs.values_list('UT',flat=True)
+    # )
+
+
     m = mdocs.count()
     m_dict = dict(zip(
         list(mdocs.values_list('UT',flat=True)),
@@ -85,10 +94,6 @@ def main():
         list(mdocs.values_list('UT',flat=True))
     ))
 
-    for d in mdocs.iterator():
-        d.k=0
-        d.save()
-
     del mdocs
 
 
@@ -96,10 +101,6 @@ def main():
     n_dict = dict(zip(
         list(Citation.objects.all().values_list('id',flat=True)),
         list(range(n))
-    ))
-    rev_n_dict = dict(zip(
-        list(range(n)),
-        list(Citation.objects.all().values_list('id',flat=True))
     ))
 
     print("ROWIDS")
@@ -122,6 +123,7 @@ def main():
     del col_ids
     del cols
     del data
+    del n_dict
 
     gc.collect()
 
@@ -141,20 +143,28 @@ def main():
     gc.collect()
 
     ltri = tril(Cmat,k=-1)
+
+    
     G = nx.from_scipy_sparse_matrix(ltri)
+
+    cnode = m_dict[Doc.objects.get(UT='WOS:000297683800015').UT]
+
+    paths = nx.single_source_shortest_path(G,cnode)
 
     deg = nx.degree_centrality(G)
     ecent = nx.eigenvector_centrality(G)
 
     x = nx.core_number(G)
 
-
-
     for i in range(G.number_of_nodes()):
         d = Doc.objects.get(pk=rev_m_dict[i])
         d.k = x[i]
         d.degree = deg[i]
         d.eigen_cent = ecent[i]
+        try:
+            d.distance = len(paths[i])
+        except:
+            pass
         d.save()
 
     del x
