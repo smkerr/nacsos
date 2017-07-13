@@ -43,6 +43,7 @@ urlpatterns = [
     url(r'^technology/(?P<tid>[0-9]+)$',views.technology, name='technology'),
     url(r'^download_tdocs/(?P<tid>[0-9]+)$',views.download_tdocs, name='download_tdocs'),
     url(r'^authorlist/(?P<tid>[0-9]+)$',views.prepare_authorlist, name='authorlist'),
+    url(r'^sendauthorlist/(?P<tid>[0-9]+)$',views.send_authorlist, name='send_authorlist'),
 
     url(r'^add_tech',views.add_tech, name='add_tech'),
     url(r'^update_tech',views.update_tech, name='update_tech'),
@@ -73,7 +74,9 @@ urlpatterns = [
     url(r'^manual_add/(?P<qid>[0-9]+)$', views.add_doc_form, name='add_doc_form'),
     url(r'^manual_add/$', views.add_doc_form, name='add_doc_form'),
     url(r'^external_add/(?P<authtoken>[0-9a-f-]+)$', views.add_doc_form, name='add_doc_form'),
+    url(r'^external_add/(?P<authtoken>[0-9a-f-]+)/(?P<r>[0-9]+)$', views.add_doc_form, name='add_doc_form'),
     url(r'^do_add_doc/$', views.do_add_doc, name='do_add_doc'),
+    url(r'^do_add_doc/(?P<authtoken>[0-9a-f-]+)$', views.do_add_doc, name='do_add_doc'),
     url(r'^editdoc$', views.editdoc, name='editdoc'),
     url(r'^document/(?P<doc_id>.+)/$', views.document, name='document'),
     url(r'^remove_tech/(?P<doc_id>.+)/(?P<tid>[0-9]+)/(?P<thing>.+)$', views.remove_tech, name='remove_tech'),

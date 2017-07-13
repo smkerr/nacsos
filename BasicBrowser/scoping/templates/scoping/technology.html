@@ -28,6 +28,10 @@
   <a href="{% url 'scoping:authorlist' tech.pk %}">Generate a list of author emails
     for this technology</a>
 
+    Happy with the author email list?
+    <a href="{% url 'scoping:send_authorlist' tech.pk %}">
+        Send</a> emails to everyone on that list!
+
 <table><tr>
 <td width="100%">
     <div id="pyGraph" height="600"></div><br>

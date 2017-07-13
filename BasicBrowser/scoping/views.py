@@ -189,8 +189,8 @@ def snowball(request):
             sbs.ndrev = Doc.objects.filter(docownership__query__snowball=sbs,docownership__relevant=0).distinct().count()
         except:
             pass
+            # Get technologies
 
-    # Get technologies
     technologies = Technology.objects.all()
 
     context = {
@@ -1517,6 +1517,8 @@ def doclist(request,qid,q2id='0',sbsid='0'):
     relevance_fields.append({"path": "k", "name": "K Core"})
     relevance_fields.append({"path": "degree", "name": "Degree"})
     relevance_fields.append({"path": "eigen_cent", "name": "Eigenvector centrality"})
+    relevance_fields.append({"path": "distance", "name": "Distance to Kates"})
+
 
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
@@ -1703,7 +1705,7 @@ def docrellist(request,sbsid,qid=0,q2id=0,q3id=0):
 
 ###########################################################
 ## Manual docadd form
-def add_doc_form(request,qid=0,authtoken=0):
+def add_doc_form(request,qid=0,authtoken=0,r=0):
     try:
         query = Query.objects.get(pk=qid)
     except:
@@ -1743,75 +1745,99 @@ def add_doc_form(request,qid=0,authtoken=0):
         'basic_fields': basic_fields,
         'author_fields': author_fields,
         'techs': Technology.objects.all(),
-        'em': em
+        'em': em,
+        'r': r
     }
     return HttpResponse(template.render(context, request))
 
 ## Manual docadd form HANDLER
-def do_add_doc(request):
+def do_add_doc(request, authtoken=0):
 
     d = request.POST
 
     t = Technology.objects.get(pk=d['technology'])
 
-    # create new query
-    q = Query(
-        title="Manual add "+d['title'],
-        type="default",
-        text="Manually add "+d['title']+" at "+str(timezone.now()),
-        creator = request.user,
-        date = timezone.now(),
-        database = "manual",
-        r_count = 1,
-        technology=t
-    )
-    q.save()
+    if authtoken!=0:
+        et = EmailTokens.objects.get(pk=authtoken)
+        au = et.AU
 
-    Doc.objects.get(UT=d['UT']).delete()
+        q, created = Query.objects.get_or_create(
+            title="uploaded_by_{}".format(au),
+            type="default",
+            text="uploaded_by_{}".format(authtoken),
+        )
+        if created:
+            q.date = timezone.now(),
+            q.database = "manual",
+            q.r_count = 1
+            q.technology = t
+        else:
+            q.r_count +=1
+
+        q.save()
+
+    else:
+        # create new query
+        q = Query(
+            title="Manual add "+d['title'],
+            type="default",
+            text="Manually add "+d['title']+" at "+str(timezone.now()),
+            creator = request.user,
+            date = timezone.now(),
+            database = "manual",
+            r_count = 1,
+            technology=t
+        )
+        q.save()
 
     # create new doc
-    doc = Doc(UT=d['UT'])
+    doc, created = Doc.objects.get_or_create(UT=d['UT'])
 
-    doc.UT=d['UT']
-    doc.title=d['title']
-    doc.PY=d['PY']
-    doc.content=d['content']
+    if created:
 
-    doc.save()
+        doc.title=d['title']
+        doc.PY=d['PY']
+        doc.content=d['content']
+
+        doc.save()
+
+        article = WoSArticle(
+            doc=doc
+        )
+
+        article.ti=d['title']
+        article.py=d['PY']
+        article.ab=d['content']
+
+        pos = 0
+        for f in d:
+            # create new docauthors
+            if "author__" in f:
+                if len(d[f].strip()) > 0 :
+                    pos+=1
+                    if DocAuthInst.objects.filter(doc=doc,position=pos).count() == 1:
+                        dai = DocAuthInst.objects.get(doc=doc,position=pos)
+                    else:
+                        dai = DocAuthInst(doc=doc)
+                    dai.AU = d[f].strip()
+                    dai.position = pos
+                    dai.save()
+            # populate new wosarticle
+            if "wosarticle__" in f:
+                if len(d[f].strip()) > 0 :
+                    fn = f.split('__')[1]
+                    setattr(article,fn,d[f])
+
+        article.save()
 
     # Add doc to query
     doc.query.add(q)
+    doc.technology.add(t)
 
-    article = WoSArticle(
-        doc=doc
-    )
-
-    article.ti=d['title']
-    article.py=d['PY']
-    article.ab=d['content']
-
-    pos = 0
-    for f in d:
-        # create new docauthors
-        if "author__" in f:
-            if len(d[f].strip()) > 0 :
-                pos+=1
-                if DocAuthInst.objects.filter(doc=doc,position=pos).count() == 1:
-                    dai = DocAuthInst.objects.get(doc=doc,position=pos)
-                else:
-                    dai = DocAuthInst(doc=doc)
-                dai.AU = d[f].strip()
-                dai.position = pos
-                dai.save()
-        # populate new wosarticle
-        if "wosarticle__" in f:
-            if len(d[f].strip()) > 0 :
-                fn = f.split('__')[1]
-                setattr(article,fn,d[f])
-
-    article.save()
-
-    return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': q.id}))
+    if authtoken!=0:
+        return HttpResponseRedirect(reverse('scoping:add_doc_form', kwargs={'authtoken': authtoken,'r':q.r_count}))
+    else:
+        return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': q.id}))
 
 
 from django.db.models.aggregates import Aggregate
@@ -2401,9 +2427,11 @@ def prepare_authorlist(request,tid):
             evalue = d.wosarticle.em.split(';')[0]
             if evalue not in em_values:
                 au = d.docauthinst_set.order_by('position').first()
-                audocs = docs.filter(docauthinst__AU=au)
+                audocs = docs.filter(docauthinst__AU=au,query__technology__isnull=False).distinct('UT')
                 docset = "; ".join([x.citation() for x in audocs])
                 et, created = EmailTokens.objects.get_or_create(email=evalue,AU=au)
+                et.docset= docset
+                et.save()
                 link = 'https://apsis.mcc-berlin.net/scoping/external_add/{}'.format(et.id)
                 ems.append({
                     "name": au.AU,
@@ -2426,6 +2454,95 @@ def prepare_authorlist(request,tid):
         writer.writerow([em["name"],em["email"],em["docset"],em["link"]])
 
     return response
+
+from django.core.mail import send_mail
+def send_authorlist(request,tid):
+
+    message = '''Dear {},
+
+A team of researchers at the Mercator Research Institute on
+Global Commons and Climate Change, the University of Wisconsin,
+the University of Hamburg and the University of Aberdeen are
+currently performing a systematic review of the literature on
+negative emissions technologies, with a particular focus on
+costs, potentials, and side-effects. This project is intended
+to inform upcoming climate change assessments such as the
+UNEP Gap report and the Special Report on the 1.5°C limit
+by the Intergovernmental Panel on Climate Change.
+
+It is our ambition to cover the literature as comprehensively as
+possible. So far, we have systematically searched the Web of
+Science and Scopus, but we are aware that this will not provide
+an exhaustive list of relevant documents and therefore we are
+contacting relevant experts in the field directly.
+
+We have identified the following articles authored by yourself below.
+If you have additional relevant articles that we should cover in
+our review, we would very much appreciate it, if you could upload
+them to our system:
+
+{}.
+
+Or simply reply to this email and send
+the relevant PDFs.
+
+Thanks so much for all your considerations and efforts.
+
+Warm Regards,
+
+Jan Minx
+
+{}
+    '''
+
+    tech, docs, tobj = get_tech_docs(tid)
+    docs = docs.filter(
+        docownership__relevant=1,
+        docownership__query__technology__in=tech
+    )
+    docids = docs.values_list('UT',flat=True)
+
+    emails = Doc.objects.filter(UT__in=docids,wosarticle__em__isnull=False).annotate(
+        em_lower=Func(F('wosarticle__em'), function='lower')
+    ).distinct('em_lower')
+
+    ems = []
+    em_values = []
+    for d in emails.iterator():
+        #d = Doc.objects.filter(wosarticle__em__icontains=em['em_lower']).first()
+        if d.wosarticle.em is not None:
+            evalue = d.wosarticle.em.split(';')[0]
+            if evalue not in em_values:
+                au = d.docauthinst_set.order_by('position').first()
+                audocs = docs.filter(
+                    docauthinst__AU=au,query__technology__isnull=False
+                ).distinct('UT')
+                docset = "\n".join([x.citation() for x in audocs])
+                et, created = EmailTokens.objects.get_or_create(email=evalue,AU=au)
+                link = 'https://apsis.mcc-berlin.net/scoping/external_add/{}'.format(et.id)
+                ems.append({
+                    "name": au.AU,
+                    "email": evalue,
+                    "docset": docset,
+                    "link": link
+                })
+                em_values.append(evalue)
+                if not et.sent:
+                    s = send_mail(
+                        'Systematic review of negative emissions technologies',
+                        message.format(au,link,docset),
+                        'nets@mcc-berlin.net',
+                        ['callaghan@mcc-berlin.net'],
+                        fail_silently=False,
+                    )
+                    break
+                    if s == 1:
+                        et.sent = True
+                        et.save()
+
+    return HttpResponseRedirect(reverse('scoping:technology', kwargs={'tid': tid}))
+
+
 
 def document(request,doc_id):
     template = loader.get_template('scoping/document.html')

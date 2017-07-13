@@ -145,6 +145,7 @@ class Doc(models.Model):
     degree = models.FloatField(null=True,db_index=True)
     eigen_cent = models.FloatField(null=True,db_index=True)
     citation_objects = models.BooleanField(default=False,db_index=True)
+    distance = models.IntegerField(null=True,db_index=True)
 
     def __str__(self):
       return self.UT
@@ -234,7 +235,9 @@ class WC(models.Model):
 class EmailTokens(models.Model):
     email = models.TextField()
     AU = models.TextField()
+    docset = models.TextField(null=True)
     id = models.UUIDField(primary_key=True,default=uuid.uuid4)
+    sent = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ["email","AU"]

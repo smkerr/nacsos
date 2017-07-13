@@ -10,7 +10,7 @@
 <p>Thank you for contributing to our project.
 <p>If you have any questions, please send an email to nets [at] mcc-berlin.net
 </div>
-<form action="{% url 'scoping:do_add_doc' %}" method="post">
+<form action="{% url 'scoping:do_add_doc' em.id %}" method="post">
       {% csrf_token %}
       <input type="hidden" name="qid" value="{{query.id}}"></input>
 <table>
@@ -82,6 +82,11 @@
 {% block script %}
 
 <script type="text/javascript" language="javascript">
+
+if ({{r}}>0) {
+    alert("Thank you for adding your document! If you have more to add, please keep adding in the same way")
+}
+
 
 $("#navigation").addClass("hidden")
 
