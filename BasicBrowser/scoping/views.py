@@ -1772,7 +1772,10 @@ def do_add_doc(request, authtoken=0):
             q.r_count = 1
             q.technology = t
         else:
-            q.r_count +=1
+            try:
+                q.r_count +=1
+            except:
+                q.r_count = 1
 
         q.save()
 
