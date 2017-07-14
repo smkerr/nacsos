@@ -2426,7 +2426,7 @@ def prepare_authorlist(request,tid):
         if d.wosarticle.em is not None:
             evalue = d.wosarticle.em.split(';')[0]
             if evalue not in em_values:
-                au = d.docauthinst_set.order_by('position').first()
+                au = d.docauthinst_set.order_by('position').first().AU
                 audocs = docs.filter(docauthinst__AU=au,query__technology__isnull=False).distinct('UT')
                 docset = "; ".join([x.citation() for x in audocs])
                 et, created = EmailTokens.objects.get_or_create(email=evalue,AU=au)
@@ -2434,7 +2434,7 @@ def prepare_authorlist(request,tid):
                 et.save()
                 link = 'https://apsis.mcc-berlin.net/scoping/external_add/{}'.format(et.id)
                 ems.append({
-                    "name": au.AU,
+                    "name": au,
                     "email": evalue,
                     "docset": docset,
                     "link": link
@@ -2455,26 +2455,25 @@ def prepare_authorlist(request,tid):
 
     return response
 
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
 def send_authorlist(request,tid):
 
     message = '''Dear {},
 
-A team of researchers at the Mercator Research Institute on
-Global Commons and Climate Change, the University of Wisconsin,
-the University of Hamburg and the University of Aberdeen are
-currently performing a systematic review of the literature on
-negative emissions technologies, with a particular focus on
-costs, potentials, and side-effects. This project is intended
-to inform upcoming climate change assessments such as the
-UNEP Gap report and the Special Report on the 1.5°C limit
-by the Intergovernmental Panel on Climate Change.
+a team of researchers at the Mercator Research Institute on Global Commons
+and Climate Change, the University of Wisconsin, the University of Hamburg
+and the University of Aberdeen are currently performing a systematic review
+of the literature on negative emissions technologies, with a particular focus
+on costs, potentials, and side-effects. This project is intended to inform
+upcoming climate change assessments such as the UNEP Gap report and the
+Special Report on the 1.5°C limit by the Intergovernmental Panel on
+Climate Change.
 
 It is our ambition to cover the literature as comprehensively as
 possible. So far, we have systematically searched the Web of
 Science and Scopus, but we are aware that this will not provide
 an exhaustive list of relevant documents and therefore we are
-contacting relevant experts in the field directly.
+contacting experts in the field directly.
 
 We have identified the following articles authored by yourself below.
 If you have additional relevant articles that we should cover in
@@ -2483,14 +2482,26 @@ them to our system:
 
 {}.
 
-Or simply reply to this email and send
-the relevant PDFs.
+Or simply reply to this email and send the relevant PDFs. This
+will make sure that your work on the topic is fully considered.
 
 Thanks so much for all your considerations and efforts.
 
 Warm Regards,
 
 Jan Minx
+
+--
+Prof. Jan Christoph Minx, PhD
+
+Mercator Research Institute on Global Commons and Climate Change (MCC)
+Head of Research Group on Applied Sustainability Sciences (APSIS)
+
+Professor for Science-Policy and Sustainable Development, Hertie School of Governance
+
+Torgauer Str. 12-15
+10829 Berlin
+Germany
 
 {}
     '''
@@ -2513,7 +2524,7 @@ Jan Minx
         if d.wosarticle.em is not None:
             evalue = d.wosarticle.em.split(';')[0]
             if evalue not in em_values:
-                au = d.docauthinst_set.order_by('position').first()
+                au = d.docauthinst_set.order_by('position').first().AU
                 audocs = docs.filter(
                     docauthinst__AU=au,query__technology__isnull=False
                 ).distinct('UT')
@@ -2521,24 +2532,26 @@ Jan Minx
                 et, created = EmailTokens.objects.get_or_create(email=evalue,AU=au)
                 link = 'https://apsis.mcc-berlin.net/scoping/external_add/{}'.format(et.id)
                 ems.append({
-                    "name": au.AU,
+                    "name": au,
                     "email": evalue,
                     "docset": docset,
                     "link": link
                 })
                 em_values.append(evalue)
                 if not et.sent:
-                    s = send_mail(
-                        'Systematic review of negative emissions technologies',
-                        message.format(au,link,docset),
-                        'nets@mcc-berlin.net',
-                        ['callaghan@mcc-berlin.net'],
-                        fail_silently=False,
+                    print(evalue)
+                    emessage = EmailMessage(
+                        subject = 'Systematic review of negative emissions technologies',
+                        body = message.format(au,link,docset),
+                        from_email = 'nets@mcc-berlin.net',
+                        to = [evalue],
+                        cc = ['nets@mcc-berlin.net'],
                     )
-                    break
+                    s = emessage.send()
                     if s == 1:
                         et.sent = True
                         et.save()
+                        time.sleep(5)
 
     return HttpResponseRedirect(reverse('scoping:technology', kwargs={'tid': tid}))
 
