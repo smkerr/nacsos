@@ -174,6 +174,7 @@ class RunStats(models.Model):
     max_features = models.IntegerField(null=True)
     ngram = models.IntegerField(null=True)
     term_count = models.IntegerField(null=True)
+    dthreshold = models.FloatField(null=True)
 
 class Settings(models.Model):
     run_id = models.IntegerField()

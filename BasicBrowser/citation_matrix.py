@@ -29,6 +29,7 @@ def doc_cites(doc):
     citations = doc.wosarticle.cr
     cdos = []
     for c in citations:
+
         doim = re.findall("DOI ([0-9]+.*)",c)
         if len(doim) > 0:
             doi = doim[0].replace(" ","")
@@ -62,24 +63,26 @@ def main():
 
     ndocs = docs.count()
 
+    print(ndocs)
+
     # Chunk size, so as to prevent overuse of memory
-    chunk_size = 1000
+    chunk_size = 1
 
     for i in range(ndocs//chunk_size+1):
         cdos = []
         f = i*chunk_size
         print(f)
-        l = (i+1)*chunk_size-1
+        l = (i+1)*chunk_size
         if l > ndocs:
             l = ndocs-1
         chunk_docs = docs[f:l]
-        pool = Pool(processes=5)
+        pool = Pool(processes=1)
         cdos.append(pool.map(doc_cites,chunk_docs))
         pool.terminate()
         gc.collect()
 
-        django.db.connections.close_all()
 
+        django.db.connections.close_all()
         cdos = flatten(cdos)
 
         CDO.objects.bulk_create(cdos)

@@ -64,7 +64,12 @@ def print_top_topics(t):
 def main():
     qid = sys.argv[1]
 
-    time.sleep(14400)
+    for cdo in CDO.objects.values('doc','citation').distinct()[:5]:
+        print(cdo)
+        #CDO.objects.filter(pk__in=CDO.objects.filter(doc=).values_list('id', flat=True)[1:]).delete()
+
+    sys.exit()
+    #time.sleep(14400)
 
     q = Query.objects.get(pk=qid)
 
@@ -144,7 +149,7 @@ def main():
 
     ltri = tril(Cmat,k=-1)
 
-    
+
     G = nx.from_scipy_sparse_matrix(ltri)
 
     cnode = m_dict[Doc.objects.get(UT='WOS:000297683800015').UT]

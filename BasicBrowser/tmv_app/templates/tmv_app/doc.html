@@ -50,6 +50,19 @@
             <span class="{{ word.topic }}">{{ word.title }}</span>
           {% endfor %}
             </p>
+            <p>Adjust topic threshold:
+            <input type="range"
+                id="dt_thresh"
+                min=0
+                max=0.005
+                step=0.0001
+                value="{{dt_threshold}}"
+                oninput="inputUpdate(value)"
+            />
+            <span><output
+                id="out_dt_thresh"
+                >{{dt_threshold}}</output>
+
 <!--		            <p><a href="http://en.wikipedia.org/wiki/{{ doc.title }}">Full article&nbsp;&#x25B8;</a></p>-->
             </td></tr>
             </table>
@@ -64,7 +77,24 @@
 
 {% endblock %}
 {% block script %}
+
+
+
+
 <script type="text/javascript">
+
+function inputUpdate(x) {
+    $('#out_dt_thresh').val(x)
+    $.ajax({
+        url: '{% url "tmv_app:adjust_threshold" run_id %}',
+        data: {
+            'value': x,
+        },
+        success: function(data) {
+            location.reload()
+        },
+    })
+}
 
 var array = {{ pie_array|safe }};
 var elements = generate_pie_elements(array);
