@@ -581,6 +581,11 @@ def doc_detail(request, doc_id, run_id):
     pie_array = []
     dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
     dt_thresh_scaled = Settings.objects.get(id=1).doc_topic_scaled_score
+    if stat.dthreshold is not None:
+        dt_threshold = stat.dthreshold
+        dt_thresh_scaled = stat.dthreshold
+        print(dt_threshold)
+
     if stat.method=="BD":
         dt_threshold=dt_threshold*100
     topicwords = {}
@@ -625,11 +630,21 @@ def doc_detail(request, doc_id, run_id):
         'pie_array': pie_array,
         'doc_authors': doc_authors,
         'words': words,
-        'run_id': run_id
+        'run_id': run_id,
+        'dt_threshold': dt_threshold
     })
 
 
     return HttpResponse(template.render(context))
+
+def adjust_threshold(request,run_id):
+    value = request.GET.get('value',None)
+    print(value)
+    stat = RunStats.objects.get(run_id=run_id)
+    stat.dthreshold = value
+    stat.save()
+    response = 0
+    return HttpResponse(response)
 
 def print_table(request,run_id):
     response = HttpResponse(content_type='text/csv')

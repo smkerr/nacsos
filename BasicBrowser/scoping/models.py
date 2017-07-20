@@ -61,6 +61,7 @@ class Query(models.Model):
     def __str__(self):
       return self.title
 
+
 class Technology(models.Model):
     name = models.TextField(null = True, verbose_name="Technology Name")
     description = models.TextField(null=True, verbose_name="Technology Description")
@@ -165,12 +166,29 @@ class Doc(models.Model):
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
 
+class Bigram(models.Model):
+    stem1 = models.TextField(db_index=True)
+    word1 = models.TextField()
+    word2 = models.TextField()
+    stem2 = models.TextField()
+    pos = models.IntegerField(db_index=True)
+
+class DocBigram(models.Model):
+    doc = models.ForeignKey(Doc)
+    bigram = models.ForeignKey(Bigram)
+    n = models.IntegerField(null=True)
+
+class Network(models.Model):
+    title = models.TextField(unique=True)
+    type = models.TextField()
+    date = models.DateTimeField(auto_now_add=True)
+    query = models.ForeignKey(Query)
+
 class NetworkProperties(models.Model):
     doc = models.ForeignKey(Doc)
-    query = models.ForeignKey(Query)
-    k = models.IntegerField(null=True,db_index=True)
-    degree = models.FloatField(null=True,db_index=True)
-    eigen_cent = models.FloatField(null=True,db_index=True)
+    network = models.ForeignKey(Network)
+    value = models.IntegerField(null=True)
+    fvalue = models.FloatField(null=True)
 
 class Citation(models.Model):
     au = models.TextField(null=True)
@@ -181,6 +199,13 @@ class Citation(models.Model):
     doi = models.TextField(null=True,unique=True,db_index=True)
     ftext = models.TextField(db_index=True)
     alt_text = ArrayField(models.TextField(),null=True)
+    ## Link the citation to the document it refers to if possible
+    referent = models.ForeignKey(Doc, null=True)
+    docmatches = models.IntegerField(null=True)
+
+class JournalAbbrev(models.Model):
+    fulltext = models.TextField(unique=True)
+    abbrev = models.TextField(unique=True,null=True)
 
 class CDO(models.Model):
     doc = models.ForeignKey(Doc)

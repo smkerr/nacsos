@@ -5372,3 +5372,177 @@ Traceback (most recent call last):
   File "/usr/local/lib/python3.4/dist-packages/multiprocess/popen_fork.py", line 70, in _launch
     self.pid = os.fork()
 OSError: [Errno 12] Cannot allocate memory
+<QuerySet [<Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, '...(remaining elements truncated)...']>
+Traceback (most recent call last):
+  File "manage.py", line 22, in <module>
+    execute_from_command_line(sys.argv)
+  File "/usr/local/lib/python3.4/dist-packages/django/core/management/__init__.py", line 367, in execute_from_command_line
+    utility.execute()
+  File "/usr/local/lib/python3.4/dist-packages/django/core/management/__init__.py", line 359, in execute
+    self.fetch_command(subcommand).run_from_argv(self.argv)
+  File "/usr/local/lib/python3.4/dist-packages/django/core/management/base.py", line 294, in run_from_argv
+    self.execute(*args, **cmd_options)
+  File "/usr/local/lib/python3.4/dist-packages/django/core/management/base.py", line 345, in execute
+    output = self.handle(*args, **options)
+  File "/home/galm/software/tmv/BasicBrowser/scoping/management/commands/match_citations.py", line 38, in handle
+    dc = docmatches.count()
+NameError: name 'docmatches' is not defined
+<QuerySet [<Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, <Citation: Citation object>, '...(remaining elements truncated)...']>
+0
+Process ForkPoolWorker-9:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 254, in _bootstrap
+    self.run()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 93, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 108, in worker
+    task = get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/queues.py", line 354, in get
+    with self._rlock:
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/synchronize.py", line 96, in __enter__
+    return self._semlock.__enter__()
+KeyboardInterrupt
+Process ForkPoolWorker-10:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 254, in _bootstrap
+    self.run()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 93, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 108, in worker
+    task = get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/queues.py", line 354, in get
+    with self._rlock:
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/synchronize.py", line 96, in __enter__
+    return self._semlock.__enter__()
+KeyboardInterrupt
+Process ForkPoolWorker-8:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 254, in _bootstrap
+    self.run()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/process.py", line 93, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 108, in worker
+    task = get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/queues.py", line 355, in get
+    res = self._reader.recv_bytes()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/connection.py", line 216, in recv_bytes
+    buf = self._recv_bytes(maxlength)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/connection.py", line 416, in _recv_bytes
+    buf = self._recv(4)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/connection.py", line 383, in _recv
+    chunk = read(handle, remaining)
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "manage.py", line 22, in <module>
+    execute_from_command_line(sys.argv)
+  File "/usr/local/lib/python3.4/dist-packages/django/core/management/__init__.py", line 367, in execute_from_command_line
+    utility.execute()
+  File "/usr/local/lib/python3.4/dist-packages/django/core/management/__init__.py", line 359, in execute
+    self.fetch_command(subcommand).run_from_argv(self.argv)
+  File "/usr/local/lib/python3.4/dist-packages/django/core/management/base.py", line 294, in run_from_argv
+    self.execute(*args, **cmd_options)
+  File "/usr/local/lib/python3.4/dist-packages/django/core/management/base.py", line 345, in execute
+    output = self.handle(*args, **options)
+  File "/home/galm/software/tmv/BasicBrowser/scoping/management/commands/match_citations.py", line 74, in handle
+    pool.map(citation_chunk,chunks)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 260, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 593, in get
+    self.wait(timeout)
+  File "/usr/local/lib/python3.4/dist-packages/multiprocess/pool.py", line 590, in wait
+    self._event.wait(timeout)
+  File "/usr/lib/python3.4/threading.py", line 553, in wait
+    signaled = self._cond.wait(timeout)
+  File "/usr/lib/python3.4/threading.py", line 290, in wait
+    waiter.acquire()
+KeyboardInterrupt
+0
+10000
+20000
+30000
+40000
+50000
+60000
+70000
+0
+docs per second = 590.41
+0
+docs per second = 551.61
+100000
+docs per second = 641.55
+200000
+docs per second = 685.76
+300000
+docs per second = 612.6
+400000
+docs per second = 606.72
+500000
+docs per second = 639.35
+600000
+docs per second = 617.64
+700000
+docs per second = 647.99
+800000
+docs per second = 643.6
+900000
+docs per second = 414.69
+1000000
+docs per second = 430.8
+1100000
+docs per second = 404.6
+1200000
+docs per second = 339.42
+1300000
+docs per second = 226.9
+1400000
+docs per second = 362.85
+1500000
+docs per second = 302.52
+1600000
+docs per second = 273.83
+1700000
+docs per second = 271.95
+1800000
+docs per second = 549.74
+1900000
+docs per second = 624.56
+2000000
+docs per second = 16932.17
+2100000
+docs per second = 19618.3
+2200000
+docs per second = 19226.15
+2300000
+docs per second = 19583.34
+2400000
+docs per second = 18799.43
+2500000
+docs per second = 19124.06
+2600000
+docs per second = 15348.2
+2700000
+docs per second = 19168.31
+2800000
+docs per second = 19228.49
+2900000
+docs per second = 19177.33
+3000000
+docs per second = 19167.92
+3100000
+docs per second = 19233.28
+3200000
+docs per second = 18067.08
+3300000
+docs per second = 18846.1
+3400000
+docs per second = 16609.4
+3500000
+docs per second = 19221.14
+3600000
+docs per second = 18854.83
+3700000
+docs per second = 19595.53
+3800000
+docs per second = 19227.56
+3900000
+docs per second = 38592.41
