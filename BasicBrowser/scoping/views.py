@@ -6,7 +6,7 @@ from django.db.models import Count, Func, F, Sum, Value as V
 from django.db.models.functions import Concat
 from django.core import serializers
 from django.core.serializers import serialize
-
+import short_url
 import datetime
 
 from cities.models import *
@@ -1795,7 +1795,9 @@ def do_add_doc(request, authtoken=0):
         q.save()
 
     # create new doc
-    doc, created = Doc.objects.get_or_create(UT=d['UT'])
+    url, created = URLs.objects.get_or_create(url=d['UT'].strip())
+    surl = short_url.encode_url(url.id)
+    doc, created = Doc.objects.get_or_create(UT=surl)
 
     if created:
 
