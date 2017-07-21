@@ -147,6 +147,7 @@ class Doc(models.Model):
     eigen_cent = models.FloatField(null=True,db_index=True)
     citation_objects = models.BooleanField(default=False,db_index=True)
     distance = models.IntegerField(null=True,db_index=True)
+    duplicated = models.BooleanField(default=False)
 
     def __str__(self):
       return self.UT
@@ -268,6 +269,8 @@ class EmailTokens(models.Model):
         unique_together = ["email","AU"]
         index_together = ["email","AU"]
 
+class URLs(models.Model):
+    url = models.TextField(unique=True,db_index=True)
 
 class DocRel(models.Model):
     seed = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="parent")
