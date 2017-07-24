@@ -16,52 +16,51 @@ class Command(BaseCommand):
 
         st = SnowballStemmer("english")
         stoplist = set(nltk.corpus.stopwords.words("english"))
+        Bigram.objects.all().delete()
 
-        docs = Doc.objects.filter(query=q,content__iregex='\w')
+        docs = Doc.objects.filter(query=q)
+        docs = docs.filter(docbigram__isnull=True)
         n = docs.count()
+
+        p = '(\w*?)(\W*?)(\w*)(\W*)([sS]ustainab[a-zA-Z]*)(\W*)(\w*)(\W*)(\w*)'
+
         i = 0
         for d in docs.iterator():
             if i % 10000 == 0:
                 print("processing doc {}, of {}...".format(i,n))
             i+=1
-            dmatches = re.findall(
-                '(\w*)(\W*)([sS]ustainab[a-zA-Z]*)(\W*)(\w*)',
-                d.content
-            )
+            if d.content is not None:
+                dmatches = re.findall(p, d.content)
+            else:
+                dmatches = []
+            tmatches = re.findall(p,d.title)
+
+            dmatches = dmatches + tmatches
+
             for m in dmatches:
-                if not re.match('\S',m[1]) and m[0] not in stoplist and len(m[0]) > 0:
+                for pos in [-1,1]:
+                    s = m[4+pos]
+                    w2 = m[4+pos*2]
+                    if not re.match('\S',s) and len(w2)>0:
+                        if w2 in stoplist:
+                            s = m[4+pos*3]
+                            w2 = m[4+pos*4]
 
-                    bg, created = Bigram.objects.get_or_create(
-                        word1=m[2],
-                        word2=m[0],
-                        pos=-1
-                    )
-                    if created:
-                        s1 = st.stem(m[2])
-                        s2 = st.stem(m[0])
-                        bg.stem1 = s1
-                        bg.stem2 = s2
-                        bg.save()
-                    dbg, created = DocBigram.objects.get_or_create(
-                        doc = d,
-                        bigram = bg
-                    )
-                    dbg.save()
+                        if not re.match('\S',s) and w2 not in stoplist and len(w2) > 0:
 
-                if not re.match('\S',m[3]) and m[4] not in stoplist and len(m[4]) > 0:
-                    bg, created = Bigram.objects.get_or_create(
-                        word1=m[2],
-                        word2=m[4],
-                        pos=1
-                    )
-                    if created:
-                        s1 = st.stem(m[2])
-                        s2 = st.stem(m[4])
-                        bg.stem1 = s1
-                        bg.stem2 = s2
-                        bg.save()
-                    dbg, created = DocBigram.objects.get_or_create(
-                        doc = d,
-                        bigram = bg
-                    )
-                    dbg.save()
+                            bg, created = Bigram.objects.get_or_create(
+                                word1=m[4],
+                                word2=w2,
+                                pos=pos
+                            )
+                            if created:
+                                s1 = st.stem(m[4])
+                                s2 = st.stem(w2)
+                                bg.stem1 = s1
+                                bg.stem2 = s2
+                                bg.save()
+                            dbg, created = DocBigram.objects.get_or_create(
+                                doc = d,
+                                bigram = bg
+                            )
+                            dbg.save()
