@@ -1801,9 +1801,9 @@ def do_add_doc(request, authtoken=0):
 
     if created:
 
-        doc.title=d['title']
-        doc.PY=d['PY']
-        doc.content=d['content']
+        doc.title=d['title'].strip()
+        doc.PY=d['PY'].strip()
+        doc.content=d['content'].strip()
 
         doc.save()
 
@@ -1832,7 +1832,7 @@ def do_add_doc(request, authtoken=0):
             if "wosarticle__" in f:
                 if len(d[f].strip()) > 0 :
                     fn = f.split('__')[1]
-                    setattr(article,fn,d[f])
+                    setattr(article,fn,d[f].strip())
 
         article.save()
 
@@ -2839,6 +2839,14 @@ def screen(request,qid,tid,ctype,d=0):
     authors = DocAuthInst.objects.filter(doc=doc)
     abstract = highlight_words(doc.content,query)
     title = highlight_words(doc.wosarticle.ti,query)
+    if doc.wosarticle.de is not None:
+        de = highlight_words(doc.wosarticle.de,query)
+    else:
+        de = None
+    if doc.wosarticle.kwp is not None:
+        kwp = highlight_words(doc.wosarticle.kwp,query)
+    else:
+        de = None
 
     # Create the tags for clicking on
     tags = {'Technology': {},'Innovation': {}}
@@ -2866,6 +2874,8 @@ def screen(request,qid,tid,ctype,d=0):
         'sdocs': sdocs,
         'abstract': abstract,
         'title': title,
+        'de': de,
+        'kwp': kwp,
         'ctype': ctype,
         'tags': tags,
         'innovation': innovation,
@@ -3056,7 +3066,7 @@ def highlight_words(s,query):
     for word in s.split(" "):
         h = False
         for q in qwords:
-            if q in word:
+            if q in word.lower():
                 h = True
         if h:
             abstract.append('<span class="t1">'+word+'</span>')

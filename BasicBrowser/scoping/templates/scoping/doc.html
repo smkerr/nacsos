@@ -42,6 +42,10 @@
 	    <span>{{au.AF}} [{{au.institution}}];</span>
     {% endfor %}
     <p style="text-align:left">
+        Author keywords: {{de | safe}}
+    <p style="text-align:left">
+        WoS Keywords Plus: {{kwp | safe}}
+    <p style="text-align:left">
       Document ID: <a href="/scoping/document/{{doc.UT}}">{{doc.UT}}</a>
     <p style="text-align:left">
     {{ abstract | safe }}
