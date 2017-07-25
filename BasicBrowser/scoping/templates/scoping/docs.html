@@ -392,23 +392,31 @@ function update_fields(download="false") {
 }
 
 function cyclescore(el) {
+    console.log(el)
     var el = $(el)
     var data = {}
-    data['score'] = parseInt(el.attr("data-value"))
+
+    data['score'] = parseInt(el.val())
+
+    console.log(data['score'])
     data['doc_id'] = el.attr("data-id")
     data['tag'] = parseInt(el.attr("data-tag"))
     data['user'] = parseInt(el.attr("data-user"))
     data['qid'] = qid
     data['q2id'] = q2id
+
+
     $('body').toggleClass('waiting');
     $.ajax({
         url: '/scoping/cycle_score',
-	data: data,
+	data: data    /*,
 	success: function() {
 	    update_fields()
 	    $('body').toggleClass('waiting');
 	}
+        */
     })
+
 }
 
 // For snowballing queries add user (creator) field
