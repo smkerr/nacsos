@@ -2871,7 +2871,7 @@ def screen(request,qid,tid,ctype,d=0):
     if doc.wosarticle.kwp is not None:
         kwp = highlight_words(doc.wosarticle.kwp,query)
     else:
-        de = None
+        kwp = None
 
     # Create the tags for clicking on
     tags = {'Technology': {},'Innovation': {}}

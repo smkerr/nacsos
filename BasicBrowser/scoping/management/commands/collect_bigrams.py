@@ -30,18 +30,18 @@ class Command(BaseCommand):
                 print("processing doc {}, of {}...".format(i,n))
             i+=1
             if d.content is not None:
-                dmatches = re.findall(p, d.content)
+                dmatches = re.findall(p, d.content.lower())
             else:
                 dmatches = []
-            tmatches = re.findall(p,d.title)
+            tmatches = re.findall(p,d.title.lower())
 
             if d.wosarticle.de is not None:
-                dematches = re.findall(p, d.wosarticle.de)
+                dematches = re.findall(p, d.wosarticle.de.lower())
             else:
                 dematches = []
 
             if d.wosarticle.kwp is not None:
-                kwpmatches = re.findall(p, d.wosarticle.kwp)
+                kwpmatches = re.findall(p, d.wosarticle.kwp.lower())
             else:
                 kwpmatches = []
 
@@ -57,6 +57,8 @@ class Command(BaseCommand):
                             w2 = m[4+pos*4]
 
                         if not re.match('\S',s) and w2 not in stoplist and len(w2) > 0:
+                            print("BA")
+                            print(w2)
 
                             bg, created = Bigram.objects.get_or_create(
                                 word1=m[4],
