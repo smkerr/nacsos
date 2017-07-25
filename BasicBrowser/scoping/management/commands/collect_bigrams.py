@@ -35,7 +35,17 @@ class Command(BaseCommand):
                 dmatches = []
             tmatches = re.findall(p,d.title)
 
-            dmatches = dmatches + tmatches
+            if d.wosarticle.de is not None:
+                dematches = re.findall(p, d.wosarticle.de)
+            else:
+                dematches = []
+
+            if d.wosarticle.kwp is not None:
+                kwpmatches = re.findall(p, d.wosarticle.kwp)
+            else:
+                kwpmatches = []
+
+            dmatches = dmatches + tmatches + dematches + kwpmatches
 
             for m in dmatches:
                 for pos in [-1,1]:

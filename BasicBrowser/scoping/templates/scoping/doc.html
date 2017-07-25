@@ -102,6 +102,8 @@
 
 <script>
 
+
+
 $(".thing_name").click(function() {
     thing2 = $(this).attr("data-thing")
     id2 = $(this).attr("data-value")
@@ -208,6 +210,21 @@ function review(d) {
 	})
 console.log({{page}})
 }
+
+$(document).keydown(function(e){
+    if (e.keyCode == 49) {
+        review(1)
+    }
+    if (e.keyCode == 50) {
+        review(2)
+    }
+    if (e.keyCode == 51) {
+        review(3)
+    }
+    if (e.keyCode == 52) {
+        review(4)
+    }
+});
 </script>
 
 {% endblock %}

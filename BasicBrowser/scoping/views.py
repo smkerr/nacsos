@@ -2246,6 +2246,13 @@ def sortdocs(request):
                         adoc = filt_docs.filter(UT=d['UT']).values_list(*f).order_by('docauthinst__position')
                     d[mult_fields[m]] = "; <br>".join(str(x) for x in (list(itertools.chain(*adoc))))
 
+    if request.user.profile.type == "default":
+        max = 4
+        min = 0
+    else:
+        max = 8
+        min = 5
+
     for d in docs:
         # work out total relevance
         if "wosarticle__cr" in fields:
@@ -2272,11 +2279,28 @@ def sortdocs(request):
                     do = do.filter(tag__title__icontains=tag_filter)
                 if do.count() > 0:
                     d[u] = do.first().relevant
+                    num = do.first().relevant
                     text = do.first().get_relevant_display()
                     tag = str(do.first().tag.id)
                     user = str(User.objects.filter(username=uname).first().id)
                     if download == "false":
-                        d[u] = '<span class="relevant_cycle" data-user='+user+' data-tag='+tag+' data-id='+d['UT']+' data-value='+str(d[u])+' onclick="cyclescore(this)">'+text+'</span>'
+                        d[u] = '<select class="relevant_cycle" data-user=' \
+                        +user+' data-tag='+tag+' data-id='+d['UT']+' \
+                        onchange="cyclescore(this)"\
+                        >'
+                        for r in range(min,max+1):
+                            dis = DocOwnership(
+                                relevant=r
+                            ).get_relevant_display()
+                            sel = ""
+                            if r == num:
+                                sel = "selected"
+                            d[u]+='<option {} value={}>{}</option>'.format(sel, r, dis)
+
+
+
+                        #' data-value='+str(d[u])+'\
+                        #onclick="cyclescore(this)">'+text+'</span>'
         try:
             d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
         except:
@@ -2674,6 +2698,7 @@ def cycle_score(request):
             new_score = min
         else:
             new_score = score+1
+        new_score = score
         docown = DocOwnership.objects.filter(query__id=qid, doc__UT=doc_id, user__id=user, tag__id=tag).first()
         docown.relevant = new_score
         docown.save()

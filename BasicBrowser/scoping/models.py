@@ -148,6 +148,7 @@ class Doc(models.Model):
     citation_objects = models.BooleanField(default=False,db_index=True)
     distance = models.IntegerField(null=True,db_index=True)
     duplicated = models.BooleanField(default=False)
+    relevant = models.BooleanField(default=False)
 
     def __str__(self):
       return self.UT
