@@ -1997,12 +1997,12 @@ def sortdocs(request):
     users = []
     rfields = []
     for f in fields:
-        if "docauthinst" in f or "tag__" in f:
+        if "docauthinst" in f or "tag__" in f or "note__text" in f:
             mult_fields.append(f)
             #single_fields.append(f)
         elif "docownership" in f:
             users.append(f)
-        elif "relevance_" in f or "note_" in f:
+        elif "relevance_" in f:
             rfields.append(f)
             single_fields.append(f)
         else:
@@ -2244,7 +2244,11 @@ def sortdocs(request):
                             adoc = Tag.objects.all().filter(doc__UT=d['UT'],query=qid).values_list("title")
                     else:
                         adoc = filt_docs.filter(UT=d['UT']).values_list(*f).order_by('docauthinst__position')
+                    if "note__" in mult_fields_tuple[m]:
+                        adoc = [x.text for x in Doc.objects.get(UT=d['UT']).note_set.all()]
                     d[mult_fields[m]] = "; <br>".join(str(x) for x in (list(itertools.chain(*adoc))))
+                    if "note__" in mult_fields_tuple[m]:
+                        d[mult_fields[m]] = "; <br>".join(x.strip() for x in  adoc)
 
     if request.user.profile.type == "default":
         max = 4
