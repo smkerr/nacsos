@@ -2428,7 +2428,7 @@ def download_tdocs(request,tid):
         docownership__relevant=1,
         docownership__query__technology__in=tech
     )
-    trdocs = docs.filter(technology__in=tech)
+    trdocs = docs.filter(technology__in=tech).exclude(query__technology__in=tech)
     rdocs = rdocs | trdocs
     rdocs = rdocs.distinct('UT')
     response = HttpResponse(content_type='text/csv')
