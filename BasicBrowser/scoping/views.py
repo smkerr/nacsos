@@ -2306,7 +2306,10 @@ def sortdocs(request):
                         #' data-value='+str(d[u])+'\
                         #onclick="cyclescore(this)">'+text+'</span>'
         try:
-            d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
+            if download==True:
+                d['wosarticle__di'] = 'http://dx.doi.org/'+d['wosarticle__di']
+            else:
+                d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
         except:
             pass
 
@@ -2318,7 +2321,7 @@ def sortdocs(request):
 
         writer.writerow(fields)
 
-        for d in docs:
+        for d in filt_docs:
             row = [d[x] for x in fields]
             writer.writerow(row)
 
@@ -2433,10 +2436,11 @@ def download_tdocs(request,tid):
 
     writer = csv.writer(response)
 
-    writer.writerow(['UT','PY','CITATION'])
+    writer.writerow(['UT','PY','CITATION','DOI'])
 
     for d in rdocs.iterator():
-        row = [d.UT,d.PY,d.citation()]
+
+        row = [d.UT,d.PY,d.citation(),'http://dx.doi.org/'+str(d.wosarticle.di)]
         writer.writerow(row)
 
     return response
