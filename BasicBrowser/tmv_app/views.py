@@ -280,7 +280,7 @@ def dynamic_topic_detail(request,topic_id):
     )
 
 
-    context = RequestContext(request, {
+    context = {
         'run_id': run_id,
         'topic': topic,
         'topicterms': topicterms,
@@ -288,8 +288,8 @@ def dynamic_topic_detail(request,topic_id):
         'wtvs': list(dtopics.values('title','score','year','dscore','id')),
         'ysums': list(ysums.values('year','sum')),
         'docs': docs
-    })
-    return HttpResponse(template.render(context))
+    }
+    return HttpResponse(template.render(request =request, context=context))
 
 def dtopic_detail(request,topic_id):
     template = loader.get_template('tmv_app/dtopic.html')
@@ -306,11 +306,11 @@ def dtopic_detail(request,topic_id):
     docs = Doc.objects.filter(doctopic__topic=topic) \
         .order_by('-doctopic__score')[:50]
 
-    context = Context({
+    context = {
         "topic":topic,
         "tterms": tterms,
         "docs": docs
-    })
+    }
 
     return HttpResponse(template.render(context))
 
@@ -639,7 +639,7 @@ def doc_detail(request, doc_id, run_id):
                 wt = t
         words.append({'title': word, 'topic':"t"+str(wt)})
 
-    context = RequestContext(request, {
+    context = {
         'doc': doc,
         'topics': topics,
         'pie_array': pie_array,
@@ -647,10 +647,10 @@ def doc_detail(request, doc_id, run_id):
         'words': words,
         'run_id': run_id,
         'dt_threshold': dt_threshold
-    })
+    }
 
 
-    return HttpResponse(template.render(context))
+    return HttpResponse(template.render(request=request, context=context))
 
 def adjust_threshold(request,run_id):
     value = request.GET.get('value',None)
