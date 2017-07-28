@@ -2306,7 +2306,7 @@ def sortdocs(request):
                         #' data-value='+str(d[u])+'\
                         #onclick="cyclescore(this)">'+text+'</span>'
         try:
-            if download==True:
+            if download=="true":
                 d['wosarticle__di'] = 'http://dx.doi.org/'+d['wosarticle__di']
             else:
                 d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
