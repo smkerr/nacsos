@@ -76,7 +76,12 @@ def author_detail(request, author_name):
 
     author_template = loader.get_template('tmv_app/author.html')
 
-    author_page_context = Context({'author': author_name, 'docs': documents, 'topics': topics, 'pie_array': pie_array})
+    author_page_context = {
+        'author': author_name,
+        'docs': documents,
+        'topics': topics,
+        'pie_array': pie_array
+    }
 
     return HttpResponse(author_template.render(author_page_context))
 
@@ -108,12 +113,12 @@ def institution_detail(request, run_id, institution_name):
 
     institution_template = loader.get_template('tmv_app/institution.html')
 
-    institution_page_context = Context({
+    institution_page_context = {
         'institution': institution_name,
         'docs': documents,
         'topics': topics,
         'pie_array': pie_array
-    })
+    }
 
     return HttpResponse(institution_template.render(institution_page_context))
 
@@ -373,7 +378,7 @@ def topic_detail(request, topic_id):
         topic=topic_id
     ).order_by('-score')[:10]
 
-    topic_page_context = Context({
+    topic_page_context = {
         'topic': topic,
         'terms': terms,
         'term_bar': term_bar,
@@ -382,7 +387,7 @@ def topic_detail(request, topic_id):
         'corrtops': corrtops,
         'dtops': dtops,
         'run_id': run_id
-        })
+        }
 
     return HttpResponse(topic_template.render(topic_page_context))
 
@@ -424,12 +429,12 @@ def get_topic_docs(request,topic_id):
         float=4
 
     #x = y
-    context = Context({
+    context = {
         "docs": doctopics,
         "svalue": sortcol,
         "topic": topic,
         "float": float
-    })
+    }
 
     return HttpResponse(template.render(context))
 
@@ -471,10 +476,10 @@ def multi_topic(request):
     y = combine2.order_by('-topic_combination')[:50]
     y= y.values('doc__pk','doc__PY','doc__title','topic_combination')
 
-    context = Context({
+    context = {
         'docs' : y,
         'topic': Topic.objects.get(pk=topics[0])
-    })
+    }
 
     return HttpResponse(template.render(context))
 
@@ -527,7 +532,14 @@ def topic_detail_hlda(request, topic_id):
             score = round(ct.score,2)
             ctarray.append({"topic": top.topic,"title":top.title,"score":score})
 
-    topic_page_context = Context({'topic': topic, 'terms': terms, 'term_bar': term_bar, 'docs': doctopics, 'yts': ytarray, 'corrtops': ctarray})
+    topic_page_context = {
+        'topic': topic,
+        'terms': terms,
+        'term_bar': term_bar,
+        'docs': doctopics,
+        'yts': ytarray,
+        'corrtops': ctarray
+    }
 
     return HttpResponse(topic_template.render(topic_page_context))
 
@@ -548,7 +560,10 @@ def term_detail(request, term_id):
         for topic in topics:
             topic_tuples.append((topic.topic, topic.score, topic.score/max_score*100))
 
-    term_page_context = Context({'term': term, 'topic_tuples': topic_tuples})
+    term_page_context = {
+        'term': term,
+        'topic_tuples': topic_tuples
+    }
 
     return HttpResponse(term_template.render(term_page_context))
 
@@ -721,7 +736,14 @@ def doc_detail_hlda(request, doc_id):
                 wt = t
         words.append({'title': word, 'topic':"t"+str(wt)})
 
-    doc_page_context = Context({'doc': doc, 'topics': topics, 'pie_array': pie_array,'doc_authors': doc_authors, 'doc_institutions': doc_institutions , 'words': words })
+    doc_page_context = {
+        'doc': doc,
+        'topics': topics,
+        'pie_array': pie_array,
+        'doc_authors': doc_authors,
+        'doc_institutions': doc_institutions ,
+        'words': words
+    }
 
     return HttpResponse(doc_template.render(doc_page_context))
 
@@ -765,7 +787,7 @@ def topic_list_detail(request):
             tops.append(None)
         rows.append((tops, temp))
 
-    list_page_context = Context({'rows': rows})
+    list_page_context = {'rows': rows}
 
     return HttpResponse(list_template.render(list_page_context))
 
@@ -805,10 +827,11 @@ def topic_presence_detail(request,run_id):
         s = topic.score
         topic_tuples.append((topic, topic.score, topic.score/max_score*100))
 
-    presence_page_context = Context({
-        'run_id': run_id, 'topic_tuples': topic_tuples,
+    presence_page_context = {
+        'run_id': run_id,
+        'topic_tuples': topic_tuples,
         'stat': stat
-    })
+    }
 
     return HttpResponse(presence_template.render(presence_page_context))
 
@@ -853,7 +876,11 @@ def topic_presence_hlda(request):
                     topic['children'].append(child)
             root['children'].append(topic)
 
-    presence_page_context = Context({'topic_tuples': topic_tuples,'topic_tree': root})
+    presence_page_context = {
+        'topic_tuples': topic_tuples,
+        'topic_tree': root
+    }
+
 
     return HttpResponse(presence_template.render(presence_page_context))
 
@@ -865,7 +892,10 @@ def get_docs(request):
     data = {
         "bla": "bla"
     }
-    topic_box_context = Context({'docs':docs, 'topic':t})
+    topic_box_context = {
+        'docs':docs,
+        'topic':t
+    }
     return HttpResponse(topic_box_template.render(topic_box_context))
 
 def stats(request,run_id):
@@ -884,17 +914,18 @@ def stats(request,run_id):
 
     stats.save()
 
-    context = Context({
+    context = {
         'stats': stats,
         'num_topics': Topic.objects.filter(run_id=run_id).count(),
         'num_terms': Term.objects.filter(run_id=run_id).count(),
-    })
+    }
 
     return HttpResponse(template.render(context))
 
 def runs(request):
 
     template = loader.get_template('tmv_app/runs.html')
+
     stats = RunStats.objects.all().order_by('-start')
 
     stats = stats.annotate(
@@ -906,7 +937,7 @@ def runs(request):
             s.term_count = Term.objects.filter(run_id=s.run_id).count()
             s.save()
 
-    context = Context({'stats':stats})
+    context = {'stats':stats}
 
     return HttpResponse(template.render(context, request))
 
@@ -924,7 +955,9 @@ def settings(request):
 
     settings_template = loader.get_template('tmv_app/settings.html')
 
-    settings_page_context = Context({'settings': Settings.objects.get(id=1)})
+    settings_page_context = {
+        'settings': Settings.objects.get(id=1)
+    }
 
     return HttpResponse(settings_template.render(settings_page_context,request))
     #return render_to_response('settings.html', settings_page_context, context_instance=RequestContext(request))

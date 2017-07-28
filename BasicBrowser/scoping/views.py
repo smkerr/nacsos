@@ -2321,7 +2321,7 @@ def sortdocs(request):
 
         writer.writerow(fields)
 
-        for d in filt_docs:
+        for d in docs:
             row = [d[x] for x in fields]
             writer.writerow(row)
 
