@@ -2146,6 +2146,8 @@ def sortdocs(request):
 
 
     tag_text = ""
+
+    pre_filt_docs = filt_docs
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
         if i==0:
@@ -2186,15 +2188,23 @@ def sortdocs(request):
                     if exclude:
                         filt_docs = filt_docs | all_docs.exclude(**kwargs)
                     else:
-                        filt_docs = filt_docs | all_docs.filter(**kwargs)
+                        fids = filt_docs.values_list('UT',flat=True)
+                        asfdocs = all_docs.filter(**kwargs)
+                        asfids = asfdocs.values_list('UT',flat=True)
+                        filt_docs_ids = set(list(fids)+list(asfids))
+                        filt_docs = pre_filt_docs.filter(UT__in=filt_docs_ids)
+                        #filt_docs = pre
                 tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
         except:
             break
 
+    #filt_docs_ids = filt_docs.values_list('UT',flat=True)
+
+
     if "k" in fields:
         filt_docs = filt_docs.filter(citation_objects=True)
 
-    print(len(filt_docs))
+    #print(len(filt_docs))
 
 
     if tag_title is not None:
