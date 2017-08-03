@@ -310,7 +310,7 @@ function update_fields(download="false") {
         for (i =0 ; i<sortdirs.length; i++) {
             url += '&sort_dirs[]='+sortdirs[i]
         }
-        url += '&f_text='+text
+        url += '&f_text[]='+text
         url += '&download='+download
         window.location=url
         console.log(url)

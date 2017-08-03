@@ -1967,6 +1967,7 @@ def sortdocs(request):
     f_text = request.GET.getlist('f_text[]',None)
     f_join = request.GET.getlist('f_join[]',None)
 
+
     sort_dirs = request.GET.getlist('sort_dirs[]',None)
     sort_fields = request.GET.getlist('sort_fields[]',None)
 
