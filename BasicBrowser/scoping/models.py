@@ -349,9 +349,9 @@ class DocOwnership(models.Model):
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")
-    AU = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author")
-    AF = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author Full Name")
-    institution = models.CharField(max_length=250, db_index=True, verbose_name="Institution Name")
+    AU = models.TextField(db_index=True, null=True, verbose_name="Author")
+    AF = models.TextField(db_index=True, null=True, verbose_name="Author Full Name")
+    institution = models.TextField(db_index=True, verbose_name="Institution Name")
     position = models.IntegerField(verbose_name="Author Position")
 
     def __str__(self):
