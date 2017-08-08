@@ -42,12 +42,12 @@ get_data <- function(ss){
   return(data)
 }
 
-countranges <- function(df,data,headers) {
+countranges <- function(df,data,headers, measure) {
   
-  countrange <- function(x,resource) {
+  countrange <- function(x,resource, measure) {
     data <- filter(
       suppressWarnings(mutate(data,value=as.numeric(value))),
-      measurement=="max",
+      measurement==measure,
       variable==resource,
       !is.na(value),
       value>=x
@@ -63,8 +63,8 @@ countranges <- function(df,data,headers) {
   
   
   # For each resource, count the number of values under each threshold
-  for (r in resources) {
-    df[[r]] <- as.numeric(lapply(df$v,countrange,r))
+  for (r in headers) {
+    df[[r]] <- as.numeric(lapply(df$v,countrange,r, measure))
   }
   
   # Gather the resources
