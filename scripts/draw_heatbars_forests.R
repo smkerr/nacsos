@@ -96,7 +96,31 @@ ggsave("plots/afforestation/range.png",width=8,height=5)
 
 
 
+dataf <- filter(
+  suppressWarnings(mutate(data,value=as.numeric(value))),
+  measurement %in% c("min","max"),
+  variable==costs[1],
+  !is.na(value)
+) %>% spread(
+  measurement, value
+) %>%
+  group_by(PY) %>%
+  mutate(
+    gtot = n(),
+    pn = row_number()
+  ) %>%
+  ungroup() %>%
+  mutate(
+    PY = as.numeric(PY),
+    jitter= (1/gtot)*(pn-1),
+    PYJ = PY + (1/gtot)*(pn-1)
+  )
 
+ggplot(dataf) +
+  theme_bw() +
+  geom_linerange(
+    aes(x=PYJ,ymin=min,ymax=max)
+  )
 
 
 #ggsave("heatbar_example.png",width=8,height=5)
