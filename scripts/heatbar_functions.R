@@ -44,27 +44,43 @@ get_data <- function(ss){
 
 countranges <- function(df,data,headers, measure) {
   
-  countrange <- function(x,resource, measure) {
-    data <- filter(
-      suppressWarnings(mutate(data,value=as.numeric(value))),
-      measurement==measure,
-      variable==resource,
-      !is.na(value),
-      value>=x
-    )
-    data$TI <- if ("TI" %in% names(data)) data$TI else data$UT
-    if (length(data$TI) > length(unique(data$TI))) {
-      print("warning, some titles seem to be duplicated, do you
-            need to filter by a dimension?")
+  countrange <- function(x, resource, measure) {
+    if (measure=="range") {
+      dataf <- filter(
+        suppressWarnings(mutate(data,value=as.numeric(value))),
+        measurement %in% c("min","max"),
+        variable==resource,
+        !is.na(value)
+      ) %>% spread(
+        measurement, value
+      ) %>%
+      filter(
+        min <=x,
+        max >=x
+      )
+    } else {
+      dataf <- filter(
+        suppressWarnings(mutate(data,value=as.numeric(value))),
+        measurement==measure,
+        variable==resource,
+        !is.na(value),
+        value>=x
+      )      
+    }
+
+    dataf$TI <- if ("TI" %in% names(dataf)) dataf$TI else dataf$UT
+    if (length(dataf$TI) > length(unique(dataf$TI))) {
+        print("warning, some titles seem to be duplicated, do you
+            need to filter by a dimension?")       
     } 
-    return(as.numeric(count(data)))
+    return(as.numeric(count(dataf)))
     }
   
   
   
   # For each resource, count the number of values under each threshold
   for (r in headers) {
-    df[[r]] <- as.numeric(lapply(df$v,countrange,r, measure))
+    df[[r]] <- as.numeric(lapply(df$v,countrange, r, measure))
   }
   
   # Gather the resources
