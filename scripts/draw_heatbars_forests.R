@@ -29,7 +29,7 @@ data <- get_data(ss)
 ## Generate a new df of ranges
 
 # Adjust the maximum here to change the scale
-ranges <- seq(1,200)
+ranges <- seq(1,300)
 df <- data.frame(v=ranges)
 
 
@@ -89,8 +89,8 @@ ggsave("plots/afforestation/range_gt_2004.png",width=8,height=5)
 res2050 <- countranges(df, filter(data), costs, "range")
 
 heatbar(res2050,"pcnt") + 
-  labs(x="Variable",y="Cost") +
-  ylim(c(0,200))
+  labs(x="Variable",y="Cost") #+
+  #ylim(c(0,200))
 
 ggsave("plots/afforestation/range.png",width=8,height=5)
 
@@ -116,14 +116,42 @@ dataf <- filter(
     PYJ = PY + (1/gtot)*(pn-1)
   )
 
-ggplot(dataf) +
+
+
+w = 5
+y = 1985
+f <- "pcnt"
+df <- res2050[res2050[[f]]>0,]
+flab <- if (f=="pcnt") "% of Studies" else "Number of Studies" 
+ggplot() +
   theme_bw() +
+  geom_bar(
+    data=df,
+    aes_string(x=y,y=1,fill=f),
+    stat="identity",
+    width=w,
+    color=NA
+  ) +
+  geom_bar(
+    data=df,
+    aes(x=y),
+    fill=NA,
+    color="grey22",
+    width=w
+  ) +
+  scale_fill_gradientn(
+    colours=c(NA,"#fffcef","#fcf0ba","#d30000"),
+    values = scales::rescale(c(0,min(df[[f]]),max(df[[f]])/2,max(df[[f]]))),
+    name=flab
+  ) +
+  guides(fill = guide_colourbar(reverse = TRUE)) +
   geom_linerange(
+    data=dataf,
     aes(x=PYJ,ymin=min,ymax=max)
   )
 
 
-#ggsave("heatbar_example.png",width=8,height=5)
+ggsave("plots/afforestation/ranges_years.png",width=8,height=5)
 
 
 

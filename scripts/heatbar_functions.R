@@ -83,13 +83,33 @@ countranges <- function(df,data,headers, measure) {
     df[[r]] <- as.numeric(lapply(df$v,countrange, r, measure))
   }
   
+  data_r_sum <- filter(
+      suppressWarnings(mutate(data,value=as.numeric(value))),
+      measurement %in% c("min","max"),
+      !is.na(value)
+    ) %>% spread(
+      measurement, value
+    ) %>%
+    filter(
+      !is.na(min),
+      !is.na(max)
+    ) %>% 
+    group_by(variable) %>%
+    summarise(
+      maxvalue = n()
+    )
+    
+  
+  n_studies = length(unique(dataf$TI))
+  
   # Gather the resources
-  df <- df %>%
+  res <- df %>%
     gather(resource,value,-v) %>% #gather resources into a resource column
-    group_by(resource) %>% # group by resource
-    mutate(maxvalue = max(value)) %>% # calculate the maximum (total number of studies) in each resource
-    group_by(value) %>% # group by each value
+    group_by(resource) %>% 
+    left_join(data_r_sum, by = c("resource" = "variable")) %>%
     mutate(pcnt=value/maxvalue*100) # calculate the value as a pcnt of the total
+  
+  return(res)
 }
 
 heatbar <- function(df,f) {
