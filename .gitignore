@@ -4,3 +4,4 @@ settings_local.py
 .Rproj.user
 BasicBrowser/queries/*
 BasicBrowser/nohup.out
+*.httr.oauth
