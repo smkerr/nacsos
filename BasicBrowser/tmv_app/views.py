@@ -227,21 +227,30 @@ def dynamic_topic_detail(request,topic_id):
     topic = DynamicTopic.objects.get(pk=topic_id)
     run_id = topic.run_id.run_id
 
+    stat = RunStats.objects.get(pk=run_id)
+
+    if stat.parent_run_id is not None:
+        run_id=stat.parent_run_id
+
     topicterms = Term.objects.filter(
-        dynamictopicterm__topic=topic, run_id=run_id,
+        dynamictopicterm__topic=topic,
+        run_id=run_id,
         dynamictopicterm__score__gt=0.00001
     ).order_by('-dynamictopicterm__score')[:50]
 
     wtopics = Topic.objects.filter(
-        run_id=run_id,primary_dtopic=topic
-    ).order_by('year')
+        #run_id=run_id,
+        topicdtopic__dynamictopic__run_id=run_id,
+        primary_dtopic=topic
+    ).distinct().order_by('year')
 
     for t in wtopics:
         if t.top_words is not None:
             t.tts = t.top_words
         else:
             t.tts = Term.objects.filter(
-                topicterm__topic=t, run_id=run_id,
+                topicterm__topic=t,
+                #run_id=run_id,
                 topicterm__score__gt=0.00001
             ).order_by('-topicterm__score')[:10]
         score = TopicDTopic.objects.get(
@@ -251,8 +260,10 @@ def dynamic_topic_detail(request,topic_id):
 
     docs = DocTopic.objects.filter(
         #topic__primary_dtopic=topic,
-        run_id=run_id,
-        topic__topicdtopic__dynamictopic=topic
+        #run_id=run_id,
+        topic__topicdtopic__dynamictopic=topic,
+        topic__topicdtopic__score__gt=0.05,
+        score__gt=0.05
     )
 
     docs = docs.annotate(
@@ -929,12 +940,23 @@ def runs(request):
     stats = RunStats.objects.all().order_by('-start')
 
     stats = stats.annotate(
-        topics = models.Count('topic')#,
+        topics = models.Count('topic'),
+        dtopics = models.Count('dynamictopic', distinct=True),
         #terms = models.Count('term')
     )
+
     for s in stats:
-        if s.term_count is None:
-            s.term_count = Term.objects.filter(run_id=s.run_id).count()
+        if s.parent_run_id is not None:
+            run_id = s.parent_run_id
+        else:
+            run_id = s.run_id
+        if s.max_topics is None and s.method=="DT":
+            myear = Topic.objects.filter(run_id=run_id).aggregate(
+                myear=models.Max('year')
+            )['myear']
+            s.max_topics = Topic.objects.filter(run_id=run_id,year=myear).count()
+        if s.term_count is None or s.term_count==0:
+            s.term_count = Term.objects.filter(run_id=run_id).count()
             s.save()
 
     context = {'stats':stats}
@@ -1066,6 +1088,10 @@ def update_bdtopics(run_id):
 
 def update_dtopics(run_id):
     stats = RunStats.objects.get(pk=run_id)
+    if stats.parent_run_id is not None:
+        parent_run_id=stats.parent_run_id
+    else:
+        parent_run_id = run_id
     #if "a" == "b":
     if not stats.topic_titles_current:
     #if "a" in "ab":
@@ -1074,6 +1100,7 @@ def update_dtopics(run_id):
             topicterms = Term.objects.filter(
                 dynamictopicterm__topic=topic
             ).order_by('-dynamictopicterm__score')[:10]
+            topic.top_words=[x.title.lower() for x in topicterms]
             new_topic_title = '{'
             for tt in topicterms[:3]:
                 new_topic_title +=tt.title
@@ -1083,15 +1110,16 @@ def update_dtopics(run_id):
             topic.title = new_topic_title
             topic.score = 0
             score = DocTopic.objects.filter(
-                run_id=run_id,topic__primary_dtopic=topic
+                run_id=parent_run_id,
+                topic__primary_dtopic=topic
             ).aggregate(
                 t=Sum('score')
             )['t']
             if score is not None:
                 topic.score = score
             topic.save()
-        #stats.topic_titles_current = True
-        #stats.save()
+        stats.topic_titles_current = True
+        stats.save()
 
     return
 

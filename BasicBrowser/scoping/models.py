@@ -40,7 +40,21 @@ class SnowballingSession(models.Model):
     def __str__(self):
       return self.name
 
+class Project(models.Model):
+    title = models.TextField(null=True)
+    description = models.TextField(null=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+      return self.title
+
+class DocProject(models.Model):
+    doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    relevant = models.BooleanField(default=False)
+
 class Query(models.Model):
+    project = models.ForeignKey(Project, null=True)
     type        = models.TextField(null=True, verbose_name="Query Type", default="default")
     title       = models.TextField(null=True, verbose_name="Query Title")
     text        = models.TextField(null=True, verbose_name="Query Text")
@@ -62,9 +76,13 @@ class Query(models.Model):
       return self.title
 
 
+
+
+
 class Technology(models.Model):
     name = models.TextField(null = True, verbose_name="Technology Name")
     description = models.TextField(null=True, verbose_name="Technology Description")
+    project = models.ForeignKey(Project, null=True)
     ndocs = models.IntegerField(null=True)
     nqs = models.IntegerField(null=True)
 
@@ -149,6 +167,7 @@ class Doc(models.Model):
     distance = models.IntegerField(null=True,db_index=True)
     duplicated = models.BooleanField(default=False)
     relevant = models.BooleanField(default=False)
+    projects = models.ManyToManyField(Project, through='DocProject')
 
     def __str__(self):
       return self.UT
@@ -349,9 +368,9 @@ class DocOwnership(models.Model):
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")
-    AU = models.TextField(db_index=True, null=True, verbose_name="Author")
-    AF = models.TextField(db_index=True, null=True, verbose_name="Author Full Name")
-    institution = models.TextField(db_index=True, verbose_name="Institution Name")
+    AU = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author")
+    AF = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author Full Name")
+    institution = models.CharField(max_length=250, db_index=True, verbose_name="Institution Name")
     position = models.IntegerField(verbose_name="Author Position")
 
     def __str__(self):
@@ -380,6 +399,7 @@ class WoSArticle(models.Model):
         primary_key=True,
         verbose_name='Document ID'
     )
+    pt = models.CharField(null=True, max_length=50, verbose_name="Publication Type") # pub type
     ti = models.TextField(null=True, verbose_name="Title")
     ab = models.TextField(null=True, verbose_name="Abstract")
     py = models.IntegerField(null=True, verbose_name="Year")
@@ -412,7 +432,6 @@ class WoSArticle(models.Model):
     pd = models.CharField(null=True, max_length=50, verbose_name="Publication Date") # pub month
     pg = models.IntegerField(null=True, verbose_name="Page Count") # page count
     pi = models.TextField(null=True, verbose_name="Publisher City") # pub city
-    pt = models.CharField(null=True, max_length=50, verbose_name="Publication Type") # pub type
     pu = models.TextField(null=True, verbose_name="Publisher") # publisher
     rp = models.TextField(null=True, verbose_name="Reprint Address") # reprint address
     sc = models.TextField(null=True, verbose_name="Subject Category") # subj category

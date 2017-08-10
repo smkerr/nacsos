@@ -41,7 +41,7 @@ class Topic(models.Model):
     growth = models.FloatField(null=True)
     run_id = models.ForeignKey('RunStats',db_index=True)
     year = models.IntegerField(null=True)
-    primary_dtopic = models.ForeignKey('DynamicTopic',null=True)
+    primary_dtopic = models.ManyToManyField('DynamicTopic')
     top_words = ArrayField(models.TextField(),null=True)
 
     def __unicode__(self):
@@ -52,6 +52,7 @@ class DynamicTopic(models.Model):
     score = models.FloatField(null=True)
     size = models.IntegerField(null=True)
     run_id = models.ForeignKey('RunStats',db_index=True)
+    top_words = ArrayField(models.TextField(),null=True)
 
     def __unicode__(self):
         return str(self.title)
@@ -142,6 +143,7 @@ class DocTerm(models.Model):
 ## RunStats and Settings....
 class RunStats(models.Model):
     run_id = models.IntegerField(primary_key=True)
+    parent_run_id = models.IntegerField(null=True)
     query = models.ForeignKey('scoping.Query', null=True)
     start = models.DateTimeField()
     batch_count = models.IntegerField()
@@ -168,10 +170,11 @@ class RunStats(models.Model):
         choices=METHOD_CHOICES,
         default=LDA,
     )
-    error = models.FloatField(null=True)
+    error = models.FloatField(null=True, default = 0)
     errortype = models.TextField(null=True)
     iterations = models.IntegerField(null=True)
     max_features = models.IntegerField(null=True)
+    max_topics = models.IntegerField(null=True)
     ngram = models.IntegerField(null=True)
     term_count = models.IntegerField(null=True)
     dthreshold = models.FloatField(null=True)

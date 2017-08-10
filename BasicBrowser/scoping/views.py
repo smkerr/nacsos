@@ -276,11 +276,14 @@ def doquery(request):
             if args[0].strip()=="*":
                 q1 = Doc.objects.all()
                 q1ids = None
+                cids = q1ids
             else:
                 q1 = Doc.objects.filter(query=args[0])
                 q1ids = q1.values_list('UT',flat=True)
+                cids = q1ids
             for a in range(1,len(args)):
                 parts = args[a].split(":")
+                print(parts)
                 # Deal WITH tech filters
                 if parts[0] == "TECH":
                     tech, tdocs, tobj = get_tech_docs(parts[1])
@@ -1967,7 +1970,6 @@ def sortdocs(request):
     f_text = request.GET.getlist('f_text[]',None)
     f_join = request.GET.getlist('f_join[]',None)
 
-
     sort_dirs = request.GET.getlist('sort_dirs[]',None)
     sort_fields = request.GET.getlist('sort_fields[]',None)
 
@@ -2147,8 +2149,6 @@ def sortdocs(request):
 
 
     tag_text = ""
-
-    pre_filt_docs = filt_docs
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
         if i==0:
@@ -2189,23 +2189,15 @@ def sortdocs(request):
                     if exclude:
                         filt_docs = filt_docs | all_docs.exclude(**kwargs)
                     else:
-                        fids = filt_docs.values_list('UT',flat=True)
-                        asfdocs = all_docs.filter(**kwargs)
-                        asfids = asfdocs.values_list('UT',flat=True)
-                        filt_docs_ids = set(list(fids)+list(asfids))
-                        filt_docs = pre_filt_docs.filter(UT__in=filt_docs_ids)
-                        #filt_docs = pre
+                        filt_docs = filt_docs | all_docs.filter(**kwargs)
                 tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
         except:
             break
 
-    #filt_docs_ids = filt_docs.values_list('UT',flat=True)
-
-
     if "k" in fields:
         filt_docs = filt_docs.filter(citation_objects=True)
 
-    #print(len(filt_docs))
+    print(len(filt_docs))
 
 
     if tag_title is not None:
