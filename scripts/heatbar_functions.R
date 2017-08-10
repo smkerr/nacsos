@@ -100,7 +100,6 @@ countranges <- function(df,data,headers, measure) {
     )
     
   
-  n_studies = length(unique(dataf$TI))
   
   # Gather the resources
   res <- df %>%
