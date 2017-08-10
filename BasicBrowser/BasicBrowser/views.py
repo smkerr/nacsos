@@ -16,4 +16,3 @@ def index(request):
         'app_list': apps
     }
     return HttpResponse(template.render(context, request))
-

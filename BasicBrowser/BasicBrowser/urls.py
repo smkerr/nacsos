@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.conf import settings
 from django.contrib.auth import views as auth_views
 from scoping import views
-import views as site_views
+import BasicBrowser.views as site_views
 
 urlpatterns = [
     url(r'^tmv_app/', include('tmv_app.urls')),
