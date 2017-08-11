@@ -114,8 +114,6 @@ class Tag(models.Model):
 def random_doc(q=None):
     if q is not None:
         docs = Doc.objects.filter(query=q)
-        if q==1457:
-            docs = docs.filter(PY=2016)
     else:
         docs = Doc.objects.all()
     c = docs.count()
