@@ -48,6 +48,9 @@ class Project(models.Model):
     def __str__(self):
       return self.title
 
+
+
+
 class DocProject(models.Model):
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)

@@ -48,6 +48,10 @@ h1 {
 #header canvas {
 }
 
+.left {
+    text-align: left;
+}
+
 h2 {
     /*line-height: 0em;*/
     font-size: 16px;
