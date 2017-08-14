@@ -43,7 +43,9 @@ urlpatterns = [
     url(r'^topic/random$', login_required(topic_random)),
     url(r'^term/random$', login_required(term_random)),
     url(r'^get_docs$', login_required(get_docs), name="get_docs"),
-    url(r'^print_table/(?P<run_id>\d+)$', login_required(print_table), name="print_table")
+    url(r'^print_table/(?P<run_id>\d+)$', login_required(print_table), name="print_table"),
+
+    url(r'^compare/(?P<a>\d+)/(?P<z>\d+)$', login_required(compare_runs), name="compare_runs")
 
     ]
 
