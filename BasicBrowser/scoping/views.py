@@ -27,7 +27,12 @@ from django.apps import apps
 import difflib
 from sklearn.metrics import cohen_kappa_score
 
+from django_tables2 import RequestConfig
+
 from .models import *
+
+from .forms import *
+from .tables import *
 
 def super_check(user):
     return user.groups.filter(name__in=['superuser'])
@@ -48,12 +53,46 @@ def switch_mode(request):
 ########################################################
 ## Homepage - list the queries, form for adding new ones
 
+
 @login_required
 def index(request):
+
+    if request.method == "POST":
+        newproj=ProjectForm(request.POST)
+        if newproj.is_valid():
+            project = newproj.save(commit=False)
+            project.owner = request.user
+            project.save()
+
+    template = loader.get_template('scoping/index.html')
+
+    myproj = Project.objects.filter(owner=request.user).annotate(
+        queries = Count('query', distinct=True),
+        docs = Count('query__doc', distinct=True)
+    )
+    myproj = ProjectTable(myproj)
+    RequestConfig(request).configure(myproj)
+
+    print(myproj)
+
+    newproj= ProjectForm()
+
+    acproj = Project.objects.all()
+
+    context = {
+        'myproj': myproj,
+        'acproj': acproj,
+        'newproj': newproj
+    }
+
+    return HttpResponse(template.render(context, request))
+
+@login_required
+def queries(request):
     request.session['DEBUG'] = False
     request.session['appmode']='scoping'
 
-    template = loader.get_template('scoping/index.html')
+    template = loader.get_template('scoping/queries.html')
 
     queries_none  = Query.objects.all().filter(type=None)
     queries_dft   = Query.objects.all().filter(type="default")

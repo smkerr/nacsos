@@ -8,8 +8,21 @@ from . import views
 app_name = 'scoping'
 
 urlpatterns = [
+
+
+    # Homepage, projet management
+
+    url(r'^$', views.index, name='index'),
+
+
+
+
+    # Query management
+
+
     #### Index pages / query set-up (user input)
     url(r'^$', views.index, name='index'),
+
     url(r'^snowball$', views.snowball, name='snowball'),
     #### Query processing
     url(r'^start_snowballing$', views.start_snowballing, name='start_snowballing'),
@@ -20,6 +33,7 @@ urlpatterns = [
     url(r'^querying/(?P<qid>[0-9]+)/(?P<substep>[0-9]+)/(?P<docadded>[0-9]+)/$', views.querying, name='querying'),
     url(r'^querying/(?P<qid>[0-9]+)/$', views.querying, name='querying'),
     url(r'^snowball_progress/(?P<sbs>[0-9]+)/$', views.snowball_progress, name='snowball_progress'),
+
     #### Manage Query
     url(r'^query/(?P<qid>[0-9]+)/$', views.query, name='query'),
 
