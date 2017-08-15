@@ -16,16 +16,36 @@
 
     {% render_table myproj %}
 
+    <p class="left" id="reveal_new">+</p>
+
+    <div id="new_div" class="hidden">
+
+        <form method="POST" class="post-form">{% csrf_token %}
+        {{ newproj.as_p }}
+        <button type="submit" class="save btn btn-default">Save</button>
+        </form>
+
+    </div>
+
 
     <h4 class="left">Projects I have access to:</h4>
 
     {% render_table acproj %}
 
-    <form method="POST" class="post-form">{% csrf_token %}
-    {{ newproj.as_p }}
-    <button type="submit" class="save btn btn-default">Save</button>
-    </form>
 
 </div>
+
+{% endblock %}
+
+
+
+{% block script %}
+<script type="text/JavaScript">
+
+    $("#reveal_new").click( function() {
+        $("#new_div").toggleClass("hidden")
+    })
+
+</script>
 
 {% endblock %}

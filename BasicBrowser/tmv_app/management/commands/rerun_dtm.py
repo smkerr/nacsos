@@ -127,4 +127,7 @@ class Command(BaseCommand):
         stat.errortype = "Frobenius"
         stat.last_update=timezone.now()
         stat.save()
+        print("updating and summarising run, {}".format(run_id))
+        management.call_command('update_run',run_id)
+
         management.call_command('update_run',run_id)

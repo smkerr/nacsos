@@ -1,0 +1,36 @@
+{% extends "scoping/base.html" %}
+
+{% load render_table from django_tables2 %}
+
+{% block content %}
+
+{% ifequal admin "true" %}
+
+<h1> Scoping Review Helper</h1>
+<br>
+<h2> Homepage </h2>
+<br>
+
+<div class="explanation">
+    <h3> Edit user roles for project {{ project.title }} </h3>
+
+{% for f in updateRoles %}
+    <p>
+    <form method="POST" class="post-form">{% csrf_token %}
+    {{ f.as_p }}
+    <button type="submit" class="save btn btn-default">Save</button>
+    </form>
+
+{% endfor %}
+
+<h3> Add new users to the project </h3>
+<form method="POST" class="post-form">{% csrf_token %}
+{{ newRole.as_p }}
+<button type="submit" class="save btn btn-default">Save</button>
+</form>
+
+</div>
+
+{% endifequal %}
+
+{% endblock %}
