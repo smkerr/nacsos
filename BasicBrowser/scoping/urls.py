@@ -1,9 +1,6 @@
 from django.conf.urls import url
-
 from django.contrib.auth.decorators import login_required
-
-
-from . import views
+from scoping import views
 
 app_name = 'scoping'
 
@@ -22,6 +19,8 @@ urlpatterns = [
 
     #### Index pages / query set-up (user input)
     url(r'^$', views.index, name='index'),
+
+    url(r'^project/(?P<pid>[0-9]+)/$', views.project, name='project'),
 
     url(r'^snowball$', views.snowball, name='snowball'),
     #### Query processing

@@ -32,7 +32,8 @@ from django_tables2 import RequestConfig
 from .models import *
 
 from .forms import *
-from .tables import *
+from .tables import ProjectTable
+from .tasks import *
 
 def super_check(user):
     return user.groups.filter(name__in=['superuser'])
@@ -61,23 +62,32 @@ def index(request):
         newproj=ProjectForm(request.POST)
         if newproj.is_valid():
             project = newproj.save(commit=False)
-            project.owner = request.user
+            #project.owner = request.user
             project.save()
 
     template = loader.get_template('scoping/index.html')
 
-    myproj = Project.objects.filter(owner=request.user).annotate(
-        queries = Count('query', distinct=True),
-        docs = Count('query__doc', distinct=True)
-    )
+    myproj = Project.objects.filter(users=request.user,projectroles__role="OW")
+
+    for p in myproj:
+        p.role = ProjectRoles.objects.get(project=p,user=request.user).get_role_display()
+
+
     myproj = ProjectTable(myproj)
     RequestConfig(request).configure(myproj)
 
-    print(myproj)
 
     newproj= ProjectForm()
 
-    acproj = Project.objects.all()
+    acproj = Project.objects.filter(users=request.user)
+    for p in acproj:
+        p.role = ProjectRoles.objects.get(project=p,user=request.user).get_role_display()
+        #p.id = '<a href="">{}</a>'.format(p.id)
+    pids = acproj.values_list('id',flat=True)
+    update_projs.delay(list(pids))
+
+    acproj = ProjectTable(acproj)
+    RequestConfig(request).configure(acproj)
 
     context = {
         'myproj': myproj,
@@ -86,6 +96,56 @@ def index(request):
     }
 
     return HttpResponse(template.render(context, request))
+
+@login_required
+def project(request, pid):
+
+    if request.method == "POST":
+        form=ProjectRoleForm(request.POST)
+        if form.is_valid() :
+            print(form.data)
+            u = form.cleaned_data['user']
+            role = form.cleaned_data['role']
+            obj, created = ProjectRoles.objects.get_or_create(
+                project_id=pid,user=u)
+            obj.role = role
+            obj.save()
+
+    template = loader.get_template('scoping/project.html')
+
+    p = Project.objects.get(pk=pid)
+    ars = ['OW','AD']
+    try:
+        if ProjectRoles.objects.get(project=p,user=request.user).role in ars:
+            admin="true"
+        else:
+            admin="false"
+    except:
+        return HttpResponseRedirect(reverse('scoping:index'))
+
+    updateRoles = []
+    projUsers = User.objects.filter(project=p)
+    for u in projUsers:
+        ur = ProjectRoles.objects.get(project=p,user=u).role
+        f = ProjectRoleForm(initial={'user': u, 'role': ur})
+        f.fields["user"].queryset = User.objects.filter(pk=u.id)
+        updateRoles.append(f)
+
+    newRole = ProjectRoleForm()
+    newRole.fields["user"].queryset = User.objects.exclude(
+        id__in=projUsers.values_list('id',flat=True)
+    )
+
+
+    context = {
+        'newRole': newRole,
+        'updateRoles': updateRoles,
+        'admin': admin,
+        'project': p
+    }
+
+    return HttpResponse(template.render(context, request))
+
 
 @login_required
 def queries(request):

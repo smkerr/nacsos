@@ -41,14 +41,28 @@ class SnowballingSession(models.Model):
       return self.name
 
 class Project(models.Model):
+
     title = models.TextField(null=True)
     description = models.TextField(null=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    users = models.ManyToManyField(User, through='ProjectRoles')
+    queries = models.IntegerField(null=True)
+    docs = models.IntegerField(null=True)
 
     def __str__(self):
       return self.title
 
+class ProjectRoles(models.Model):
 
+    ROLE_CHOICES = (
+        ('OW', 'Owner'),
+        ('AD', 'Admin'),
+        ('RE', 'Reviewer'),
+        ('VE', 'Viewer')
+    )
+
+    project= models.ForeignKey(Project, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=2, choices=ROLE_CHOICES)
 
 
 class DocProject(models.Model):
