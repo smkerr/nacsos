@@ -12,6 +12,7 @@ from nltk.stem import SnowballStemmer
 from django.http import JsonResponse
 import json, csv
 import decimal
+from django.core import management
 
 # the following line will need to be updated to launch the browser on a web server
 TEMPLATE_DIR = sys.path[0] + '/templates/'
@@ -218,6 +219,17 @@ def return_corrs(request):
         "links":links
     }
     return HttpResponse(json.dumps(context,sort_keys=True))
+
+def compare_runs(request, a, z):
+
+    fname = management.call_command('compare_topics',a, z)
+
+    with open(fname,"rb") as f:
+
+        response = HttpResponse(f, content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = 'attachment; filename="'+fname+'"'
+
+    return response
 
 #######################################################################
 ## DynamicTopic View
@@ -644,7 +656,7 @@ def doc_detail(request, doc_id, run_id):
     words = []
     for word in doc.content.split():
         wt = ""
-        for t in range(1,ntopic+1):
+        for t in reversed(range(1,ntopic+1)):
             if snowball_stemmer.stem(word) in topicwords[t] or word in topicwords[t]:
             #if word in topicwords[t]:
                 wt = t
