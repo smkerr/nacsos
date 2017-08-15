@@ -29,6 +29,14 @@ class Command(BaseCommand):
 
         runs = list(range(a,z))
 
+        stat = RunStats.objects.get(pk=a)
+
+        if stat.method == "DT":
+            dynamic = True
+        else:
+            dynamic = False
+
+
         col1s = []
         col2s = []
         ss = []
@@ -36,8 +44,12 @@ class Command(BaseCommand):
 
         for i in range(1,len(runs)):
 
-            topics1 = Topic.objects.filter(run_id=runs[i-1])
-            topics2 = Topic.objects.filter(run_id=runs[i])
+            if dynamic==True:
+                topics1 = DynamicTopic.objects.filter(run_id=runs[i-1])
+                topics2 = DynamicTopic.objects.filter(run_id=runs[i])
+            else:
+                topics1 = Topic.objects.filter(run_id=runs[i-1])
+                topics2 = Topic.objects.filter(run_id=runs[i])
 
 
             df = pd.DataFrame.from_dict(list(topics2.values('title','score')))
