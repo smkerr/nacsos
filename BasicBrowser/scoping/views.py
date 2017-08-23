@@ -3096,7 +3096,10 @@ def highlight_words(s,query):
 
     nots = ["TS","AND","NOT","NEAR","OR","and","W"]
     transtable = {ord(c): None for c in string.punctuation + string.digits}
-    qwords = set([x.split('*')[0].translate(transtable) for x in qwords if x not in nots and len(x.translate(transtable)) > 0])
+    try:
+        qwords = set([x.split('*')[0].translate(transtable) for x in qwords if x not in nots and len(x.translate(transtable)) > 0])
+    except:
+        qwords = set()
     print(qwords)
     abstract = []
     for word in s.split(" "):
