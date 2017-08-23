@@ -3102,7 +3102,11 @@ def highlight_words(s,query):
         qwords = set()
     print(qwords)
     abstract = []
-    for word in s.split(" "):
+    try:
+        words = s.split(" ")
+    except:
+        words = []
+    for word in words:
         h = False
         for q in qwords:
             if q in word.lower():
