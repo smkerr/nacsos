@@ -3113,6 +3113,10 @@ def highlight_words(s,query):
     qwords = set([x.split('*')[0].translate(transtable) for x in qwords if x not in nots and len(x.translate(transtable)) > 0])
     print(qwords)
     abstract = []
+    try:
+        words = s.split(" ")
+    except:
+        words = []
     for word in s.split(" "):
         h = False
         for q in qwords:
