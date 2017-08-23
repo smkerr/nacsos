@@ -79,7 +79,7 @@
 	 	    <td class="ltext">{{ query.text }}</td>
 		    <td>{{ query.date }}</td>
                     {% if query.r_count > 0 %}
-                      <td><a href="docs/{{query.id}}">{{ query.r_count }}</a></td>
+                      <td><a href="{% url 'scoping:doclist' query.project.id query.id %}">{{ query.r_count }}</a></td>
                     {% else %}
                       <td><a href="querying/{{query.id}}/0/0">View progress</a></td>
                     {% endif %}
@@ -117,7 +117,9 @@
                 </select>
             </td>
                 {% endif %}
-                <td><a href="delete_query/{{query.id}}"><button onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button></a></td>
+                <td><a href="{% url 'scoping:delete' 'Query' query.id %}">
+                    <button onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button>
+                </a></td>
 		    </tr>
 
 		{% endfor %}
@@ -137,7 +139,7 @@ Use this form to submit a new query, which will be run in the background. Be awa
 <p>Note that larger queries (more than 2000 results in any single year) cannot currently be carried out in Scopus.
 <p>Choose the source "internal" to compare and combine two existing queries, identified by their IDs, using the operators "NOT" and "AND"; e.g. "36 AND 42", or "42 NOT 36".
 </p>
-<form action="{% url 'scoping:doquery' %}" method="post">
+<form action="{% url 'scoping:doquery' project.id %}" method="post">
   {% csrf_token %}
 
   <h4> Query Title </h4>

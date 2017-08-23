@@ -53,6 +53,8 @@ class DynamicTopic(models.Model):
     size = models.IntegerField(null=True)
     run_id = models.ForeignKey('RunStats',db_index=True)
     top_words = ArrayField(models.TextField(),null=True)
+    l5ys = models.FloatField(null=True)
+    l1ys = models.FloatField(null=True)
 
     def __unicode__(self):
         return str(self.title)
@@ -88,7 +90,18 @@ class TopicYear(models.Model):
     topic = models.ForeignKey('Topic',null=True)
     PY = models.IntegerField()
     score = models.FloatField()
+    year_share = models.FloatField(null=True)
     count = models.FloatField()
+    run_id = models.IntegerField(db_index=True)
+
+#################################################
+## TopicYear holds per year topic totals
+class DynamicTopicYear(models.Model):
+    topic = models.ForeignKey('DynamicTopic',null=True)
+    PY = models.IntegerField()
+    score = models.FloatField(null=True)
+    count = models.FloatField(null=True)
+    year_share = models.FloatField(null=True)
     run_id = models.IntegerField(db_index=True)
 
 class TopicARScores(models.Model):
@@ -125,10 +138,12 @@ class TopicTerm(models.Model):
     run_id = models.IntegerField(db_index=True)
 
 class DynamicTopicTerm(models.Model):
-    topic = models.ForeignKey('DynamicTopic',null=True)
-    term = models.ForeignKey('Term',null=True)
+    topic = models.ForeignKey('DynamicTopic', null=True)
+    term = models.ForeignKey('Term', null=True)
+    PY = models.IntegerField(db_index=True, null=True)
     score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
+
 
 
 #################################################

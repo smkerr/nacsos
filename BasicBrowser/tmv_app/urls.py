@@ -28,6 +28,9 @@ urlpatterns = [
     url(r'^topic_list$', login_required(topic_list_detail)),
     # Home page
     url(r'^topic_presence/(?P<run_id>\d+)$', login_required(topic_presence_detail),name="topics"),
+
+    url(r'^topics_time/(?P<run_id>\d+)/(?P<stype>\d+)$', login_required(topics_time),name="topics_time"),
+
     url(r'^stats/(?P<run_id>\d+)$', login_required(stats)),
     url(r'^settings$', login_required(settings)),
     url(r'^settings/apply$', login_required(apply_settings)),

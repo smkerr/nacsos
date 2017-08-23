@@ -35,7 +35,13 @@ class Command(BaseCommand):
         if stat.method == "DT":
             update_topic_scores(parent_run_id)
             update_dtopics(run_id)
+
+            pstat = RunStats.objects.get(run_id=parent_run_id)
+            pstat.topic_titles_current = False
+            pstat.save()
             update_topic_titles(run_id)
+
+
 
             tops = Topic.objects.filter(run_id=parent_run_id)
 
@@ -56,5 +62,7 @@ class Command(BaseCommand):
             update_year_topic_scores(run_id)
             update_topic_scores(run_id)
             update_topic_titles(run_id)
+
+            yearly_topic_term_scores(run_id)
 
             management.call_command('corr_topics',run_id)

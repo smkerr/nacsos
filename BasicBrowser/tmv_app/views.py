@@ -13,6 +13,8 @@ from django.http import JsonResponse
 import json, csv
 import decimal
 from django.core import management
+from .tasks import *
+from celery import group
 
 # the following line will need to be updated to launch the browser on a web server
 TEMPLATE_DIR = sys.path[0] + '/templates/'
@@ -231,6 +233,40 @@ def compare_runs(request, a, z):
 
     return response
 
+def topics_time(request, run_id, stype):
+    stat = RunStats.objects.get(pk=run_id)
+    if stat.method=="DT":
+        topics = DynamicTopic.objects.filter(run_id=run_id)
+        yts = DynamicTopicYear.objects.filter(run_id=run_id)#, PY__lt=2016)
+        #yts = DynamicTopicYear.objects.filter(run_id=run_id, PY__in=[2010,2011,2012])
+    else:
+        topics = Topic.objects.filter(run_id=run_id)
+
+    template = loader.get_template('tmv_app/topics_time.html')
+
+    yts = yts.order_by(
+        'topic__score','PY'
+    ).values(
+        'topic__id',
+        'topic__title',
+        'PY',
+        'score',
+        'year_share'
+    )
+
+    if int(stype)==0:
+        stype='score'
+    else:
+        stype='year_share'
+
+    context = {
+        'yts': list(yts),
+        'stype': stype
+
+    }
+
+    return HttpResponse(template.render(request =request, context=context))
+
 #######################################################################
 ## DynamicTopic View
 def dynamic_topic_detail(request,topic_id):
@@ -247,8 +283,25 @@ def dynamic_topic_detail(request,topic_id):
     topicterms = Term.objects.filter(
         dynamictopicterm__topic=topic,
         run_id=run_id,
-        dynamictopicterm__score__gt=0.00001
+        dynamictopicterm__score__gt=0.00001,
+        dynamictopicterm__PY__isnull=True
     ).order_by('-dynamictopicterm__score')[:50]
+
+    ytterms = []
+
+    tts = DynamicTopicTerm.objects.filter(
+        topic=topic,
+        PY__isnull=False
+    )
+    for py in tts.distinct('PY') \
+        .order_by('PY').values_list('PY',flat=True):
+        ytts = tts.filter(PY=py).order_by('-score')[:10]
+        ytterms.append(ytts)
+
+    yscores = list(DynamicTopicYear.objects.filter(
+        topic=topic
+    ).values('PY','score'))
+
 
     wtopics = Topic.objects.filter(
         #run_id=run_id,
@@ -298,7 +351,10 @@ def dynamic_topic_detail(request,topic_id):
         )
     )
 
-    ysums = dtopics.values('year').annotate(
+    ysums = Topic.objects.filter(
+        run_id=run_id,
+        year__lt=2200
+    ).values('year').annotate(
         sum = Sum('score'),
     )
 
@@ -310,7 +366,9 @@ def dynamic_topic_detail(request,topic_id):
         'wtopics': wtopics,
         'wtvs': list(dtopics.values('title','score','year','dscore','id')),
         'ysums': list(ysums.values('year','sum')),
-        'docs': docs
+        'docs': docs,
+        'ytterms': ytterms,
+        'yscores': yscores
     }
     return HttpResponse(template.render(request =request, context=context))
 
@@ -336,6 +394,47 @@ def dtopic_detail(request,topic_id):
     }
 
     return HttpResponse(template.render(context))
+
+def yearly_topic_term_scores(run_id):
+
+    stat=RunStats.objects.get(pk=run_id)
+    if stat.parent_run_id is not None:
+        parent_run_id = stat.parent_run_id
+    else:
+        parent_run_id = run_id
+
+    ytds = DocTopic.objects.filter(
+        run_id=parent_run_id
+    ).values('topic__year').annotate(
+        dtopic_score = F('score') * F('topic__topicdtopic__score')
+    ).annotate(
+        yscore = Sum('dtopic_score')
+    )
+
+
+    dt_ids = DynamicTopic.objects.filter(
+        run_id=run_id#,
+        #dynamictopicyear__isnull=True
+    ).values_list('id',flat=True)
+
+    jobs = group(yearly_topic_term.s(dt,run_id) for dt in dt_ids)
+    result = jobs.apply_async()
+
+    dtys = DynamicTopicYear.objects.filter(
+        run_id=run_id
+    )
+
+    yscores = dtys.values('PY').annotate(
+        ytotal=Sum('score')
+    )
+
+    for dty in dtys:
+        ytot = yscores.get(PY=dty.PY)['ytotal']
+        dty.year_share = dty.score/ytot
+        dty.save()
+
+
+
 
 ###########################################################################
 ## Topic View
@@ -1107,29 +1206,9 @@ def update_dtopics(run_id):
     #if "a" == "b":
     if not stats.topic_titles_current:
     #if "a" in "ab":
-        #print("UPDATING")
-        for topic in DynamicTopic.objects.filter(run_id=run_id):
-            topicterms = Term.objects.filter(
-                dynamictopicterm__topic=topic
-            ).order_by('-dynamictopicterm__score')[:10]
-            topic.top_words=[x.title.lower() for x in topicterms]
-            new_topic_title = '{'
-            for tt in topicterms[:3]:
-                new_topic_title +=tt.title
-                new_topic_title +=', '
-            new_topic_title = new_topic_title[:-2]
-            new_topic_title+='}'
-            topic.title = new_topic_title
-            topic.score = 0
-            score = DocTopic.objects.filter(
-                run_id=parent_run_id,
-                topic__primary_dtopic=topic
-            ).aggregate(
-                t=Sum('score')
-            )['t']
-            if score is not None:
-                topic.score = score
-            topic.save()
+        dts = DynamicTopic.objects.filter(run_id=run_id).values_list('id',flat=True)
+        jobs = group(update_dtopic.s(dt,parent_run_id) for dt in dts)
+        result = jobs.apply_async()
         stats.topic_titles_current = True
         stats.save()
 
