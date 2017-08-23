@@ -10,7 +10,7 @@ urlpatterns = [
     # Homepage, projet management
 
     url(r'^$', views.index, name='index'),
-
+    url(r'^project/(?P<pid>[0-9]+)/$', views.project, name='project'),
 
 
 
@@ -18,16 +18,20 @@ urlpatterns = [
 
 
     #### Index pages / query set-up (user input)
-    url(r'^$', views.index, name='index'),
 
-    url(r'^project/(?P<pid>[0-9]+)/$', views.project, name='project'),
+
+    url(r'^queries/(?P<pid>[0-9]+)/$', views.queries, name='queries'),
+    url(r'^docs/(?P<pid>[0-9]+)/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
+
+    url(r'^doquery/(?P<pid>[0-9]+)$', views.doquery, name='doquery'),
+
 
     url(r'^snowball$', views.snowball, name='snowball'),
     #### Query processing
     url(r'^start_snowballing$', views.start_snowballing, name='start_snowballing'),
     url(r'^doquery$', views.doquery, name='doquery'),
     url(r'^do_snowballing/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)$', views.do_snowballing, name='do_snowballing'),
-    url(r'^dodocadd$', views.dodocadd, name='dodocadd'),
+    url(r'^dodocadd/(?P<qid>[0-9]+)$', views.dodocadd, name='dodocadd'),
     url(r'^querying/(?P<qid>[0-9]+)/(?P<substep>[0-9]+)/(?P<docadded>[0-9]+)/(?P<q2id>[0-9]+)$', views.querying, name='querying'),
     url(r'^querying/(?P<qid>[0-9]+)/(?P<substep>[0-9]+)/(?P<docadded>[0-9]+)/$', views.querying, name='querying'),
     url(r'^querying/(?P<qid>[0-9]+)/$', views.querying, name='querying'),
@@ -52,7 +56,7 @@ urlpatterns = [
 
     url(r'^switchmode$', views.switch_mode, name='switch_mode'),
 
-    url(r'^technologies',views.technologies, name='technologies'),
+    url(r'^technologies/(?P<pid>[0-9]+)',views.technologies, name='technologies'),
     url(r'^technology/(?P<tid>[0-9]+)$',views.technology, name='technology'),
     url(r'^download_tdocs/(?P<tid>[0-9]+)$',views.download_tdocs, name='download_tdocs'),
     url(r'^authorlist/(?P<tid>[0-9]+)$',views.prepare_authorlist, name='authorlist'),
@@ -61,10 +65,10 @@ urlpatterns = [
     url(r'^add_tech',views.add_tech, name='add_tech'),
     url(r'^update_tech',views.update_tech, name='update_tech'),
 
-    url(r'^user$', views.userpage, name='userpage'),
+    url(r'^user/(?P<pid>[0-9]+)$', views.userpage, name='userpage'),
 
     url(r'^update_criteria$', views.update_criteria, name='update_criteria'),
-    url(r'^docs/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
+
     url(r'^docs/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<sbsid>[0-9]+)$', views.doclist, name='doclist'),
     url(r'^docssbs/(?P<sbsid>[0-9]+)$', views.doclistsbs, name='doclistsbs'),
     url(r'^docrellist/(?P<sbsid>[0-9]+)/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<q3id>[0-9]+)$', views.docrellist, name='docrellist'),

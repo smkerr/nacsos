@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 from scoping.models import *
+from utils.utils import *
 import os
 
 class Command(BaseCommand):
@@ -85,6 +86,8 @@ class Command(BaseCommand):
                             for i in range(len(r)):
                                 if i>0:
                                     f.write('   ')
+                                if fn=="CR" and "WOS:" not in d.UT:
+                                    r[i] = wosify_scopus_ref(r[i].strip())
                                 f.write(r[i].strip())
                                 f.write('\n')
                         else:
