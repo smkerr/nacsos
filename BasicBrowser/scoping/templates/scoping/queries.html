@@ -1,0 +1,135 @@
+{% extends "scoping/base.html" %}
+{% block content %}
+
+        <h1> Scoping Review Helper</h1>
+        <br/>
+
+        <!-- Query manager -->
+        <div class="explanation">
+
+          <h2> Query manager </h2>
+          <p>Use the buttons below to filter queries by user and technology.
+             New queries can be made at the bottom of the page.</p>
+          <br/>
+          <p id="field_container">
+          {% for u in users %}
+              {% if u == user %}
+                <span class="field_name user active" name="{{u.id}}">{{ u.username }}</span>
+              {% else %}
+                <span class="field_name user technology" name="{{u.id}}">{{ u.username }}</span>
+              {% endif %}
+          {% endfor %}
+          </p>
+
+          <p id="field_container">
+            <span class="field_name tech active" name="None">None</span>
+            {% for t in techs %}
+              <span class="field_name tech active" name="{{t.id}}">{{ t.name }}</span>
+            {% endfor %}
+          </p>
+        </div>
+
+        <p>
+            <table class="light" id="query_table" style="width:100%">
+        {% include 'scoping/query_table.html' %}
+    </table>
+
+<br/><hr/><br/>
+
+<!-- This gets new queries -->
+
+<div class="explanation">
+<h2> Query Getter </h2>
+
+<p>
+Use this form to submit a new query, which will be run in the background. Be aware that queries of external databases may take some time, and involve scraping outside websites and downloading large amounts of information.
+<p>It is recommended that you develop a query at the external page (<a href="http://apps.webofknowledge.com/WOS_AdvancedSearch_input.do?SID=3CWPGcaiOusPROlzkHF&product=WOS&search_mode=AdvancedSearch">Web of Science</a> or <a href="https://www.scopus.com/search/form.uri?display=advanced">Scopus</a>). When you enter it here, the server will type it into the box on the relevant page, download bibliographic information about all results, and upload them to the server where they can be analysed in more detail.
+<p>Note that larger queries (more than 2000 results in any single year) cannot currently be carried out in Scopus.
+<p>Choose the source "internal" to compare and combine two existing queries, identified by their IDs, using the operators "NOT" and "AND"; e.g. "36 AND 42", or "42 NOT 36".
+</p>
+<form action="{% url 'scoping:doquery' project.id %}" method="post">
+  {% csrf_token %}
+
+  <h4> Query Title </h4>
+  <input type="text" name="qtitle"></input>
+
+  <input type="hidden" name="qtype" value="default"></input>
+
+  <h4> Query Source </h4>
+
+
+    <select name="qdb">
+        <option value="WoS">Web of Science</option>
+        <option value="scopus">Scopus</option>
+        <option value="intern">Internal</option>
+    </select>
+
+  <h4> Query Text </h4>
+  <textarea rows=3 cols=50 name="qtext"></textarea>
+  <br/><br/>
+
+  <input type="submit" value="Search Query" />
+</form>
+</div>
+<p>
+
+
+{% endblock %}
+
+
+
+{% block script %}
+
+<script>
+
+$(".field_name").click(function() {
+    $("body").css("cursor", "progress");
+    $(this).toggleClass('active')
+    users = []
+    techs = []
+    $(".field_name.user.active").each(function(){
+        users.push($(this).attr('name'))
+    })
+    $(".field_name.tech.active").each(function(){
+        techs.push($(this).attr('name'))
+    })
+    console.log(users)
+    console.log(techs)
+
+    $.ajax({
+        url: "{% url 'scoping:query_table' project.id %}",
+        data: {
+            'users': users,
+            'techs': techs
+        },
+        success: function(res) {
+            $("#query_table").html(res)
+            $("body").css("cursor", "default");
+        }
+    })
+})
+
+
+
+$(".qtag").change(function() {
+    thing = $(this).attr("data-thing")
+    query = $(this).attr("data-query")
+    value = $(this).val()
+
+    $.ajax({
+        url: "{% url 'scoping:update_thing' %}",
+        data: {
+            'thing1': "Query",
+            'id1': query,
+            'thing2': thing,
+            'id2': value,
+            'method': "update"
+        },
+        success: function(data) {
+        }
+    })
+})
+
+</script>
+
+{% endblock %}

@@ -8,6 +8,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'BasicBrowser.settings')
 
 app = Celery(
     'BasicBrowser',
+    backend='redis://localhost:6379/0',
     broker='redis://localhost:6379/0'
 )
 

@@ -2,7 +2,7 @@ from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 from itertools import chain
 from django.db.models import Max
-from django.db.models import Count, Func, F, Sum, Value as V
+from django.db.models import Q, Count, Func, F, Sum, Value as V
 from django.db.models.functions import Concat
 from django.core import serializers
 from django.core.serializers import serialize
@@ -26,8 +26,15 @@ import json
 from django.apps import apps
 import difflib
 from sklearn.metrics import cohen_kappa_score
+from django.core import management
+
+from django_tables2 import RequestConfig
 
 from .models import *
+
+from .forms import *
+from .tables import ProjectTable
+from .tasks import *
 
 def super_check(user):
     return user.groups.filter(name__in=['superuser'])
@@ -48,20 +55,146 @@ def switch_mode(request):
 ########################################################
 ## Homepage - list the queries, form for adding new ones
 
+
 @login_required
 def index(request):
-    request.session['DEBUG'] = False
-    request.session['appmode']='scoping'
+
+    if request.method == "POST":
+        newproj=ProjectForm(request.POST)
+        if newproj.is_valid():
+            project = newproj.save(commit=False)
+            project.save()
+            obj, created = ProjectRoles.objects.get_or_create(
+                project=project,user=request.user)
+            obj.role = "OW"
+            obj.save()
 
     template = loader.get_template('scoping/index.html')
 
-    queries_none  = Query.objects.all().filter(type=None)
-    queries_dft   = Query.objects.all().filter(type="default")
-    queries       = queries_none | queries_dft
-    queries       = queries.order_by('-id')
-    query         = queries.last()
-    users         = User.objects.all()
-    technologies  = Technology.objects.all()
+    myproj = Project.objects.filter(users=request.user,projectroles__role="OW")
+
+    for p in myproj:
+        p.role = ProjectRoles.objects.get(project=p,user=request.user).get_role_display()
+
+
+    myproj = ProjectTable(myproj)
+    RequestConfig(request).configure(myproj)
+
+
+    newproj= ProjectForm()
+
+    acproj = Project.objects.filter(users=request.user)
+    for p in acproj:
+        p.role = ProjectRoles.objects.get(project=p,user=request.user).get_role_display()
+
+    pids = acproj.values_list('id',flat=True)
+
+    update_projs.delay(list(pids))
+
+    acproj = ProjectTable(acproj)
+    RequestConfig(request).configure(acproj)
+
+    context = {
+        'myproj': myproj,
+        'acproj': acproj,
+        'newproj': newproj
+    }
+
+    return HttpResponse(template.render(context, request))
+
+@login_required
+def project(request, pid):
+
+    if request.method == "POST":
+        form=ProjectRoleForm(request.POST)
+        if form.is_valid() :
+            print(form.data)
+            u = form.cleaned_data['user']
+            role = form.cleaned_data['role']
+            obj, created = ProjectRoles.objects.get_or_create(
+                project_id=pid,user=u)
+            obj.role = role
+            obj.save()
+
+    template = loader.get_template('scoping/project.html')
+
+    p = Project.objects.get(pk=pid)
+    ars = ['OW','AD']
+    try:
+        if ProjectRoles.objects.get(project=p,user=request.user).role in ars:
+            admin="true"
+        else:
+            admin="false"
+    except:
+        return HttpResponseRedirect(reverse('scoping:index'))
+
+    updateRoles = []
+    projUsers = User.objects.filter(project=p)
+    for u in projUsers:
+        ur = ProjectRoles.objects.get(project=p,user=u).role
+        f = ProjectRoleForm(initial={'user': u, 'role': ur})
+        f.fields["user"].queryset = User.objects.filter(pk=u.id)
+        updateRoles.append(f)
+        u.f = f
+        u.queries = Query.objects.filter(
+            creator=u,
+            project=p
+        ).count()
+        u.ratings = u.docownership_set.filter(
+            relevant__gt=0,
+            query__project=p
+        ).count()
+
+    newRole = ProjectRoleForm()
+    newRole.fields["user"].queryset = User.objects.exclude(
+        id__in=projUsers.values_list('id',flat=True)
+    )
+
+
+    context = {
+        'newRole': newRole,
+        'updateRoles': updateRoles,
+        'admin': admin,
+        'project': p,
+        'projectUsers': projUsers
+    }
+
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def queries(request, pid):
+    request.session['DEBUG'] = False
+    request.session['appmode']='scoping'
+
+    template = loader.get_template('scoping/queries.html')
+
+    if int(pid) == 0:
+        queries = Query.objects.filter(
+            project__isnull=True
+        ).order_by('-id')
+
+        users = User.objects.all().order_by('username')
+
+        technologies  = Technology.objects.all()
+        p = None
+
+    else:
+        p = Project.objects.get(pk=pid)
+
+        queries = Query.objects.filter(
+            project=p,
+            creator=request.user
+        ).order_by('-id')
+        users = User.objects.filter(
+            projectroles__project=p
+        ).order_by('username')
+
+        technologies  = Technology.objects.filter(
+            project=p
+        )
+
+    query = queries.last()
 
     for q in queries:
         q.tech = q.technology
@@ -84,20 +217,59 @@ def index(request):
       'techs'        : technologies,
       'appmode'      : request.session['appmode'],
       'extended'     : extended,
-      'innovations'  : Innovation.objects.all()
+      'innovations'  : Innovation.objects.all(),
+      'project'      : p,
     }
 
     return HttpResponse(template.render(context, request))
+
+@login_required
+def query_table(request, pid):
+    template = loader.get_template('scoping/query_table.html')
+    p = Project.objects.get(pk=pid)
+
+    users = request.GET.getlist('users[]',None)
+    techs = request.GET.getlist('techs[]',None)
+    if 'None' in techs:
+        techs = [t for t in techs if t !='None']
+        queries = Query.objects.filter(
+            project=p,
+            creator__id__in=users
+        ).filter(
+            Q(technology__isnull=True) | Q(technology__in=techs)
+        ).order_by('-id')
+    else:
+        queries = Query.objects.filter(
+            project=p,
+            creator__id__in=users,
+            technology__in=techs
+        ).order_by('-id')
+
+    technologies  = Technology.objects.filter(
+        project=p
+    )
+
+
+
+
+    context = {
+      'queries': queries,
+      'project': p,
+      'techs': technologies
+    }
+
+    return HttpResponse(template.render(context, request))
+
 
 ########################################################
 ## Tech Homepage - list the technologies, form for adding new ones
 
 @login_required
-def technologies(request):
+def technologies(request, pid):
 
     template = loader.get_template('scoping/tech.html')
 
-    technologies = Technology.objects.all()
+    technologies = Technology.objects.filter(project=pid)
 
     users = User.objects.all()
     refresh = False
@@ -237,7 +409,7 @@ def update_tech(request):
 import subprocess
 import sys
 @login_required
-def doquery(request):
+def doquery(request, pid):
 
     #ssh_test()
 
@@ -246,11 +418,22 @@ def doquery(request):
     qtype  = request.POST['qtype']
     qtext  = request.POST['qtext']
 
+    p = Project.objects.get(pk=pid)
+
+    pr = ProjectRoles.objects.get(project=p,user=request.user).role
+
+    if pr in ['OW', 'AD']:
+        admin = True
+    else: # STOP! and go back with a good message
+        admin = False
+        return HttpResponseRedirect(reverse('scoping:queries', kwargs={'pid': pid}))
+
     #  create a new query record in the database
     q = Query(
         title=qtitle,
         type=qtype,
         text=qtext,
+        project=p,
         creator = request.user,
         date = timezone.now(),
         database = qdb
@@ -320,7 +503,7 @@ def doquery(request):
         q.r_count = len(combine.distinct('UT'))
         q.save()
 
-        return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': q.id, 'q2id': 0, 'sbsid': 0}))
+        return HttpResponseRedirect(reverse('scoping:doclist', kwargs={ 'qid': q.id }))
 
 
     else:
@@ -334,7 +517,10 @@ def doquery(request):
     # run "scrapeQuery.py" on the text file in the background
     subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
 
-    return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 0, 'docadded': 0, 'q2id': 0}))
+    return HttpResponseRedirect(reverse(
+        'scoping:querying',
+        kwargs={'qid': q.id, 'substep': 0, 'docadded': 0, 'q2id': 0}
+    ))
 
 #########################################################
 ## Start snowballing
@@ -612,30 +798,12 @@ def delete_sbs(request, sbsid):
 #########################################################
 ## Add the documents to the database
 @login_required
-def dodocadd(request):
-    qid = request.GET.get('qid',None)
-    if 'q2id' != 0 or 'q2id' != '0':
-        q2id = request.GET.get('q2id',None)
-    else:
-        q2id = 0
-    db  = request.GET.get('db',None)
-
+def dodocadd(request,qid):
     q = Query.objects.get(pk=qid)
 
     if q.dlstat != "NOREC":
-        if db=="WoS":
-            upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_docs.py'))
-        if db=="scopus":
-            upload = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','upload_scopus_docs.py'))
-
-        subprocess.Popen(["python3", upload, qid])
-
+        management.call_command('upload', qid, True, 1)
         time.sleep(2)
-
-    if q.type == "default":
-        substep = 0
-    else:
-        substep = 2
 
     #return HttpResponse(upload)
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
@@ -647,50 +815,40 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
 
     template = loader.get_template('scoping/query_progress.html')
 
-    if 'appmode' not in request.session:
-        request.session['appmode'] = "scoping"
-    #== SCOPING ===================================================================================
-    if request.session['appmode']!='snowballing':
+    query = Query.objects.get(pk=qid)
 
-        query = Query.objects.get(pk=qid)
+    # How many docs are there already added?
+    doclength = Doc.objects.filter(query__id=qid).count()
 
-        # How many docs are there already added?
-        docs      = Doc.objects.filter(query__id=qid)
-        doclength = len(docs)
+    if doclength == 0: # if we've already added the docs, we don't need to show the log
+        logfile = "/queries/"+str(query.id)+".log"
 
-        if doclength == 0: # if we've already added the docs, we don't need to show the log
-            logfile = "/queries/"+str(query.id)+".log"
+        wait = True
+        # wait up to 15 seconds for the log file, then go to a page which displays its contents
+        for i in range(10):
+            try:
+                with open(logfile,"r") as lfile:
+                    log = lfile.readlines()
+                break
+            except:
+                log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
+                time.sleep(1)
 
-            wait = True
-            # wait up to 15 seconds for the log file, then go to a page which displays its contents
-            for i in range(15):
-                try:
-                    with open(logfile,"r") as lfile:
-                        log = lfile.readlines()
-                    break
-                except:
-                    log = ["oops, there seems to be some kind of problem, I can't find the log file. Try refreshing a couple of times before you give up and start again."]
-                    time.sleep(1)
-
-            finished = False
-            if "done!" in log[-1]:
-                finished = True
-        else:
-            log=False
-            finished=True
-
-        context = {
-            'log': log,
-            'finished': finished,
-            'docs': docs,
-            'doclength': doclength,
-            'query': query,
-            'substep': substep
-        }
-
-    #== SNOWBALLING ================================================= (all moved down to next fun)
+        finished = False
+        if "done!" in log[-1]:
+            finished = True
     else:
-       context = {}
+        log=False
+        finished=True
+
+    context = {
+        'log': log,
+        'finished': finished,
+        'doclength': doclength,
+        'query': query,
+        'project': query.project
+    }
+
     return HttpResponse(template.render(context, request))
 
 def snowball_progress(request,sbs):
@@ -1289,11 +1447,15 @@ def query(request,qid,q2id='0',sbsid='0'):
 ## User home page
 
 @login_required
-def userpage(request):
+def userpage(request, pid):
     template = loader.get_template('scoping/user.html')
 
+    project = Project.objects.get(pk=pid)
     # Queries
-    queries = Tag.objects.filter(query__users=request.user).values('query__id','query__type','id')
+    queries = Tag.objects.filter(
+        query__users=request.user,
+        query__project=project
+    ).values('query__id','query__type','id')
 
     query_list = []
 
@@ -1338,111 +1500,11 @@ def userpage(request):
 
     query = queries.last()
 
-
-    # Snowballing sesseions
-   # sb_sessions     = SnowballingSession.objects.all().order_by('-id')
-
-    # Get latest step associated with each SB sessions
-    # Initialise variable that will contain the information to be sent to the webpage (context)
-    #sb_info = []
-
-    # Loop over SB sessions
-    #for sbs in sb_sessions:
-    #    sb_info_tmp = {}
-    #    sb_info_tmp['id']     = sbs.id
-    #    sb_info_tmp['name']   = sbs.name
-    #    sb_info_tmp['ip']     = sbs.initial_pearls
-    #    sb_info_tmp['date']   = sbs.date
-    #    sb_info_tmp['status'] = sbs.status
-
-        # Get queries associated with the current SB session
-    #    sb_qs    = Query.objects.filter(snowball = sbs.id).order_by('-id')
-
-        # Initialise step, count and query_info variables
-    #    step     = "1"
-    #    nbdocsel = 0
-    #    nbdoctot = 0
-    #    nbdocrem = 0
-    #    sb_info_tmp['q_info'] = []
-
-        # Loop over queries associated with the current SB session
-    #    cnt = 0 # Query iterator to capture last query (There must be a better way to do that)
-    #    for q in sb_qs:
-            # Select reference queries only (sub-step == 2)
-    #        if q.title.split("_")[3] == "2":
-                # For old queries
-    #            try:
-    #                q_info_tmp             = {}
-    #                q_info_tmp['id']       = q.id
-    #                q_info_tmp['title']    = q.title
-    #                q_info_tmp['type']     = q.type
-                    #q_info_tmp['nbdoctot'] = DocOwnership.objects.filter(query = q, user=request.user).count()
-                    #q_info_tmp['nbdocsel'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 1).count()
-                    #q_info_tmp['nbdocrev'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 0).count()
-                    #q_info_tmp['nbdoctot'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
-    #                q_info_tmp['nbdocsel'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
-    #                q_info_tmp['nbdocrem'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
-    #                q_info_tmp['nbdoctot'] = q_info_tmp['nbdocsel'] + q_info_tmp['nbdocrem']
-
-    #                if cnt == 0:
-    #                    q_info_tmp['last'] = "True"
-    #                else:
-    #                    q_info_tmp['last'] = "False"##
-#
-#                    sb_info_tmp['q_info'].append(q_info_tmp)
-#                except:
-#                    q_info_tmp             = {}
-#                    q_info_tmp['id']       = q.id
-#                    q_info_tmp['title']    = q.title
-#                    q_info_tmp['type']     = q.type
-                    #q_info_tmp['nbdoctot'] = DocOwnership.objects.filter(query = q, user=request.user).count()
-                    #q_info_tmp['nbdocsel'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 1).count()
-                    #q_info_tmp['nbdocrev'] = DocOwnership.objects.filter(query = q, user=request.user, relevant = 0).count()
-#                    q_info_tmp['nbdoctot'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
-#                    q_info_tmp['nbdocsel'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
-#                    q_info_tmp['nbdocrem'] = Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
-
-#                    if cnt == 0:
-#                        q_info_tmp['last'] = "True"
-#                    else:
-#                        q_info_tmp['last'] = "False"
-
-   #                 sb_info_tmp['q_info'].append(q_info_tmp)
-
-                # Get current step
-#                s = q.title.split("_")[2]
-#                if s > step:
-#                    step = s
-
-                # Update total counts
-                #nbdoctot += DocOwnership.objects.filter(query = q, user=request.user).count()
-                #nbdocsel += DocOwnership.objects.filter(query = q, user=request.user, relevant = 1).count()
-                #nbdocrev += DocOwnership.objects.filter(query = q, user=request.user, relevant = 2).count()
-                #nbdoctot += Doc.objects.filter(query = q, docownership__user=request.user, docownership__query = q).count()
- #               nbdocsel += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count()
- #               nbdocrem += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
- #               nbdoctot += Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 1, docownership__query = q).count() + Doc.objects.filter(query = q, docownership__user=request.user, docownership__relevant = 2, docownership__query = q).count()
-
-                # Update iterator
-  #              cnt += 1
-
-        # Update info of current SB session
-   #     sb_info_tmp['ns']    = step
-    #    sb_info_tmp['lq']    = sb_qs.last().id
-    #    sb_info_tmp['rc']    = sb_qs.last().r_count
-    #    sb_info_tmp['ndsel'] = str(nbdocsel)
-    #    sb_info_tmp['ndtot'] = str(nbdoctot)
-    #    sb_info_tmp['ndrem'] = str(nbdocrem)
-
-        # Add SB session info to container
-     #   sb_info.append(sb_info_tmp)
-
-
     context = {
         'user': request.user,
         'queries': query_list,
-        'query': query
-#        'sbsessions': sb_info
+        'query': query,
+        'project': project
     }
     return HttpResponse(template.render(context, request))
 
@@ -1475,7 +1537,7 @@ def sbsExcludeDoc(request,qid,did):
 ##################################################
 ## View all docs
 @login_required
-def doclist(request,qid,q2id='0',sbsid='0'):
+def doclist(request, pid, qid, q2id='0',sbsid='0'):
 
     template = loader.get_template('scoping/docs.html')
 
@@ -1553,6 +1615,7 @@ def doclist(request,qid,q2id='0',sbsid='0'):
 
     context = {
         'query': query,
+        'project': query.project,
         'query2' : query_f,
         'docs': docs,
         'fields': fields,
@@ -1709,11 +1772,11 @@ def docrellist(request,sbsid,qid=0,q2id=0,q3id=0):
 
 ###########################################################
 ## Manual docadd form
-def add_doc_form(request,qid=0,authtoken=0,r=0):
+def add_doc_form(request,pid=0,authtoken=0,r=0):
     try:
-        query = Query.objects.get(pk=qid)
+        project = Project.objects.get(pk=pid)
     except:
-        query = Query.objects.last()
+        project = None
     if authtoken!=0:
         em = EmailTokens.objects.get(pk=authtoken)
         em.sname, em.initial = em.AU.split(',')
@@ -1761,6 +1824,8 @@ def do_add_doc(request, authtoken=0):
 
     t = Technology.objects.get(pk=d['technology'])
 
+    p = t.project
+
     if authtoken!=0:
         et = EmailTokens.objects.get(pk=authtoken)
         au = et.AU
@@ -1775,6 +1840,7 @@ def do_add_doc(request, authtoken=0):
             q.database = "manual",
             q.r_count = 1
             q.technology = t
+            q.project = p
         else:
             try:
                 q.r_count +=1
@@ -1846,7 +1912,7 @@ def do_add_doc(request, authtoken=0):
     if authtoken!=0:
         return HttpResponseRedirect(reverse('scoping:add_doc_form', kwargs={'authtoken': authtoken,'r':q.r_count}))
     else:
-        return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'qid': q.id}))
+        return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'pid': p.id, 'qid': q.id}))
 
 
 from django.db.models.aggregates import Aggregate

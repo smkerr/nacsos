@@ -14,6 +14,9 @@ class Command(BaseCommand):
         run_id = options['run_id']
         stat = RunStats.objects.get(run_id=run_id)
 
+        print(run_id)
+        print(stat)
+
         if stat.parent_run_id is not None:
             parent_run_id=stat.parent_run_id
         else:
@@ -27,9 +30,18 @@ class Command(BaseCommand):
         ).values('doc_id').order_by().distinct().count()
         stat.save()
 
+
+
         if stat.method == "DT":
+            update_topic_scores(parent_run_id)
             update_dtopics(run_id)
+
+            pstat = RunStats.objects.get(run_id=parent_run_id)
+            pstat.topic_titles_current = False
+            pstat.save()
             update_topic_titles(run_id)
+
+
 
             tops = Topic.objects.filter(run_id=parent_run_id)
 
@@ -50,5 +62,7 @@ class Command(BaseCommand):
             update_year_topic_scores(run_id)
             update_topic_scores(run_id)
             update_topic_titles(run_id)
+
+            yearly_topic_term_scores(run_id)
 
             management.call_command('corr_topics',run_id)
