@@ -11,11 +11,14 @@
         <td><a href="/scoping/switchmode"><div style="color:#4d00ee;"><b><i>&gt; Switch to Scoping mode &lt;</i></b></div></a></td>
 
         {% else %}
-        <td class="linked"><a href="/scoping/technologies">Technologies</a></td>
-        <td class="linked"><a href="/scoping/">Queries</a></td>
-        <td class="linked"><a href="/scoping/user">{{user}}</a></td>
-        <td class="linked"><a href="/scoping/docs/{{qid}}">Documents</a></td>
-        <td class="linked"><a href="/scoping/manual_add/{{qid}}">Add Reference Manually</a></td>
+        <td class="linked"><a href="{% url 'scoping:index' %}">Home</a></td>
+        {% if project %}
+            <td class="linked"><a href="{% url 'scoping:technologies' project.id %}">Technologies</a></td>
+            <td class="linked"><a href="{% url 'scoping:queries' project.id %}">Queries</a></td>
+            <td class="linked"><a href="{% url 'scoping:userpage' project.id %}">{{user}}</a></td>
+            <td class="linked"><a href="{% url 'scoping:doclist' project.id qid %}">Documents</a></td>
+            <td class="linked"><a href="{% url 'scoping:manual_add_doc_form' project.id %}">Add Reference Manually</a></td>
+        {% endif %}
 
         <td></td>
         <td><a href="/scoping/switchmode"><div style="color:#ee4d00;"><b><i>&gt; Switch to Snowballing mode &lt;</i></b></div></a></td>

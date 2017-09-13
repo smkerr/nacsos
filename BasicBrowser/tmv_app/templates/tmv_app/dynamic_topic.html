@@ -25,7 +25,31 @@
       {% endfor %}
     </table>
   </td>
-  <td width="50%">
+
+  <td width="80%">
+
+      <h1>Terms across all window topics</h1>
+      <br>
+          <p>
+      <table>
+      {% for y in ytterms %}
+      <tr class="wtopic">
+        <td>{{y.0.PY}}
+          {% for tt in y %}
+          <td class="word" data-word="{{tt.term.title|lower}}">
+            {{tt.term.title|lower}}
+          </td>
+          {% endfor %}
+
+      {% endfor %}
+      </table>
+      <hr>
+
+      <h1>Terms in window topics where the primary dynamic topic
+      is this one</h1>
+      <br>
+          <p>
+
     <table>
     {% for t in wtopics %}
 
@@ -41,7 +65,7 @@
     </td>
     {% endfor %}
     </table>
-    <td width=40%>
+    <td width=30%>
       {% include 'tmv_app/multi_topic_docs.html' with docs=docs %}
     </td>
   </table>
@@ -63,11 +87,15 @@ $(".word").on("click", function() {
 
 var data = {{ wtvs|safe }};
 
+var yscores = {{ yscores|safe }}
+
+console.log(yscores)
+
 div = d3.select("body").append("div")
   .attr("class","tooltip")
   .style("opacity",0)
 
-console.log(data)
+
 
 width=800
 height = 600
@@ -100,7 +128,7 @@ var x = d3.scaleLinear()
 
 
 keys = d3.map(data, function(d) { return d.year }).keys()
-console.log(keys)
+
 
 nested = d3.nest()
   .key(function(d) { return d.year; })
@@ -113,19 +141,28 @@ for (y=0;y<nested.length;y++) {
         return d3.descending(x.dscore,y.dscore)
     })
     for (v=0;v<vals.length;v++) {
-        if (v==0) {last=0}
+        if (v==0) {
+            last=0
+            loglast=0
+        }
+        if (vals[v].dscore<0.001) { vals[v].score = 0}
         vals[v].offset = last
+        vals[v].logoffset = loglast
+        lscore = Math.log1p(vals[v].score)
+        vals[v].logscore = lscore
         last += vals[v].score
+        loglast += lscore
         flat_data.push(vals[v])
     }
 }
 
-console.log(nested)
 
 
 ysums = d3.max(flat_data, function(d) {
-    return d.offset + d.score
+    return d.logoffset + d.logscore
 } )
+
+
 
 //console.log("YSUMS")
 //var ysums = {{ ysums|safe }};
@@ -138,7 +175,7 @@ ysums = d3.max(flat_data, function(d) {
 
 var y = d3.scaleLinear()
     .range([height, 0])
-    .domain([0,Math.log(ysums)]);
+    .domain([0,ysums]);
 
 // var y = d3.scaleLog()
 //     .base(Math.E)
@@ -146,7 +183,7 @@ var y = d3.scaleLinear()
 //     .domain([Math.exp(0), Math.exp(9)])
 
 var z = d3.scaleLinear()
-    .range([0.2,1])
+    .range([0.1,1])
     .domain([0,d3.max(flat_data,function(d) {return d.dscore})]);
 
 var xAxis = d3.axisBottom(x)
@@ -177,7 +214,10 @@ g.append("g")
           div.transition()
             .duration(200)
             .style("opacity", .9);
-          div.html(d.title + "<br/>score: " + Math.round(d.dscore*100)/100)
+          div.html(
+              d.title + "<br/>dynamic topic score: " + Math.round(d.dscore*1000)/1000 +
+              "<br/>corpus score: " + Math.round(d.score*100)/100
+          )
             .style("left", (d3.event.pageX) + "px")
             .style("top", (d3.event.pageY - 28) + "px");
           })
@@ -194,26 +234,41 @@ g.append("g")
       })
       .attr("y", function(d) {
           if (d.offset+d.score > 0) {
-              v = Math.log(d.offset+d.score)
+              v = d.logoffset + d.logscore
           } else {
               v = 0
           }
           return y(v);
       })
       .attr("height", function(d) {
-          if (d.offset > 0) {
-              o = Math.log(d.offset)
+          if (d.logoffset > 0) {
+              o = d.logoffset
           } else {
               o = 0
           }
-          if (d.offset+d.score > 0) {
-              v = Math.log(d.offset+d.score)
+          if (d.logoffset+d.logscore > 0) {
+              v = d.logoffset+d.logscore
           } else {
               v = 0
           }
           return y(o) - y(v) ;
       })
       .attr("width", bwidth);
+
+var line = d3.line()
+  .x(function(d) { return x(d.PY); })
+  .y(function(d) { return y(Math.log1p(d.score)) });
+
+console.log(yscores)
+
+g.append("path")
+    .datum(yscores)
+    .attr("fill", "none")
+    .attr("stroke", "steelblue")
+    .attr("stroke-linejoin", "round")
+    .attr("stroke-linecap", "round")
+    .attr("stroke-width", 1.5)
+    .attr("d", line);
 
 
 

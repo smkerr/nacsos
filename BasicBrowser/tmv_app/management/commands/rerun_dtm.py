@@ -20,24 +20,33 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('run_id',type=int)
         parser.add_argument('K',type=int)
+        parser.add_argument('nWords',type=int,default=50)
+        parser.add_argument('fileDest',type=str,default='')
 
     def handle(self, *args, **options):
         parent_run_id = options['run_id']
         K = options['K']
+        nWords = options['nWords']
+        fileDest = options['fileDest']
 
         parent_stat = RunStats.objects.get(pk=parent_run_id)
 
         n_features = parent_stat.max_features
 
-        run_id = init(n_features)
-        stat = RunStats.objects.get(run_id=run_id)
-        stat.query = Query.objects.get(pk=parent_stat.query.id)
-        stat.method = "DT"
-        stat.parent_run_id = parent_run_id
-        stat.save()
+        if fileDest=='':
+
+            run_id = init(n_features)
+            stat = RunStats.objects.get(run_id=run_id)
+            stat.query = Query.objects.get(pk=parent_stat.query.id)
+            stat.method = "DT"
+            stat.parent_run_id = parent_run_id
+            stat.save()
 
 
-        tops = Topic.objects.filter(run_id=parent_run_id)
+        tops = Topic.objects.filter(
+            run_id=parent_run_id,
+            topicterm__isnull=False
+        ).distinct()
         terms = Term.objects.all()
 
         B = np.zeros((tops.count(),terms.count()))
@@ -46,7 +55,12 @@ class Command(BaseCommand):
         for topic in tops:
             tts = TopicTerm.objects.filter(
                 topic=topic
-            ).order_by('-score')[:50]
+            ).order_by('-score')[:nWords]
+            if len(tts) == 0:
+                if fileDest != '':
+                    print(wt)
+                    continue
+                print(topic)
             for tt in tts:
                 B[wt,tt.term.id] = tt.score
             wt+=1
@@ -54,10 +68,24 @@ class Command(BaseCommand):
         col_sum = np.sum(B,axis=0)
         vocab_ids = np.flatnonzero(col_sum)
 
+        row_sum = np.sum(B,axis=1)
+        top_ids = np.flatnonzero(row_sum)
+
+        print(np.where(~B.any(axis=1)))
+
+
         # we only want the columns where there are at least some
         # topic-term values
         B = B[:,vocab_ids]
 
+        print(B.shape)
+
+        print(np.where(~B.any(axis=1)))
+
+
+        if fileDest != '':
+            np.save(fileDest,B)
+            sys.exit()
 
         nmf = NMF(
             n_components=K, random_state=1,
@@ -127,4 +155,7 @@ class Command(BaseCommand):
         stat.errortype = "Frobenius"
         stat.last_update=timezone.now()
         stat.save()
+        print("updating and summarising run, {}".format(run_id))
+        management.call_command('update_run',run_id)
+
         management.call_command('update_run',run_id)

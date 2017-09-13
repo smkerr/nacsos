@@ -3,7 +3,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import Template, Context, RequestContext, loader
 from tmv_app.models import *
 from scoping.models import *
-from django.db.models import Q, F, Sum, Count, FloatField, Case, When
+from django.db.models import Q, F, Sum, Count, FloatField, Case, When, Value
 from django.shortcuts import *
 from django.forms import ModelForm
 import random, sys, datetime
@@ -13,6 +13,8 @@ from django.http import JsonResponse
 import json, csv
 import decimal
 from django.core import management
+from .tasks import *
+from celery import group
 
 # the following line will need to be updated to launch the browser on a web server
 TEMPLATE_DIR = sys.path[0] + '/templates/'
@@ -231,6 +233,40 @@ def compare_runs(request, a, z):
 
     return response
 
+def topics_time(request, run_id, stype):
+    stat = RunStats.objects.get(pk=run_id)
+    if stat.method=="DT":
+        topics = DynamicTopic.objects.filter(run_id=run_id)
+        yts = DynamicTopicYear.objects.filter(run_id=run_id)#, PY__lt=2016)
+        #yts = DynamicTopicYear.objects.filter(run_id=run_id, PY__in=[2010,2011,2012])
+    else:
+        topics = Topic.objects.filter(run_id=run_id)
+
+    template = loader.get_template('tmv_app/topics_time.html')
+
+    yts = yts.order_by(
+        'topic__score','PY'
+    ).values(
+        'topic__id',
+        'topic__title',
+        'PY',
+        'score',
+        'year_share'
+    )
+
+    if int(stype)==0:
+        stype='score'
+    else:
+        stype='year_share'
+
+    context = {
+        'yts': list(yts),
+        'stype': stype
+
+    }
+
+    return HttpResponse(template.render(request =request, context=context))
+
 #######################################################################
 ## DynamicTopic View
 def dynamic_topic_detail(request,topic_id):
@@ -247,8 +283,25 @@ def dynamic_topic_detail(request,topic_id):
     topicterms = Term.objects.filter(
         dynamictopicterm__topic=topic,
         run_id=run_id,
-        dynamictopicterm__score__gt=0.00001
+        dynamictopicterm__score__gt=0.00001,
+        dynamictopicterm__PY__isnull=True
     ).order_by('-dynamictopicterm__score')[:50]
+
+    ytterms = []
+
+    tts = DynamicTopicTerm.objects.filter(
+        topic=topic,
+        PY__isnull=False
+    )
+    for py in tts.distinct('PY') \
+        .order_by('PY').values_list('PY',flat=True):
+        ytts = tts.filter(PY=py).order_by('-score')[:10]
+        ytterms.append(ytts)
+
+    yscores = list(DynamicTopicYear.objects.filter(
+        topic=topic
+    ).values('PY','score'))
+
 
     wtopics = Topic.objects.filter(
         #run_id=run_id,
@@ -298,7 +351,10 @@ def dynamic_topic_detail(request,topic_id):
         )
     )
 
-    ysums = dtopics.values('year').annotate(
+    ysums = Topic.objects.filter(
+        run_id=run_id,
+        year__lt=2200
+    ).values('year').annotate(
         sum = Sum('score'),
     )
 
@@ -310,7 +366,9 @@ def dynamic_topic_detail(request,topic_id):
         'wtopics': wtopics,
         'wtvs': list(dtopics.values('title','score','year','dscore','id')),
         'ysums': list(ysums.values('year','sum')),
-        'docs': docs
+        'docs': docs,
+        'ytterms': ytterms,
+        'yscores': yscores
     }
     return HttpResponse(template.render(request =request, context=context))
 
@@ -336,6 +394,47 @@ def dtopic_detail(request,topic_id):
     }
 
     return HttpResponse(template.render(context))
+
+def yearly_topic_term_scores(run_id):
+
+    stat=RunStats.objects.get(pk=run_id)
+    if stat.parent_run_id is not None:
+        parent_run_id = stat.parent_run_id
+    else:
+        parent_run_id = run_id
+
+    ytds = DocTopic.objects.filter(
+        run_id=parent_run_id
+    ).values('topic__year').annotate(
+        dtopic_score = F('score') * F('topic__topicdtopic__score')
+    ).annotate(
+        yscore = Sum('dtopic_score')
+    )
+
+
+    dt_ids = DynamicTopic.objects.filter(
+        run_id=run_id#,
+        #dynamictopicyear__isnull=True
+    ).values_list('id',flat=True)
+
+    jobs = group(yearly_topic_term.s(dt,run_id) for dt in dt_ids)
+    result = jobs.apply_async()
+
+    dtys = DynamicTopicYear.objects.filter(
+        run_id=run_id
+    )
+
+    yscores = dtys.values('PY').annotate(
+        ytotal=Sum('score')
+    )
+
+    for dty in dtys:
+        ytot = yscores.get(PY=dty.PY)['ytotal']
+        dty.year_share = dty.score/ytot
+        dty.save()
+
+
+
 
 ###########################################################################
 ## Topic View
@@ -568,24 +667,86 @@ def topic_detail_hlda(request, topic_id):
 
 ##############################################################
 
-def term_detail(request, term_id):
-    update_topic_titles(request.session)
-    run_id = find_run_id(request.session)
-    response = ''
+def term_detail(request, run_id, term_id):
+
+    allnodes = []
+    alllinks = []
+    terms = []
 
     term_template = loader.get_template('tmv_app/term.html')
 
-    term = Term.objects.get(pk=term_id,run_id=run_id)
-    topics = TopicTerm.objects.filter(term=term_id,run_id=run_id).order_by('-score')
-    if len(topics) > 0:
-        topic_tuples = []
-        max_score = topics[0].score
-        for topic in topics:
-            topic_tuples.append((topic.topic, topic.score, topic.score/max_score*100))
+    for term_id in [term_id,264]:
+        term = Term.objects.get(pk=term_id,run_id=run_id)
+        terms.append(term)
+        topics = TopicTerm.objects.filter(term=term_id,run_id=run_id).order_by('-score')
+        if len(topics) > 0:
+            topic_tuples = []
+            max_score = topics[0].score
+            for topic in topics:
+                topic_tuples.append((topic.topic, topic.score, topic.score/max_score*100))
+
+        topicobjs = Topic.objects.filter(
+            topicterm__term=term,run_id=run_id
+        ).order_by('-topicterm__score').annotate(
+            type=Value('topic', output_field=models.CharField())
+        )
+
+        new_term_id = 'term_'+str(term_id)
+
+        new_term_id = term_id
+
+        nodes = list(topicobjs.values('id', 'title', 'score', 'type'))
+
+        nodes.append({
+            'id': new_term_id,
+            'title': term.title,
+            'score': 1000,
+            'type': 'word'
+        })
+
+        #nodes = json.dumps(nodes, indent=4, sort_keys=True)
+
+        links = topics.annotate(
+            source=Value(new_term_id, output_field=models.CharField()),
+            target=F('topic__id'),
+            type=Value(0, output_field=models.IntegerField())
+        )
+
+        tlinks = TopicCorr.objects.filter(
+            run_id=run_id,
+            topic__in=topicobjs,
+            topiccorr__in=topicobjs,
+            score__gt=0.05,
+            score__lt=1
+        ).annotate(
+            type=Value(1, output_field=models.IntegerField()),
+            source=F('topic'),
+            target=F('topiccorr')#,
+            #tscore=F('score')
+        )
+
+        tlinks = list(tlinks.values('source','target','score'))
+
+        for l in tlinks:
+            l['score'] = l['score']/100000000
+
+        #x = y
+
+        links = list(links.values('source','target','score'))
+
+        allnodes = allnodes + nodes
+        alllinks = alllinks + links + tlinks
+
+    allnodes = json.dumps(allnodes,indent=4,sort_keys=True)
+    alllinks = json.dumps(alllinks,indent=4,sort_keys=True)
 
     term_page_context = {
         'term': term,
-        'topic_tuples': topic_tuples
+        'terms': terms,
+        'topic_tuples': topic_tuples,
+        'run_id': run_id,
+        'nodes': allnodes,
+        'links': alllinks
     }
 
     return HttpResponse(term_template.render(term_page_context))
@@ -1107,29 +1268,9 @@ def update_dtopics(run_id):
     #if "a" == "b":
     if not stats.topic_titles_current:
     #if "a" in "ab":
-        #print("UPDATING")
-        for topic in DynamicTopic.objects.filter(run_id=run_id):
-            topicterms = Term.objects.filter(
-                dynamictopicterm__topic=topic
-            ).order_by('-dynamictopicterm__score')[:10]
-            topic.top_words=[x.title.lower() for x in topicterms]
-            new_topic_title = '{'
-            for tt in topicterms[:3]:
-                new_topic_title +=tt.title
-                new_topic_title +=', '
-            new_topic_title = new_topic_title[:-2]
-            new_topic_title+='}'
-            topic.title = new_topic_title
-            topic.score = 0
-            score = DocTopic.objects.filter(
-                run_id=parent_run_id,
-                topic__primary_dtopic=topic
-            ).aggregate(
-                t=Sum('score')
-            )['t']
-            if score is not None:
-                topic.score = score
-            topic.save()
+        dts = DynamicTopic.objects.filter(run_id=run_id).values_list('id',flat=True)
+        jobs = group(update_dtopic.s(dt,parent_run_id) for dt in dts)
+        result = jobs.apply_async()
         stats.topic_titles_current = True
         stats.save()
 
