@@ -13,15 +13,20 @@
 
 <div class="explanation">
     <h3> Edit user roles for project {{ project.title }} </h3>
+<table>
+{% for u in projectUsers %}
+    <tr>
+    <td>
+        <form method="POST" class="post-form">{% csrf_token %}
+        {{ u.f.as_p }}
+        <button type="submit" class="save btn btn-default">Save</button>
+        <td><b>Queries</b>: {{u.queries}}
+            <br><b>Ratings</b>: {{u.ratings}}
 
-{% for f in updateRoles %}
-    <p>
-    <form method="POST" class="post-form">{% csrf_token %}
-    {{ f.as_p }}
-    <button type="submit" class="save btn btn-default">Save</button>
     </form>
 
 {% endfor %}
+</table>
 
 <h3> Add new users to the project </h3>
 <form method="POST" class="post-form">{% csrf_token %}

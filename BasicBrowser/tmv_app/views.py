@@ -3,7 +3,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import Template, Context, RequestContext, loader
 from tmv_app.models import *
 from scoping.models import *
-from django.db.models import Q, F, Sum, Count, FloatField, Case, When
+from django.db.models import Q, F, Sum, Count, FloatField, Case, When, Value
 from django.shortcuts import *
 from django.forms import ModelForm
 import random, sys, datetime
@@ -667,24 +667,86 @@ def topic_detail_hlda(request, topic_id):
 
 ##############################################################
 
-def term_detail(request, term_id):
-    update_topic_titles(request.session)
-    run_id = find_run_id(request.session)
-    response = ''
+def term_detail(request, run_id, term_id):
+
+    allnodes = []
+    alllinks = []
+    terms = []
 
     term_template = loader.get_template('tmv_app/term.html')
 
-    term = Term.objects.get(pk=term_id,run_id=run_id)
-    topics = TopicTerm.objects.filter(term=term_id,run_id=run_id).order_by('-score')
-    if len(topics) > 0:
-        topic_tuples = []
-        max_score = topics[0].score
-        for topic in topics:
-            topic_tuples.append((topic.topic, topic.score, topic.score/max_score*100))
+    for term_id in [term_id,264]:
+        term = Term.objects.get(pk=term_id,run_id=run_id)
+        terms.append(term)
+        topics = TopicTerm.objects.filter(term=term_id,run_id=run_id).order_by('-score')
+        if len(topics) > 0:
+            topic_tuples = []
+            max_score = topics[0].score
+            for topic in topics:
+                topic_tuples.append((topic.topic, topic.score, topic.score/max_score*100))
+
+        topicobjs = Topic.objects.filter(
+            topicterm__term=term,run_id=run_id
+        ).order_by('-topicterm__score').annotate(
+            type=Value('topic', output_field=models.CharField())
+        )
+
+        new_term_id = 'term_'+str(term_id)
+
+        new_term_id = term_id
+
+        nodes = list(topicobjs.values('id', 'title', 'score', 'type'))
+
+        nodes.append({
+            'id': new_term_id,
+            'title': term.title,
+            'score': 1000,
+            'type': 'word'
+        })
+
+        #nodes = json.dumps(nodes, indent=4, sort_keys=True)
+
+        links = topics.annotate(
+            source=Value(new_term_id, output_field=models.CharField()),
+            target=F('topic__id'),
+            type=Value(0, output_field=models.IntegerField())
+        )
+
+        tlinks = TopicCorr.objects.filter(
+            run_id=run_id,
+            topic__in=topicobjs,
+            topiccorr__in=topicobjs,
+            score__gt=0.05,
+            score__lt=1
+        ).annotate(
+            type=Value(1, output_field=models.IntegerField()),
+            source=F('topic'),
+            target=F('topiccorr')#,
+            #tscore=F('score')
+        )
+
+        tlinks = list(tlinks.values('source','target','score'))
+
+        for l in tlinks:
+            l['score'] = l['score']/100000000
+
+        #x = y
+
+        links = list(links.values('source','target','score'))
+
+        allnodes = allnodes + nodes
+        alllinks = alllinks + links + tlinks
+
+    allnodes = json.dumps(allnodes,indent=4,sort_keys=True)
+    alllinks = json.dumps(alllinks,indent=4,sort_keys=True)
 
     term_page_context = {
         'term': term,
-        'topic_tuples': topic_tuples
+        'terms': terms,
+        'topic_tuples': topic_tuples,
+        'run_id': run_id,
+        'nodes': allnodes,
+        'links': alllinks
     }
 
     return HttpResponse(term_template.render(term_page_context))

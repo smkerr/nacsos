@@ -1,27 +1,6 @@
-<html>
-  <head>
-    {% load static %}
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Scoping</title>
-    <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
-    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-    <style>
-.ltext {
-    max-width : 50px;
-    white-space : nowrap;
-    overflow : hidden;
-  }
+{% extends "scoping/base.html" %}
+{% block content %}
 
-  .ltext:hover {
-    max-width : 200px;
-    white-space: normal;
-  }
-    </style>
-  </head>
-  <body>
-    {% include 'scoping/nav_bar.html' with user=user qid=query.id%}
-    <div id="main">
-      <div id="graph">
         <h1> Scoping Review Helper</h1>
         <br/>
 
@@ -35,96 +14,25 @@
           <p id="field_container">
           {% for u in users %}
               {% if u == user %}
-                <span class="field_name active" name="{{u.username}}">{{ u.username }}</span>
+                <span class="field_name user active" name="{{u.id}}">{{ u.username }}</span>
               {% else %}
-                <span class="field_name" name="{{u.username}}">{{ u.username }}</span>
+                <span class="field_name user technology" name="{{u.id}}">{{ u.username }}</span>
               {% endif %}
           {% endfor %}
           </p>
 
           <p id="field_container">
-            <span class="field_name active" name="None">None</span>
+            <span class="field_name tech active" name="None">None</span>
             {% for t in techs %}
-              <span class="field_name active" name="{{t.name}}">{{ t.name }}</span>
+              <span class="field_name tech active" name="{{t.id}}">{{ t.name }}</span>
             {% endfor %}
           </p>
         </div>
 
         <p>
-
-          <table class="light" style="width:100%">
-
-	    <tr class="title">
-	      <td>ID</td>
-              <td>Created by</td>
-              <td>Title</td>
-	      <td>Text</td>
-	      <td>Date</td>
-        <td>Documents</td>
-        <td>Technology</td>
-        {% if extended %}
-          <td>Innovation</td>
-        {% endif %}
-        <td>Delete</td>
-            </tr>
-            {% for query in queries %}
-                {% if query.creator in active_users %}
-                  <tr data-name="{{query.creator}}"  data-tech="{{query.tech}}">
-                {% else %}
-                  <tr class="hidden" data-name="{{query.creator}}" data-tech="{{query.tech}}">
-                {% endif %}
-                    <td><a href="query/{{query.id}}">{{ query.id }}</a></td>
-                    <td>{{ query.creator }}</td>
-                    <td>{{ query.title }}</td>
-	 	    <td class="ltext">{{ query.text }}</td>
-		    <td>{{ query.date }}</td>
-                    {% if query.r_count > 0 %}
-                      <td><a href="{% url 'scoping:doclist' query.project.id query.id %}">{{ query.r_count }}</a></td>
-                    {% else %}
-                      <td><a href="querying/{{query.id}}/0/0">View progress</a></td>
-                    {% endif %}
-                    <td>
-                      <select class="qtag" data-thing="Technology" data-query="{{query.id}}" autocomplete="off">
-                        {% if not query.technology %}
-                        <option selected value="None">{{query.technology}}</option>
-                        {% else %}
-                        <option value="None">None</option>
-                        {% endif %}
-                        {% for t in techs %}
-                            {% if t == query.technology %}
-                            <option selected value={{t.id}}>{{t.name}}</option>
-                            {% else %}
-                            <option value={{t.id}}>{{t.name}}</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </td>
-                {% if extended %}
-                <td>
-                  <select class="qtag" data-thing="Innovation" data-query="{{query.id}}" autocomplete="off">
-                    {% if not query.innovation %}
-                    <option selected value="None">{{query.innovation}}</option>
-                    {% else %}
-                    <option value="None">None</option>
-                    {% endif %}
-                    {% for i in innovations %}
-                        {% if i == query.innovation %}
-                        <option selected value={{i.id}}>{{i.name}}</option>
-                        {% else %}
-                        <option value={{i.id}}>{{i.name}}</option>
-                        {% endif %}
-                    {% endfor %}
-                </select>
-            </td>
-                {% endif %}
-                <td><a href="{% url 'scoping:delete' 'Query' query.id %}">
-                    <button onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button>
-                </a></td>
-		    </tr>
-
-		{% endfor %}
-
-</table>
+            <table class="light" id="query_table" style="width:100%">
+        {% include 'scoping/query_table.html' %}
+    </table>
 
 <br/><hr/><br/>
 
@@ -164,18 +72,41 @@ Use this form to submit a new query, which will be run in the background. Be awa
 </form>
 </div>
 <p>
-</div>
-</div>
-</body>
+
+
+{% endblock %}
+
+
+
+{% block script %}
 
 <script>
 
 $(".field_name").click(function() {
-    user = $(this).attr('name')
+    $("body").css("cursor", "progress");
     $(this).toggleClass('active')
-    $('*[data-name="'+user+'"]').toggleClass('hidden')
-    $('*[data-tech="'+user+'"]').toggleClass('thidden')
-    console.log(user)
+    users = []
+    techs = []
+    $(".field_name.user.active").each(function(){
+        users.push($(this).attr('name'))
+    })
+    $(".field_name.tech.active").each(function(){
+        techs.push($(this).attr('name'))
+    })
+    console.log(users)
+    console.log(techs)
+
+    $.ajax({
+        url: "{% url 'scoping:query_table' project.id %}",
+        data: {
+            'users': users,
+            'techs': techs
+        },
+        success: function(res) {
+            $("#query_table").html(res)
+            $("body").css("cursor", "default");
+        }
+    })
 })
 
 
@@ -201,4 +132,4 @@ $(".qtag").change(function() {
 
 </script>
 
-</html>
+{% endblock %}

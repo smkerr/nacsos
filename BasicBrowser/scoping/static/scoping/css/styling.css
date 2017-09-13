@@ -28,6 +28,17 @@ a:active {
 }
 */
 
+.ltext {
+    max-width : 50px;
+    white-space : nowrap;
+    overflow : hidden;
+  }
+
+  .ltext:hover {
+    max-width : 200px;
+    white-space: normal;
+  }
+
 a {
     color: blue;
     text-decoration: underline;

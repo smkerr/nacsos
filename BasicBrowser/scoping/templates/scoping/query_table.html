@@ -1,0 +1,67 @@
+
+
+<tr class="title">
+<td>ID</td>
+<td>Created by</td>
+<td>Title</td>
+<td>Text</td>
+<td>Date</td>
+<td>Documents</td>
+<td>Technology</td>
+{% if extended %}
+<td>Innovation</td>
+{% endif %}
+<td>Delete</td>
+</tr>
+  {% for query in queries %}
+        <tr data-name="{{query.creator}}"  data-tech="{{query.tech}}">
+          <td><a href="{% url 'scoping:query' query.id %}">{{ query.id }}</a></td>
+          <td>{{ query.creator }}</td>
+          <td>{{ query.title }}</td>
+          <td class="ltext">{{ query.text }}</td>
+          <td>{{ query.date }}</td>
+          {% if query.r_count > 0 %}
+            <td><a href="{% url 'scoping:doclist' project.id query.id %}">{{ query.r_count }}</a></td>
+          {% else %}
+            <td><a href="{% url 'scoping:querying' query.id %}">View progress</a></td>
+          {% endif %}
+          <td>
+            <select class="qtag" data-thing="Technology" data-query="{{query.id}}" autocomplete="off">
+              {% if not query.technology %}
+              <option selected value="None">{{query.technology}}</option>
+              {% else %}
+              <option value="None">None</option>
+              {% endif %}
+              {% for t in techs %}
+                  {% if t == query.technology %}
+                  <option selected value={{t.id}}>{{t.name}}</option>
+                  {% else %}
+                  <option value={{t.id}}>{{t.name}}</option>
+                  {% endif %}
+              {% endfor %}
+          </select>
+      </td>
+      {% if extended %}
+      <td>
+        <select class="qtag" data-thing="Innovation" data-query="{{query.id}}" autocomplete="off">
+          {% if not query.innovation %}
+          <option selected value="None">{{query.innovation}}</option>
+          {% else %}
+          <option value="None">None</option>
+          {% endif %}
+          {% for i in innovations %}
+              {% if i == query.innovation %}
+              <option selected value={{i.id}}>{{i.name}}</option>
+              {% else %}
+              <option value={{i.id}}>{{i.name}}</option>
+              {% endif %}
+          {% endfor %}
+      </select>
+  </td>
+      {% endif %}
+      <td><a href="{% url 'scoping:delete' 'Query' query.id %}">
+          <button onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button>
+      </a></td>
+  </tr>
+
+{% endfor %}
