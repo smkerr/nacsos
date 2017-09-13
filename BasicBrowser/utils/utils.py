@@ -317,7 +317,7 @@ def add_scopus_doc(r,q):
         return
 
     docs = Doc.objects.filter(UT=r['UT'])
-    if docs.count()==1:
+    if docs.count()==1: # If it's just there - great!
         doc = docs.first()
         article = WoSArticle(doc=doc)
         article.save()
@@ -328,45 +328,48 @@ def add_scopus_doc(r,q):
                 doc.save()
         except:
             pass
-        docs.first().query.add(q)
-        return
+        doc.query.add(q)
+        #return
 
-    try:
-        did = r['di']
-    except:
-        did = 'NA'
-        pass
+    else: # Otherwise try and match by doi
+        try:
+            did = r['di']
+        except:
+            did = 'NA'
+            pass
 
-    if did=='NA':
-        docs = Doc.objects.filter(
-                wosarticle__ti=get(r,'ti')).filter(PY=get(r,'py')
-        )
-    else:
-        docs = Doc.objects.filter(wosarticle__di=did)
+        if did=='NA':
+            docs = Doc.objects.filter(
+                    wosarticle__ti=get(r,'ti')).filter(PY=get(r,'py')
+            )
+        else:
+            docs = Doc.objects.filter(wosarticle__di=did)
 
 
-    if len(docs)==1:
-        docs.first().query.add(q)
-        doc = docs.first()
-    if len(docs)>1:
-        print("more than one doc matching!!!!!")
-        for d in docs:
-            print(d.title)
-            print(d.UT)
-    if len(docs)==0:
-        #print("no matching docs")
-        s1 = shingle(get(r,'ti'))
-        py_docs = Doc.objects.filter(PY=get(r,'py'))
-        docs = []
-        for d in py_docs:
-            j = jaccard(s1,d.shingle())
-            if j > 0.51:
-                d.query.add(q)
-                return
+        if len(docs)==1:
+            docs.first().query.add(q)
+            doc = docs.first()
+        if len(docs)>1: # if there are two, that's bad!
+            print("more than one doc matching!!!!!")
+            for d in docs:
+                print(d.title)
+                print(d.UT)
+        if len(docs)==0: # if there are none, try with the title and jaccard similarity
+            #print("no matching docs")
+            s1 = shingle(get(r,'ti'))
+            py_docs = Doc.objects.filter(PY=get(r,'py'))
+            docs = []
+            for d in py_docs:
+                j = jaccard(s1,d.shingle())
+                if j > 0.51:
+                    d.query.add(q)
+                    doc = d
+                    docs = Doc.objects.filter(UT=doc.UT)
+                    break
 
-    if len(docs)==0:
-        doc = Doc(UT=r['UT'])
-        #print(doc)
+        if len(docs)==0: # if there's still nothing, create one
+            doc = Doc(UT=r['UT'])
+            #print(doc)
 
     if doc is not None and "WOS:" not in doc.UT:
 
@@ -415,17 +418,9 @@ def add_scopus_doc(r,q):
 
 def read_scopus(res, q, update):
 
-    mfields = ['au','AF','CR','C1']
-
-    very_par = True
-
-    i=0
     n_records = 0
-    records=[]
-    if very_par == True:
-        record = []
-    else:
-        record = {}
+    records= []
+    record = []
     mfields = ['au','AF','CR','C1']
 
     max_chunk_size = 2000
@@ -465,6 +460,8 @@ def read_scopus(res, q, update):
 
     django.db.connections.close_all()
 
+    return n_records
+
 def wosify_scopus_ref(r):
     r = r.strip()
     if re.match('(.*?)\(([0-9]{4})[a-z]{0,1}\)(.*)',str(r)):
@@ -480,5 +477,14 @@ def wosify_scopus_ref(r):
     else:
         wosref = r
 
-
     return wosref
+
+ars = [
+    {"name":"AR0","years":range(0,1985),"n":0},
+    {"name":"AR1","years":range(1985,1991),"n":1},
+    {"name":"AR2","years":range(1991,1995),"n":2},
+    {"name":"AR3","years":range(1995,2001),"n":3},
+    {"name":"AR4","years":range(2001,2008),"n":4},
+    {"name":"AR5","years":range(2008,2014),"n":5},
+    {"name":"AR6","years":range(2014,9999),"n":6}
+]

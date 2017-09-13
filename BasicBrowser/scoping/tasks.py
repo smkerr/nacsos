@@ -14,9 +14,9 @@ def update_projs(pids):
     projs = Project.objects.filter(id__in=pids)
     for p in projs:
         p.queries = p.query_set.distinct().count()
-        p.docs = Doc.objects.filter(query__project=p).distinct().count()
+        p.docs = len(set(list(Doc.objects.filter(query__project=p).values_list('UT',flat=True))))
         p.save()
-    return(projs)
+    return
 
 @shared_task
 def upload_docs(qid, update):

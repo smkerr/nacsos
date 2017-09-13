@@ -30,7 +30,13 @@
     <td>words</td></tr>
     {% if terms %}
 	    {% for term in terms %}
-	    <tr class="list" onclick="window.location.href='/tmv_app/term/{{ term.id }}'" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')"><td id="{{ term.title }}_list">{{ term.title }}</td><tr>
+	    <tr class="list" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')">
+
+
+                <td id="{{ term.title }}_list"><a href="{% url 'tmv_app:term_detail' run_id term.id %}">{{ term.title }}</a>
+                </td>
+
+        </tr>
 	    {% endfor %}
     {% endif %}
     <tmv-topic-terms-column>
