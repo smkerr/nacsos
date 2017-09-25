@@ -11,6 +11,7 @@ app_name = 'tmv_app'
 urlpatterns = [
     url(r'^$', login_required(runs), name='index'),
     url(r'^network/(?P<run_id>\d+)$', login_required(network), name='network'),
+    url(r'^network_wg/(?P<run_id>\d+)$', login_required(network_wg), name='network_wg'),
     url(r'^return_corrs$', login_required(return_corrs), name='return_corrs'),
 
     # topic page and topic doc loader

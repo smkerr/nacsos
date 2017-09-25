@@ -43,6 +43,8 @@ class Topic(models.Model):
     year = models.IntegerField(null=True)
     primary_dtopic = models.ManyToManyField('DynamicTopic')
     top_words = ArrayField(models.TextField(),null=True)
+    primary_wg = models.IntegerField(null=True)
+    wg_prop = models.FloatField(null=True)
 
     def __unicode__(self):
         return str(self.title)
