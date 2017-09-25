@@ -150,13 +150,24 @@ def project(request, pid):
         id__in=projUsers.values_list('id',flat=True)
     )
 
+    queries = Query.objects.filter(
+        project=p
+    )
+    if queries.count() == 0:
+        queries = Query.objects.all()
+
+    query = queries.last()
+
+
 
     context = {
         'newRole': newRole,
         'updateRoles': updateRoles,
         'admin': admin,
         'project': p,
-        'projectUsers': projUsers
+        'projectUsers': projUsers,
+        'query': query,
+        'qid': query.id
     }
 
     return HttpResponse(template.render(context, request))
