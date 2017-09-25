@@ -675,7 +675,7 @@ def term_detail(request, run_id, term_id):
 
     term_template = loader.get_template('tmv_app/term.html')
 
-    for term_id in [term_id,264]:
+    for term_id in [term_id]:#,264]:
         term = Term.objects.get(pk=term_id,run_id=run_id)
         terms.append(term)
         topics = TopicTerm.objects.filter(term=term_id,run_id=run_id).order_by('-score')
@@ -750,6 +750,55 @@ def term_detail(request, run_id, term_id):
     }
 
     return HttpResponse(term_template.render(term_page_context))
+
+
+def network_wg(request, run_id):
+
+    template = loader.get_template('tmv_app/network_wg.html')
+
+    nodes = Topic.objects.filter(run_id=run_id)
+
+    for n in nodes.filter(primary_wg__isnull=True):
+        wgs = list(IPCCRef.objects.filter(
+            doc__doctopic__topic=n
+        ).values('wg__wg').annotate(
+            tscore = models.Sum('doc__doctopic__score')
+        ))
+        try:
+            pwg = max(wgs, key=lambda x:x['tscore'])
+            n.primary_wg =  pwg['wg__wg']
+            total = sum(wg['tscore'] for wg in wgs)
+            n.wg_prop = pwg['tscore'] / total
+        except:
+            n.primary_wg = None
+        n.save()
+
+
+
+    nodes = list(nodes.order_by('-score').values(
+        'id','title','score','primary_wg','wg_prop'
+    ))
+    i = 0
+    for n in nodes:
+        i+=1
+        n['rank'] = i
+    nodes = json.dumps(nodes,indent=4,sort_keys=True)
+    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1).annotate(
+        source=F('topic'),
+        target=F('topiccorr')
+    )
+    links = json.dumps(list(links.values('source','target','score')),indent=4,sort_keys=True)
+
+
+    context = {
+        "nodes":nodes,
+        "links":links,
+        "run_id":run_id,
+        "stat": RunStats.objects.get(pk=run_id)
+    }
+
+
+    return HttpResponse(template.render(context))
 
 #######################################################################
 ## Doc view
