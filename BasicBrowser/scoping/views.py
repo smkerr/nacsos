@@ -207,6 +207,9 @@ def queries(request, pid):
 
     query = queries.last()
 
+    if query is None:
+        query = Query.objects.last()
+
     for q in queries:
         q.tech = q.technology
         if q.technology==None:

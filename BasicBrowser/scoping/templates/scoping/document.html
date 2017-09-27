@@ -68,7 +68,7 @@
     <tr>
       <td><a href="{% url 'scoping:query' q.pk %}">{{q.pk}}</a></td>
       <td>{{q.title}}</td>
-      <td><a href="{% url 'scoping:doclist' q.pk %}">{{q.r_count}}</td>
+      <td><a href="{% url 'scoping:doclist' q.project.id q.pk %}">{{q.r_count}}</td>
       <td>
         {% if q.technology is not None %}
           <a href="{% url 'scoping:technology' q.technology.pk %}">
