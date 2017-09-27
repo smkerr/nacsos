@@ -12,15 +12,15 @@
 
 </head>
   <body>
-{% include 'scoping/nav_bar.html' with user=user qid=query.id query=query qid=query.id %}
+      {% include 'scoping/nav_bar.html' with user=user qid=query.id query=query qid=query.id %}
 
 
 <div id="main">
 <div id="graph">
-{% block content %} {% endblock %}
-</div>
-</div>
+    {% block content %} {% endblock %}
+    </div>
+    </div>
 
-</body>
-{% block script %} {% endblock %}
+    </body>
+    {% block script %} {% endblock %}
 </html>

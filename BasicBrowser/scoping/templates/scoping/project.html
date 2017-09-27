@@ -11,7 +11,10 @@
 <h2> Homepage </h2>
 <br>
 
+
+
 <div class="explanation">
+    <h3> View <a href="{% url 'scoping:queries' project.id%}">Queries</a> for project: {{ project.title }} </h3>
     <h3> Edit user roles for project {{ project.title }} </h3>
 <table>
 {% for u in projectUsers %}
