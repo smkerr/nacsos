@@ -1348,7 +1348,7 @@ def query(request,qid,q2id='0',sbsid='0'):
 
 
 
-        users = User.objects.all()
+        users = User.objects.filter(project=query.project)
 
         proj_users = users.query
 
