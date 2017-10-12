@@ -160,6 +160,7 @@ class DocTerm(models.Model):
 ## RunStats and Settings....
 class RunStats(models.Model):
     run_id = models.IntegerField(primary_key=True)
+    process_id = models.IntegerField(null=True)
     parent_run_id = models.IntegerField(null=True)
     query = models.ForeignKey('scoping.Query', null=True)
     start = models.DateTimeField()
@@ -189,6 +190,7 @@ class RunStats(models.Model):
     )
     error = models.FloatField(null=True, default = 0)
     errortype = models.TextField(null=True)
+    alpha = models.FloatField(null=True)
     iterations = models.IntegerField(null=True)
     max_features = models.IntegerField(null=True)
     max_topics = models.IntegerField(null=True)

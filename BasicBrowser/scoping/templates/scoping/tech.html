@@ -35,7 +35,7 @@
                 <form action="{% url 'scoping:update_tech' %}" method="post">
                   {% csrf_token %}
                 <input type="text" name="tid" class="hidden" value="{{t.id}}"></input>
-			    <td><a href="technology/{{t.id}}">{{ t.id }}</a></td>
+			    <td><a href="{% url 'scoping:technology' t.id %}">{{ t.id }}</a></td>
                 <td><textarea name="tname">{{ t.name }}</textarea></td>
                 <td><textarea name="tdesc">{{ t.description }}</textarea></td>
 			    <td>{{ t.queries }}</td>

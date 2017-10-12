@@ -42,11 +42,19 @@ class SnowballingSession(models.Model):
 
 class Project(models.Model):
 
+    ROLE_CHOICES = (
+        ('OW', 'Owner'),
+        ('AD', 'Admin'),
+        ('RE', 'Reviewer'),
+        ('VE', 'Viewer')
+    )
+
     title = models.TextField(null=True)
     description = models.TextField(null=True)
     users = models.ManyToManyField(User, through='ProjectRoles')
-    queries = models.IntegerField(null=True)
-    docs = models.IntegerField(null=True)
+    queries = models.IntegerField(default=0)
+    docs = models.IntegerField(default=0)
+    role = models.CharField(max_length=2, choices=ROLE_CHOICES, null=True)
 
     def __str__(self):
       return self.title
