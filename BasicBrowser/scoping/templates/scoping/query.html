@@ -6,7 +6,7 @@
   <br/>
 
   <!-- Query manager -->
-  <h2> Query #{{query.id}} ({{query.title}}) Overview - <a href="/scoping/docs/{{query.id}}">View Docs</a></h2>
+  <h2> Query #{{query.id}} ({{query.title}}) Overview - <a href="{% url 'scoping:doclist' query.project.id query.id %}">View Docs</a></h2>
   <br/>
 
   <table class="light" style="width:100%">
