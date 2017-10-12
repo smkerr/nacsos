@@ -1,6 +1,43 @@
 from tmv_app.models import *
 from scoping.models import *
 from django.utils import timezone
+import django
+from django.db import connection, transaction
+cursor = connection.cursor()
+
+def add_features(title, run_id):
+    django.db.connections.close_all()
+    term, created = Term.objects.get_or_create(title=title)
+    term.run_id.add(run_id)
+    django.db.connections.close_all()
+    return term.pk
+
+def add_topics(no_topics, run_id):
+    topic_ids = []
+    for t in range(0,no_topics):
+        title = "Topic " + str(t+1)
+        topicrow = Topic(title=title,run_id_id=run_id)
+        topicrow.save()
+        topic_ids.append(topicrow.pk)
+    return(topic_ids)
+
+def f_lambda(t,m,v_ids,t_ids,run_id):
+    tt = TopicTerm(
+        term_id = v_ids[m[1][t]],
+        topic_id = t_ids[m[0][t]],
+        score = m[2][t],
+        run_id = run_id
+    )
+    return tt
+
+def insert_many(values_list):
+    query='''
+        INSERT INTO "tmv_app_doctopic"
+        ("doc_id", "topic_id", "score", "scaled_score", "run_id")
+        VALUES (%s,%s,%s,%s,%s)
+    '''
+    cursor = connection.cursor()
+    cursor.executemany(query,values_list)
 
 def f_dlambda(t,m,v_ids,t_ids,run_id):
     tt = DynamicTopicTerm(
@@ -40,3 +77,17 @@ def init(n_f):
     settings.save()
 
     return(run_id)
+
+
+def f_gamma_batch(docs,gamma,docsizes,docUTset,topic_ids,run_id):
+    vl = []
+    for d in docs:
+        dt = (
+            docUTset[gamma[0][d]],
+            topic_ids[gamma[1][d]],
+            gamma[2][d],
+            gamma[2][d] / docsizes[gamma[0][d]],
+            run_id
+        )
+        vl.append(dt)
+    return vl

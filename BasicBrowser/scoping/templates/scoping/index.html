@@ -16,7 +16,7 @@
 
     {% render_table myproj %}
 
-    <p class="left" id="reveal_new">+</p>
+    <p class="left"><span class="buttonp" id="reveal_new">+</span></p>
 
     <div id="new_div" class="hidden">
 
@@ -43,6 +43,11 @@
 <script type="text/JavaScript">
 
     $("#reveal_new").click( function() {
+        if ($("#reveal_new").html()=="+") {
+            $("#reveal_new").html("-")
+        } else{
+            $("#reveal_new").html("+")
+        }
         $("#new_div").toggleClass("hidden")
     })
 

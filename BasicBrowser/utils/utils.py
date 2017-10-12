@@ -216,7 +216,11 @@ def read_wos(res, q, update):
             if key in mfields:
                 record[key].append(line.strip())
             else:
-                record[key] += " " + line.strip()
+                try:
+                    record[key] += " " + line.strip()
+                except:
+                    print(line)
+                    print(record)
 
     return n_records
 

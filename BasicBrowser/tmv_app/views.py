@@ -521,7 +521,7 @@ def get_topic_docs(request,topic_id):
 
     stat = RunStats.objects.get(run_id=run_id)
 
-    dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
+    dt_threshold = stat.dthreshold
     dt_thresh_scaled = Settings.objects.get(id=1).doc_topic_scaled_score
     if stat.method=="BD":
         dt_threshold=dt_threshold*100
@@ -831,36 +831,38 @@ def doc_detail(request, doc_id, run_id):
     dt_thresh_scaled = Settings.objects.get(id=1).doc_topic_scaled_score
     if stat.dthreshold is not None:
         dt_threshold = stat.dthreshold
-        dt_thresh_scaled = stat.dthreshold
+        #dt_thresh_scaled = stat.dthreshold
         print(dt_threshold)
 
     if stat.method=="BD":
         dt_threshold=dt_threshold*100
     topicwords = {}
     ntopic = 0
-    for dt in doctopics:
-#        if ((not dt_thresh_scaled and dt.score >= dt_threshold) or (dt_thresh_scaled and dt.scaled_score*100 >= dt_threshold)):
-        if ((dt_thresh_scaled and dt.scaled_score*80 >= dt_threshold) or
-            (not dt_thresh_scaled and dt.score >= dt_threshold)):
-            topic = Topic.objects.get(pk=dt.topic_id)
-            ntopic+=1
-            topic.ntopic = "t"+str(ntopic)
-            topics.append(topic)
-            if stat.method=="BD":
-                terms=Term.objects.filter(
-                    topicterm__topic=topic.pk,
-                    topicterm__PY=doc.PY
-                ).order_by('-topicterm__score')[:10]
-            else:
-                terms = Term.objects.filter(topicterm__topic=topic.pk).order_by('-topicterm__score')[:10]
 
-            topicwords[ntopic] = []
-            for tt in terms:
-                topicwords[ntopic].append(tt.title)
-            if not dt_thresh_scaled:
-                pie_array.append([dt.score, '/tmv_app/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
-            else:
-                pie_array.append([dt.scaled_score, '/tmv_app/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
+    if dt_thresh_scaled:
+        doctopics = doctopics.filter(scaled_score__gte=dt_threshold/80)
+    else:
+        doctopics = doctopics.filter(score__gte=dt_threshold)
+    for dt in doctopics:
+        topic = Topic.objects.get(pk=dt.topic_id)
+        ntopic+=1
+        topic.ntopic = "t"+str(ntopic)
+        topics.append(topic)
+        if stat.method=="BD":
+            terms=Term.objects.filter(
+                topicterm__topic=topic.pk,
+                topicterm__PY=doc.PY
+            ).order_by('-topicterm__score')[:10]
+        else:
+            terms = Term.objects.filter(topicterm__topic=topic.pk).order_by('-topicterm__score')[:10]
+
+        topicwords[ntopic] = []
+        for tt in terms:
+            topicwords[ntopic].append(tt.title)
+        if not dt_thresh_scaled:
+            pie_array.append([dt.score, '/tmv_app/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
+        else:
+            pie_array.append([dt.scaled_score, '/tmv_app/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
 
 
     words = []
