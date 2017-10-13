@@ -173,6 +173,8 @@ class Doc(models.Model):
     tilength = models.IntegerField(null=True)
     content = models.TextField(null=True)
     PY = models.IntegerField(null=True,db_index=True)
+    first_author = models.TextField(null=True, verbose_name='First Author')
+    authors = models.TextField(null=True, verbose_name='All Authors')
     users = models.ManyToManyField(User, through='DocOwnership')
     references = models.ManyToManyField("self", symmetrical=False)
     technology = models.ManyToManyField('Technology',db_index=True)

@@ -96,6 +96,16 @@
       </td>
 
     {% endfor %}
+    
+    <tr>
+        <td width="50%">
+            <select id="techtoadd">
+            {% for t in ptechs %}
+                <option value={{t.id}}>{{t.name}}</option>
+            {% endfor %}
+            </select>
+        </td>
+        <td width="50%" style="text-align:right"><span class="buttonp" id="addtech">Add</span></td>
   </table>
   </div>
 
@@ -148,6 +158,23 @@ $(".hboxselect").click(function() {
 })
 $("#edit").click(function(){
   $(".edit").toggleClass("hidden")
+})
+
+$("#addtech").click(function() {
+    t = $("#techtoadd").val()
+    $.ajax({
+        url: "{% url 'scoping:update_thing' %}",
+        data: {
+            'thing1': "Doc",
+            'id1': '{{doc.UT | safe}}',
+            'thing2': 'Technology',
+            'id2': t,
+            'method': "add"
+        },
+        success: function(data) {
+            location.reload();
+        }
+    })
 })
 </script>
 {% endblock %}
