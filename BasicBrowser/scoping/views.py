@@ -1383,6 +1383,7 @@ def query(request,qid,q2id='0',sbsid='0'):
 
         context = {
             'query': query,
+            'project': query.project,
             'tags': list(tags),
             'untagged': untagged,
             'users': user_list,
@@ -1553,6 +1554,7 @@ def sbsExcludeDoc(request,qid,did):
 @login_required
 def doclist(request, pid, qid, q2id='0',sbsid='0'):
 
+    p = Project.objects.get(pk=pid)
     template = loader.get_template('scoping/docs.html')
 
     print(str(qid))
@@ -1609,7 +1611,7 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
         fields.append({"path": path, "name": f.verbose_name})
         wos_fields.append({"path": path, "name": f.verbose_name})
 
-    for u in User.objects.all():
+    for u in User.objects.filter(project=p):
         path = "docownership__"+u.username
         fields.append({"path": path, "name": u.username})
         relevance_fields.append({"path": path, "name": u.username})
@@ -2935,23 +2937,32 @@ def screen(request,qid,tid,ctype,d=0):
         docs = docs.filter(relevant__gte=1)
     else:
         docs = docs.filter(relevant=ctype)
+
+    docs = docs.order_by('date')
+
     if d < 0:
         d = docs.count() - 1
         back = -1
-
-    docs = docs.order_by('date')
+        ldocs = DocOwnership.objects.filter(
+            doc__wosarticle__isnull=False,
+            query=query,
+            user=user.id,
+            tag=tag
+        ).order_by('-date')[:1]
+        docs = docs | ldocs
+        doc = ldocs.first().doc
+    else:
+        try:
+            doc = docs[d].doc
+        except:
+            doc = None
+            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={'pid': query.project.id }))
 
     tdocs = docs.count() + sdocs
 
 
     ndocs = docs.count()
 
-    try:
-        doc_id = docs[d].doc_id
-    except:
-        return HttpResponseRedirect(reverse('scoping:userpage'))
-
-    doc = Doc.objects.filter(UT=doc_id).first()
     authors = DocAuthInst.objects.filter(doc=doc)
     abstract = highlight_words(doc.content,query)
     title = highlight_words(doc.wosarticle.ti,query)
@@ -2982,6 +2993,7 @@ def screen(request,qid,tid,ctype,d=0):
     template = loader.get_template('scoping/doc.html')
     context = {
         'query': query,
+        'project': query.project,
         'doc': doc,
         'ndocs': ndocs,
         'user': user,

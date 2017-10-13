@@ -398,6 +398,9 @@ class DocAuthInst(models.Model):
     institution = models.CharField(max_length=250, db_index=True, verbose_name="Institution Name")
     position = models.IntegerField(verbose_name="Author Position")
 
+    class Meta:
+        unique_together = ('doc', 'AU','AF','institution','position')
+
     def __str__(self):
       return self.AU
 
