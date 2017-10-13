@@ -99,7 +99,7 @@ urlpatterns = [
     url(r'^do_add_doc/$', views.do_add_doc, name='do_add_doc'),
     url(r'^do_add_doc/(?P<authtoken>[0-9a-f-]+)$', views.do_add_doc, name='do_add_doc'),
     url(r'^editdoc$', views.editdoc, name='editdoc'),
-    url(r'^document/(?P<doc_id>.+)/$', views.document, name='document'),
+    url(r'^document/(?P<pid>.+)/(?P<doc_id>.+)/$', views.document, name='document'),
     url(r'^remove_tech/(?P<doc_id>.+)/(?P<tid>[0-9]+)/(?P<thing>.+)$', views.remove_tech, name='remove_tech'),
 
 ]

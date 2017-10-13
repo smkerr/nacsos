@@ -283,6 +283,7 @@ def technologies(request, pid):
 
     template = loader.get_template('scoping/tech.html')
 
+    project = Project.objects.get(pk=pid)
     technologies = Technology.objects.filter(project=pid)
 
     users = User.objects.all()
@@ -302,9 +303,11 @@ def technologies(request, pid):
         else:
             t.docs = t.ndocs
 
+
     context = {
       'techs'    : technologies,
-      'users'    : users
+      'users'    : users,
+      'project'  : project
     }
 
     return HttpResponse(template.render(context, request))
@@ -2456,6 +2459,7 @@ from collections import defaultdict
 def technology(request,tid):
     template = loader.get_template('scoping/technology.html')
     tech, docs, tobj, nqdocs = get_tech_docs(tid,other=True)
+    project = tobj.project
     docinfo={}
     docinfo['nqdocs'] = nqdocs.distinct('UT').count()
     docinfo['tdocs'] = docs.distinct('UT').count()
@@ -2501,7 +2505,8 @@ def technology(request,tid):
         'tech': tobj,
         'docinfo': docinfo,
         'bypy': docjson,
-        'nqdocs': nqdocs
+        'nqdocs': nqdocs,
+        'project': project
         #'bypy': list(bypy.values('PY','techrelevant','n'))
     }
 
@@ -2680,7 +2685,7 @@ Germany
 
 
 
-def document(request,doc_id):
+def document(request, pid, doc_id):
     template = loader.get_template('scoping/document.html')
     doc = Doc.objects.get(pk=doc_id)
     authors = DocAuthInst.objects.filter(doc=doc)
@@ -2692,6 +2697,12 @@ def document(request,doc_id):
         extended=True
     else:
         extended=False
+
+    project = Project.objects.get(pk=pid)
+
+    ptechs = Technology.objects.filter(project=project).exclude(pk__in=technologies)
+
+
     context = {
         'doc': doc,
         'authors': authors,
@@ -2699,7 +2710,8 @@ def document(request,doc_id):
         'innovations': innovations,
         'ratings': ratings,
         'queries': queries,
-        'extended': extended
+        'extended': extended,
+        'ptechs': ptechs
     }
     return HttpResponse(template.render(context, request))
 

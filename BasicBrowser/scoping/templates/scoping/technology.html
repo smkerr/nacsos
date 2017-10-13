@@ -19,7 +19,7 @@
 <div class="explanation hidden" id="nqdocsbox" style="text-align:left">
   <ul>
     {% for d in nqdocs %}
-      <li>{{d.title}} <a href="{% url 'scoping:document' d.pk %}">[View more]</a>
+      <li>{{d.title}} <a href="{% url 'scoping:document' project.id d.pk %}">[View more]</a>
     {% endfor %}
   </ul>
 </div>
