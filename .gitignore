@@ -6,3 +6,4 @@ BasicBrowser/queries/*
 BasicBrowser/nohup.out
 *.httr.oauth
 BasicBrowser/worker*
+dump.rdb
