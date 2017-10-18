@@ -45,8 +45,14 @@ class Topic(models.Model):
     top_words = ArrayField(models.TextField(),null=True)
     primary_wg = models.IntegerField(null=True)
     wg_prop = models.FloatField(null=True)
+    wg_1 = models.FloatField(null=True)
+    wg_2 = models.FloatField(null=True)
+    wg_3 = models.FloatField(null=True)
 
     def __unicode__(self):
+        return str(self.title)
+
+    def __str__(self):
         return str(self.title)
 
 class DynamicTopic(models.Model):
@@ -59,6 +65,9 @@ class DynamicTopic(models.Model):
     l1ys = models.FloatField(null=True)
 
     def __unicode__(self):
+        return str(self.title)
+
+    def __str__(self):
         return str(self.title)
 
 class TopicDTopic(models.Model):
@@ -75,6 +84,7 @@ class TopicCorr(models.Model):
 
     def __unicode__(self):
         return str(self.title)
+
 
 class Term(models.Model):
     title = models.CharField(max_length=100, db_index=True)
@@ -196,7 +206,7 @@ class RunStats(models.Model):
     max_topics = models.IntegerField(null=True)
     ngram = models.IntegerField(null=True)
     term_count = models.IntegerField(null=True)
-    dthreshold = models.FloatField(null=True)
+    dthreshold = models.FloatField(default = 0.0005 )
 
 class Settings(models.Model):
     run_id = models.IntegerField()

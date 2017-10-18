@@ -19,11 +19,12 @@ class snowball_stemmer(object):
 
 
 def proc_docs(docs, stoplist):
-    abstracts = [re.split("\([C-c]\) [1-2][0-9]{3} Elsevier",x.content)[0] for x in docs.iterator()]
+    docs = [x for x in docs.iterator() if x.word_count() > 10]
+    abstracts = [re.split("\([C-c]\) [1-2][0-9]{3} Elsevier",x.content)[0] for x in docs]
     abstracts = [x.split("Published by Elsevier")[0] for x in abstracts]
     abstracts = [x.split("Copyright (C)")[0] for x in abstracts]
     abstracts = [re.split("\. \(C\) [1-2][0-9]{3} ",x)[0] for x in abstracts]
     docsizes = [len(x) for x in abstracts]
-    ids = [x.UT for x in docs.iterator()]
+    ids = [x.UT for x in docs]
 
     return [abstracts, docsizes, ids]

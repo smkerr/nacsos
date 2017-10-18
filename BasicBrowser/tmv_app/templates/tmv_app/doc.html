@@ -38,13 +38,29 @@
                   {% for author in doc_authors %}
                      <a href="/tmv_app/author/{{ author.AU }}">{{ author.AU }}</a>;
                   {% endfor %}
-                   {{ doc.PY }}
+                    {{ doc.PY }}. {{doc.wosarticle.so }}
                 </p>
                 <p>
                    {% for inst in doc_institutions %}
                       <a href="/tmv_app/institution/{{ inst.institution }}">{{ inst.institution }}</a>;
                    {% endfor %}
                 </p>
+                <p>
+                    DOI: <a href="https://dx.doi.org/{{dox.wosarticle.di}}">{{ doc.wosarticle.di }}</a>
+                </p>
+                <p>
+                    IPCC Citations:
+                    {% if ipccrefs %}
+                        <ul>
+                            {% for r in ipccrefs %}
+                                <li>AR{{ r.wg__ar}} WG{{ r.wg__wg }}
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                     None
+                    {% endif %}
+                </p>
+                <p>Citations: {{doc.wosarticle.tc}}
                 <p>
               {% for word in words %}
             <span class="{{ word.topic }}">{{ word.title }}</span>

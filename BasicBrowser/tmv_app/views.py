@@ -825,6 +825,9 @@ def doc_detail(request, doc_id, run_id):
     #for di in doc_institutions:
     #    di.institution = di.institution.split(',')[0]
 
+    ipccrefs = doc.ipccref_set.all().values('wg__ar','wg__wg')
+
+
     topics = []
     pie_array = []
     dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
@@ -881,7 +884,8 @@ def doc_detail(request, doc_id, run_id):
         'doc_authors': doc_authors,
         'words': words,
         'run_id': run_id,
-        'dt_threshold': dt_threshold
+        'dt_threshold': dt_threshold,
+        'ipccrefs': ipccrefs
     }
 
 
