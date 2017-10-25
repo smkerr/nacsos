@@ -815,7 +815,7 @@ def doc_detail(request, doc_id, run_id):
     response = ''
     template = loader.get_template('tmv_app/doc.html')
 
-    doc = Doc.objects.get(UT=doc_id)
+    doc = Doc.objects.get(id=doc_id)
 
     doctopics = DocTopic.objects.filter(doc=doc_id,run_id=run_id).order_by('-score')
 
