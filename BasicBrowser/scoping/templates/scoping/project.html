@@ -15,8 +15,9 @@
 
 <div class="explanation">
     <h3> View <a href="{% url 'scoping:queries' project.id%}">Queries</a> for project: {{ project.title }} </h3>
-    <h3> View <a href="{% url 'tmv_app:runs' project.id%}">Topic Models</a> 
+    <h3> View <a href="{% url 'tmv_app:runs' project.id%}">Topic Models</a>
         for project: {{ project.title }} </h3>
+
     <h3> Edit user roles for project {{ project.title }} </h3>
 <table>
 {% for u in projectUsers %}

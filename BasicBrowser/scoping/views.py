@@ -33,7 +33,9 @@ from django_tables2 import RequestConfig
 from .models import *
 
 from .forms import *
+
 from .tables import *
+
 from .tasks import *
 
 def super_check(user):
@@ -1455,13 +1457,18 @@ def query(request,qid,q2id='0',sbsid='0'):
             'fields': fields,
             'untagged': untagged,
             'users': user_list,
+<<<<<<< HEAD
             'user': request.user,
             'query_tms': RunStats.objects.filter(query=query).count()
+=======
+            'user': request.user
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
         }
 
 
     return HttpResponse(template.render(context, request))
 
+<<<<<<< HEAD
 
 @login_required
 def query_tm(request,qid):
@@ -1503,6 +1510,8 @@ def query_tm_manager(request,qid):
     }
     return HttpResponse(template.render(context, request))
 
+=======
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
 ##################################################
 ## User home page
 

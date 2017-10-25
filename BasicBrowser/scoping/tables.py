@@ -1,6 +1,7 @@
 import django_tables2 as tables
 from django_tables2.utils import A
 from .models import *
+
 from tmv_app.models import *
 
 #from .urls import urlpatterns
@@ -23,3 +24,5 @@ class TopicTable(tables.Table):
     class Meta:
         model = RunStats
         fields = ('run_id','start','status','K')
+
+#from .urls import urlpatterns

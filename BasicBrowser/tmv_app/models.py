@@ -21,6 +21,7 @@ class HTopicTerm(models.Model):
     count = models.IntegerField()
     run_id = models.IntegerField(null=True, db_index=True)
 
+
 # class HDocTopic(models.Model):
 #     #doc = models.ForeignKey('Doc')
 #     doc = models.ForeignKey('scoping.Doc', null=True)
@@ -28,6 +29,7 @@ class HTopicTerm(models.Model):
 #     level = models.SmallIntegerField()
 #     score = models.FloatField(null=True)
 #     run_id = models.IntegerField(null=True, db_index=True)
+
 
 
 
@@ -45,15 +47,19 @@ class Topic(models.Model):
     top_words = ArrayField(models.TextField(),null=True)
     primary_wg = models.IntegerField(null=True)
     wg_prop = models.FloatField(null=True)
+
     wg_1 = models.FloatField(null=True)
     wg_2 = models.FloatField(null=True)
     wg_3 = models.FloatField(null=True)
 
+
     def __unicode__(self):
         return str(self.title)
 
+
     def __str__(self):
         return str(self.title)
+
 
 class DynamicTopic(models.Model):
     title = models.CharField(null=True, max_length=80)
@@ -67,8 +73,10 @@ class DynamicTopic(models.Model):
     def __unicode__(self):
         return str(self.title)
 
+
     def __str__(self):
         return str(self.title)
+
 
 class TopicDTopic(models.Model):
     topic = models.ForeignKey('Topic', null=True)
@@ -206,7 +214,6 @@ class RunStats(models.Model):
 
     parent_run_id = models.IntegerField(null=True)
 
-
     docs_seen = models.IntegerField(null=True)
     notes = models.TextField(null=True)
     LDA = 'LD'
@@ -228,12 +235,14 @@ class RunStats(models.Model):
     )
     error = models.FloatField(null=True, default = 0)
     errortype = models.TextField(null=True)
+
     iterations = models.IntegerField(null=True)
 
     max_topics = models.IntegerField(null=True)
 
     term_count = models.IntegerField(null=True)
     dthreshold = models.FloatField(default = 0.0005 )
+
 
 class Settings(models.Model):
     run_id = models.IntegerField()

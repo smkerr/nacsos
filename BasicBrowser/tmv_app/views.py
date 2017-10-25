@@ -824,9 +824,12 @@ def doc_detail(request, doc_id, run_id):
     #doc_institutions = DocInstitutions.objects.filter(doc__UT=doc_id)
     #for di in doc_institutions:
     #    di.institution = di.institution.split(',')[0]
+<<<<<<< HEAD
 
     ipccrefs = doc.ipccref_set.all().values('wg__ar','wg__wg')
 
+=======
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
 
     topics = []
     pie_array = []
@@ -884,8 +887,12 @@ def doc_detail(request, doc_id, run_id):
         'doc_authors': doc_authors,
         'words': words,
         'run_id': run_id,
+<<<<<<< HEAD
         'dt_threshold': dt_threshold,
         'ipccrefs': ipccrefs
+=======
+        'dt_threshold': dt_threshold
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
     }
 
 
@@ -1084,6 +1091,7 @@ def topic_presence_hlda(request):
     response = ''
 
     get_year_filter(request)
+<<<<<<< HEAD
 
     presence_template = loader.get_template('tmv_app/topic_presence_hlda.html')
 
@@ -1099,6 +1107,23 @@ def topic_presence_hlda(request):
 
     topics = topics.values()
 
+=======
+
+    presence_template = loader.get_template('tmv_app/topic_presence_hlda.html')
+
+    topics = HTopic.objects.filter(run_id=run_id).order_by('-n_docs')
+    max_score = topics[0].n_docs
+
+    topic_tuples = []
+
+    ttree = "{"
+
+    for topic in topics:
+        topic_tuples.append((topic, topic.n_docs, topic.n_docs/max_score*100))
+
+    topics = topics.values()
+
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
     root = topics[0]
     root['children'] = []
     root['parent_id'] = "null"
@@ -1161,23 +1186,32 @@ def stats(request,run_id):
 
     return HttpResponse(template.render(context))
 
+<<<<<<< HEAD
 def runs(request,pid=0):
 
     pid = int(pid)
 
+=======
+def runs(request):
+
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
     template = loader.get_template('tmv_app/runs.html')
 
     stats = RunStats.objects.all().order_by('-start')
 
+<<<<<<< HEAD
     if pid > 0:
         stats = stats.filter(query__project_id=pid)
 
+=======
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
     stats = stats.annotate(
         topics = models.Count('topic'),
         dtopics = models.Count('dynamictopic', distinct=True),
         #terms = models.Count('term')
     )
 
+<<<<<<< HEAD
 
     for s in stats:
         if s.parent_run_id is not None:
@@ -1193,6 +1227,22 @@ def runs(request,pid=0):
             s.term_count = Term.objects.filter(run_id=run_id).count()
             s.save()
 
+=======
+    for s in stats:
+        if s.parent_run_id is not None:
+            run_id = s.parent_run_id
+        else:
+            run_id = s.run_id
+        if s.max_topics is None and s.method=="DT":
+            myear = Topic.objects.filter(run_id=run_id).aggregate(
+                myear=models.Max('year')
+            )['myear']
+            s.max_topics = Topic.objects.filter(run_id=run_id,year=myear).count()
+        if s.term_count is None or s.term_count==0:
+            s.term_count = Term.objects.filter(run_id=run_id).count()
+            s.save()
+
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
     context = {'stats':stats}
 
     return HttpResponse(template.render(context, request))
@@ -1257,11 +1307,14 @@ def apply_run_filter(request,new_run_id):
 
 def delete_run(request,new_run_id):
     stat = RunStats.objects.get(run_id=new_run_id)
+<<<<<<< HEAD
     p = stat.query.project
     if p is not None:
         pid = p.id
     else:
         pid = 0
+=======
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
     stat.delete()
     topics = Topic.objects.filter(run_id_id=new_run_id)
     topics.delete()
@@ -1275,7 +1328,11 @@ def delete_run(request,new_run_id):
     DynamicTopic.objects.filter(run_id=new_run_id).delete()
 
 
+<<<<<<< HEAD
     return HttpResponseRedirect(reverse('tmv_app:runs', kwargs={'pid': pid}))
+=======
+    return HttpResponseRedirect('/tmv_app/runs')
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
 
 
 
@@ -1297,6 +1354,7 @@ def update_topic_titles(session):
                 new_topic_title +=', '
             new_topic_title = new_topic_title[:-2]
             new_topic_title+='}'
+<<<<<<< HEAD
 
             topic.top_words = [x.title.lower() for x in topicterms]
 
@@ -1305,6 +1363,16 @@ def update_topic_titles(session):
         stats.topic_titles_current = True
         stats.save()
 
+=======
+
+            topic.top_words = [x.title.lower() for x in topicterms]
+
+            topic.title = new_topic_title
+            topic.save()
+        stats.topic_titles_current = True
+        stats.save()
+
+>>>>>>> 77aa37cd70683764d39ae069a81b0aa50822b9e2
 def update_bdtopics(run_id):
     stats = RunStats.objects.get(pk=run_id)
     if "a"=="a":

@@ -39,13 +39,16 @@ urlpatterns = [
     url(r'^runs$', login_required(runs), name='runs'),
     url(r'^runs/(?P<pid>\d+)/$', login_required(runs), name='runs'),
 
+
     url(r'^queries$', login_required(queries), name='queries'),
 
     url(r'^adjust_threshold/(?P<run_id>\d+)/$', login_required(adjust_threshold), name='adjust_threshold'),
 
     url(r'^update/(?P<run_id>\d+)$', login_required(update_run), name='update'),
     url(r'^runs/apply/(?P<new_run_id>\d+)$', login_required(apply_run_filter)),
+
     url(r'^runs/delete/(?P<new_run_id>\d+)$', login_required(delete_run), name='delete_run'),
+
     url(r'^topic/random$', login_required(topic_random)),
     url(r'^term/random$', login_required(term_random)),
     url(r'^get_docs$', login_required(get_docs), name="get_docs"),
