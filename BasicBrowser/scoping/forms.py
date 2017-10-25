@@ -1,5 +1,6 @@
 from django import forms
 from .models import *
+from tmv_app.models import *
 
 class ProjectForm(forms.ModelForm):
     class Meta:
@@ -17,3 +18,9 @@ class UpdateProjectRoleForm(forms.ModelForm):
         model = (ProjectRoles)
         fields = ('user', 'role',)
         #widgets = {'user': forms.HiddenInput()}
+
+
+class TopicModelForm(forms.ModelForm):
+    class Meta:
+        model = (RunStats)
+        fields = ('K','alpha','max_features','limit','max_iterations','ngram')

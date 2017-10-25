@@ -57,7 +57,7 @@
 			<td>{{ stat.ngram }}</td>
 			<td>{{ stat.iterations }}</td>
       <td>{{ stat.start|timesince:stat.last_update}}</td>
-      <td><button onclick="window.location.href='runs/delete/{{ stat.run_id }}';event.stopImmediatePropagation();">Delete</button></td>
+      <td><button onclick="window.location.href='{% url 'tmv_app:delete_run' stat.run_id %}';event.stopImmediatePropagation();">Delete</button></td>
       <td>
           <form action="{% url 'tmv_app:update' stat.run_id %}" method="post" >
           {% csrf_token %}

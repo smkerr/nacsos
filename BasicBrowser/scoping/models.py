@@ -54,6 +54,7 @@ class Project(models.Model):
     users = models.ManyToManyField(User, through='ProjectRoles')
     queries = models.IntegerField(default=0)
     docs = models.IntegerField(default=0)
+    tms = models.IntegerField(default=0)
     role = models.CharField(max_length=2, choices=ROLE_CHOICES, null=True)
 
     def __str__(self):
@@ -163,10 +164,14 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
 
+class UT(models.Model):
+    UT = models.CharField(max_length=30,db_index=True,primary_key=True, verbose_name='Document ID')
 
 class Doc(models.Model):
     random = DocManager
-    UT = models.CharField(max_length=240,db_index=True,primary_key=True, verbose_name='Document ID')
+
+    UT = models.OneToOneField(UT)
+    #UT = models.CharField(max_length=30,db_index=True,primary_key=True, verbose_name='Document ID')
     query = models.ManyToManyField('Query')
     tag = models.ManyToManyField('Tag')
     title = models.TextField(null=True)
@@ -176,7 +181,6 @@ class Doc(models.Model):
     first_author = models.TextField(null=True, verbose_name='First Author')
     authors = models.TextField(null=True, verbose_name='All Authors')
     users = models.ManyToManyField(User, through='DocOwnership')
-    references = models.ManyToManyField("self", symmetrical=False)
     technology = models.ManyToManyField('Technology',db_index=True)
     innovation = models.ManyToManyField('Innovation',db_index=True)
     category = models.ManyToManyField('SBSDocCategory')
@@ -187,17 +191,13 @@ class Doc(models.Model):
     date = models.DateTimeField(null=True)
     ymentions = ArrayField(models.IntegerField(),null=True)
     cities = models.ManyToManyField('cities.City')
-    k = models.IntegerField(null=True,db_index=True)
-    degree = models.FloatField(null=True,db_index=True)
-    eigen_cent = models.FloatField(null=True,db_index=True)
     citation_objects = models.BooleanField(default=False,db_index=True)
-    distance = models.IntegerField(null=True,db_index=True)
     duplicated = models.BooleanField(default=False)
     relevant = models.BooleanField(default=False)
     projects = models.ManyToManyField(Project, through='DocProject')
 
     def __str__(self):
-      return self.UT
+      return self.UT.UT
 
     def citation(self):
         used = set()
@@ -214,12 +214,14 @@ class Doc(models.Model):
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
 
+
 class Bigram(models.Model):
     stem1 = models.TextField(db_index=True)
     word1 = models.TextField()
     word2 = models.TextField()
     stem2 = models.TextField()
     pos = models.IntegerField(db_index=True)
+
 
 class DocBigram(models.Model):
     doc = models.ForeignKey(Doc)
@@ -232,11 +234,13 @@ class Network(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     query = models.ForeignKey(Query)
 
+
 class NetworkProperties(models.Model):
     doc = models.ForeignKey(Doc)
     network = models.ForeignKey(Network)
     value = models.IntegerField(null=True)
     fvalue = models.FloatField(null=True)
+
 
 class Citation(models.Model):
     au = models.TextField(null=True)
@@ -255,14 +259,17 @@ class JournalAbbrev(models.Model):
     fulltext = models.TextField(unique=True)
     abbrev = models.TextField(unique=True,null=True)
 
+
 class CDO(models.Model):
     doc = models.ForeignKey(Doc)
     citation = models.ForeignKey(Citation)
 
+
+
 class BibCouple(models.Model):
     doc1 = models.ForeignKey(Doc, related_name="node1")
     doc2 = models.ForeignKey(Doc, related_name="node2")
-    cocites = models.IntegerField(Doc, default=0)
+    cocites = models.IntegerField(default=0)
 
 class AR(models.Model):
     ar = models.IntegerField(unique=True)
@@ -298,6 +305,7 @@ class KW(models.Model):
     doc = models.ManyToManyField(Doc)
     ndocs = models.IntegerField(default=0)
 
+
 class WC(models.Model):
     text = models.TextField()
     doc = models.ManyToManyField(Doc)
@@ -318,6 +326,7 @@ class EmailTokens(models.Model):
 
 class URLs(models.Model):
     url = models.TextField(unique=True,db_index=True)
+
 
 class DocRel(models.Model):
     seed = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="parent")
@@ -343,6 +352,7 @@ class DocRel(models.Model):
 
     class Meta:
         unique_together = ('seed', 'seedquery', 'text',)
+
 
 
 class Note(models.Model):
@@ -393,6 +403,7 @@ class DocOwnership(models.Model):
     date     = models.DateTimeField(null=True,default=timezone.now,verbose_name="Rating Date")
 
 
+
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")
     AU = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author")
@@ -407,6 +418,8 @@ class DocAuthInst(models.Model):
       return self.AU
 
 # A simple form of the table below, just to store the dois as we parse them
+
+
 class DocReferences(models.Model):
     doc = models.ForeignKey('Doc',null=True)
     refdoi = models.CharField(null=True, max_length=150, verbose_name="DOI")
@@ -421,6 +434,7 @@ class DocReferences(models.Model):
 
 ##############################################
 ## Article holds more WoS type information for each doc
+
 
 class WoSArticle(models.Model):
     doc = models.OneToOneField(

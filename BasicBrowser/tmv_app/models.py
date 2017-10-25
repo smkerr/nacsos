@@ -21,13 +21,13 @@ class HTopicTerm(models.Model):
     count = models.IntegerField()
     run_id = models.IntegerField(null=True, db_index=True)
 
-class HDocTopic(models.Model):
-    #doc = models.ForeignKey('Doc')
-    doc = models.ForeignKey('scoping.Doc', null=True)
-    topic = models.ForeignKey('HTopic')
-    level = models.SmallIntegerField()
-    score = models.FloatField(null=True)
-    run_id = models.IntegerField(null=True, db_index=True)
+# class HDocTopic(models.Model):
+#     #doc = models.ForeignKey('Doc')
+#     doc = models.ForeignKey('scoping.Doc', null=True)
+#     topic = models.ForeignKey('HTopic')
+#     level = models.SmallIntegerField()
+#     score = models.FloatField(null=True)
+#     run_id = models.IntegerField(null=True, db_index=True)
 
 
 
@@ -134,6 +134,7 @@ class HTopicYear(models.Model):
 ## DocTopic and TopicTerm map contain topic scores
 ## for docs and topics respectively
 
+
 class DocTopic(models.Model):
     #doc = models.ForeignKey(Doc, null=True)
     doc = models.ForeignKey('scoping.Doc', null=True)
@@ -169,16 +170,43 @@ class DocTerm(models.Model):
 #################################################
 ## RunStats and Settings....
 class RunStats(models.Model):
-    run_id = models.IntegerField(primary_key=True)
-    process_id = models.IntegerField(null=True)
-    parent_run_id = models.IntegerField(null=True)
+    run_id = models.AutoField(primary_key=True)
+
+    ##Inputs
+    K = models.IntegerField(null=True, help_text='Number of topics')
+    alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter')
+    max_features = models.IntegerField(null=True, help_text = 'Maximum number of terms')
+    limit = models.IntegerField(null=True, default=0, help_text='Limit model to first x documents (leave as zero for no limit)')
+    ngram = models.IntegerField(null=True, default=1, help_text='Length of feature n_gram')
+    max_iterations  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
+
     query = models.ForeignKey('scoping.Query', null=True)
-    start = models.DateTimeField()
-    batch_count = models.IntegerField()
-    last_update = models.DateTimeField()
-    topic_titles_current = models.NullBooleanField()
-    topic_scores_current = models.NullBooleanField()
-    topic_year_scores_current = models.NullBooleanField()
+
+
+    ## Progress
+    process_id = models.IntegerField(null=True)
+    start = models.DateTimeField(auto_now_add=True)
+    batch_count = models.IntegerField(default=0)
+    last_update = models.DateTimeField(auto_now_add=True)
+    topic_titles_current = models.NullBooleanField(default=False)
+    topic_scores_current = models.NullBooleanField(default=False)
+    topic_year_scores_current = models.NullBooleanField(default=False)
+
+    status_choices = (
+        (0,'Not Started'),
+        (1,'Running'),
+        (2,'Interrupted'),
+        (3,'Finished')
+    )
+    status = models.IntegerField(
+        choices = status_choices,
+        default = 0
+    )
+
+
+    parent_run_id = models.IntegerField(null=True)
+
+
     docs_seen = models.IntegerField(null=True)
     notes = models.TextField(null=True)
     LDA = 'LD'
@@ -200,11 +228,10 @@ class RunStats(models.Model):
     )
     error = models.FloatField(null=True, default = 0)
     errortype = models.TextField(null=True)
-    alpha = models.FloatField(null=True)
     iterations = models.IntegerField(null=True)
-    max_features = models.IntegerField(null=True)
+
     max_topics = models.IntegerField(null=True)
-    ngram = models.IntegerField(null=True)
+
     term_count = models.IntegerField(null=True)
     dthreshold = models.FloatField(default = 0.0005 )
 

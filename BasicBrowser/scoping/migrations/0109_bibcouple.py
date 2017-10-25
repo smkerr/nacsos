@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
             name='BibCouple',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('cocites', models.IntegerField(default=0, verbose_name=scoping.models.Doc)),
+                ('cocites', models.IntegerField(default=0, verbose_name="DOC")),
                 ('doc1', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='node1', to='scoping.Doc')),
                 ('doc2', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='node2', to='scoping.Doc')),
             ],

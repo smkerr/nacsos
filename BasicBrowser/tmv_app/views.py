@@ -1161,17 +1161,23 @@ def stats(request,run_id):
 
     return HttpResponse(template.render(context))
 
-def runs(request):
+def runs(request,pid=0):
+
+    pid = int(pid)
 
     template = loader.get_template('tmv_app/runs.html')
 
     stats = RunStats.objects.all().order_by('-start')
+
+    if pid > 0:
+        stats = stats.filter(query__project_id=pid)
 
     stats = stats.annotate(
         topics = models.Count('topic'),
         dtopics = models.Count('dynamictopic', distinct=True),
         #terms = models.Count('term')
     )
+
 
     for s in stats:
         if s.parent_run_id is not None:
@@ -1251,6 +1257,11 @@ def apply_run_filter(request,new_run_id):
 
 def delete_run(request,new_run_id):
     stat = RunStats.objects.get(run_id=new_run_id)
+    p = stat.query.project
+    if p is not None:
+        pid = p.id
+    else:
+        pid = 0
     stat.delete()
     topics = Topic.objects.filter(run_id_id=new_run_id)
     topics.delete()
@@ -1264,7 +1275,7 @@ def delete_run(request,new_run_id):
     DynamicTopic.objects.filter(run_id=new_run_id).delete()
 
 
-    return HttpResponseRedirect('/tmv_app/runs')
+    return HttpResponseRedirect(reverse('tmv_app:runs', kwargs={'pid': pid}))
 
 
 

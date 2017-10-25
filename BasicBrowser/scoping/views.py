@@ -33,7 +33,7 @@ from django_tables2 import RequestConfig
 from .models import *
 
 from .forms import *
-from .tables import ProjectTable
+from .tables import *
 from .tasks import *
 
 def super_check(user):
@@ -1455,10 +1455,52 @@ def query(request,qid,q2id='0',sbsid='0'):
             'fields': fields,
             'untagged': untagged,
             'users': user_list,
-            'user': request.user
+            'user': request.user,
+            'query_tms': RunStats.objects.filter(query=query).count()
         }
 
 
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def query_tm(request,qid):
+    template = loader.get_template('scoping/query_tm.html')
+    query = Query.objects.get(pk=qid)
+
+    if request.method == 'POST':
+        form = TopicModelForm(request.POST)
+        # check whether it's valid:
+        if form.is_valid():
+            obj = form.save()
+            obj.query = query
+            obj.save()
+
+            return HttpResponseRedirect(reverse('scoping:query_tm_manager', kwargs={'qid': qid}))
+
+    # if a GET (or any other method) we'll create a blank form
+    else:
+        form = TopicModelForm()
+
+    context = {
+        'query': query,
+        'form': form
+    }
+    return HttpResponse(template.render(context, request))
+
+@login_required
+def query_tm_manager(request,qid):
+    template = loader.get_template('scoping/query_tm_manager.html')
+    query = Query.objects.get(pk=qid)
+
+    tms = RunStats.objects.filter(query=query)
+
+    table = TopicTable(tms)
+
+    context = {
+        'query': query,
+        'table': table
+    }
     return HttpResponse(template.render(context, request))
 
 ##################################################
