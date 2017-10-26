@@ -25,6 +25,6 @@ def proc_docs(docs, stoplist):
     abstracts = [x.split("Copyright (C)")[0] for x in abstracts]
     abstracts = [re.split("\. \(C\) [1-2][0-9]{3} ",x)[0] for x in abstracts]
     docsizes = [len(x) for x in abstracts]
-    ids = [x.UT for x in docs]
+    ids = [x.pk for x in docs]
 
     return [abstracts, docsizes, ids]

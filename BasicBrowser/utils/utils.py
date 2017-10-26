@@ -75,11 +75,15 @@ def add_doc(r, q, update):
 
     django.db.connections.close_all()
 
-    doc, created = Doc.objects.get_or_create(UT=r['UT'])
+    ut, created = UT.objects.get_or_create(UT=r['UT'])
+
+    #doc, created = Doc.objects.get_or_create(UT=r['UT'])
 
     if created==False and update==False:
+        doc = ut.doc
         doc.query.add(q)
     else:
+        doc, created = Doc.objects.get_or_create(UT=ut)
         doc.title=get(r,'TI')
         doc.content=get(r,'AB')
         doc.PY=get(r,'PY')

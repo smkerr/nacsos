@@ -37,6 +37,7 @@ from .forms import *
 from .tables import *
 
 from .tasks import *
+from tmv_app.tasks import *
 
 def super_check(user):
     return user.groups.filter(name__in=['superuser'])
@@ -481,7 +482,7 @@ def doquery(request, pid):
                 cids = q1ids
             else:
                 q1 = Doc.objects.filter(query=args[0])
-                q1ids = q1.values_list('UT',flat=True)
+                q1ids = q1.values_list('id',flat=True)
                 cids = q1ids
             for a in range(1,len(args)):
                 parts = args[a].split(":")
@@ -489,7 +490,7 @@ def doquery(request, pid):
                 # Deal WITH tech filters
                 if parts[0] == "TECH":
                     tech, tdocs, tobj = get_tech_docs(parts[1])
-                    tids = tdocs.values_list('UT',flat=True)
+                    tids = tdocs.values_list('id',flat=True)
                     if q1ids is not None:
                         cids = list(set(q1ids).intersection(set(tids)))
                     else:
@@ -517,12 +518,12 @@ def doquery(request, pid):
                         )
 
 
-        for d in combine.distinct('UT'):
+        for d in combine.distinct('id'):
             d.query.add(q)
-        q.r_count = len(combine.distinct('UT'))
+        q.r_count = len(combine.distinct('id'))
         q.save()
 
-        return HttpResponseRedirect(reverse('scoping:doclist', kwargs={ 'qid': q.id }))
+        return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'pid': pid, 'qid': q.id }))
 
 
     else:
@@ -1506,6 +1507,18 @@ def query_tm_manager(request,qid):
         'table': table
     }
     return HttpResponse(template.render(context, request))
+
+@login_required
+def run_model(request,run_id):
+
+    run = RunStats.objects.get(pk=run_id)
+    qid = run.query.id
+
+    do_nmf.delay(run_id)
+
+    return HttpResponseRedirect(reverse(
+        'scoping:query_tm_manager', kwargs={'qid': qid}
+    ))
 
 
 ##################################################

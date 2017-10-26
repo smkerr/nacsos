@@ -44,7 +44,7 @@ urlpatterns = [
     url(r'^query/(?P<qid>[0-9]+)/$', views.query, name='query'),
     url(r'^query-tm-manager/(?P<qid>[0-9]+)/$', views.query_tm_manager, name='query_tm_manager'),
     url(r'^query-tm/(?P<qid>[0-9]+)/$', views.query_tm, name='query_tm'),
-
+    url(r'^run_model-tm/(?P<run_id>[0-9]+)/$', views.run_model, name='run_model'),
 
     #### Manage SBS
     url(r'^sbs_allocateDocsToUser/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)$', views.sbs_allocateDocsToUser, name='sbs_allocateDocsToUser'),
