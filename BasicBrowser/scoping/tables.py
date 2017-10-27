@@ -21,13 +21,13 @@ class TopicTable(tables.Table):
     # queries = tables.LinkColumn('scoping:queries', args=[A('pk')])
     # tms = tables.LinkColumn('tmv_app:runs', args=[A('pk')])
     #id = tables.LinkColumn('scoping:project', args=[A('pk')])
-    startit = tables.LinkColumn(
-        'scoping:run_model',
-        text='Start',
-        args=[A('pk')]
-    )
+    # startit = tables.LinkColumn(
+    #     'scoping:run_model',
+    #     text='Start',
+    #     args=[A('pk')]
+    # )
     class Meta:
         model = RunStats
-        fields = ('run_id','start','status','K','startit')
+        fields = ('run_id','start','status','K')#'startit')
 
 #from .urls import urlpatterns

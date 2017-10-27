@@ -22,6 +22,14 @@ def flatten(container):
             yield i
 
 
+
+########################
+## check status of run
+
+def run_status(run_id):
+    stat = RunStats.objects.get(pk=run_id)
+    
+
 ###################################
 # function, to be done in parallel,
 # which pull citations from docs,

@@ -179,6 +179,7 @@ and {} topics\n'.format(qid, docs.count(),K))
     del abstracts
     gc.collect()
     stat.process_id = os.getpid()
+    stat.status = 1
     stat.save()
 
     vocab = tfidf_vectorizer.get_feature_names()
@@ -279,5 +280,6 @@ and {} topics\n'.format(qid, docs.count(),K))
         stat.errortype = "Frobenius"
         stat.iterations = nmf.n_iter_
         stat.last_update=timezone.now()
+        stat.status=3
         stat.save()
         management.call_command('update_run',run_id)

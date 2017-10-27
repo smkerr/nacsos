@@ -1481,6 +1481,8 @@ def query_tm(request,qid):
             obj.query = query
             obj.save()
 
+            do_nmf.delay(obj.run_id)
+
             return HttpResponseRedirect(reverse('scoping:query_tm_manager', kwargs={'qid': qid}))
 
     # if a GET (or any other method) we'll create a blank form
@@ -1489,7 +1491,8 @@ def query_tm(request,qid):
 
     context = {
         'query': query,
-        'form': form
+        'form': form,
+        'project': query.project
     }
     return HttpResponse(template.render(context, request))
 
@@ -1504,7 +1507,8 @@ def query_tm_manager(request,qid):
 
     context = {
         'query': query,
-        'table': table
+        'table': table,
+        'project': query.project
     }
     return HttpResponse(template.render(context, request))
 
