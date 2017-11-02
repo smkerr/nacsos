@@ -28,6 +28,6 @@ class TopicTable(tables.Table):
     # )
     class Meta:
         model = RunStats
-        fields = ('run_id','start','status','K')#'startit')
+        fields = ('run_id','start','status','K','alpha')#'startit')
 
 #from .urls import urlpatterns

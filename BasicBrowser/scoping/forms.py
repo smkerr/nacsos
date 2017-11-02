@@ -26,4 +26,4 @@ class UpdateProjectRoleForm(forms.ModelForm):
 class TopicModelForm(forms.ModelForm):
     class Meta:
         model = (RunStats)
-        fields = ('K','alpha','max_features','limit','max_iterations','ngram')
+        fields = ('K','alpha','limit','ngram','max_features','max_iterations')

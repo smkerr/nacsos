@@ -15,6 +15,7 @@ import decimal
 from django.core import management
 from .tasks import *
 from celery import group
+from utils.tm_mgmt import *
 
 # the following line will need to be updated to launch the browser on a web server
 TEMPLATE_DIR = sys.path[0] + '/templates/'
@@ -54,10 +55,10 @@ DEBUG_TOOLBAR_CONFIG = {
     "SHOW_TOOLBAR_CALLBACK" : show_toolbar,
 }
 
-def author_detail(request, author_name):
-    run_id = find_run_id(request.session)
+def author_detail(request, author_name, run_id):
     response = author_name
-    documents = Doc.objects.filter(docauthinst__AU=author_name)
+
+    documents = Doc.objects.filter(docauthinst__AU=author_name).distinct()
 
     dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
 
@@ -605,65 +606,6 @@ def multi_topic(request):
 
     return HttpResponse(template.render(context))
 
-###########################################################################
-## Topic View for HLDA
-def topic_detail_hlda(request, topic_id):
-    #update_year_topic_scores(request.session)
-    response = ''
-    run_id = find_run_id(request.session)
-
-    topic_template = loader.get_template('tmv_app/topic.html')
-
-    topic = HTopic.objects.get(topic=topic_id,run_id=run_id)
-    topicterms = Term.objects.filter(htopicterm__topic=topic.topic, run_id=run_id).order_by('-htopicterm__count')[:10]
-    doctopics = Doc.objects.filter(hdoctopic__topic=topic.topic,hdoctopic__run_id=run_id)
-
-    terms = []
-    term_bar = []
-    remainder = 1
-    remainder_titles = ''
-
-    for tt in topicterms:
-        term = Term.objects.get(term=tt.term)
-
-        terms.append(term)
-
-#            term_bar.append((True, term, score * 100))
-#            remainder -= score
-#        else:
-#            if remainder_titles == '':
-#                remainder_titles += term.title
-#            else:
-#                remainder_titles += ', ' + term.title
-#    term_bar.append((False, remainder_titles, remainder*100))
-
-    update_year_topic_scores(request.session)
-
-    yts = HTopicYear.objects.filter(run_id=run_id)
-
-    ytarray = list(yts.values('PY','count','score','topic_id','topic__title'))
-    #ytarray = []
-
-    corrtops = TopicCorr.objects.filter(topic=topic_id).order_by('-score')[:10]
-
-    ctarray = []
-
-    for ct in corrtops:
-        top = Topic.objects.get(topic=ct.topiccorr)
-        if ct.score < 1:
-            score = round(ct.score,2)
-            ctarray.append({"topic": top.topic,"title":top.title,"score":score})
-
-    topic_page_context = {
-        'topic': topic,
-        'terms': terms,
-        'term_bar': term_bar,
-        'docs': doctopics,
-        'yts': ytarray,
-        'corrtops': ctarray
-    }
-
-    return HttpResponse(topic_template.render(topic_page_context))
 
 ##############################################################
 
@@ -931,66 +873,6 @@ def print_table(request,run_id):
 
     return response
 
-############################################################################
-## for HLDA
-def doc_detail_hlda(request, doc_id):
-
-    snowball_stemmer = SnowballStemmer("english")
-
-    run_id = find_run_id(request.session)
-
-    update_topic_titles(request.session)
-    response = ''
-    doc_template = loader.get_template('tmv_app/doc.html')
-
-    doc = Doc.objects.get(UT=doc_id)
-
-    doctopics = HDocTopic.objects.filter(doc=doc_id,run_id=run_id).order_by('level')
-
-    doc_authors = DocAuthors.objects.filter(doc__UT=doc_id).distinct('author')
-
-    doc_institutions = DocInstitutions.objects.filter(doc__UT=doc_id)
-    for di in doc_institutions:
-        di.institution = di.institution.split(',')[0]
-
-    topics = []
-    pie_array = []
-
-    topicwords = {}
-    ntopic = 0
-    for dt in doctopics:
-        topic = HTopic.objects.get(topic=dt.topic_id)
-        ntopic+=1
-        topic.ntopic = "t"+str(ntopic)
-        topics.append(topic)
-        terms = Term.objects.filter(htopicterm__topic=topic.topic).order_by('-htopicterm__count')[:10]
-
-        topicwords[ntopic] = []
-        for tt in terms:
-            topicwords[ntopic].append(tt.title)
-        pie_array.append([dt.score, '/topic/' + str(topic.topic), 'topic_' + str(topic.topic)])
-
-
-    words = []
-    for word in doc.content.split():
-        wt = ""
-        for t in range(1,ntopic+1):
-            if snowball_stemmer.stem(word) in topicwords[t]:
-                wt = t
-        words.append({'title': word, 'topic':"t"+str(wt)})
-
-    doc_page_context = {
-        'doc': doc,
-        'topics': topics,
-        'pie_array': pie_array,
-        'doc_authors': doc_authors,
-        'doc_institutions': doc_institutions ,
-        'words': words
-    }
-
-    return HttpResponse(doc_template.render(doc_page_context))
-
-
 def topic_list_detail(request):
     run_id = find_run_id(request.session)
     update_topic_titles()
@@ -1128,19 +1010,6 @@ def topic_presence_hlda(request):
 
     return HttpResponse(presence_template.render(presence_page_context))
 
-def get_docs(request):
-    topic = request.GET.get('topic',None)
-    t = HTopic.objects.get(topic=topic)
-    topic_box_template = loader.get_template('tmv_app/topic_box.html')
-    docs = Doc.objects.filter(hdoctopic__topic=topic).order_by('hdoctopic__score')[:5].values()
-    data = {
-        "bla": "bla"
-    }
-    topic_box_context = {
-        'docs':docs,
-        'topic':t
-    }
-    return HttpResponse(topic_box_template.render(topic_box_context))
 
 def stats(request,run_id):
 
@@ -1148,10 +1017,7 @@ def stats(request,run_id):
 
     stats = RunStats.objects.get(run_id=run_id)
 
-    if stats.get_method_display() == 'hlda':
-        docs_seen = HDocTopic.objects.filter(run_id=run_id).values('doc_id').order_by().distinct().count()
-    else:
-        docs_seen = DocTopic.objects.filter(run_id=run_id).values('doc_id').order_by().distinct().count()
+    docs_seen = DocTopic.objects.filter(run_id=run_id).values('doc_id').order_by().distinct().count()
 
     stats.docs_seen = docs_seen
     stats.num_docs = stats.query.doc_set.count()
@@ -1282,7 +1148,6 @@ def delete_run(request,new_run_id):
     tt.delete()
     ht = HTopic.objects.filter(run_id=new_run_id)
     ht.delete()
-    hd = HDocTopic.objects.filter(run_id=new_run_id)
     DynamicTopic.objects.filter(run_id=new_run_id).delete()
 
 
@@ -1292,186 +1157,7 @@ def delete_run(request,new_run_id):
 
 
 
-def update_topic_titles(session):
-    if isinstance(session, int):
-        run_id=session
-    else:
-        run_id = find_run_id(session)
 
-    stats = RunStats.objects.get(run_id=run_id)
-    if not stats.topic_titles_current:
-    #if "a" in "ab":
-        for topic in Topic.objects.filter(run_id=run_id):
-            #topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')[:3]
-            topicterms = Term.objects.filter(topicterm__topic=topic).order_by('-topicterm__score')[:10]
-            new_topic_title = '{'
-            for tt in topicterms[:3]:
-                new_topic_title +=tt.title
-                new_topic_title +=', '
-            new_topic_title = new_topic_title[:-2]
-            new_topic_title+='}'
-
-
-            topic.top_words = [x.title.lower() for x in topicterms]
-
-            topic.title = new_topic_title
-            topic.save()
-        stats.topic_titles_current = True
-        stats.save()
-
-
-def update_bdtopics(run_id):
-    stats = RunStats.objects.get(pk=run_id)
-    if "a"=="a":
-    #if not stats.topic_titles_current:
-        topics = Topic.objects.filter(run_id=run_id)
-        for topic in topics:
-            tts = TopicTerm.objects.filter(topic=topic)
-            at = tts.values('term').annotate(
-                mean = models.Avg('score')
-            ).order_by('-mean')[:3]
-            new_topic_title = '{'
-            for tt in at:
-                term = Term.objects.get(pk=tt['term'])
-                new_topic_title += term.title
-                new_topic_title +=', '
-            new_topic_title = new_topic_title[:-2]
-            new_topic_title+='}'
-            topic.title = new_topic_title
-            topic.save()
-
-def update_dtopics(run_id):
-    stats = RunStats.objects.get(pk=run_id)
-    if stats.parent_run_id is not None:
-        parent_run_id=stats.parent_run_id
-    else:
-        parent_run_id = run_id
-    #if "a" == "b":
-    if not stats.topic_titles_current:
-    #if "a" in "ab":
-        dts = DynamicTopic.objects.filter(run_id=run_id).values_list('id',flat=True)
-        jobs = group(update_dtopic.s(dt,parent_run_id) for dt in dts)
-        result = jobs.apply_async()
-        stats.topic_titles_current = True
-        stats.save()
-
-    return
-
-def update_topic_titles_hlda(session):
-    if isinstance(session, int):
-        run_id=session
-    else:
-        run_id = find_run_id(session)
-
-    stats = RunStats.objects.get(run_id=run_id)
-    if not stats.topic_titles_current:
-    #if "a" in "ab":
-        for topic in HTopic.objects.filter(run_id=run_id):
-            #topicterms = TopicTerm.objects.filter(topic=topic.topic).order_by('-score')[:3]
-            topicterms = Term.objects.filter(htopicterm__topic=topic.topic).order_by('-htopicterm__count')[:3]
-            new_topic_title = '{'
-            for tt in topicterms:
-                new_topic_title +=tt.title
-                new_topic_title +=', '
-            new_topic_title = new_topic_title[:-2]
-            new_topic_title+='}'
-
-            topic.title = new_topic_title
-            topic.save()
-        stats.topic_titles_current = True
-        stats.save()
-
-
-def update_topic_scores(session):
-    if isinstance(session, int):
-        run_id=session
-    else:
-        run_id = find_run_id(session)
-    stats = RunStats.objects.get(run_id=run_id)
-    #if "a" in "ab":
-    if not stats.topic_scores_current:
-
-        topics = Topic.objects.filter(run_id=stats)
-        for t in topics:
-            t.score=0
-            t.save()
-
-        topics = DocTopic.objects.filter(run_id=run_id).values('topic').annotate(
-            total=Sum('score')
-        )
-        for tscore in topics:
-            topic = Topic.objects.get(pk=tscore['topic'])
-            topic.score = tscore['total']
-            topic.save()
-
-
-
-        stats.topic_scores_current = True
-        stats.save()
-
-def update_year_topic_scores(session):
-    if isinstance(session, int):
-        run_id=session
-    else:
-        run_id = find_run_id(session)
-    stats = RunStats.objects.get(run_id=run_id)
-    #if "a" in "a":
-    if not stats.topic_year_scores_current:
-        if stats.get_method_display() == 'hlda':
-            yts = HDocTopic.objects.filter(doc__PY__gt=1989,run_id=run_id)
-
-            yts = yts.values('doc__PY').annotate(
-                yeartotal=Count('doc')
-            )
-
-            ytts = yts.values().values('topic','topic__title','doc__PY').annotate(
-                score=Count('doc')
-            )
-            HTopicYear.objects.filter(run_id=run_id).delete()
-            for ytt in ytts:
-                yttyear = ytt['doc__PY']
-                topic = HTopic.objects.get(topic=ytt['topic'])
-                for yt in yts:
-                    ytyear = yt['doc__PY']
-                    if yttyear==ytyear:
-                        yeartotal = yt['yeartotal']
-                try:
-                    topicyear = HTopicYear.objects.get(topic=topic,PY=yttyear, run_id=run_id)
-                except:
-                    topicyear = HTopicYear(topic=topic,PY=yttyear,run_id=run_id)
-                topicyear.score = ytt['score']
-                topicyear.count = yeartotal
-                topicyear.save()
-        else:
-            yts = DocTopic.objects.filter(doc__PY__gt=1989,run_id=run_id)
-
-            yts = yts.values('doc__PY').annotate(
-                yeartotal=Sum('scaled_score')
-            )
-
-            ytts = yts.values().values('topic','topic__title','doc__PY').annotate(
-                score=Sum('scaled_score')
-            )
-            TopicYear.objects.filter(run_id=run_id).delete()
-            for ytt in ytts:
-                yttyear = ytt['doc__PY']
-                topic = Topic.objects.get(pk=ytt['topic'])
-                for yt in yts:
-                    ytyear = yt['doc__PY']
-                    if yttyear==ytyear:
-                        yeartotal = yt['yeartotal']
-                try:
-                    topicyear = TopicYear.objects.get(topic=topic,PY=yttyear, run_id=run_id)
-                except:
-                    topicyear = TopicYear(topic=topic,PY=yttyear,run_id=run_id)
-                topicyear.score = ytt['score']
-                topicyear.count = yeartotal
-                topicyear.save()
-
-
-
-        stats.topic_year_scores_current = True
-        stats.save()
 
 
 def topic_random(request):

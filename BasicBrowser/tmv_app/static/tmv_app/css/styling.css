@@ -19,6 +19,10 @@ div.tooltip {
   pointer-events: none;
 }
 
+p.formheader {
+    font-weight: bold;
+}
+
 body.waiting, body.waiting * {
 	cursor:progress !important;
 }

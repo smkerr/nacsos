@@ -4,6 +4,7 @@ from django.utils import timezone
 import django
 from django.db import connection, transaction
 cursor = connection.cursor()
+from psycopg2.extras import *
 
 def add_features(title, run_id):
     django.db.connections.close_all()
@@ -30,7 +31,7 @@ def f_lambda(t,m,v_ids,t_ids,run_id):
     )
     return tt
 
-def insert_many(values_list):
+def insert_many_old(values_list):
     query='''
         INSERT INTO "tmv_app_doctopic"
         ("doc_id", "topic_id", "score", "scaled_score", "run_id")
@@ -38,6 +39,14 @@ def insert_many(values_list):
     '''
     cursor = connection.cursor()
     cursor.executemany(query,values_list)
+
+def insert_many(values_list):
+    cursor = connection.cursor()
+    execute_values(
+        cursor,
+        "INSERT INTO tmv_app_doctopic_copy (doc_id, topic_id, score, scaled_score, run_id) VALUES %s",
+        values_list
+    )
 
 def f_dlambda(t,m,v_ids,t_ids,run_id):
     tt = DynamicTopicTerm(

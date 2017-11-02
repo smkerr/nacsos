@@ -181,11 +181,14 @@ class RunStats(models.Model):
     run_id = models.AutoField(primary_key=True)
 
     ##Inputs
-    K = models.IntegerField(null=True, help_text='Number of topics')
-    alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter')
-    max_features = models.IntegerField(null=True, help_text = 'Maximum number of terms')
+
+    max_features = models.IntegerField(default=0, help_text = 'Maximum number of terms')
+    min_freq = models.IntegerField(default=1, help_text = 'Minimum frequency of terms')
     limit = models.IntegerField(null=True, default=0, help_text='Limit model to first x documents (leave as zero for no limit)')
     ngram = models.IntegerField(null=True, default=1, help_text='Length of feature n_gram')
+
+    K = models.IntegerField(null=True, help_text='Number of topics')
+    alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter')
     max_iterations  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
 
     query = models.ForeignKey('scoping.Query', null=True)
@@ -199,6 +202,12 @@ class RunStats(models.Model):
     topic_titles_current = models.NullBooleanField(default=False)
     topic_scores_current = models.NullBooleanField(default=False)
     topic_year_scores_current = models.NullBooleanField(default=False)
+
+
+    ## Time spent
+    nmf_time = models.FloatField(default=0)
+    tfidf_time = models.FloatField(default=0)
+    db_time = models.FloatField(default=0)
 
     status_choices = (
         (0,'Not Started'),

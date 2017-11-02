@@ -151,6 +151,10 @@ def do_nmf(run_id):
     ng = stat.ngram
     n_samples = stat.max_iterations
 
+    stat.process_id = os.getpid()
+    stat.status = 1
+    stat.save()
+
     docs = Doc.objects.filter(query=qid,content__iregex='\w')
 
     # if we are limiting, probably for testing, then do that
@@ -167,20 +171,23 @@ and {} topics\n'.format(qid, docs.count(),K))
     #############################################
     # Use tf-idf features for NMF.
     print("Extracting tf-idf features for NMF...")
-    tfidf_vectorizer = TfidfVectorizer(max_df=0.97, min_df=2,
-                                       max_features=n_features,
-                                       ngram_range=(ng,ng),
-                                       tokenizer=snowball_stemmer(),
-                                       stop_words=stoplist)
+    tfidf_vectorizer = TfidfVectorizer(
+        max_df=0.97,
+        min_df=stat.min_freq,
+        max_features=n_features,
+        ngram_range=(ng,ng),
+        tokenizer=snowball_stemmer(),
+        stop_words=stoplist
+    )
     t0 = time()
     tfidf = tfidf_vectorizer.fit_transform(abstracts)
     print("done in %0.3fs." % (time() - t0))
+    stat.tfidf_time = time() - t0
+    stat.save()
 
     del abstracts
     gc.collect()
-    stat.process_id = os.getpid()
-    stat.status = 1
-    stat.save()
+
 
     vocab = tfidf_vectorizer.get_feature_names()
     vocab_ids = []
@@ -205,9 +212,10 @@ and {} topics\n'.format(qid, docs.count(),K))
     t0 = time()
     nmf = NMF(n_components=K, random_state=1,
               alpha=alpha, l1_ratio=.5, verbose=True,
-              init='nndsvd', max_iter=500).fit(tfidf)
+              init='nndsvd', max_iter=n_samples).fit(tfidf)
 
     print("done in %0.3fs." % (time() - t0))
+    stat.nmf_time = time() - t0
 
     ## Add topics terms
     print("Adding topicterms to db")
@@ -226,6 +234,7 @@ and {} topics\n'.format(qid, docs.count(),K))
     django.db.connections.close_all()
     TopicTerm.objects.bulk_create(tts)
     print("done in %0.3fs." % (time() - t0))
+    stat.db_time = stat.db_time + time() - t0
 
 
     ## Add topic-docs
@@ -242,6 +251,7 @@ and {} topics\n'.format(qid, docs.count(),K))
     make_t = 0
     add_t = 0
 
+    t0 = time()
     ### Go through in chunks
     for i in range(glength//chunk_size+1):
         dts = []
@@ -276,10 +286,12 @@ and {} topics\n'.format(qid, docs.count(),K))
         gc.collect()
         sys.stdout.flush()
 
-        stat.error = nmf.reconstruction_err_
-        stat.errortype = "Frobenius"
-        stat.iterations = nmf.n_iter_
-        stat.last_update=timezone.now()
-        stat.status=3
-        stat.save()
-        management.call_command('update_run',run_id)
+    stat.db_time = stat.db_time + time() - t0
+
+    stat.error = nmf.reconstruction_err_
+    stat.errortype = "Frobenius"
+    stat.iterations = nmf.n_iter_
+    stat.last_update=timezone.now()
+    stat.status=3
+    stat.save()
+    management.call_command('update_run',run_id)

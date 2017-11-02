@@ -21,9 +21,20 @@
             each of the parameters.
 
             <form action="" method="post">
+
+
             {% csrf_token %}
             <table>
-            {{ form.as_table }}
+                <td width="50%">
+                <!-- {{ form }} -->
+                <p class="formheader">Document and Text filtering:
+                </p>
+                {% include "scoping/snippets/form_table.html" with form=form fields=fields_1 %}
+            <td width="50%">
+                <p class="formheader">Model Parameters:
+                </p>
+                {% include "scoping/snippets/form_table.html" with form=form fields=fields_2 %}
+        </table>
         </table>
             <input type="submit" value="Submit" />
             </form>

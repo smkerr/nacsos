@@ -717,6 +717,11 @@ table#xscale {
 	width: 100%;
 }
 
+p.formheader {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
 
 .t1 {
 	background-color: #fbb4ae;

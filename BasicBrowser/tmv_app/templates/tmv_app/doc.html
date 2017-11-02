@@ -36,7 +36,7 @@
             <tr class="doc"><td>
                 <p>
                   {% for author in doc_authors %}
-                     <a href="/tmv_app/author/{{ author.AU }}">{{ author.AU }}</a>;
+                     <a href="{% url 'tmv_app:author_detail' author.AU run_id %}">{{ author.AU }}</a>;
                   {% endfor %}
                     {{ doc.PY }}. {{doc.wosarticle.so }}
 

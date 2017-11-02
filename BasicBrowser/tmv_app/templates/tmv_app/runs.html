@@ -29,6 +29,7 @@
 			<th>Error</th>
       <th>Max Features</th>
       <th>Ngram size</th>
+      <th>Alpha</th>
 			<th>Iterations</th>
       <th>Duration</th>
       <th>Actions</th>
@@ -55,6 +56,7 @@
 			<td>{{ stat.error|floatformat:3 }}</td>
 			<td>{{ stat.max_features }}</td>
 			<td>{{ stat.ngram }}</td>
+            <td>{{ stat.alpha }}</td>
 			<td>{{ stat.iterations }}</td>
       <td>{{ stat.start|timesince:stat.last_update}}</td>
       <td><button onclick="window.location.href='{% url 'tmv_app:delete_run' stat.run_id %}';event.stopImmediatePropagation();">Delete</button></td>

@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core import management
 from tmv_app.views import *
 from tmv_app.models import *
+from utils.tm_mgmt import *
 
 class Command(BaseCommand):
     help = 'update a run, do a load of calculations  \

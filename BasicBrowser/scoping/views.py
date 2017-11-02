@@ -1479,6 +1479,7 @@ def query_tm(request,qid):
         if form.is_valid():
             obj = form.save()
             obj.query = query
+            obj.method = 'NM'
             obj.save()
 
             do_nmf.delay(obj.run_id)
@@ -1492,7 +1493,9 @@ def query_tm(request,qid):
     context = {
         'query': query,
         'form': form,
-        'project': query.project
+        'project': query.project,
+        'fields_1': ['max_features','limit','ngram'],
+        'fields_2': ['K','alpha','max_iterations']
     }
     return HttpResponse(template.render(context, request))
 
@@ -1545,7 +1548,7 @@ def userpage(request, pid):
         docstats = {}
         q = Query.objects.get(pk=qt['query__id'])
         tag = Tag.objects.get(pk=qt['id'])
-        docstats['ndocs'] = Doc.objects.filter(tag=tag).distinct('UT').count()
+        docstats['ndocs'] = Doc.objects.filter(tag=tag).distinct().count()
         dos = DocOwnership.objects.filter(query=q,user=request.user,tag=tag)
         docstats['revdocs']         = dos.count()
         docstats['reviewed_docs']   = dos.filter(relevant__gt=0).count()
@@ -1646,7 +1649,7 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
 
     ndocs = all_docs.count()
 
-    docs = list(all_docs[:500].values('UT','wosarticle__ti','wosarticle__ab','wosarticle__py'))
+    docs = list(all_docs[:500].values('pk','wosarticle__ti','wosarticle__ab','wosarticle__py'))
 
 
     fields = []
@@ -2136,15 +2139,15 @@ def sortdocs(request):
         filt_docs = Doc.objects.filter(query__id=qid) | qdocs_f
     else:
         query_f  = False
-        all_docs = Doc.objects.filter(query__id=qid).values_list('UT',flat=True)
-        filt_docs = Doc.objects.filter(UT__in=all_docs)
+        all_docs = Doc.objects.filter(query__id=qid).values_list('pk',flat=True)
+        filt_docs = Doc.objects.filter(pk__in=all_docs)
 
     #if "tag__title" in fields:
     #    filt_docs = filt_docs.filter(tag__query__id=qid)
 
     fields = tuple(fields)
 
-    single_fields = ['UT']
+    single_fields = ['pk']
     mult_fields = []
     users = []
     rfields = []
@@ -2231,7 +2234,7 @@ def sortdocs(request):
 
     if "wosarticle__doc" in fields:
         filt_docs = filt_docs.annotate(
-            wosarticle__doc=Concat(V('<a href="/scoping/document/'),'UT',V('">'),'UT',V('</a>'))
+            wosarticle__doc=Concat(V('<a href="/scoping/document/'),'pk',V('">'),'pk',V('</a>'))
         )
     #x = y
     for i in range(len(f_fields)):
@@ -2262,15 +2265,15 @@ def sortdocs(request):
             if "tag__title" in f_fields:
                 reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter) | filt_docs.filter(docownership__user=user,docownership__query=query_f, docownership__tag__title__icontains=tag_filter)
                 print(reldocs)
-            reldocs = reldocs.values("UT")
-            filt_docs = filt_docs.filter(UT__in=reldocs)
+            reldocs = reldocs.values("pk")
+            filt_docs = filt_docs.filter(pk__in=reldocs)
         else:
             reldocs = filt_docs.filter(docownership__user=user,docownership__query=query)
             if "tag__title" in f_fields:
                 reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter)
                 print(reldocs)
-            reldocs = reldocs.values("UT")
-            filt_docs = filt_docs.filter(UT__in=reldocs)
+            reldocs = reldocs.values("pk")
+            filt_docs = filt_docs.filter(pk__in=reldocs)
         for u in users:
             uname = u.split("__")[1]
             user = User.objects.get(username=uname)
@@ -2366,7 +2369,7 @@ def sortdocs(request):
     #print(len(filt_docs))
 
     if sort_dirs is not None:
-        order_by = ('-PY','UT')
+        order_by = ('-PY','pk')
         if len(sort_dirs) > 0:
             order_by = []
         for s in range(len(sort_dirs)):
@@ -2391,13 +2394,13 @@ def sortdocs(request):
                     f = (mult_fields_tuple[m],)
                     if "tag__" in mult_fields_tuple[m]:
                         if q2id!='0':
-                            adoc = Tag.objects.all().filter(doc__UT=d['UT'],query=qid).values_list("title") | Tag.objects.all().filter(doc__UT=d['UT'],query=q2id).values_list("title")
+                            adoc = Tag.objects.all().filter(doc__pk=d['pk'],query=qid).values_list("title") | Tag.objects.all().filter(doc__pk=d['pk'],query=q2id).values_list("title")
                         else:
-                            adoc = Tag.objects.all().filter(doc__UT=d['UT'],query=qid).values_list("title")
+                            adoc = Tag.objects.all().filter(doc__pk=d['pk'],query=qid).values_list("title")
                     else:
-                        adoc = filt_docs.filter(UT=d['UT']).values_list(*f).order_by('docauthinst__position')
+                        adoc = filt_docs.filter(pk=d['pk']).values_list(*f).order_by('docauthinst__position')
                     if "note__" in mult_fields_tuple[m]:
-                        adoc = [x.text for x in Doc.objects.get(UT=d['UT']).note_set.all()]
+                        adoc = [x.text for x in Doc.objects.get(pk=d['pk']).note_set.all()]
                     d[mult_fields[m]] = "; <br>".join(str(x) for x in (list(itertools.chain(*adoc))))
                     if "note__" in mult_fields_tuple[m]:
                         d[mult_fields[m]] = "; <br>".join(x.strip() for x in  adoc)
@@ -2419,18 +2422,18 @@ def sortdocs(request):
         except:
             pass
         if "relevance__netrelevantasdfasdf" in rfields:
-            d["relevance__netrelevant"] = DocOwnership.objects.filter(doc_id=d['UT'],relevant__gt=0).count()
+            d["relevance__netrelevant"] = DocOwnership.objects.filter(doc_id=d['pk'],relevant__gt=0).count()
         # Get the user relevance rating for each doc (if asked)
         if len(users) > 0:
             for u in users:
                 uname = u.split("__")[1]
                 #print(uname)
-                doc = Doc.objects.get(UT=d['UT'])
+                doc = Doc.objects.get(pk=d['pk'])
                 #print(d['UT'])
                 if q2id!='0':
-                    do = DocOwnership.objects.filter(doc_id=d['UT'],query__id=qid,user__username=uname) | DocOwnership.objects.filter(doc_id=d['UT'],query__id=q2id,user__username=uname)
+                    do = DocOwnership.objects.filter(doc_id=d['pk'],query__id=qid,user__username=uname) | DocOwnership.objects.filter(doc_id=d['pk'],query__id=q2id,user__username=uname)
                 else:
-                    do = DocOwnership.objects.filter(doc_id=d['UT'],query__id=qid,user__username=uname)
+                    do = DocOwnership.objects.filter(doc_id=d['pk'],query__id=qid,user__username=uname)
                 if "tag__title" in f_fields:
                     do = do.filter(tag__title__icontains=tag_filter)
                 if do.count() > 0:
@@ -2441,7 +2444,7 @@ def sortdocs(request):
                     user = str(User.objects.filter(username=uname).first().id)
                     if download == "false":
                         d[u] = '<select class="relevant_cycle" data-user=' \
-                        +user+' data-tag='+tag+' data-id='+d['UT']+' \
+                        +user+' data-tag='+tag+' data-id='+str(d['pk'])+' \
                         onchange="cyclescore(this)"\
                         >'
                         for r in range(min,max+1):
@@ -2505,13 +2508,13 @@ def get_tech_docs(tid,other=False):
     docs1 = list(Doc.objects.filter(
         query__technology__in=tech,
         query__type="default"
-    ).values_list('UT',flat=True))
+    ).values_list('pk',flat=True))
     docs2 = list(Doc.objects.filter(
         technology__in=tech
-    ).values_list('UT',flat=True))
+    ).values_list('pk',flat=True))
     dids = list(set(docs2)|set(docs1))
-    docs = Doc.objects.filter(UT__in=dids)
-    nqdocs = Doc.objects.filter(UT__in=docs2).exclude(UT__in=docs1)
+    docs = Doc.objects.filter(pk__in=dids)
+    nqdocs = Doc.objects.filter(pk__in=docs2).exclude(pk__in=docs1)
 
     if other:
         return [tech,docs,tobj,nqdocs]
