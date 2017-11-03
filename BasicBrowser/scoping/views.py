@@ -1512,7 +1512,7 @@ def query_tm_manager(request,qid):
     template = loader.get_template('scoping/query_tm_manager.html')
     query = Query.objects.get(pk=qid)
 
-    tms = RunStats.objects.filter(query=query)
+    tms = RunStats.objects.filter(query=query).order_by('-pk')
 
     table = TopicTable(tms)
 

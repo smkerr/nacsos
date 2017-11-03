@@ -7,10 +7,10 @@
 <td>Text</td>
 <td>Date</td>
 <td>Documents</td>
-<td>Technology</td>
-{% if extended %}
+<td>Category</td>
+<!-- {% if extended %}
 <td>Innovation</td>
-{% endif %}
+{% endif %} -->
 <td>Delete</td>
 </tr>
   {% for query in queries %}
@@ -41,7 +41,7 @@
               {% endfor %}
           </select>
       </td>
-      {% if extended %}
+      <!-- {% if extended %}
       <td>
         <select class="qtag" data-thing="Innovation" data-query="{{query.id}}" autocomplete="off">
           {% if not query.innovation %}
@@ -58,7 +58,7 @@
           {% endfor %}
       </select>
   </td>
-      {% endif %}
+      {% endif %} -->
       <td><a href="{% url 'scoping:delete' 'Query' query.id %}">
           <button onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button>
       </a></td>
