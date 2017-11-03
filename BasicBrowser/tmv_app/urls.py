@@ -15,6 +15,7 @@ urlpatterns = [
 
     # topic page and topic doc loader
     url(r'^topic/(?P<topic_id>\d+)/$', login_required(topic_detail), name="topic_detail"),
+    url(r'^get_topic_docs/(?P<topic_id>\d+)/$', login_required(get_topic_docs), name="get_topic_docs"),
     url(r'^multi_topic/$', login_required(multi_topic), name="multi_topic"),
 
     url(r'^dynamic_topic/(?P<topic_id>\d+)/$', login_required(dynamic_topic_detail), name="dynamic_topic_detail"),

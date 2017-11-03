@@ -15,7 +15,7 @@
 <br>
 
 <!-- Query manager -->
-<h2> Technology Manager </h2>
+<h2> Category Manager </h2>
 <br>
 
 
@@ -52,16 +52,16 @@
 
 <br/><hr/><br/>
 
-<!-- This gets new queries -->
-<h2> Add technology </h2>
+
+<h2> Add Category </h2>
 <br/>
 <form action="{% url 'scoping:add_tech' %}" method="post">
   {% csrf_token %}
 
-  <h4> Technology Name </h4>
+  <h4> Category Name </h4>
   <input type="text" name="tname"></input>
 
-  <h4> Technology Description </h4>
+  <h4> Category Description </h4>
 
   <textarea rows=3 cols=50 name="tdesc"></textarea>
   <br/><br/>

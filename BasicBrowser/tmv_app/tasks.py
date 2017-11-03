@@ -213,7 +213,7 @@ and {} topics\n'.format(qid, docs.count(),K))
           % (n_samples, n_features))
     t0 = time()
     nmf = NMF(n_components=K, random_state=1,
-              alpha=alpha, l1_ratio=.5, verbose=True,
+              alpha=alpha, l1_ratio=.1, verbose=True,
               init='nndsvd', max_iter=n_samples).fit(tfidf)
 
     print("done in %0.3fs." % (time() - t0))

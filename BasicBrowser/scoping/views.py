@@ -39,6 +39,8 @@ from .tables import *
 from .tasks import *
 from tmv_app.tasks import *
 
+import time
+
 def super_check(user):
     return user.groups.filter(name__in=['superuser'])
 
@@ -531,6 +533,7 @@ def doquery(request, pid):
         fname = "/queries/"+str(q.id)+".txt"
         with open(fname,encoding='utf-8',mode="w") as qfile:
             qfile.write(qtext.encode("utf-8").decode("utf-8"))
+
 
         time.sleep(1)
 
@@ -3057,13 +3060,13 @@ def screen(request,qid,tid,ctype,d=0):
         kwp = None
 
     # Create the tags for clicking on
-    tags = {'Technology': {},'Innovation': {}}
+    tags = {'Technology': {}}#,'Innovation': {}}
     for t in tags:
         m = apps.get_model(app_label='scoping',model_name=t)
         ctags = m.objects.filter(query__doc=doc) | m.objects.filter(doc=doc)
         tags[t]['thing'] = t
         tags[t]['ctags'] = ctags.distinct()
-        tags[t]['ntags'] = m.objects.exclude(query__doc=doc).exclude(doc=doc)
+        tags[t]['ntags'] = m.objects.filter(project=query.project).exclude(query__doc=doc).exclude(doc=doc)
 
 
     if request.user.profile.type == "default":
@@ -3098,6 +3101,8 @@ def screen(request,qid,tid,ctype,d=0):
 @login_required
 def do_review(request):
 
+    import time
+
     tid = request.GET.get('tid',None)
     qid = request.GET.get('query',None)
     doc_id = request.GET.get('doc',None)
@@ -3120,6 +3125,7 @@ def do_review(request):
     docown.save()
     print(docown.relevant)
 
+    x = dir(time)
     time.sleep(1)
     return HttpResponse("")
 

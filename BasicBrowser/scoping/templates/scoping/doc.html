@@ -46,7 +46,7 @@
     <p style="text-align:left">
         WoS Keywords Plus: {{kwp | safe}}
     <p style="text-align:left">
-      Document ID: <a href="/scoping/document/{{doc.UT}}">{{doc.UT}}</a>
+      Document ID: <a href="{% url 'scoping:document' query.project.id doc.id %}">{{doc.pk}}</a>
     <p style="text-align:left">
     {{ abstract | safe }}
     </div>
@@ -112,7 +112,7 @@ $(".thing_name").click(function() {
         url: "{% url 'scoping:update_thing' %}",
         data: {
           "thing1": "Doc",
-          "id1": "{{doc.UT}}",
+          "id1": "{{doc.pk}}",
           'thing2': thing2,
           'id2': id2,
           "method": "add"
@@ -177,7 +177,7 @@ graph.selectAll("line")
 
 
 var qid = {{ query.id }}
-var docid = "{{ doc.UT }}"
+var docid = "{{ doc.pk }}"
 
 
 function review(d) {
