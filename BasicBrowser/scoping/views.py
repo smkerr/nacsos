@@ -293,7 +293,8 @@ def technologies(request, pid):
 
     users = User.objects.all()
     refresh = False
-    subprocess.Popen(["python3", "/home/galm/software/tmv/BasicBrowser/update_techs.py"], stdout=subprocess.PIPE)
+    update_techs.delay(project.id)
+    #subprocess.Popen(["python3", "/home/galm/software/tmv/BasicBrowser/update_techs.py"], stdout=subprocess.PIPE)
     for t in technologies:
         t.queries = t.query_set.count()
         tdocs = Doc.objects.filter(technology=t)
@@ -401,13 +402,15 @@ def snowball(request):
 def add_tech(request):
     tname = request.POST['tname']
     tdesc  = request.POST['tdesc']
+    pid = int(request.POST['pid'])
     #  create a new query record in the database
     t = Technology(
         name=tname,
-        description=tdesc
+        description=tdesc,
+        project_id=pid
     )
     t.save()
-    return HttpResponseRedirect(reverse('scoping:technologies'))
+    return HttpResponseRedirect(reverse('scoping:technologies', kwargs={"pid": pid}))
 
 ########################################################
 ## update the technology

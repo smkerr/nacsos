@@ -119,9 +119,9 @@ class Term(models.Model):
 class TopicYear(models.Model):
     topic = models.ForeignKey('Topic',null=True)
     PY = models.IntegerField()
-    score = models.FloatField()
+    score = models.FloatField(null=True)
     year_share = models.FloatField(null=True)
-    count = models.FloatField()
+    count = models.FloatField(null=True)
     run_id = models.IntegerField(db_index=True)
 
 #################################################
