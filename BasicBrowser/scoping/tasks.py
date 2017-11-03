@@ -14,7 +14,7 @@ def update_projs(pids):
     projs = Project.objects.filter(id__in=pids)
     for p in projs:
         p.queries = p.query_set.distinct().count()
-        p.docs = len(set(list(Doc.objects.filter(query__project=p).values_list('UT',flat=True))))
+        p.docs = len(set(list(Doc.objects.filter(query__project=p).values_list('pk',flat=True))))
         p.tms = len(set(list(RunStats.objects.filter(query__project=p).values_list('pk',flat=True))))
         p.save()
     return

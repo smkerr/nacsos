@@ -1486,6 +1486,8 @@ def query_tm(request,qid):
 
             return HttpResponseRedirect(reverse('scoping:query_tm_manager', kwargs={'qid': qid}))
 
+        else:
+            print("INVALID")
     # if a GET (or any other method) we'll create a blank form
     else:
         form = TopicModelForm()
@@ -1494,7 +1496,7 @@ def query_tm(request,qid):
         'query': query,
         'form': form,
         'project': query.project,
-        'fields_1': ['max_features','limit','ngram'],
+        'fields_1': ['min_freq','max_df','max_features','limit','ngram'],
         'fields_2': ['K','alpha','max_iterations']
     }
     return HttpResponse(template.render(context, request))

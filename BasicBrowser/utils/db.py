@@ -44,7 +44,7 @@ def insert_many(values_list):
     cursor = connection.cursor()
     execute_values(
         cursor,
-        "INSERT INTO tmv_app_doctopic_copy (doc_id, topic_id, score, scaled_score, run_id) VALUES %s",
+        "INSERT INTO tmv_app_doctopic (doc_id, topic_id, score, scaled_score, run_id) VALUES %s",
         values_list
     )
 

@@ -2,6 +2,16 @@ from django.db import models
 from django.contrib.postgres.fields import ArrayField
 import scoping
 
+class MinMaxFloat(models.FloatField):
+    def __init__(self, min_value=None, max_value=None, *args, **kwargs):
+        self.min_value, self.max_value = min_value, max_value
+        super(MinMaxFloat, self).__init__(*args, **kwargs)
+
+    def formfield(self, **kwargs):
+        defaults = {'min_value': self.min_value, 'max_value' : self.max_value}
+        defaults.update(kwargs)
+        return super(MinMaxFloat, self).formfield(**defaults)
+
 #################################################
 ## Below are some special model variants for hlda
 ## method
@@ -184,6 +194,7 @@ class RunStats(models.Model):
 
     max_features = models.IntegerField(default=0, help_text = 'Maximum number of terms')
     min_freq = models.IntegerField(default=1, help_text = 'Minimum frequency of terms')
+    max_df = MinMaxFloat(default=0.95, min_value=0.0, max_value=1.0)
     limit = models.IntegerField(null=True, default=0, help_text='Limit model to first x documents (leave as zero for no limit)')
     ngram = models.IntegerField(null=True, default=1, help_text='Length of feature n_gram')
 

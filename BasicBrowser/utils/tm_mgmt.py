@@ -1,5 +1,6 @@
 from tmv_app.models import *
 from scoping.models import *
+from django.db.models import Q, Count, Func, F, Sum, Value as V
 
 def update_topic_titles(session):
     if isinstance(session, int):

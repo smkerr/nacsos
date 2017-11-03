@@ -26,4 +26,32 @@ class UpdateProjectRoleForm(forms.ModelForm):
 class TopicModelForm(forms.ModelForm):
     class Meta:
         model = (RunStats)
-        fields = ('K','alpha','limit','ngram','max_features','max_iterations')
+        exclude = (
+            'topic',
+            'dynamictopic',
+            'term',
+            'run_id',
+            'query',
+            'process_id',
+            'start',
+            'batch_count',
+            'last_update',
+            'topic_titles_current',
+            'topic_scores_current',
+            'topic_year_scores_current',
+            'nmf_time',
+            'tfidf_time',
+            'db_time',
+            'status',
+            'parent_run_id',
+            'docs_seen',
+            'notes',
+            'method',
+            'error',
+            'errortype',
+            'iterations',
+            'max_topics',
+            'term_count',
+            'dthreshold'
+        )
+        #fields = ('K','alpha','limit','ngram','min_freq','max_df','max_features','max_iterations')

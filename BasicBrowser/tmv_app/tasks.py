@@ -147,6 +147,8 @@ def do_nmf(run_id):
 
     alpha = stat.alpha
     n_features = stat.max_features
+    if n_features == 0:
+        n_features = 100000000000
     limit = stat.limit
     ng = stat.ngram
     n_samples = stat.max_iterations
@@ -172,7 +174,7 @@ and {} topics\n'.format(qid, docs.count(),K))
     # Use tf-idf features for NMF.
     print("Extracting tf-idf features for NMF...")
     tfidf_vectorizer = TfidfVectorizer(
-        max_df=0.97,
+        max_df=stat.max_df,
         min_df=stat.min_freq,
         max_features=n_features,
         ngram_range=(ng,ng),
