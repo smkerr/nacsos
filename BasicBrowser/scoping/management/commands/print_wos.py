@@ -86,7 +86,7 @@ class Command(BaseCommand):
                             for i in range(len(r)):
                                 if i>0:
                                     f.write('   ')
-                                if fn=="CR" and "WOS:" not in d.UT:
+                                if fn=="CR" and "WOS:" not in d.UT.UT:
                                     r[i] = wosify_scopus_ref(r[i].strip())
                                 f.write(r[i].strip())
                                 f.write('\n')
@@ -122,7 +122,7 @@ class Command(BaseCommand):
                                 f.write('\n')
 
                     f.write('UT ')
-                    f.write(d.UT)
+                    f.write(d.UT.UT)
                     f.write('\n')
 
 

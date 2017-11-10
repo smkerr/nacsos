@@ -8,7 +8,7 @@
 
 .links line {
 
-  stroke-opacity: 0.1;
+  stroke-opacity: 0.05;
 }
 
 .nodes circle {
@@ -70,7 +70,7 @@ graph = {
   "links": {{links | safe}}
 }
 
-force = -100
+force = {{force}}
 
 drawgraph(graph,force)
 
@@ -185,7 +185,7 @@ var gnodes = svg.selectAll('g.gnode')
 
   var labels = gnodes.append("text")
     .text(function(d) {
-        if (d.rank < 21) {
+        if (d.wgrank < 6) {
                 return d.title;
         }  });
 

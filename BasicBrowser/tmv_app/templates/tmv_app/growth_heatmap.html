@@ -1,0 +1,73 @@
+{% extends "tmv_app/base.html" %}
+
+{% block head %}
+{% load static %}
+<script src="http://d3js.org/d3.v3.js"></script>
+<script src="http://d3js.org/colorbrewer.v1.min.js"></script>
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+
+<script src="{% static 'tmv_app/js/heatmap.js' %}"></script>
+<link rel="stylesheet" href="{% static 'tmv_app/css/heatmap.css' %}" type="text/css"/>
+
+{% endblock %}
+
+{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=run_id %} {% endblock %}
+
+{% block content %}
+
+<script>
+$(document).ready(function() {
+	// heatmap_display("{% static 'tmv_app/js/metrics_ocmip5.json' %}", "#heatmap", "Spectral");
+    heatmap_display("{% url 'tmv_app:growth_json' run_id 'pgrowthn' %}", "#heatmap", "Spectral");
+});
+</script>
+
+<div id="main">
+    <div id="graph">
+
+        <h1>Topic growth over IPCC assessment periods</h1>
+
+        Variable:
+        <select id="var">
+            <option value="pgrowth">% Growth</option>
+            <option selected value="pgrowthn">% Growth (normalised)</option>
+            <option value="share">Share</option>
+        </select>
+
+        Order:
+        <select id="order">
+          <option value="null" selected> ----- </option>
+          <option value="sortinit_col_row">Initial order on columns and rows</option>
+          <option value="sortinit_row">Initial order on rows</option>
+          <option value="sortinit_col">Initial order on columns</option>
+        </select>
+
+        <!-- Palette:
+        <select id="palette">
+          <option value="RdYlGn">RdYlGn</option>
+          <option value="Spectral" selected>Spectral</option>
+          <option value="RdYlBu">RdYlBu</option>
+          <option value="RdGy">RdGy</option>
+          <option value="RdBu">RdBu</option>
+          <option value="PiYG">PiYG</option>
+          <option value="PRGn">PRGn</option>
+          <option value="BrBG">BrBG</option>
+          <option value="PuOr">PuOr</option>
+        </select> -->
+
+        <div id="heatmap"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+$("#var").on("change", function() {
+    v = $(this).val()
+    console.log(v)
+    heatmap_display("{% url 'tmv_app:growth_json' run_id 'vvv' %}".replace('vvv',v), "#heatmap", "Spectral");
+})
+
+</script>
+{% endblock %}

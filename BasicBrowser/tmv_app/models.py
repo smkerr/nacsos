@@ -57,6 +57,7 @@ class Topic(models.Model):
     top_words = ArrayField(models.TextField(),null=True)
     primary_wg = models.IntegerField(null=True)
     wg_prop = models.FloatField(null=True)
+    ipcc_coverage = models.FloatField(null=True)
 
     wg_1 = models.FloatField(null=True)
     wg_2 = models.FloatField(null=True)
@@ -138,6 +139,10 @@ class TopicARScores(models.Model):
     topic = models.ForeignKey('Topic',null=True)
     ar = models.ForeignKey('scoping.AR',null=True)
     score = models.FloatField(null=True)
+    share = models.FloatField(null=True)
+    pgrowth = models.FloatField(null=True)
+    pgrowthn = models.FloatField(null=True)
+
 
 #################################################
 ## Separate topicyear for htopic

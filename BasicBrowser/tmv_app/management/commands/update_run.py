@@ -63,6 +63,7 @@ class Command(BaseCommand):
             update_year_topic_scores(run_id)
             update_topic_scores(run_id)
             update_topic_titles(run_id)
+            update_ar_scores(run_id)
 
             yearly_topic_term_scores(run_id)
 

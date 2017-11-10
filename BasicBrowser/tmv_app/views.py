@@ -16,6 +16,7 @@ from django.core import management
 from .tasks import *
 from celery import group
 from utils.tm_mgmt import *
+import pandas as pd
 
 # the following line will need to be updated to launch the browser on a web server
 TEMPLATE_DIR = sys.path[0] + '/templates/'
@@ -150,6 +151,22 @@ def network(request,run_id):
     nodes = nodes.annotate(
                 arscore = F('score')
             )
+
+    for n in nodes.filter(primary_wg__isnull=True):
+        wgs = list(IPCCRef.objects.filter(
+            doc__doctopic__topic=n
+        ).values('wg__wg').annotate(
+            tscore = models.Sum('doc__doctopic__score')
+        ))
+        try:
+            pwg = max(wgs, key=lambda x:x['tscore'])
+            n.primary_wg =  pwg['wg__wg']
+            total = sum(wg['tscore'] for wg in wgs)
+            n.wg_prop = pwg['tscore'] / total
+        except:
+            n.primary_wg = None
+        n.save()
+
     nodes = nodes.values('id','title','arscore','score')
     nodes = json.dumps(list(nodes),indent=4,sort_keys=True)
     links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1,ar=ar).annotate(
@@ -211,6 +228,20 @@ def return_corrs(request):
         nodes = nodes.annotate(
             arscore = F('score')
         )
+        for n in nodes.filter(primary_wg__isnull=True):
+            wgs = list(IPCCRef.objects.filter(
+                doc__doctopic__topic=n
+            ).values('wg__wg').annotate(
+                tscore = models.Sum('doc__doctopic__score')
+            ))
+            try:
+                pwg = max(wgs, key=lambda x:x['tscore'])
+                n.primary_wg =  pwg['wg__wg']
+                total = sum(wg['tscore'] for wg in wgs)
+                n.wg_prop = pwg['tscore'] / total
+            except:
+                n.primary_wg = None
+            n.save()
     nodes = list(nodes.values('id','title','score','arscore'))
     links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=cor,score__lt=1,ar=ar).annotate(
         source=F('topic'),
@@ -222,6 +253,37 @@ def return_corrs(request):
         "links":links
     }
     return HttpResponse(json.dumps(context,sort_keys=True))
+
+
+def growth_heatmap(request, run_id):
+    template = loader.get_template('tmv_app/growth_heatmap.html')
+    context = {
+        'run_id': run_id
+    }
+    return HttpResponse(template.render(context, request))
+
+def growth_json(request, run_id, v='pgrowthn'):
+
+    ars = TopicARScores.objects.filter(
+        topic__run_id=run_id,
+        ar__ar__isnull=False,
+        ar__ar__gt=0
+    )
+    df = pd.DataFrame.from_dict(
+        list(ars.values('topic__title','ar__name', v, 'topic__ipcc_coverage'))
+        )
+    ppdf = df.pivot('topic__title','ar__name', v).fillna(0)
+
+    #ndf =
+    col_ids = Topic.objects.filter(
+        run_id=run_id,
+        topicarscores__isnull=False
+    ).order_by('title').values_list(
+        'id',flat=True
+    )
+    json = ppdf.to_json(orient="split")
+
+    return JsonResponse([json,list(col_ids)], safe=False)
 
 def compare_runs(request, a, z):
 
@@ -694,7 +756,10 @@ def term_detail(request, run_id, term_id):
     return HttpResponse(term_template.render(term_page_context))
 
 
-def network_wg(request, run_id):
+def network_wg(request, run_id, t=50, f=100):
+    ar = -1
+    force = int(f) * -1
+    t = int(t) / 100
 
     template = loader.get_template('tmv_app/network_wg.html')
 
@@ -724,8 +789,19 @@ def network_wg(request, run_id):
     for n in nodes:
         i+=1
         n['rank'] = i
+    for wg in [1,2,3]:
+        i = 0
+        for n in nodes:
+            if n['primary_wg'] == wg:
+                i+=1
+                n['wgrank'] = i
+
     nodes = json.dumps(nodes,indent=4,sort_keys=True)
-    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1).annotate(
+    links = TopicCorr.objects.filter(run_id=run_id).filter(
+        score__gt=t,
+        score__lt=1,
+        ar=ar
+    ).annotate(
         source=F('topic'),
         target=F('topiccorr')
     )
@@ -736,7 +812,8 @@ def network_wg(request, run_id):
         "nodes":nodes,
         "links":links,
         "run_id":run_id,
-        "stat": RunStats.objects.get(pk=run_id)
+        "stat": RunStats.objects.get(pk=run_id),
+        "force": force
     }
 
 

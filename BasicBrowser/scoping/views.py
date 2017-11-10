@@ -1336,7 +1336,8 @@ def query(request,qid,q2id='0',sbsid='0'):
         for u in qusers:
             qdocs = qdocs.filter(docownership__user=u,docownership__query=query)
 
-        query.ndocs = qdocs.distinct('UT').count()
+        query.ndocs = query.r_count
+        query.tms = RunStats.objects.filter(query=query).count()
 
         i = 0
         for u in qusers:

@@ -1,6 +1,6 @@
 from tmv_app.models import *
 from scoping.models import *
-from django.db.models import Q, Count, Func, F, Sum, Value as V
+from django.db.models import Q, Count, Func, F, Sum, Avg, Value as V
 
 def update_topic_titles(session):
     if isinstance(session, int):
@@ -119,6 +119,92 @@ def update_topic_scores(session):
 
         stats.topic_scores_current = True
         stats.save()
+
+# class TopicARScores(models.Model):
+#     topic = models.ForeignKey('Topic',null=True)
+#     ar = models.ForeignKey('scoping.AR',null=True)
+#     score = models.FloatField(null=True)
+#     share = models.FloatField(null=True)
+#     pgrowth = models.FloatField(null=True)
+#     pgrowthn = models.FloatField(null=True)
+
+
+def update_ar_scores(run_id):
+    stat = RunStats.objects.get(pk=run_id)
+    for ar in AR.objects.all().order_by('ar'):
+        years = list(range(ar.start,ar.end))
+        ytopics = DocTopic.objects.filter(
+            doc__PY__in=years,
+            run_id=run_id,
+            score__gt=stat.dthreshold
+        ).values('topic_id').annotate(
+            ttotal=models.Sum('score')
+        )
+        atotal = ytopics.aggregate(
+            s=models.Sum('ttotal')
+        )['s']
+        for yt in ytopics:
+            ars, created = TopicARScores.objects.get_or_create(
+                topic_id=yt['topic_id'],
+                ar=ar
+            )
+            ars.score = yt['ttotal']
+            ars.share = ars.score / atotal
+            if ar.ar>0:
+                par, created = TopicARScores.objects.get_or_create(
+                    topic_id=yt['topic_id'],
+                    ar__ar=ar.ar-1
+                )
+                if created:
+                    par.score = 0
+                    par.pgrowth = 0
+                    par.save()
+                if par.score == 0:
+                    ars.pgrowth=100
+                else:
+                    ars.pgrowth = (ars.score - par.score) / par.score * 100
+            ars.save()
+
+    run_ars = TopicARScores.objects.filter(
+        topic__run_id=run_id,
+        ar__ar__gt=0
+    )
+
+    ar_av = run_ars.values('ar').annotate(
+        av_growth = Avg('pgrowth')
+    )
+
+    for ar in ar_av:
+        ars = run_ars.filter(ar=ar['ar'])
+        n = abs(ar['av_growth'])
+        ars.update(
+            pgrowthn = F('pgrowth') / n
+        )
+
+def update_ipcc_coverage(run_id):
+    runstat = RunStats.objects.get(pk=run_id)
+    dts = DocTopic.objects.filter(
+        run_id=run_id,
+        doc__PY__lt=2014,
+        score__gt=runstat.dthreshold
+    ).values('topic_id')
+
+    dts = dts.annotate(
+        ipcc = models.Sum(
+            models.Case(
+                models.When(doc__ipccref__isnull=False,then=F('score')),default=0, output_field=models.FloatField()
+            )
+        ),
+        no_ipcc = models.Sum(
+            models.Case(
+                models.When(doc__ipccref__isnull=True,then=F('score')),default=0, output_field=models.FloatField()
+            )
+        )
+    )
+    for dt in dts:
+        t = Topic.objects.get(pk=dt['topic_id'])
+        t.ipcc_coverage = dt['ipcc'] / (dt['ipcc'] + dt['no_ipcc'])
+        t.save()
 
 def update_year_topic_scores(session):
     if isinstance(session, int):

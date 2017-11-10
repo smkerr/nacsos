@@ -28,7 +28,7 @@ def flatten(container):
 
 def run_status(run_id):
     stat = RunStats.objects.get(pk=run_id)
-    
+
 
 ###################################
 # function, to be done in parallel,
@@ -174,6 +174,9 @@ def add_doc(r, q, update):
                     position = a+1
                 )
                 dai.save()
+
+        doc.authors = ', '.join([x.AU for x in doc.docauthinst_set.all().order_by('position')])
+        doc.first_author = doc.docauthinst_set.all().order_by('position').first().AU
         # except:
         #     pass
 

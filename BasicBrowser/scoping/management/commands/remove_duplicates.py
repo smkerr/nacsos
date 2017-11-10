@@ -16,10 +16,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        sdocs = Doc.objects.exclude(UT__contains="WOS:",wosarticle__di__isnull=True)[:50]
+        sdocs = Doc.objects.exclude(
+            UT__UT__contains="WOS:",
+            wosarticle__di__isnull=True
+        )
         for s in sdocs.iterator():
             docs = []
-            py_docs = Doc.objects.exclude(UT=s.UT).filter(PY=s.PY)
+            py_docs = Doc.objects.exclude(id=s.id).filter(PY=s.PY)
 
             s1 = shingle(s.title)
 
@@ -29,43 +32,53 @@ class Command(BaseCommand):
                     docs.append(d)
 
             if len(docs)>0:
-                print("{}: {} , from queries {} \n \
+                print("{}: {} , {}, from queries {} \n \
                 \nmatches the following: ".format(
-                    s.UT,
+                    s.UT.UT,
                     s.title,
+                    s.authors,
                     "; ".join([x.title for x in s.query.all()])
                 ))
                 i = 0
                 for d in docs:
                     print(
-                        "{}: {} {}, from queries {}".format(
+                        "{}: {} {}, {}, from queries {}".format(
                             i,
-                            d.UT,
+                            d.UT.UT,
                             d.title,
+                            d.authors,
                             "; ".join([x.title for x in d.query.all()])
                         )
                     )
-                    print('##########\n')
-                    print("I'm going to give you a choice of which to delete now,\n\
+                    print('\n')
+                    i+=1
+
+                print('##########\n')
+                print("I'm going to give you a choice of which to delete now,\n\
 press \"o\" for the original, or a number for the numbered duplicate\n\
 to delete. Or enter \"s\" to skip")
-                    print("You can combine choices in a list like [o,0,1,2]")
-                    x = input('What do you want to delete?: ')
+                print("You can combine choices in a list like [o,0,1,2]")
+                x = input('What do you want to delete?: ')
 
+                #try:
+                x = list(str(x))
+                for el in x:
                     try:
-                        x = list(x)
-                        for el in x:
-                            if el=="o":
-                                ut = s.UT
-                                s.delete()
-                                print("deleted {}".format(ut))
-                                continue
-                            elif isinstance(el, int):
-                                ut = docs[el].UT
-                                docs[el].delete()
-                                print("deleted {}".format(ut))
-                            else:
-                                y = abcsd
+                        el = int(el)
                     except:
-                        print("sorry I didn't manage to understand what you meant\n\
-or didn't manage to act on it, I'm just goin to move on now...")
+                        pass
+                    if el=="o":
+                        ut = s.UT.UT
+                        s.delete()
+                        print("deleted {}".format(ut))
+                        continue
+                    elif isinstance(el, int):
+                        ut = docs[el].UT.UT
+                        docs[el].delete()
+                        print("deleted {}".format(ut))
+                    else:
+                        print(repr(el))
+                        y = "abcsd"
+#                     except:
+#                         print("sorry I didn't manage to understand what you meant\n\
+# or didn't manage to act on it, I'm just goin to move on now...")

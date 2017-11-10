@@ -11,7 +11,10 @@ urlpatterns = [
     url(r'^$', login_required(runs), name='index'),
     url(r'^network/(?P<run_id>\d+)$', login_required(network), name='network'),
     url(r'^network_wg/(?P<run_id>\d+)$', login_required(network_wg), name='network_wg'),
+    url(r'^network_wg/(?P<run_id>\d+)/(?P<t>\d+)/(?P<f>\d+)$', login_required(network_wg), name='network_wg'),
     url(r'^return_corrs$', login_required(return_corrs), name='return_corrs'),
+    url(r'^growth/(?P<run_id>\d+)$', login_required(growth_heatmap), name='growth_heatmap'),
+    url(r'^growth_json/(?P<run_id>\d+)/(?P<v>.+)/$', login_required(growth_json), name='growth_json'),
 
     # topic page and topic doc loader
     url(r'^topic/(?P<topic_id>\d+)/$', login_required(topic_detail), name="topic_detail"),

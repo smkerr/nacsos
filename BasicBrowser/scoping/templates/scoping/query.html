@@ -9,7 +9,7 @@
   <div class="explanation">
   <h2> Query #{{query.id}} ({{query.title}}) Overview - <a href="{% url 'scoping:doclist' query.project.id query.id %}">View Docs</a></h2>
   <p/>
-  This query is used in {{ query.tms }} topic models. Click <a href="{% url 'scoping:query_tm_manager' query.id %}">here</a>
+  This query is used in <b>[{{ query.tms }}]</b> topic models. Click <a href="{% url 'scoping:query_tm_manager' query.id %}">here</a>
       to manage topic models with this query
   </div>
 

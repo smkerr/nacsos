@@ -460,6 +460,7 @@ class WoSArticle(models.Model):
     c1 = models.TextField(null=True, verbose_name="Author Address") # author address
     cl = models.TextField(null=True, verbose_name="Conference Location") # conf location
     cr = ArrayField(models.TextField(), verbose_name="Cited References", null=True)
+    cr_scopus = ArrayField(models.TextField(), verbose_name="Cited References", null=True)
     ct = models.TextField(null=True, verbose_name="Conference Title") # conf title
     de = models.TextField(null=True, verbose_name="Author Keywords") # keywords - separate table?
     di = models.CharField(null=True, db_index=True, max_length=250, verbose_name="DOI") # DOI
