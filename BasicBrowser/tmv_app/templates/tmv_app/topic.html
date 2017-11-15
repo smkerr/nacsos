@@ -31,8 +31,6 @@
     {% if terms %}
 	    {% for term in terms %}
 	    <tr class="list" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')">
-
-
                 <td id="{{ term.title }}_list"><a href="{% url 'tmv_app:term_detail' run_id term.id %}">{{ term.title }}</a>
                 </td>
 
@@ -45,7 +43,7 @@
 
 <td width="50.0%">
   <div class="explanation">
-    <h2>Related Documents</h2>
+    <h2>Related Documents ({{ndocs}})</h2>
     <p>Sort by: <select id="sort">
       <option value="-doctopic__score">Score (descending)</option>
       <option value="PY">Year (ascending)</option>
@@ -88,9 +86,26 @@
     <tr>
 	{% endfor %}
 </table>
+
+{% endif %}
+
+{% if journals %}
+    <p>
+  <table class="dark">
+  <tr class="title">
+  <td>Top Journals</td><td></tr>
+	{% for j in journals %}
+	<tr>
+        <!-- id="{{ corrtop.title }}" class="list" onclick="window.location.href='/tmv_app/topic/{{ corrtop.topiccorr.pk }}'"> -->
+        <td width="75%">{{ j.fulltext }}</td>
+        <td width="25%">{{ j.t }} docs</td>
+    <tr>
+	{% endfor %}
   </table>
 {% endif %}
 
+
+</table>
 
 
 </div>

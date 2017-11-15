@@ -32,18 +32,6 @@ class HTopicTerm(models.Model):
     run_id = models.IntegerField(null=True, db_index=True)
 
 
-# class HDocTopic(models.Model):
-#     #doc = models.ForeignKey('Doc')
-#     doc = models.ForeignKey('scoping.Doc', null=True)
-#     topic = models.ForeignKey('HTopic')
-#     level = models.SmallIntegerField()
-#     score = models.FloatField(null=True)
-#     run_id = models.IntegerField(null=True, db_index=True)
-
-
-
-
-
 #################################################
 ## Topic, Term and Doc are the three primary models
 class Topic(models.Model):

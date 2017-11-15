@@ -32,12 +32,12 @@
 
 <table width="100%">
 
-<td width="25%">
+<td width="17%">
 </td>
-<td width="50%">
+<td width="67%">
 <div id="pyGraph" width="600" height="600"></div><br>
 </td>
-<td width="25%">
+<td width="17%">
 </td>
 </table>
 
@@ -67,8 +67,10 @@
 
 graph = {
   "nodes": {{nodes | safe}},
-  "links": {{links | safe}}
+  "links": {{links | safe}},
+  "top_id": {{top_id | safe}}
 }
+
 
 force = {{force}}
 
@@ -139,6 +141,10 @@ var g = svg.append("g")
   lmax=d3.max(graph.links, function(d) { return d.score;});
   lmin=d3.min(graph.links, function(d) { return d.score;});
 
+  var top_id = graph.top_id
+
+  console.log(top_id)
+
   var weightScale = d3.scaleLinear()
  .domain(d3.extent(graph.links, function (d) { return d.score }))
  .range([.1, 1])
@@ -172,7 +178,20 @@ var gnodes = svg.selectAll('g.gnode')
     .attr("class", "nodes")
     .attr("r", function(d) { return size(d.score)})
     .attr("fill", function(d) { return ordinal(d.primary_wg); })
-    .attr("stroke","black")
+    .attr("stroke-width", function(d) {
+        if (d.wgrank < 6) {
+            return 3;
+        } else {
+            return 1;
+        }
+    })
+    .attr("stroke",function(d) {
+        if (d.id == top_id) {
+            return "red"
+        } else {
+            return "black"
+        }
+    })
     .attr("fill-opacity", function(d) { return d.wg_prop})
     //.on("mouseover", fade(.1))//.on("mouseout", fade(1))
     .call(d3.drag()

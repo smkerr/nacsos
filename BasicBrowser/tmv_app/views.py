@@ -533,6 +533,12 @@ def topic_detail(request, topic_id):
             doctopic__topic=topic,doctopic__run_id=run_id
         ).order_by('-doctopic__score')[:50]
 
+    ndocs = Doc.objects.filter(
+        doctopic__topic=topic,
+        doctopic__run_id=run_id,
+        doctopic__score__gt=stat.dthreshold
+    ).count()
+
     doctopics = doctopics.values('PY','title','pk','doctopic__score')
     terms = []
     term_bar = []
@@ -563,6 +569,15 @@ def topic_detail(request, topic_id):
         topic=topic_id
     ).order_by('-score')[:10]
 
+    ### Journals
+    journals = JournalAbbrev.objects.filter(
+        doc__doctopic__topic=topic,
+        doc__journal__isnull=False,
+        doc__doctopic__score__gt=stat.dthreshold
+    ).values('fulltext').annotate(
+        t = Count('doc__doctopic__score')
+    ).order_by('-t')[:10]
+
     topic_page_context = {
         'topic': topic,
         'terms': terms,
@@ -571,7 +586,9 @@ def topic_detail(request, topic_id):
         'yts': ytarray,
         'corrtops': corrtops,
         'dtops': dtops,
-        'run_id': run_id
+        'run_id': run_id,
+        'journals': journals,
+        'ndocs': ndocs
         }
 
     return HttpResponse(topic_template.render(topic_page_context))
@@ -756,10 +773,11 @@ def term_detail(request, run_id, term_id):
     return HttpResponse(term_template.render(term_page_context))
 
 
-def network_wg(request, run_id, t=50, f=100):
+def network_wg(request, run_id, t=5, f=100,top=0):
     ar = -1
     force = int(f) * -1
     t = int(t) / 100
+    top = int(top)
 
     template = loader.get_template('tmv_app/network_wg.html')
 
@@ -780,22 +798,53 @@ def network_wg(request, run_id, t=50, f=100):
             n.primary_wg = None
         n.save()
 
-
-
     nodes = list(nodes.order_by('-score').values(
         'id','title','score','primary_wg','wg_prop'
     ))
+
+    if int(top) != 0:
+        if top < 0:
+            topic = Topic.objects.filter(
+                run_id=run_id,
+                primary_wg=abs(top)
+            ).annotate(
+                links = models.Sum(
+                    models.Case(
+                        models.When(
+                            topiccorr__score__gt=t,topiccorr__ar=ar,then=1
+                        ),
+                        default=0,
+                        output_field=models.IntegerField()
+                    )
+                )
+            ).order_by('-score').first()
+        else:
+            topic = Topic.objects.get(pk=int(top))
+        corrs = list(Topic.objects.filter(
+            topiccorr__topiccorr=topic,
+            topiccorr__score__gt=t,
+            topiccorr__ar=ar
+        ).values_list('id',flat=True))
+        top_id = topic.id
+    else:
+        top_id = 0
     i = 0
-    for n in nodes:
-        i+=1
-        n['rank'] = i
     for wg in [1,2,3]:
         i = 0
         for n in nodes:
             if n['primary_wg'] == wg:
                 i+=1
                 n['wgrank'] = i
+    for n in nodes:
+        i+=1
+        n['rank'] = i
+        if int(top) != 0:
+            if n['id'] in corrs:
+                n['wgrank'] = 1
+            else:
+                n['wgrank'] = 50
 
+    #x = y
     nodes = json.dumps(nodes,indent=4,sort_keys=True)
     links = TopicCorr.objects.filter(run_id=run_id).filter(
         score__gt=t,
@@ -813,7 +862,8 @@ def network_wg(request, run_id, t=50, f=100):
         "links":links,
         "run_id":run_id,
         "stat": RunStats.objects.get(pk=run_id),
-        "force": force
+        "force": force,
+        "top_id": top_id
     }
 
 
@@ -856,7 +906,7 @@ def doc_detail(request, doc_id, run_id):
     if stat.dthreshold is not None:
         dt_threshold = stat.dthreshold
         #dt_thresh_scaled = stat.dthreshold
-        print(dt_threshold)
+
 
     if stat.method=="BD":
         dt_threshold=dt_threshold*100
@@ -916,7 +966,6 @@ def doc_detail(request, doc_id, run_id):
 
 def adjust_threshold(request,run_id):
     value = request.GET.get('value',None)
-    print(value)
     stat = RunStats.objects.get(run_id=run_id)
     stat.dthreshold = value
     stat.save()
@@ -1017,7 +1066,6 @@ def topic_presence_detail(request,run_id):
     get_year_filter(request)
 
     presence_template = loader.get_template('tmv_app/topic_presence.html')
-    print(stat.method)
     if stat.method=="DT":
         topics = DynamicTopic.objects.filter(run_id=run_id).order_by('-score')
     else:

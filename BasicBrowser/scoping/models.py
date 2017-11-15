@@ -182,6 +182,7 @@ class Doc(models.Model):
     first_author = models.TextField(null=True, verbose_name='First Author')
     authors = models.TextField(null=True, verbose_name='All Authors')
     users = models.ManyToManyField(User, through='DocOwnership')
+    journal = models.ForeignKey('JournalAbbrev',null=True)
 
     technology = models.ManyToManyField('Technology',db_index=True)
     innovation = models.ManyToManyField('Innovation',db_index=True)
@@ -262,7 +263,7 @@ class Citation(models.Model):
     docmatches = models.IntegerField(null=True)
 
 class JournalAbbrev(models.Model):
-    fulltext = models.TextField(unique=True)
+    fulltext = models.TextField(unique=True,db_index=True)
     abbrev = models.TextField(unique=True,null=True)
 
 
@@ -309,9 +310,14 @@ class IPCCRef(models.Model):
         return set(s for s in ngrams(self.text.lower().split(".")[0].split(),2))
 
 class KW(models.Model):
-    text = models.TextField()
+    kwtype_choices = (
+        (0,'author'), # wosarticle.de
+        (1,'auto_wos'), # wosarticle.kwp
+    )
+    text = models.TextField(db_index=True)
     doc = models.ManyToManyField(Doc)
     ndocs = models.IntegerField(default=0)
+    kwtype = models.IntegerField(choices=kwtype_choices,null=True)
 
 
 class WC(models.Model):
