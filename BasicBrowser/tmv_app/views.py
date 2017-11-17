@@ -1172,7 +1172,6 @@ def runs(request,pid=0):
 
 
     stats = stats.annotate(
-        topics = models.Count('topic'),
         dtopics = models.Count('dynamictopic', distinct=True),
         #terms = models.Count('term')
     )

@@ -244,7 +244,7 @@ def queries(request, pid):
 
 @login_required
 def query_table(request, pid):
-    template = loader.get_template('scoping/query_table.html')
+    template = loader.get_template('scoping/snippets/query_table.html')
     p = Project.objects.get(pk=pid)
 
     users = request.GET.getlist('users[]',None)
@@ -1504,7 +1504,7 @@ def query_tm(request,qid):
         'form': form,
         'project': query.project,
         'fields_1': ['min_freq','max_df','max_features','limit','ngram'],
-        'fields_2': ['K','alpha','max_iterations']
+        'fields_2': ['K','alpha','max_iterations','db']
     }
     return HttpResponse(template.render(context, request))
 

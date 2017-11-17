@@ -190,6 +190,7 @@ class RunStats(models.Model):
     max_df = MinMaxFloat(default=0.95, min_value=0.0, max_value=1.0)
     limit = models.IntegerField(null=True, default=0, help_text='Limit model to first x documents (leave as zero for no limit)')
     ngram = models.IntegerField(null=True, default=1, help_text='Length of feature n_gram')
+    db = models.BooleanField(default=True, help_text='Record the results into the database? Or just run the model and record statistics?')
 
     K = models.IntegerField(null=True, help_text='Number of topics')
     alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter')
@@ -248,6 +249,8 @@ class RunStats(models.Model):
     )
     error = models.FloatField(null=True, default = 0)
     errortype = models.TextField(null=True)
+
+    empty_topics = models.IntegerField(null=True)
 
     iterations = models.IntegerField(null=True)
 

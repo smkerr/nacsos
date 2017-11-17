@@ -206,6 +206,15 @@ def update_ipcc_coverage(run_id):
         t.ipcc_coverage = dt['ipcc'] / (dt['ipcc'] + dt['no_ipcc'])
         t.save()
 
+def update_primary_topic(run_id):
+    runstat = RunStats.objects.get(pk=run_id)
+    docs = Doc.objects.filter(query=runstat.query)
+    docs = docs.filter(ipccref__isnull=False)
+    for d in docs.iterator():
+        t = Topic.objects.filter(doctopic__doc=d,run_id=run_id).order_by('-doctopic__score').first()
+        if t is not None:
+            d.primary_topic.add(t)
+
 def update_year_topic_scores(session):
     if isinstance(session, int):
         run_id=session

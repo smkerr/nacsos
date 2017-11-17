@@ -8,6 +8,7 @@ from random import randint
 import cities
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import tmv_app
 
 # Create your models here.
 
@@ -200,6 +201,8 @@ class Doc(models.Model):
     duplicated = models.BooleanField(default=False)
     relevant = models.BooleanField(default=False)
     projects = models.ManyToManyField(Project, through='DocProject')
+
+    primary_topic = models.ManyToManyField('tmv_app.Topic')
 
     def __str__(self):
 
@@ -447,7 +450,9 @@ class DocReferences(models.Model):
 
 ##############################################
 ## Article holds more WoS type information for each doc
-
+class WoSArticleManager(models.Manager):
+    def get_by_natural_key(self, first_name, last_name):
+        return self.get(first_name=first_name, last_name=last_name)
 
 class WoSArticle(models.Model):
     doc = models.OneToOneField(

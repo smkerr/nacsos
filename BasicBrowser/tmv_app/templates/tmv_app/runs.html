@@ -49,7 +49,7 @@
             {% ifequal stat.get_method_display "dtm" %}
                 <td>{{ stat.dtopics }} / {{ stat.max_topics }}</td>
             {% else %}
-                <td>{{ stat.topics }}</td>
+                <td>{{ stat.K }}</td>
             {% endifequal %}
 			<td>{{ stat.docs_seen }}</td>
 			<td>{{ stat.term_count }}</td>
