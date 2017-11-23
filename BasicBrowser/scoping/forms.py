@@ -9,6 +9,25 @@ class ProjectForm(forms.ModelForm):
         model = (Project)
         fields = ('title', 'description',)
 
+class ValidatePasswordForm(forms.Form):
+    password = forms.CharField(
+        widget=forms.PasswordInput,
+        label='You need to enter your password to do this. It cannot be undone',
+    )
+    widgets = {
+        'password': forms.PasswordInput()
+    }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user')
+        super(ValidatePasswordForm, self).__init__(*args,**kwargs)
+
+    def clean_password(self):
+        password = self.cleaned_data['password']
+        if not self.user.check_password(password):
+            raise forms.ValidationError('Invalid password')
+        return password
+
 class ProjectRoleForm(forms.ModelForm):
     class Meta:
         model = (ProjectRoles)
@@ -37,6 +56,7 @@ class TopicModelForm(forms.ModelForm):
             'batch_count',
             'last_update',
             'topic_titles_current',
+            'empty_topics',
             'topic_scores_current',
             'topic_year_scores_current',
             'nmf_time',
@@ -46,7 +66,7 @@ class TopicModelForm(forms.ModelForm):
             'parent_run_id',
             'docs_seen',
             'notes',
-            'method',
+            #'method',
             'error',
             'errortype',
             'iterations',

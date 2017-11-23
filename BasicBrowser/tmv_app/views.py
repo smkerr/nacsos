@@ -423,6 +423,7 @@ def dynamic_topic_detail(request,topic_id):
 
 
     context = {
+        'project': stat.query.project,
         'run_id': run_id,
         'topic': topic,
         'topicterms': topicterms,
@@ -1289,7 +1290,9 @@ def topic_random(request):
 
 def doc_random(request,run_id):
     doc = random_doc(RunStats.objects.get(pk=run_id).query)
-    return HttpResponseRedirect('/tmv_app/doc/' +  doc.UT + '/' + run_id)
+    return HttpResponseRedirect(
+        reverse('tmv_app:doc_detail', kwargs={'run_id':run_id, 'doc_id':doc.pk})
+    )
 
 def term_random(request):
     return HttpResponseRedirect('/tmv_app/term/' + str(random.randint(1, Term.objects.count())))

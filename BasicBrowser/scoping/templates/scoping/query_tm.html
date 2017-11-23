@@ -25,6 +25,9 @@
 
             {% csrf_token %}
             <table>
+                {% include "scoping/snippets/form_table.html" with form=form fields=fields_3 %}
+            </table>
+            <table>
                 <td width="50%">
                 <p class="formheader">Document and Text filtering:
                 </p>

@@ -14,9 +14,19 @@ body {
     cursor: pointer;
 }
 
+.buttonp#delete {
+    background-color: rgba(255,0,0,0.5);
+}
 
 .bar:hover {
   fill: brown;
+}
+
+ul.errorlist {
+    background-color: rgba(255,0,0,0.5);
+    list-style-type: none;
+    margin: 20 40;
+    padding: 5 0;
 }
 
 /*

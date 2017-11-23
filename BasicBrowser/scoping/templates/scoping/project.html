@@ -40,8 +40,30 @@
 <button type="submit" class="save btn btn-default">Save</button>
 </form>
 
+<h3>Delete this project?</h3><span class="buttonp" id="delete">-</span>
+
+<form id="deleteForm" class="{{delete}}" method="POST" class="post-form">
+    {% csrf_token %}
+{{ deleteForm.as_p }}
+<button type="submit" class="save btn btn-default">Delete</button>
+</form>
+
 </div>
 
 {% endifequal %}
+
+
+
+{% endblock %}
+
+{% block script %}
+
+<script type="text/JavaScript">
+
+    $("#delete").click( function() {
+        $("#deleteForm").toggleClass("hidden")
+    })
+
+</script>
 
 {% endblock %}

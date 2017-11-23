@@ -82,7 +82,7 @@ def index(request):
         p.role = ProjectRoles.objects.get(project=p,user=request.user).get_role_display()
 
 
-    myproj = ProjectTable(myproj)
+    myproj = ProjectTable(myproj, order_by="id")
     RequestConfig(request).configure(myproj)
 
 
@@ -96,7 +96,7 @@ def index(request):
 
     update_projs.delay(list(pids))
 
-    acproj = ProjectTable(acproj)
+    acproj = ProjectTable(acproj, order_by="id")
     RequestConfig(request).configure(acproj)
 
     context = {
@@ -109,17 +109,34 @@ def index(request):
 
 @login_required
 def project(request, pid):
-
+    deleteForm = ValidatePasswordForm(user=request.user)
+    delete = "hidden"
+    p = Project.objects.get(pk=pid)
     if request.method == "POST":
-        form=ProjectRoleForm(request.POST)
-        if form.is_valid() :
-            print(form.data)
-            u = form.cleaned_data['user']
-            role = form.cleaned_data['role']
-            obj, created = ProjectRoles.objects.get_or_create(
-                project_id=pid,user=u)
-            obj.role = role
-            obj.save()
+        if "role" in request.POST:
+            form=ProjectRoleForm(request.POST)
+            if form.is_valid() :
+                print(form.data)
+                u = form.cleaned_data['user']
+                role = form.cleaned_data['role']
+                obj, created = ProjectRoles.objects.get_or_create(
+                    project_id=pid,user=u)
+                obj.role = role
+                obj.save()
+        else:
+            form = ValidatePasswordForm(request.POST,user=request.user)
+            if form.is_valid():
+                up = ProjectRoles.objects.get(user=request.user,project=p)
+                if up.role in ["OW","AD"]:
+                    p.delete()
+                    return HttpResponseRedirect(reverse('scoping:index'))
+            else:
+                deleteForm = form
+                delete = ""
+
+
+            #print("delete")
+
 
     template = loader.get_template('scoping/project.html')
 
@@ -167,6 +184,8 @@ def project(request, pid):
 
     context = {
         'newRole': newRole,
+        'delete': delete,
+        'deleteForm': deleteForm,
         'updateRoles': updateRoles,
         'admin': admin,
         'project': p,
@@ -422,10 +441,11 @@ def update_tech(request):
     tdesc  = request.POST['tdesc']
     #  create a new query record in the database
     t = Technology.objects.get(pk=tid)
+    p = t.project
     t.name=tname
     t.description=tdesc
     t.save()
-    return HttpResponseRedirect(reverse('scoping:technologies'))
+    return HttpResponseRedirect(reverse('scoping:technologies', kwargs={'pid': p.id}))
 
 
 
@@ -1486,7 +1506,7 @@ def query_tm(request,qid):
         if form.is_valid():
             obj = form.save()
             obj.query = query
-            obj.method = 'NM'
+            #obj.method = 'NM'
             obj.save()
 
             do_nmf.delay(obj.run_id)
@@ -1504,7 +1524,8 @@ def query_tm(request,qid):
         'form': form,
         'project': query.project,
         'fields_1': ['min_freq','max_df','max_features','limit','ngram'],
-        'fields_2': ['K','alpha','max_iterations','db']
+        'fields_2': ['K','alpha','max_iterations','db'],
+        'fields_3': ['method']
     }
     return HttpResponse(template.render(context, request))
 

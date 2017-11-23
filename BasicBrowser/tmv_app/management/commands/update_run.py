@@ -65,6 +65,7 @@ class Command(BaseCommand):
             update_topic_titles(run_id)
             update_ar_scores(run_id)
             update_ipcc_coverage(run_id)
+            update_primary_topic(run_id)
 
             yearly_topic_term_scores(run_id)
 

@@ -4,7 +4,7 @@ from .models import *
 from django.db.models import Q, F, Sum, Count, FloatField, Case, When
 
 import numpy as np
-from sklearn.decomposition import NMF
+from sklearn.decomposition import NMF, LatentDirichletAllocation as LDA
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from scipy.sparse import csr_matrix, find
 from functools import partial
@@ -151,7 +151,15 @@ def do_nmf(run_id):
         n_features = 100000000000
     limit = stat.limit
     ng = stat.ngram
+
+    if stat.method=="LD":
+        if stat.max_iterations == 200:
+            stat.max_iterations = 10
+        if stat.max_iterations > 100:
+            stat.max_iterations = 90
+
     n_samples = stat.max_iterations
+
 
     stat.process_id = os.getpid()
     stat.status = 1
@@ -181,8 +189,23 @@ and {} topics\n'.format(qid, docs.count(),K))
         tokenizer=snowball_stemmer(),
         stop_words=stoplist
     )
+
+    count_vectorizer = CountVectorizer(
+        max_df=stat.max_df,
+        min_df=stat.min_freq,
+        max_features=n_features,
+        ngram_range=(ng,ng),
+        tokenizer=snowball_stemmer(),
+        stop_words=stoplist
+    )
+
     t0 = time()
-    tfidf = tfidf_vectorizer.fit_transform(abstracts)
+    if stat.method=="NM":
+        tfidf = tfidf_vectorizer.fit_transform(abstracts)
+        vectorizer = tfidf_vectorizer
+    else:
+        tfidf = count_vectorizer.fit_transform(abstracts)
+        vectorizer = count_vectorizer
     print("done in %0.3fs." % (time() - t0))
     stat.tfidf_time = time() - t0
     stat.save()
@@ -191,7 +214,7 @@ and {} topics\n'.format(qid, docs.count(),K))
     gc.collect()
 
     if stat.db:
-        vocab = tfidf_vectorizer.get_feature_names()
+        vocab = vectorizer.get_feature_names()
         vocab_ids = []
         pool = Pool(processes=8)
         vocab_ids.append(pool.map(partial(add_features,run_id=run_id),vocab))
@@ -205,13 +228,27 @@ and {} topics\n'.format(qid, docs.count(),K))
         gc.collect()
 
     # Fit the NMF model
-    print("Fitting the NMF model with tf-idf features, "
+    print("Fitting the model with tf-idf features, "
           "n_samples=%d and n_features=%d..."
           % (n_samples, n_features))
     t0 = time()
-    nmf = NMF(n_components=K, random_state=1,
-              alpha=alpha, l1_ratio=.1, verbose=True,
-              init='nndsvd', max_iter=n_samples).fit(tfidf)
+    if stat.method=="NM":
+        model = NMF(
+            n_components=K, random_state=1,
+            alpha=alpha, l1_ratio=.1, verbose=True,
+            init='nndsvd', max_iter=n_samples
+        ).fit(tfidf)
+        dts = model.transfrom(tfidf)
+
+    else:
+        model = LDA(
+            n_components=K,
+            doc_topic_prior=stat.alpha,
+            max_iter=stat.max_iterations,
+            n_jobs=6
+        ).fit(tfidf)
+
+        dts = model.transform(tfidf)
 
     print("done in %0.3fs." % (time() - t0))
     stat.nmf_time = time() - t0
@@ -220,7 +257,7 @@ and {} topics\n'.format(qid, docs.count(),K))
         ## Add topics terms
         print("Adding topicterms to db")
         t0 = time()
-        ldalambda = find(csr_matrix(nmf.components_))
+        ldalambda = find(csr_matrix(model.components_))
         topics = range(len(ldalambda[0]))
         tts = []
         pool = Pool(processes=8)
@@ -238,7 +275,7 @@ and {} topics\n'.format(qid, docs.count(),K))
 
 
         ## Add topic-docs
-        gamma =  find(csr_matrix(nmf.transform(tfidf)))
+        gamma =  find(csr_matrix(dts))
         glength = len(gamma[0])
 
         chunk_size = 100000
@@ -288,13 +325,15 @@ and {} topics\n'.format(qid, docs.count(),K))
 
         stat.db_time = stat.db_time + time() - t0
 
-    em = np.diff(csr_matrix(nmf.transform(tfidf)).indptr) != 0
+    for i in range(len(topic_ids)):
+        if dts[:,i].nnz == 0:
+            em+=1
 
-    stat.empty_topics = len(em[em==False])
-
-    stat.error = nmf.reconstruction_err_
-    stat.errortype = "Frobenius"
-    stat.iterations = nmf.n_iter_
+    stat.empty_topics = em
+    if stat.method=="NM":
+        stat.error = model.reconstruction_err_
+        stat.errortype = "Frobenius"
+    stat.iterations = model.n_iter_
     stat.last_update=timezone.now()
     stat.status=3
     stat.save()

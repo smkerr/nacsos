@@ -506,7 +506,7 @@ class WoSArticle(models.Model):
     su = models.TextField(null=True, verbose_name="Supplement") # supplement
     tc = models.IntegerField(null=True, verbose_name="Times Cited") # times cited
     vl = models.CharField(null=True, max_length=50, verbose_name="Volume")
-    wc = ArrayField(models.TextField(),null=True)
+    wc = ArrayField(models.TextField(),null=True, verbose_name="Web of Science Category")
 
     def __str__(self):
       return self.ti
