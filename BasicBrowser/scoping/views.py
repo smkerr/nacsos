@@ -1889,13 +1889,23 @@ def docrellist(request,sbsid,qid=0,q2id=0,q3id=0):
 ###########################################################
 ## Manual docadd form
 def add_doc_form(request,pid=0,authtoken=0,r=0):
+    author_docs = None
     try:
         project = Project.objects.get(pk=pid)
     except:
         project = None
     if authtoken!=0:
         em = EmailTokens.objects.get(pk=authtoken)
+        p = em.category.project
+        pid = p.id
         em.sname, em.initial = em.AU.split(',')
+
+        author_docs = Doc.objects.filter(
+            query__qtype='MN',
+            query__upload_link=em
+        )
+        if author_docs.count()==0:
+            author_docs = False
 
         template = loader.get_template('scoping/ext_doc_add.html')
     else:
@@ -1927,7 +1937,8 @@ def add_doc_form(request,pid=0,authtoken=0,r=0):
         'query': query,
         'basic_fields': basic_fields,
         'author_fields': author_fields,
-        'techs': Technology.objects.all(),
+        'author_docs': author_docs,
+        'techs': Technology.objects.filter(project=pid),
         'em': em,
         'r': r
     }
@@ -1946,22 +1957,19 @@ def do_add_doc(request, authtoken=0):
         et = EmailTokens.objects.get(pk=authtoken)
         au = et.AU
 
-        q, created = Query.objects.get_or_create(
+        q = Query(
             title="uploaded_by_{}".format(au),
             type="default",
-            text="uploaded_by_{}".format(authtoken),
+            text="uploaded_by_{}".format(authtoken)
         )
-        if created:
-            q.date = timezone.now(),
-            q.database = "manual",
-            q.r_count = 1
-            q.technology = t
-            q.project = p
-        else:
-            try:
-                q.r_count +=1
-            except:
-                q.r_count = 1
+
+        q.database = "manual"
+        q.r_count = 1
+        q.technology = t
+        q.project = p
+        q.qtype='MN'
+        q.upload_link=et
+
 
         q.save()
 
@@ -1975,14 +1983,16 @@ def do_add_doc(request, authtoken=0):
             date = timezone.now(),
             database = "manual",
             r_count = 1,
-            technology=t
+            technology=t,
+            qtype='MN'
         )
         q.save()
 
     # create new doc
     url, created = URLs.objects.get_or_create(url=d['UT'].strip())
     surl = short_url.encode_url(url.id)
-    doc, created = Doc.objects.get_or_create(UT=surl)
+    ut, created = UT.objects.get_or_create(UT=surl)
+    doc, created = Doc.objects.get_or_create(UT=ut)
 
     if created:
 
@@ -2654,7 +2664,22 @@ def prepare_authorlist(request,tid):
                 au = d.docauthinst_set.order_by('position').first().AU
                 audocs = docs.filter(docauthinst__AU=au,query__technology__isnull=False).distinct('UT')
                 docset = "; ".join([x.citation() for x in audocs])
-                et, created = EmailTokens.objects.get_or_create(email=evalue,AU=au)
+                et, created = EmailTokens.objects.get_or_create(
+                    email=evalue,
+                    AU=au,
+                    category=tobj
+                )
+                pcats = Technology.objects.filter(project=tobj.project)
+                et_existing = EmailTokens.objects.filter(
+                    email=evalue,
+                    AU=au,
+                    category__in=pcats,
+                    sent = True
+                ).exclude(category=tobj)
+                if et_existing.count() > 0:
+                    et.sent_other_tech = True
+                else:
+                    et.sent_other_tech = False
                 et.docset= docset
                 et.save()
                 link = 'https://apsis.mcc-berlin.net/scoping/external_add/{}'.format(et.id)
@@ -2662,7 +2687,9 @@ def prepare_authorlist(request,tid):
                     "name": au,
                     "email": evalue,
                     "docset": docset,
-                    "link": link
+                    "link": link,
+                    "sot": et.sent_other_tech,
+                    "sent": et.sent
                 })
                 em_values.append(evalue)
 
@@ -2671,12 +2698,12 @@ def prepare_authorlist(request,tid):
 
     writer = csv.writer(response, delimiter=';')
 
-    writer.writerow(["name","email","docset","link"])
+    writer.writerow(["name","email","docset","link","sent","sent_other_tech"])
 
     print(ems)
 
     for em in ems:
-        writer.writerow([em["name"],em["email"],em["docset"],em["link"]])
+        writer.writerow([em["name"],em["email"],em["docset"],em["link"],em["sent"],em["sot"]])
 
     return response
 
@@ -2703,14 +2730,11 @@ contacting experts in the field directly.
 We have identified the following articles authored by yourself below.
 If you have additional relevant articles that we should cover in
 our review, we would very much appreciate it, if you could upload
-them to our system:
+them to our system by following this link:
 
-{}.
+{}
 
-Or simply reply to this email and send the relevant PDFs. This
-will make sure that your work on the topic is fully considered.
-
-Thanks so much for all your considerations and efforts.
+Thanks so much for all your consideration and efforts.
 
 Warm Regards,
 
@@ -2730,53 +2754,29 @@ Germany
 
 {}
     '''
-
-    tech, docs, tobj = get_tech_docs(tid)
-    docs = docs.filter(
-        docownership__relevant=1,
-        docownership__query__technology__in=tech
+    tobj = Technology.objects.get(pk=tid)
+    ems = EmailTokens.objects.filter(
+        category=tobj,
+        sent=False,
+        sent_other_tech=False
     )
-    docids = docs.values_list('UT',flat=True)
+    for et in ems:
+        sname, initial = em.AU.split(',')
+        name = "{} {}".format(initial, sname)
 
-    emails = Doc.objects.filter(UT__in=docids,wosarticle__em__isnull=False).annotate(
-        em_lower=Func(F('wosarticle__em'), function='lower')
-    ).distinct('em_lower')
-
-    ems = []
-    em_values = []
-    for d in emails.iterator():
-        #d = Doc.objects.filter(wosarticle__em__icontains=em['em_lower']).first()
-        if d.wosarticle.em is not None:
-            evalue = d.wosarticle.em.split(';')[0]
-            if evalue not in em_values:
-                au = d.docauthinst_set.order_by('position').first().AU
-                audocs = docs.filter(
-                    docauthinst__AU=au,query__technology__isnull=False
-                ).distinct('UT')
-                docset = "\n".join([x.citation() for x in audocs])
-                et, created = EmailTokens.objects.get_or_create(email=evalue,AU=au)
-                link = 'https://apsis.mcc-berlin.net/scoping/external_add/{}'.format(et.id)
-                ems.append({
-                    "name": au,
-                    "email": evalue,
-                    "docset": docset,
-                    "link": link
-                })
-                em_values.append(evalue)
-                if not et.sent:
-                    print(evalue)
-                    emessage = EmailMessage(
-                        subject = 'Systematic review of negative emissions technologies',
-                        body = message.format(au,link,docset),
-                        from_email = 'nets@mcc-berlin.net',
-                        to = [evalue],
-                        cc = ['nets@mcc-berlin.net'],
-                    )
-                    s = emessage.send()
-                    if s == 1:
-                        et.sent = True
-                        et.save()
-                        time.sleep(5)
+        link = 'https://apsis.mcc-berlin.net/scoping/external_add/{}'.format(et.id)
+        emessage = EmailMessage(
+            subject = 'Systematic review of negative emissions technologies',
+            body = message.format(name,link,et.docset),
+            from_email = 'nets@mcc-berlin.net',
+            to = [et.email],
+            cc = ['nets@mcc-berlin.net'],
+        )
+        s = emessage.send()
+        if s == 1:
+            et.sent = True
+            et.save()
+            time.sleep(5)
 
     return HttpResponseRedirect(reverse('scoping:technology', kwargs={'tid': tid}))
 

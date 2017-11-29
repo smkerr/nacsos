@@ -9,6 +9,13 @@
   the email you received.
 <p>Thank you for contributing to our project.
 <p>If you have any questions, please send an email to nets [at] mcc-berlin.net
+{% if author_docs %}
+<p>You have already added the following documents:
+    <ut>
+        {% for d in author_docs %}
+            <li>{{d.title}}
+        {% endfor %}
+{% endif %}
 </div>
 <form action="{% url 'scoping:do_add_doc' em.id %}" method="post">
       {% csrf_token %}
@@ -25,8 +32,14 @@
     {% for f in basic_fields %}
         <tr>
             <td></b> {{f.name}} ({{f.note}})
-            <td><textarea data-mandatory="true" name={{f.path}} rows=2 cols=25>
-            </textarea>
+            <td>
+                {% ifequal f.path "PY" %}
+                <input type="number" name="{{f.path}}"/>
+                {% else %}
+                <textarea data-mandatory="true" name={{f.path}} rows=2 cols=25>
+                </textarea>
+                {% endifequal %}
+
     {% endfor %}
 </table>
 </div>
@@ -102,7 +115,7 @@ function check() {
     $('*[data-mandatory="true"]').map(function(){
        if ($(this).val().trim() =="") {empty = true};
     });
-    PY = $($('textarea[name=PY]')).val().trim()
+    PY = $($('input[name=PY]')).val().trim()
     if (isNaN(PY)) {
         empty = false
     }

@@ -81,7 +81,16 @@ class DocProject(models.Model):
     relevant = models.BooleanField(default=False)
 
 class Query(models.Model):
+
+    TYPE_CHOICES = (
+        ('DE','Default'),
+        ('SB','Snowballing Backward'),
+        ('SF','Snowballing Forward'),
+        ('MN','Manual Add')
+    )
+
     project = models.ForeignKey(Project, null=True)
+    qtype       = models.CharField(max_length=2, choices=TYPE_CHOICES, default='DE')
     type        = models.TextField(null=True, verbose_name="Query Type", default="default")
     title       = models.TextField(null=True, verbose_name="Query Title")
     text        = models.TextField(null=True, verbose_name="Query Text")
@@ -89,6 +98,7 @@ class Query(models.Model):
     date        = models.DateTimeField(auto_now_add=True,verbose_name="Query Date")
     r_count     = models.IntegerField(null=True, verbose_name="Query Results Count")
     creator     = models.ForeignKey(User,null=True, verbose_name="Query Creator", related_name="user_creations")
+    upload_link = models.ForeignKey('EmailTokens', null=True)
     users       = models.ManyToManyField(User)
     criteria    = models.TextField(null=True)
     #snowball    = models.IntegerField(null=True, verbose_name="Snowball ID")
@@ -331,15 +341,18 @@ class WC(models.Model):
     oecd_fos_text = models.TextField(null=True)
 
 class EmailTokens(models.Model):
+    category = models.ForeignKey(Technology,null=True)
     email = models.TextField()
     AU = models.TextField()
     docset = models.TextField(null=True)
     id = models.UUIDField(primary_key=True,default=uuid.uuid4)
     sent = models.BooleanField(default=False)
+    sent_other_tech = models.BooleanField(default=False)
+    sent_other_project = models.BooleanField(default=False)
 
-    class Meta:
-        unique_together = ["email","AU"]
-        index_together = ["email","AU"]
+#    class Meta:
+#        unique_together = ["email","AU"]
+#        index_together = ["email","AU"]
 
 class URLs(models.Model):
     url = models.TextField(unique=True,db_index=True)
