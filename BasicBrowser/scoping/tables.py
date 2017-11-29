@@ -15,9 +15,13 @@ class ProjectTable(tables.Table):
         model = Project
         fields = ('id','title','description','role','queries','docs','tms')
 
+class FloatColumn(tables.Column):
+    def render(self, value):
+        return round(value,2)
 
 class TopicTable(tables.Table):
     run_id = tables.LinkColumn('tmv_app:topics', args=[A('pk')])
+    error = FloatColumn()
     # queries = tables.LinkColumn('scoping:queries', args=[A('pk')])
     # tms = tables.LinkColumn('tmv_app:runs', args=[A('pk')])
     #id = tables.LinkColumn('scoping:project', args=[A('pk')])
@@ -28,6 +32,6 @@ class TopicTable(tables.Table):
     # )
     class Meta:
         model = RunStats
-        fields = ('run_id','start','status','K','alpha','error',)#'startit')
+        fields = ('run_id','method','start','status','K','alpha','error',)#'startit')
 
 #from .urls import urlpatterns

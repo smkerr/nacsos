@@ -238,7 +238,8 @@ and {} topics\n'.format(qid, docs.count(),K))
             alpha=alpha, l1_ratio=.1, verbose=True,
             init='nndsvd', max_iter=n_samples
         ).fit(tfidf)
-        dts = model.transfrom(tfidf)
+        dtm = csr_matrix(model.transform(tfidf))
+
 
     else:
         model = LDA(
@@ -248,7 +249,7 @@ and {} topics\n'.format(qid, docs.count(),K))
             n_jobs=6
         ).fit(tfidf)
 
-        dts = model.transform(tfidf)
+        dtm = csr_matrix(model.transform(tfidf))
 
     print("done in %0.3fs." % (time() - t0))
     stat.nmf_time = time() - t0
@@ -275,7 +276,7 @@ and {} topics\n'.format(qid, docs.count(),K))
 
 
         ## Add topic-docs
-        gamma =  find(csr_matrix(dts))
+        gamma =  find(dtm)
         glength = len(gamma[0])
 
         chunk_size = 100000
@@ -325,14 +326,18 @@ and {} topics\n'.format(qid, docs.count(),K))
 
         stat.db_time = stat.db_time + time() - t0
 
-    for i in range(len(topic_ids)):
-        if dts[:,i].nnz == 0:
+    em = 0
+    for i in range(K):
+        if dtm[:,i].nnz == 0:
             em+=1
 
     stat.empty_topics = em
     if stat.method=="NM":
         stat.error = model.reconstruction_err_
         stat.errortype = "Frobenius"
+    elif stat.method=="LD":
+        stat.error = model.perplexity(tfidf)
+        stat.errortype = "Perplexity"
     stat.iterations = model.n_iter_
     stat.last_update=timezone.now()
     stat.status=3

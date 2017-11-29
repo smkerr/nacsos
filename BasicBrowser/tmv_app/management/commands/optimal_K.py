@@ -39,9 +39,9 @@ class Command(BaseCommand):
             wait=True
             while wait==True:
                 if os.getloadavg()[0] > 5:
-                    time.sleep(20)
+                    time.sleep(60)
                 else:
                     wait = False
             do_nmf.delay(s.run_id)
 
-            time.sleep(10)
+            time.sleep(180)
