@@ -1949,7 +1949,11 @@ def do_add_doc(request, authtoken=0):
 
     d = request.POST
 
-    t = Technology.objects.get(pk=d['technology'])
+    tids = request.POST.getlist('technology[]',None)
+
+    ts = Technology.objects.filter(pk__in=tids)
+
+    t = ts.first()
 
     p = t.project
 
@@ -1987,6 +1991,7 @@ def do_add_doc(request, authtoken=0):
             qtype='MN'
         )
         q.save()
+
 
     # create new doc
     url, created = URLs.objects.get_or_create(url=d['UT'].strip())
@@ -2033,7 +2038,8 @@ def do_add_doc(request, authtoken=0):
 
     # Add doc to query
     doc.query.add(q)
-    doc.technology.add(t)
+    for t in ts:
+        doc.technology.add(t)
 
     if authtoken!=0:
         return HttpResponseRedirect(reverse('scoping:add_doc_form', kwargs={'authtoken': authtoken,'r':q.r_count}))

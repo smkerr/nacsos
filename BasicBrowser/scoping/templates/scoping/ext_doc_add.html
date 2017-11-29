@@ -51,20 +51,14 @@
     your document is relevant. Once you have filled out all fields, you may press
     the "Add Document" button below.
 <p>
-<select id="tech" class="tech" name="technology" data-query="{{query.id}}" autocomplete="off">
-{% if not query.technology %}
-<option selected value="None">{{query.technology}}</option>
-{% else %}
-<option value="None">None</option>
-{% endif %}
+
+
+<b>Technology</b><br>
+<ul>
 {% for t in techs %}
-    {% if t == query.technology %}
-    <option selected value={{t.id}}>{{t.name}}</option>
-    {% else %}
-    <option value={{t.id}}>{{t.name}}</option>
-    {% endif %}
+    <li>{{t.name}} <input value="{{t.id}}" type="checkbox" name="technology[]">
 {% endfor %}
-</select>
+</ul>
 <input type='hidden' id="techname" name="tech" value=""/>
 <input id='addbutton' type="submit" class="addbutton" value="Add Document" disabled/>
 </div>
@@ -104,12 +98,7 @@ if ({{r}}>0) {
 
 $("#navigation").addClass("hidden")
 
-$(function() {
-      $("#tech").change(function(){
-        var v= $('option:selected', this).attr('value');
-      $('#techname').val(v);
-   });
-});
+
 
 function check() {
     empty = false
