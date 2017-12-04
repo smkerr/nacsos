@@ -1927,13 +1927,21 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
 
         f2 = None
 
+        a = request.POST
+
         if request.method == "POST":
-            if "url" in request.POST:
+            if "dtype" in request.POST:
                 ndf = NewDoc(request.POST)
                 if ndf.is_valid():
-                    url, created = URLs.objects.get_or_create(
-                        url=ndf.cleaned_data['url']
-                    )
+                    d = ndf.cleaned_data
+                    if ndf.cleaned_data['url'] == "":
+                        url, created = URLs.objects.get_or_create(
+                            url=str(uuid.uuid1())
+                        )
+                    else:
+                        url, created = URLs.objects.get_or_create(
+                            url=ndf.cleaned_data['url']
+                        )
                     surl = short_url.encode_url(url.id)
                     ut, created = UT.objects.get_or_create(UT=surl)
                     if created and did is not 0:
@@ -1971,6 +1979,7 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                             'did': doc.id
                         }
                     ))
+
 
 
             elif "so" in request.POST:
