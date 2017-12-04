@@ -7,3 +7,4 @@ BasicBrowser/nohup.out
 *.httr.oauth
 BasicBrowser/worker*
 dump.rdb
+BasicBrowser/media/*

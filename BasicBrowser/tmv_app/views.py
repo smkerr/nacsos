@@ -361,6 +361,8 @@ def dynamic_topic_detail(request,topic_id):
         ytts = tts.filter(PY=py).order_by('-score')[:10]
         ytterms.append(ytts)
 
+    #x = y
+
     yscores = list(DynamicTopicYear.objects.filter(
         topic=topic
     ).values('PY','score'))
@@ -502,7 +504,7 @@ def yearly_topic_term_scores(run_id):
 
 ###########################################################################
 ## Topic View
-def topic_detail(request, topic_id):
+def topic_detail(request, topic_id, run_id=0):
 
     template = loader.get_template('tmv_app/topic.html')
 
@@ -567,7 +569,8 @@ def topic_detail(request, topic_id):
 
     corrtops = TopicCorr.objects.filter(topic=topic_id,score__lt=1,ar=-1).order_by('-score')[:10]
     dtops = TopicDTopic.objects.filter(
-        topic=topic_id
+        topic=topic_id,
+        dynamictopic__run_id=run_id
     ).order_by('-score')[:10]
 
     ### Journals

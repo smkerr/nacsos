@@ -34,6 +34,7 @@
       <table>
       {% for y in ytterms %}
       <tr class="wtopic">
+        
         <td>{{y.0.PY}}
           {% for tt in y %}
           <td class="word" data-word="{{tt.term.title|lower}}">
@@ -54,7 +55,7 @@
     {% for t in wtopics %}
 
     <tr class="wtopic">
-      <td><a class="nodec" href="{% url 'tmv_app:topic_detail' t.pk %}">View</a>
+      <td><a class="nodec" href="{% url 'tmv_app:topic_detail' t.pk t.run_id.run_id %}">View</a>
       <td>{{t.score}}
       <td>{{t.year}}</td><td>{{t.title}}</td>
       {% for tt in t.tts %}

@@ -98,7 +98,8 @@ urlpatterns = [
     url(r'^manual_add/(?P<pid>[0-9]+)$', views.add_doc_form, name='manual_add_doc_form'),
 
     url(r'^external_add/(?P<authtoken>[0-9a-f-]+)$', views.add_doc_form, name='add_doc_form'),
-    url(r'^external_add/(?P<authtoken>[0-9a-f-]+)/(?P<r>[0-9]+)$', views.add_doc_form, name='add_doc_form'),
+    url(r'^external_add/(?P<authtoken>[0-9a-f-]+)/(?P<did>[0-9]+)$', views.add_doc_form, name='add_doc_form'),
+    #url(r'^external_add/(?P<authtoken>[0-9a-f-]+)/(?P<r>[0-9]+)$', views.add_doc_form, name='add_doc_form'),
     url(r'^do_add_doc/$', views.do_add_doc, name='do_add_doc'),
     url(r'^do_add_doc/(?P<authtoken>[0-9a-f-]+)$', views.do_add_doc, name='do_add_doc'),
     url(r'^editdoc$', views.editdoc, name='editdoc'),

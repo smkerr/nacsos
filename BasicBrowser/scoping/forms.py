@@ -9,6 +9,68 @@ class ProjectForm(forms.ModelForm):
         model = (Project)
         fields = ('title', 'description',)
 
+
+class NewDoc(forms.ModelForm):
+
+    url = forms.URLField(
+        required=False,
+        help_text="If there is a url pointing to this document, please provide it here"
+    )
+
+    class Meta:
+        model = (Doc)
+        fields = ('dtype','url',)
+
+class DocForm2(forms.ModelForm):
+
+    py = forms.IntegerField(
+        #initial=2017,
+        label="Year Published",
+        help_text="Leave as 0 if unpublished"
+    )
+    so = forms.CharField(
+        label="Source Title",
+        help_text="Enter the journal or book title",
+        required=False
+    )
+    doc = forms.IntegerField()
+    class Meta:
+        model = (WoSArticle)
+        fields = ('doc','ti','ab','py','so',)
+
+    def __init__(self,*args,**kwargs):
+        so = kwargs.pop('so',False)
+        super(DocForm2, self).__init__(*args, **kwargs)
+        self.fields['doc'].widget = forms.HiddenInput()
+        if so:
+            self.fields['so'].required = True
+
+
+class AuthorForm(forms.ModelForm):
+    class Meta:
+        model = (DocAuthInst)
+        fields = ('position','surname','initials',)
+
+    def __init__(self,*args,**kwargs):
+        super(AuthorForm, self).__init__(*args, **kwargs)
+        self.fields['position'].widget = forms.HiddenInput()
+
+
+class UploadDocFile(forms.ModelForm):
+    doc = forms.IntegerField()
+    class Meta:
+        model = (DocFile)
+        fields = ('doc','file',)
+    def __init__(self,*args,**kwargs):
+        super(UploadDocFile, self).__init__(*args, **kwargs)
+        self.fields['doc'].widget = forms.HiddenInput()
+
+class DeleteDocField(forms.Form):
+    delete = forms.IntegerField()
+    def __init__(self,*args,**kwargs):
+        super(DeleteDocField, self).__init__(*args, **kwargs)
+        self.fields['delete'].widget = forms.HiddenInput()
+
 class ValidatePasswordForm(forms.Form):
     password = forms.CharField(
         widget=forms.PasswordInput,

@@ -1,0 +1,127 @@
+{% extends "scoping/base.html" %}
+{% block content %}
+<h1>NETS Systematic Review Project</h1>
+<br>
+<div class="explanation">
+<h2> Manual Document upload</h2>
+<p> Welcome, <b>{{em.initial}} {{em.sname}},</b> Please enter the details of any relevant papers on negative
+  emissions that were not present in
+  the email you received.
+<p>Thank you for contributing to our project.
+<p>If you have any questions, please send an email to nets [at] mcc-berlin.net
+{% if author_docs %}
+<p>You have already added the following documents:
+    <ut>
+        {% for d in author_docs %}
+            <li>{{d.title}}
+        {% endfor %}
+{% endif %}
+
+{% if afs.1 %}
+
+<h3><span class="highlight">I'm done:
+    <a href="{% url 'scoping:add_doc_form' em.id %}">Add another</a>
+</span></h3>
+
+{% endif %}
+</span>
+<p>
+<table>
+<td width="50%">
+{% if ndf %}
+    <div class="addbox">
+        <h2>Basic Information</h2>
+        <form method="POST" class="post-form">{% csrf_token %}
+        {{ ndf.as_p }}
+        <button type="submit" class="save btn btn-default">{{ndf.action}}</button>
+        </form>
+    </div>
+{% endif %}
+<p>
+{% if f2 %}
+    <div class="addbox {{f2.action}}">
+
+        <h2>Further Information</h2>
+        <table>
+        <form method="POST" class="post-form">{% csrf_token %}
+        {{ f2.as_table }}
+        </table>
+        <button type="submit" class="save btn btn-default">{{f2.action}}</button>
+        </form>
+
+    </div>
+{% endif %}
+</td>
+
+{% if afs.0 %}
+<td width="50%">
+    <div class="addbox">
+        <h2>Authors</h2>
+    {% for af in afs %}
+        {% if af %}
+        <div class="authorForm {{af.action}}">
+            <h3>Author {{af.i}}</h3>
+            <table>
+                <tr>
+                <form method="POST" class="post-form">{% csrf_token %}
+                <td width="70%">
+                    {{af.as_p}}
+                </td>
+                <td style="vertical-align:middle;" width="30%">
+                    <button type="submit" class="save btn btn-default">{{af.action}}</button>
+                </td>
+                </form>
+            </table>
+        </div>
+        {% endif %}
+    {% endfor %}
+    <p>
+    <button id="addAnother">Add Another</button>
+    </div>
+    <p>
+    <div class="addbox">
+      <h2>Technology Selection (optional)</h2>
+      <p> Please select any appropriate technologies to which
+        your document is relevant.
+    <p>
+    <form method="POST" class="post-form">{% csrf_token %}
+    <b>Technology</b><br>
+    <ul>
+    {% for t in techs %}
+        <li>{{t.name}} <input value="{{t.id}}" type="checkbox"
+            {% if t in doctechs %}
+                checked
+            {% endif %}
+            name="technology[]">
+    {% endfor %}
+    </ul>
+    <input type='hidden' id="techname" name="tech" value=""/>
+    <button type="submit" class="addbutton">Save Techs</button>
+    </form>
+    </div>
+    {% if uf %}
+    <p>
+    <div class="addbox {{uf.action}}">
+        <h2>PDF upload (optional)</h2>
+        <form method="POST" class="post-form" enctype="multipart/form-data">{% csrf_token %}
+        {{ uf.as_p }}
+        {{ uf.filename }}
+        <button type="submit" class="save btn btn-default">{{uf.action}}</button>
+    </div>
+    {% endif %}
+</td>
+
+{% endif %}
+</table>
+
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+$("#addAnother").on("click",function(){
+    $(".authorForm.Add").show()
+    $(this).hide()
+})
+if ($(".authorForm.Update").length==0) $(".authorForm.Add").show()
+</script>
+{% endblock %}

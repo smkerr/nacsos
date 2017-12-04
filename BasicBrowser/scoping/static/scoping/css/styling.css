@@ -18,6 +18,10 @@ body {
     background-color: rgba(255,0,0,0.5);
 }
 
+div.authorform.add {
+    display:none;
+}
+
 .bar:hover {
   fill: brown;
 }
@@ -28,6 +32,28 @@ ul.errorlist {
     margin: 20 40;
     padding: 5 0;
 }
+
+span.highlight {
+    background-color: rgba(255,0,0,0.2);
+    padding: 10px;
+    border-radius: 5px;
+}
+
+div.authorform.add ul.errorlist {
+    background-color: inherit;
+    display:none;
+}
+
+div.addbox.Add ul.errorlist {
+    background-color: inherit;
+    display:none;
+}
+
+div.addbox.Upload ul.errorlist {
+    background-color: inherit;
+    display:none;
+}
+
 
 /*
 .axis--x path {

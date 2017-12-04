@@ -9,7 +9,8 @@ import cities
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import tmv_app
-
+import uuid
+import os
 # Create your models here.
 
 class SnowballingSession(models.Model):
@@ -182,7 +183,25 @@ class UT(models.Model):
 class Doc(models.Model):
     random = DocManager
 
+    DTYPE_CHOICES = (
+        ('AR','Article'),
+        ('RE','Review'),
+        ('BC','Book Chapter'),
+        ('BK','Book'),
+        ('WP','Working Paper')
+
+    )
+
     UT = models.OneToOneField(UT)
+    url = models.URLField(null=True, max_length=500)
+    dtype = models.CharField(
+        max_length=2,
+        null=True,
+        choices = DTYPE_CHOICES,
+        verbose_name = "Document Type",
+        help_text = "Tell us what type of document you are adding"
+    )
+
     #UT = models.CharField(max_length=30,db_index=True,primary_key=True, verbose_name='Document ID')
     query = models.ManyToManyField('Query')
     tag = models.ManyToManyField('Tag')
@@ -234,6 +253,21 @@ class Doc(models.Model):
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
 
+
+class DocFile(models.Model):
+    doc = models.OneToOneField(Doc)
+    file = models.FileField()
+
+
+@receiver(models.signals.post_delete, sender=DocFile)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    """
+    Deletes file from filesystem
+    when corresponding `MediaFile` object is deleted.
+    """
+    if instance.file:
+        if os.path.isfile(instance.file.path):
+            os.remove(instance.file.path)
 
 class Bigram(models.Model):
     stem1 = models.TextField(db_index=True)
@@ -436,6 +470,8 @@ class DocOwnership(models.Model):
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")
+    surname = models.CharField(max_length=60, null=True)
+    initials = models.CharField(max_length=10, null=True)
     AU = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author")
     AF = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author Full Name")
     institution = models.CharField(max_length=250, db_index=True, verbose_name="Institution Name")
@@ -445,7 +481,12 @@ class DocAuthInst(models.Model):
         unique_together = ('doc', 'AU','AF','institution','position')
 
     def __str__(self):
-      return self.AU
+        return self.AU
+
+    def save(self, *args, **kwargs):
+        if self.surname and self.initials:
+            self.AU = self.surname + ", " + self.initials
+        super(DocAuthInst, self).save(*args, **kwargs)
 
 # A simple form of the table below, just to store the dois as we parse them
 
@@ -514,7 +555,12 @@ class WoSArticle(models.Model):
     se = models.TextField(null=True, verbose_name="Book Series Title") # book series title
     si = models.TextField(null=True, verbose_name="Special Issue") # special issue
     sn = models.CharField(null=True, max_length=80, verbose_name="ISSN") # ISSN
-    so = models.CharField(null=True, max_length=250, verbose_name="Publication Name") # publication name
+    so = models.CharField(
+        null=True,
+        max_length=250,
+        verbose_name="Publication Name",
+        help_text="Enter the name of the journal or the title of the book"
+    ) # publication name
     sp = models.TextField(null=True, verbose_name="Conference Sponsors") # conf sponsors
     su = models.TextField(null=True, verbose_name="Supplement") # supplement
     tc = models.IntegerField(null=True, verbose_name="Times Cited") # times cited

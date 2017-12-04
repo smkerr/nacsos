@@ -9,6 +9,8 @@ from django.core.serializers import serialize
 import short_url
 import datetime
 
+from django.forms.models import model_to_dict
+
 from cities.models import *
 from tmv_app.models import *
 # Create your views here.
@@ -1885,10 +1887,222 @@ def docrellist(request,sbsid,qid=0,q2id=0,q3id=0):
 
     return HttpResponse(template.render(context, request))
 
+def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
+    author_docs = None
+    uf = None
+    if int(did) > 0:
+        try:
+            doc = Doc.objects.get(pk=did)
+        except:
+            return HttpResponseRedirect(reverse(
+                'scoping:add_doc_form', kwargs={
+                    'authtoken':authtoken
+                }
+            ))
+    else:
+        doc = None
+    try:
+        project = Project.objects.get(pk=pid)
+    except:
+        project = None
+
+    techs = Technology.objects.filter(project=project)
+    if authtoken!=0:
+        em = EmailTokens.objects.get(pk=authtoken)
+        p = em.category.project
+        techs = Technology.objects.filter(project=p)
+
+        pid = p.id
+        em.sname, em.initial = em.AU.split(',')
+
+        author_docs = Doc.objects.filter(
+            query__qtype='MN',
+            query__upload_link=em,
+            wosarticle__ti__isnull=False
+        ).distinct()
+        if author_docs.count()==0:
+            author_docs = False
+
+        template = loader.get_template('scoping/ext_doc_add_form.html')
+
+        f2 = None
+
+        if request.method == "POST":
+            if "url" in request.POST:
+                ndf = NewDoc(request.POST)
+                if ndf.is_valid():
+                    url, created = URLs.objects.get_or_create(
+                        url=ndf.cleaned_data['url']
+                    )
+                    surl = short_url.encode_url(url.id)
+                    ut, created = UT.objects.get_or_create(UT=surl)
+                    if created and did is not 0:
+                        doc = Doc.objects.get(pk=did)
+                        doc.UT.delete()
+                        doc.UT=ut
+                        doc.save()
+                    doc, created = Doc.objects.get_or_create(UT=ut)
+                    doc.dtype=ndf.cleaned_data['dtype']
+                    doc.url = ndf.cleaned_data['url']
+                    doc.save()
+                    wa, created = WoSArticle.objects.get_or_create(doc=doc)
+
+                    q = Query(
+                        title="uploaded_by_{}".format(em.AU),
+                        type="default",
+                        text="uploaded_by_{}".format(authtoken)
+                    )
+
+                    if did==0:
+                        q.database = "manual"
+                        q.r_count = 1
+                        #q.technology = t
+                        q.project = p
+                        q.qtype='MN'
+                        q.upload_link=em
+                        q.save()
+
+                        doc.query.add(q)
+                        doc.save()
+
+                    return HttpResponseRedirect(reverse(
+                        'scoping:add_doc_form', kwargs={
+                            'authtoken':authtoken,
+                            'did': doc.id
+                        }
+                    ))
+
+
+            elif "so" in request.POST:
+                f2 = DocForm2(request.POST,instance=doc.wosarticle)
+                if f2.is_valid():
+                    print("valid")
+                    f2.save()
+                    doc.title = doc.wosarticle.ti
+                    doc.content = doc.wosarticle.ab
+                    doc.PY = doc.wosarticle.py
+                    doc.save()
+
+            elif "surname" in request.POST:
+                af = AuthorForm(request.POST)
+                if af.is_valid():
+                    dai, created = DocAuthInst.objects.get_or_create(
+                        doc=doc,
+                        position=af.cleaned_data['position']
+                    )
+                    dai.surname=af.cleaned_data['surname']
+                    dai.initials=af.cleaned_data['initials']
+                    dai.save()
+
+            elif "delete" in request.POST:
+                doc = Doc.objects.get(pk=did)
+                if hasattr(doc,'docfile'):
+                    doc.docfile.delete()
+
+            elif "technology[]" in request.POST:
+                tids = request.POST.getlist('technology[]',None)
+                ts = Technology.objects.filter(pk__in=tids)
+                for t in ts:
+                    doc.technology.add(t)
+
+            elif request.FILES.get('file', False):
+
+                print("DOCCCFILE")
+                doc = Doc.objects.get(pk=did)
+                uf = UploadDocFile(request.POST, request.FILES)
+                p = dir(uf)
+                if uf.is_valid():
+                    uf.save()
+                else:
+                    e = uf.errors
+
+
+
+        #x = y
+        afs = [None] * 10
+
+        if did!=0:
+            doc = Doc.objects.get(pk=did)
+            d = model_to_dict(doc)
+            wa = model_to_dict(doc.wosarticle)
+            ndf = NewDoc(d)
+
+            ndf.action = "Update"
+            if doc.dtype=="WP":
+                if wa['py'] is None:
+                    wa['py'] = 0
+                f2 = DocForm2(wa)
+            else:
+                if wa['py'] is None:
+                    wa['py'] = 2017
+                f2 = DocForm2(wa,so=True)
+
+
+            if wa['ti'] is None:
+                f2.action = "Add"
+            else:
+                f2.action = "Update"
+
+
+            if doc.wosarticle.ti is not None:
+                new_author = True
+                for i, af  in enumerate(afs):
+                    try:
+                        dai = DocAuthInst.objects.get(doc=doc,position=i+1)
+                        afs[i] = AuthorForm(model_to_dict(dai))
+                        afs[i].i = i+1
+                        afs[i].action = "Update"
+                    except:
+                        if new_author:
+                            afs[i] = AuthorForm({
+                                'position': i+1,
+                                'surname': ""
+                            })
+                            afs[i].i = i+1
+                            afs[i].action = "Add"
+                            break
+
+            dais = doc.docauthinst_set.filter(AU__isnull=False).count()
+            if doc.docauthinst_set.filter(AU__isnull=False).count() > 0:
+                if hasattr(doc,'docfile') is False:
+                    uf = UploadDocFile()
+                    uf.fields["doc"].initial=did
+                    uf.action="Upload"
+                else:
+                    df = doc.docfile
+                    uf = DeleteDocField()
+                    uf.fields["delete"].initial=1
+                    uf.filename = df.file
+                    uf.action="Delete"
+
+            #f2.fields['doc'].queryset = Doc.objects.filter(id=did)
+
+        else:
+            ndf = NewDoc()
+            ndf.action = "Add"
+
+    #x = y
+    if doc:
+        doctechs = doc.technology.all()
+    else:
+        doctechs = None
+
+    context = {
+        'author_docs': author_docs,
+        'em': em,
+        'ndf': ndf,
+        'f2': f2,
+        'afs': afs,
+        'uf': uf,
+        'techs': techs,
+        'doctechs': doctechs
+    }
+    #return render_to_response('scoping/ext_doc_add_form.html',context)
+    return HttpResponse(template.render(context, request))
 
 ###########################################################
 ## Manual docadd form
-def add_doc_form(request,pid=0,authtoken=0,r=0):
+def add_doc_form_bla(request,pid=0,authtoken=0,r=0):
     author_docs = None
     try:
         project = Project.objects.get(pk=pid)
@@ -2177,6 +2391,8 @@ def sortdocs(request):
     # get the query
     query = Query.objects.get(pk=qid)
 
+    p = query.project
+
     # filter the docs according to the query
     if q2id != '0':
         query_f = Query.objects.get(pk=q2id)
@@ -2280,7 +2496,7 @@ def sortdocs(request):
 
     if "wosarticle__doc" in fields:
         filt_docs = filt_docs.annotate(
-            wosarticle__doc=Concat(V('<a href="/scoping/document/'),'pk',V('">'),'pk',V('</a>'))
+            wosarticle__doc=Concat(V('<a href="/scoping/document/'+str(p.id)+'/'),'pk',V('">'),'pk',V('</a>'))
         )
     #x = y
     for i in range(len(f_fields)):
@@ -2789,19 +3005,24 @@ Germany
 
 
 def document(request, pid, doc_id):
+
+    if request.method == "POST":
+        x = 1
+
     template = loader.get_template('scoping/document.html')
     doc = Doc.objects.get(pk=doc_id)
+    project = Project.objects.get(pk=pid)
     authors = DocAuthInst.objects.filter(doc=doc)
-    queries = Query.objects.filter(doc=doc)
-    technologies = doc.technology.all()
+    queries = Query.objects.filter(doc=doc,project=project)
+    technologies = doc.technology.filter(project=project)
     innovations = doc.innovation.all()
-    ratings = doc.docownership_set.all()
+    ratings = doc.docownership_set.filter(query__project=project)
     if request.user.username in ["galm","roger","nemet"]:
         extended=True
     else:
         extended=False
 
-    project = Project.objects.get(pk=pid)
+
 
     ptechs = Technology.objects.filter(project=project).exclude(pk__in=technologies)
 
@@ -2814,7 +3035,8 @@ def document(request, pid, doc_id):
         'ratings': ratings,
         'queries': queries,
         'extended': extended,
-        'ptechs': ptechs
+        'ptechs': ptechs,
+        'project': project
     }
     return HttpResponse(template.render(context, request))
 
