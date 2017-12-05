@@ -44,7 +44,7 @@ div.authorform.add ul.errorlist {
     display:none;
 }
 
-div.addbox.Add ul.errorlist {
+div.addbox.Add ul.errorlist, ul.errorlist.nonfield {
     background-color: inherit;
     display:none;
 }
