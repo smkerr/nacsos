@@ -11,6 +11,8 @@ from django.dispatch import receiver
 import tmv_app
 import uuid
 import os
+
+from .validators import *
 # Create your models here.
 
 class SnowballingSession(models.Model):
@@ -264,7 +266,7 @@ class Doc(models.Model):
 
 class DocFile(models.Model):
     doc = models.OneToOneField(Doc)
-    file = models.FileField()
+    file = models.FileField(validators=[validate_pdf])
 
 
 @receiver(models.signals.post_delete, sender=DocFile)

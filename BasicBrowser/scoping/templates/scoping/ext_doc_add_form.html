@@ -118,6 +118,9 @@
 
 {% block script %}
 <script type="text/javascript">
+
+$("#navigation").remove()
+
 $("#addAnother").on("click",function(){
     $(".authorForm.Add").show()
     $(this).hide()

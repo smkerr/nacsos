@@ -1989,6 +1989,7 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                     doc.PY = doc.wosarticle.py
                     doc.save()
 
+
             elif "surname" in request.POST:
                 af = AuthorForm(request.POST)
                 if af.is_valid():
@@ -2069,9 +2070,13 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                             break
 
             dais = doc.docauthinst_set.filter(AU__isnull=False).count()
+
             if doc.docauthinst_set.filter(AU__isnull=False).count() > 0:
                 if hasattr(doc,'docfile') is False:
-                    uf = UploadDocFile()
+                    u = uf is None
+                    #x = y
+                    if uf is None:
+                        uf = UploadDocFile()
                     uf.fields["doc"].initial=did
                     uf.action="Upload"
                 else:
@@ -2080,6 +2085,9 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                     uf.fields["delete"].initial=1
                     uf.filename = df.file
                     uf.action="Delete"
+
+
+            #x = y
 
             #f2.fields['doc'].queryset = Doc.objects.filter(id=did)
 

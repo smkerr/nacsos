@@ -49,11 +49,12 @@ div.addbox.Add ul.errorlist, ul.errorlist.nonfield {
     display:none;
 }
 
+/*
 div.addbox.Upload ul.errorlist {
     background-color: inherit;
     display:none;
 }
-
+*/
 
 /*
 .axis--x path {

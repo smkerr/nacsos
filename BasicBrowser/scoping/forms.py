@@ -14,7 +14,10 @@ class NewDoc(forms.ModelForm):
 
     url = forms.URLField(
         required=False,
-        help_text="If there is a url pointing to this document, please provide it here"
+        help_text="""
+            If you have a link to the online version of this document,
+            please provide it here so we can check whether it's been added already
+        """
     )
 
     class Meta:
@@ -31,6 +34,7 @@ class DocForm2(forms.ModelForm):
     so = forms.CharField(
         label="Source Title",
         help_text="Enter the journal or book title",
+        max_length=250,
         required=False
     )
     doc = forms.IntegerField()
@@ -47,6 +51,9 @@ class DocForm2(forms.ModelForm):
 
 
 class AuthorForm(forms.ModelForm):
+
+    surname = forms.CharField(max_length=50)
+    initials = forms.CharField(max_length=10)
     class Meta:
         model = (DocAuthInst)
         fields = ('position','surname','initials',)
