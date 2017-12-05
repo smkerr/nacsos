@@ -189,7 +189,15 @@ class Doc(models.Model):
         ('BC','Book Chapter'),
         ('BK','Book'),
         ('WP','Working Paper')
+    )
 
+    DTYPE_CHOICES = (
+        ('AR','Article'),
+        #('RE','Review'),
+        ('RP', 'Report'),
+        ('BC','Book Chapter'),
+        ('BK','Book'),
+        ('WP','Working Paper')
     )
 
     UT = models.OneToOneField(UT)
