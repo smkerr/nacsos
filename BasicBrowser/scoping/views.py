@@ -1927,13 +1927,10 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
 
         f2 = None
 
-        a = request.POST
-
         if request.method == "POST":
             if "dtype" in request.POST:
                 ndf = NewDoc(request.POST)
                 if ndf.is_valid():
-                    d = ndf.cleaned_data
                     if ndf.cleaned_data['url'] == "":
                         url, created = URLs.objects.get_or_create(
                             url=str(uuid.uuid1())

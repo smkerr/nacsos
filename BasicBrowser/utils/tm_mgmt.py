@@ -1,6 +1,9 @@
 from tmv_app.models import *
 from scoping.models import *
+from tmv_app.tasks import *
+from celery import *
 from django.db.models import Q, Count, Func, F, Sum, Avg, Value as V
+from celery import group
 
 def update_topic_titles(session):
     if isinstance(session, int):
@@ -61,7 +64,7 @@ def update_dtopics(run_id):
     if not stats.topic_titles_current:
     #if "a" in "ab":
         dts = DynamicTopic.objects.filter(run_id=run_id).values_list('id',flat=True)
-        jobs = group(update_dtopic.s(dt,parent_run_id) for dt in dts)
+        jobs = group(update_dtopic(dt,parent_run_id) for dt in dts)
         result = jobs.apply_async()
         stats.topic_titles_current = True
         stats.save()
