@@ -1906,12 +1906,12 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
     except:
         project = None
 
-    techs = Technology.objects.filter(project=project)
+    techs = None
+    doctechs = None
+
     if authtoken!=0:
         em = EmailTokens.objects.get(pk=authtoken)
         p = em.category.project
-        techs = Technology.objects.filter(project=p)
-
         pid = p.id
         em.sname, em.initial = em.AU.split(',')
 
@@ -2017,7 +2017,6 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                 print("DOCCCFILE")
                 doc = Doc.objects.get(pk=did)
                 uf = UploadDocFile(request.POST, request.FILES)
-                p = dir(uf)
                 if uf.is_valid():
                     uf.save()
                 else:
@@ -2072,6 +2071,9 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
             dais = doc.docauthinst_set.filter(AU__isnull=False).count()
 
             if doc.docauthinst_set.filter(AU__isnull=False).count() > 0:
+                doctechs = doc.technology.all()
+                techs = Technology.objects.filter(project=p)
+
                 if hasattr(doc,'docfile') is False:
                     u = uf is None
                     #x = y
@@ -2095,11 +2097,6 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
             ndf = NewDoc()
             ndf.action = "Add"
 
-    #x = y
-    if doc:
-        doctechs = doc.technology.all()
-    else:
-        doctechs = None
 
     context = {
         'author_docs': author_docs,
