@@ -600,6 +600,22 @@ canvas {
     width: 140px;
 }
 
+ul.inline-list {
+    list-style-type: none;
+    margin: 1px;
+    padding: 5px;
+}
+
+ul.inline-list li {
+    display:inline;
+    margin: 1px;
+    padding: 5px;
+}
+
+ul.inline-list li.None {
+    color: #aaaaaa;
+}
+
 #navigation td.searchbar {
     width: 1%;
     height: 100%;

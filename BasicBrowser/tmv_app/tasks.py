@@ -44,6 +44,22 @@ def update_dtopic(topic_id, parent_run_id):
     ).aggregate(
         t=Sum('dtopic_score')
     )['t']
+    stats = topic.run_id
+    for tp in stats.periods.all():
+        tdt, created = TimeDtopic.objects.get_or_create(
+            period = tp,
+            dtopic=topic
+        )
+        tdt.score = DocTopic.objects.filter(
+            run_id=parent_run_id,
+            doc__PY__in=tp.ys,
+            topic__primary_dtopic=topic
+        ).annotate(
+            dtopic_score = F('score') * F('topic__topicdtopic__score')
+        ).aggregate(
+            t=Sum('dtopic_score')
+        )['t']
+        tdt.save()
     maxyear = DocTopic.objects.filter(
         run_id=parent_run_id,
         topic__primary_dtopic=topic
@@ -73,6 +89,8 @@ def update_dtopic(topic_id, parent_run_id):
     if l5score is not None:
         topic.l5ys = l5score / score
     topic.save()
+
+    return topic.id
 
 @shared_task
 def yearly_topic_term(topic_id, run_id):

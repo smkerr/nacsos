@@ -62,9 +62,32 @@ def update_dtopics(run_id):
         parent_run_id = run_id
     #if "a" == "b":
     if not stats.topic_titles_current:
+        doc_ids = set(list(DocTopic.objects.filter(
+            run_id=parent_run_id
+        ).values_list('doc_id',flat=True)))
+        for tp in stats.periods.all():
+            y_ids = list(Doc.objects.filter(
+                pk__in=doc_ids,
+                PY__in=tp.ys
+            ).values_list('id',flat=True))
+
+            ds = DocTopic.objects.filter(
+                doc__id__in=y_ids,
+                run_id=parent_run_id
+            ).aggregate(
+                tscore = Sum('score')
+            )['tscore']
+            tdt, created = TimeDocTotal.objects.get_or_create(
+                period=tp,
+                run=stats
+            )
+            tdt.n_docs = len(y_ids)
+            tdt.dt_score = ds
+            tdt.save()
+
     #if "a" in "ab":
         dts = DynamicTopic.objects.filter(run_id=run_id).values_list('id',flat=True)
-        jobs = group(update_dtopic(dt,parent_run_id) for dt in dts)
+        jobs = group(update_dtopic.s(dt,parent_run_id) for dt in dts)
         result = jobs.apply_async()
         stats.topic_titles_current = True
         stats.save()

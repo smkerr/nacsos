@@ -2043,6 +2043,9 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                     wa['py'] = 2017
                 f2 = DocForm2(wa,so=True)
 
+            # Do something different for book chapters
+            #if doc.dtype=="BC"
+
 
             if wa['ti'] is None:
                 f2.action = "Add"
@@ -2057,6 +2060,7 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                         dai = DocAuthInst.objects.get(doc=doc,position=i+1)
                         afs[i] = AuthorForm(model_to_dict(dai))
                         afs[i].i = i+1
+                        afs[i].au = dai.AU
                         afs[i].action = "Update"
                     except:
                         if new_author:
@@ -2097,6 +2101,7 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
             ndf = NewDoc()
             ndf.action = "Add"
 
+    forms = [ndf,f2,afs,uf,techs]
 
     context = {
         'author_docs': author_docs,

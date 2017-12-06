@@ -34,27 +34,12 @@
 
 <!-- Steps bar -->
 <div style="border: 0px solid orange; border-radius:40px; background: #f9cc7a; text-align: left;">
-<ul style="list-style-type: none; margin: 1px; padding: 5px;">
-  <li style="display:inline; margin: 1px; padding: 5px;"><strong><i>Steps</i></strong></li>
-  {% if ndf %}
-    <li style="display:inline; margin: 1px; padding: 5px;">1. Basic info. ></li>
-  {% endif %}
-  {% if f2 %}
-    <li style="display:inline; margin: 1px; padding: 5px;">2. Further info. ></li>
-  {% else %}
-    <li style="display:inline; margin: 1px; padding: 5px;; color:#aaaaaa">2. Further info. ></li>
-  {% endif %}
-  {% if afs.0 %}
-    <li style="display:inline; margin: 1px; padding: 5px;">3. Author(s) info. ></li>
-  {% else %}
-    <li style="display:inline; margin: 1px; padding: 5px;; color:#aaaaaa">3. Author(s) info. ></li>
-  {% endif %}
-
-  {% if uf %}
-    <li style="display:inline; margin: 1px; padding: 5px;">4. Optional info.</li>
-  {% else %}
-    <li style="display:inline; margin: 1px; padding: 5px;; color:#aaaaaa">4. Optional info.</li>
-  {% endif %}
+<ul class="inline-list">
+  <li><strong><i>Steps</i></strong></li>
+  <li>1. Basic info. ></li>
+  <li class="{{f2}}">2. Further info. ></li>
+  <li class="{{afs.0}}">3. Author(s) info. ></li>
+  <li class="{{uf}}">4. Optional info.</li>
 </ul>
 </div>
 
@@ -106,10 +91,11 @@
       {% if afs.0 %}
       <div class="addbox">
         <h2 style="color:black;">3. Authors</h2>
+        <p>Please add at least one author.
         {% for af in afs %}
         {% if af %}
         <div class="authorForm {{af.action}}">
-          <h3>Author {{af.i}}</h3>
+          <h3>Author {{af.i}} {% if af.au %}- {{af.au}}{% endif %}</h3>
           <table>
             <tr>
               <form method="POST" class="post-form">{% csrf_token %}
@@ -208,12 +194,12 @@ if ($(".authorForm.Update").length==0) $(".authorForm.Add").show()
 
 
 $('#readme_button').on('click', function(){
-    $("#readme_div").toggle();  
+    $("#readme_div").toggle();
     $("#readme_title").toggle();
     if ($.trim($(this).text()) === 'show readme') {
         $(this).text('hide');
     } else {
-        $(this).text('show readme');        
+        $(this).text('show readme');
     }
     //$(this).toggleClass('class1')
 })

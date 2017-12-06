@@ -890,7 +890,12 @@ def doc_detail(request, doc_id, run_id):
 
     doc = Doc.objects.get(id=doc_id)
 
-    doctopics = DocTopic.objects.filter(doc=doc_id,run_id=run_id).order_by('-score')
+    if stat.parent_run_id:
+        parent_run_id=stat.parent_run_id
+    else:
+        parent_run_id=run_id
+
+    doctopics = DocTopic.objects.filter(doc=doc_id,run_id=parent_run_id).order_by('-score')
 
     doc_authors = DocAuthInst.objects.filter(doc=doc).distinct('AU')
 

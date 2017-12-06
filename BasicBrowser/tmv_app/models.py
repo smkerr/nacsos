@@ -41,6 +41,7 @@ class Topic(models.Model):
     growth = models.FloatField(null=True)
     run_id = models.ForeignKey('RunStats',db_index=True)
     year = models.IntegerField(null=True)
+    period = models.ForeignKey('TimePeriod',null=True)
     primary_dtopic = models.ManyToManyField('DynamicTopic')
     top_words = ArrayField(models.TextField(),null=True)
     primary_wg = models.IntegerField(null=True)
@@ -75,6 +76,22 @@ class DynamicTopic(models.Model):
 
     def __str__(self):
         return str(self.title)
+
+class TimePeriod(models.Model):
+    title = models.CharField(null=True, max_length=80)
+    n = models.IntegerField()
+    ys = ArrayField(models.IntegerField())
+
+class TimeDocTotal(models.Model):
+    period = models.ForeignKey(TimePeriod)
+    run = models.ForeignKey('RunStats')
+    n_docs = models.IntegerField(null=True)
+    dt_score = models.FloatField(null=True)
+
+class TimeDTopic(models.Model):
+    period = models.ForeignKey(TimePeriod)
+    dtopic = models.ForeignKey('DynamicTopic')
+    score = models.FloatField(null=True)
 
 
 class TopicDTopic(models.Model):
@@ -255,8 +272,9 @@ class RunStats(models.Model):
     iterations = models.IntegerField(null=True)
 
     max_topics = models.IntegerField(null=True)
-
     term_count = models.IntegerField(null=True)
+    periods = models.ManyToManyField('TimePeriod')
+
     dthreshold = models.FloatField(default = 0.0005 )
 
 
