@@ -45,9 +45,21 @@
 <ul class="inline-list">
   <li><strong><i>Steps</i></strong></li>
   <li>1. Basic info. ></li>
-  <li class="{{f2}}">2. Further info. ></li>
-  <li class="{{afs.0}}">3. Author(s) info. ></li>
-  <li class="{{uf}}">4. Optional info.</li>
+  {% if f2 %}
+    <li>2. Further info. ></li>
+  {% else %}
+    <li class="None">2. Further info. ></li>
+  {% endif %}
+  {% if afs.0 %}
+    <li>3. Author(s) info. ></li>
+  {% else %}
+    <li class="None">3. Author(s) info. ></li>
+  {% endif %}
+  {% if uf %}
+    <li >4. Optional info.</li>
+  {% else %}
+    <li class="None">4. Optional info.</li>
+  {% endif %}
 </ul>
 </div>
 
