@@ -1060,6 +1060,7 @@ def topic_presence_detail(request,run_id):
 
     if stat.method == "DT":
         update_dtopics(run_id)
+        return dtm_home(request,run_id)
     if stat.method == "BD":
         update_bdtopics(run_id)
 
@@ -1094,6 +1095,52 @@ def topic_presence_detail(request,run_id):
 
     return HttpResponse(presence_template.render(presence_page_context))
 
+def dtm_home(request, run_id):
+    template = loader.get_template('tmv_app/dtm_home.html')
+
+    stat=RunStats.objects.get(pk=run_id)
+
+    wtopics = Topic.objects.filter(
+        run_id=stat.parent_run_id
+    ).order_by('period','-score')
+
+    dtopics = DynamicTopic.objects.filter(
+        run_id=run_id
+    ).order_by('-score')
+
+    periods = stat.periods.all()
+    for p in periods:
+        p.w = 100/periods.count()
+        p.ds = TimeDocTotal.objects.get(run=stat,period=p)
+        p.ts = wtopics.filter(period=p)
+
+    dtopics.n_docs = stat.docs_seen
+
+    context = {
+        'run_id': run_id,
+        'wtopics': wtopics,
+        'dtopics': dtopics,
+        'periods': periods,
+        'stat': stat
+    }
+    return HttpResponse(template.render(context))
+
+def highlight_dtm_w(request):
+
+    dtid = int(request.GET.get('dtid',None))
+    run_id = int(request.GET.get('run_id',None))
+
+    wts = Topic.objects.filter(
+        run_id=run_id,
+        topicdtopic__dynamictopic=dtid
+    ).order_by('-topicdtopic__score').values(
+        'id',
+        'topicdtopic__score'
+    )
+
+
+
+    return HttpResponse(json.dumps(list(wts)))
 ##################################################################
 ## Alt Main page for hlda
 

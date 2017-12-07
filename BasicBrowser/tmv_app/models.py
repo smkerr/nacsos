@@ -277,6 +277,10 @@ class RunStats(models.Model):
 
     dthreshold = models.FloatField(default = 0.0005 )
 
+    def save(self, *args, **kwargs):
+        if not self.parent_run_id:
+            self.parent_run_id=self.run-id
+        super(RunStats, self).save(*args, **kwargs)
 
 class Settings(models.Model):
     run_id = models.IntegerField()

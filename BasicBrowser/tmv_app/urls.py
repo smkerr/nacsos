@@ -22,6 +22,7 @@ urlpatterns = [
     url(r'^get_topic_docs/(?P<topic_id>\d+)/$', login_required(get_topic_docs), name="get_topic_docs"),
     url(r'^multi_topic/$', login_required(multi_topic), name="multi_topic"),
 
+    url(r'^highlight_dtm_w$', login_required(highlight_dtm_w), name="highlight_dtm_w"),
     url(r'^dynamic_topic/(?P<topic_id>\d+)/$', login_required(dynamic_topic_detail), name="dynamic_topic_detail"),
 
     url(r'^term/(?P<run_id>\d+)/(?P<term_id>\d+)/$', login_required(term_detail), name="term_detail"),

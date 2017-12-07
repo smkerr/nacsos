@@ -1,0 +1,56 @@
+{% extends "tmv_app/base.html" %}
+
+{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=run_id %} {% endblock %}
+
+{% block content %}
+<div id="main">
+  <div id="top"></div>
+  <div id="header">
+  <h1>Climate Change Topics</h1>
+  <h2>Relative Presence of Topics in all Documents</h2>
+  <h3>Run no. {{run_id}} on query: {{stat.query}}
+  <hr noshade>
+  </div>
+
+  <table>
+      {% for p in periods %}
+      <td width="{{p.w}}%">
+          <table>
+              <th>{{p.title}}: {{p.ds.n_docs}} docs</th>
+              {% for t in p.ts %}
+              <tr><td>{{t.title}} - {{t.score|floatformat}}</td></tr>
+              {% endfor %}
+          </table>
+      </td>
+      {% endfor %}
+      <td>
+          <table>
+              <th>Dynamic Topics: {{dtopics.n_docs}}</th>
+              {% for t in dtopics %}
+              <tr><td class="dtopic" data-run="{{t.run_id.run_id}}" id="{{t.id}}">{{t.title}} - {{t.score|floatformat}}</td></tr>
+              {% endfor %}
+          </table>
+      <td>
+  </table>
+
+{% endblock %}
+
+{% block script %}
+<script>
+$(".dtopic").on("click", function(){
+    dtid = $(this)[0].id
+    run_id = $(this).attr("data-run")
+    $.ajax({
+      url: '/tmv_app/highlight_dtm_w',
+      data: {
+        'run_id': run_id,
+        'dtid': dtid,
+      },
+      datatype: 'json',
+      success: function(data) {
+        console.log(data)
+      }
+    })
+})
+</script>
+{% endblock %}
