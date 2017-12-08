@@ -310,7 +310,7 @@ def technologies(request, pid):
     template = loader.get_template('scoping/tech.html')
 
     project = Project.objects.get(pk=pid)
-    technologies = Technology.objects.filter(project=pid)
+    technologies = Technology.objects.filter(project=pid).order_by('id')
 
     users = User.objects.all()
     refresh = False
@@ -2098,6 +2098,8 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
             #f2.fields['doc'].queryset = Doc.objects.filter(id=did)
 
         else:
+            em.clicked = em.clicked + 1
+            em.save()
             ndf = NewDoc()
             ndf.action = "Add"
 
@@ -2955,9 +2957,9 @@ and Climate Change, the University of Wisconsin, the University of Hamburg
 and the University of Aberdeen are currently performing a systematic review
 of the literature on negative emissions technologies, with a particular focus
 on costs, potentials, and side-effects. This project is intended to inform
-upcoming climate change assessments such as the UNEP Gap report and the
+upcoming climate change assessments such as the
 Special Report on the 1.5°C limit by the Intergovernmental Panel on
-Climate Change.
+Climate Change as well as the Sixth Assessment Report.
 
 It is our ambition to cover the literature as comprehensively as
 possible. So far, we have systematically searched the Web of
@@ -2972,9 +2974,13 @@ them to our system by following this link:
 
 {}
 
+This will make sure that your work on the topic is fully considered.
+We are very happy to share the research with you, once the
+manuscripts are finalized.
+
 Thanks so much for all your consideration and efforts.
 
-Warm Regards,
+Warm regards,
 
 Jan Minx
 
@@ -2999,7 +3005,7 @@ Germany
         sent_other_tech=False
     )
     for et in ems:
-        sname, initial = em.AU.split(',')
+        sname, initial = et.AU.split(',')
         name = "{} {}".format(initial, sname)
 
         link = 'https://apsis.mcc-berlin.net/scoping/external_add/{}'.format(et.id)

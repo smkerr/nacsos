@@ -393,6 +393,7 @@ class EmailTokens(models.Model):
     sent = models.BooleanField(default=False)
     sent_other_tech = models.BooleanField(default=False)
     sent_other_project = models.BooleanField(default=False)
+    clicked = models.IntegerField(default=0)
 
 #    class Meta:
 #        unique_together = ["email","AU"]
