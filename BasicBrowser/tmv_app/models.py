@@ -202,7 +202,7 @@ class RunStats(models.Model):
 
     ##Inputs
 
-    max_features = models.IntegerField(default=0, help_text = 'Maximum number of terms')
+    max_features = models.IntegerField(default=0, help_text = 'Maximum number of terms (0 = no limit)')
     min_freq = models.IntegerField(default=1, help_text = 'Minimum frequency of terms')
     max_df = MinMaxFloat(default=0.95, min_value=0.0, max_value=1.0)
     limit = models.IntegerField(null=True, default=0, help_text='Limit model to first x documents (leave as zero for no limit)')
@@ -279,7 +279,7 @@ class RunStats(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.parent_run_id:
-            self.parent_run_id=self.run-id
+            self.parent_run_id=self.run_id
         super(RunStats, self).save(*args, **kwargs)
 
 class Settings(models.Model):

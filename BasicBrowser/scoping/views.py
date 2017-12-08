@@ -2901,6 +2901,8 @@ def prepare_authorlist(request,tid):
         if d.wosarticle.em is not None:
             evalue = d.wosarticle.em.split(';')[0]
             if evalue not in em_values:
+                if d.docauthinst_set.count() == 0:
+                    continue
                 au = d.docauthinst_set.order_by('position').first().AU
                 audocs = docs.filter(docauthinst__AU=au,query__technology__isnull=False).distinct('UT')
                 docset = "; ".join([x.citation() for x in audocs])
@@ -3005,7 +3007,12 @@ Germany
         sent_other_tech=False
     )
     for et in ems:
-        sname, initial = et.AU.split(',')
+        split = et.AU.split(',')
+        if len(split) ==1 :
+            sname = et.AU
+            initial = "Dr"
+        else:
+            sname, initial = et.AU.split(', ')
         name = "{} {}".format(initial, sname)
 
         link = 'https://apsis.mcc-berlin.net/scoping/external_add/{}'.format(et.id)
@@ -3020,7 +3027,7 @@ Germany
         if s == 1:
             et.sent = True
             et.save()
-            time.sleep(5)
+            time.sleep(10)
 
     return HttpResponseRedirect(reverse('scoping:technology', kwargs={'tid': tid}))
 

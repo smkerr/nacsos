@@ -112,6 +112,12 @@ class UpdateProjectRoleForm(forms.ModelForm):
 
 
 class TopicModelForm(forms.ModelForm):
+    METHOD_CHOICES = (
+        ('LD', 'lda'),
+        ('NM','nmf'),
+
+    )
+    method = forms.ChoiceField(widget=forms.Select,choices=METHOD_CHOICES)
     class Meta:
         model = (RunStats)
         exclude = (
@@ -141,6 +147,7 @@ class TopicModelForm(forms.ModelForm):
             'iterations',
             'max_topics',
             'term_count',
-            'dthreshold'
+            'dthreshold',
+            'periods'
         )
         #fields = ('K','alpha','limit','ngram','min_freq','max_df','max_features','max_iterations')
