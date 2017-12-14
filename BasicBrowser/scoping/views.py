@@ -2680,7 +2680,9 @@ def sortdocs(request):
                     else:
                         adoc = filt_docs.filter(pk=d['pk']).values_list(*f).order_by('docauthinst__position')
                     if "note__" in mult_fields_tuple[m]:
-                        adoc = [x.text for x in Doc.objects.get(pk=d['pk']).note_set.all()]
+                        adoc = [x.text for x in Doc.objects.get(pk=d['pk']).note_set.filter(
+                            project=query.project
+                        )]
                     d[mult_fields[m]] = "; <br>".join(str(x) for x in (list(itertools.chain(*adoc))))
                     if "note__" in mult_fields_tuple[m]:
                         d[mult_fields[m]] = "; <br>".join(x.strip() for x in  adoc)
@@ -2950,35 +2952,20 @@ def prepare_authorlist(request,tid):
     return response
 
 from django.core.mail import send_mail, EmailMessage
+import random
 def send_authorlist(request,tid):
 
     message = '''Dear {},
 
-a team of researchers at the Mercator Research Institute on Global Commons
-and Climate Change, the University of Wisconsin, the University of Hamburg
-and the University of Aberdeen are currently performing a systematic review
-of the literature on negative emissions technologies, with a particular focus
-on costs, potentials, and side-effects. This project is intended to inform
-upcoming climate change assessments such as the
-Special Report on the 1.5°C limit by the Intergovernmental Panel on
-Climate Change as well as the Sixth Assessment Report.
+a team of researchers at the Mercator Research Institute on Global Commons and Climate Change, the University of Wisconsin, the University of Hamburg and the University of Aberdeen are currently performing a systematic review of the literature on negative emissions technologies, with a particular focus on costs, potentials, and side-effects. Our assessment of bioenergy in combination with carbon capture and storage also looks at bioenergy and geological storage potentials. This project is intended to inform upcoming climate change assessments such as the Special Report on the 1.5°C limit by the Intergovernmental Panel on Climate Change as well as the Sixth Assessment Report.
 
-It is our ambition to cover the literature as comprehensively as
-possible. So far, we have systematically searched the Web of
-Science and Scopus, but we are aware that this will not provide
-an exhaustive list of relevant documents and therefore we are
-contacting experts in the field directly.
+It is our ambition to cover the literature as comprehensively as possible. So far, we have systematically searched the Web of Science and Scopus, but we are aware that this will not provide an exhaustive list of relevant documents and therefore we are contacting experts in the field directly.
 
-We have identified the following articles authored by yourself below.
-If you have additional relevant articles that we should cover in
-our review, we would very much appreciate it, if you could upload
-them to our system by following this link:
+We have identified the following articles authored by yourself below. If you have additional relevant articles that we should cover in our review, we would very much appreciate it, if you could upload them to our system by following this link:
 
 {}
 
-This will make sure that your work on the topic is fully considered.
-We are very happy to share the research with you, once the
-manuscripts are finalized.
+This will make sure that your work on the topic is fully considered. We are very happy to share the research with you, once the manuscripts are finalized.
 
 Thanks so much for all your consideration and efforts.
 
@@ -3027,7 +3014,7 @@ Germany
         if s == 1:
             et.sent = True
             et.save()
-            time.sleep(10)
+            time.sleep(15 + random.randrange(1,50,1)/10)
 
     return HttpResponseRedirect(reverse('scoping:technology', kwargs={'tid': tid}))
 
@@ -3356,11 +3343,14 @@ def screen(request,qid,tid,ctype,d=0):
     else:
         innovation=True
 
+    notes = doc.note_set.filter(project=query.project)
+
     template = loader.get_template('scoping/doc.html')
     context = {
         'query': query,
         'project': query.project,
         'doc': doc,
+        'notes': notes,
         'ndocs': ndocs,
         'user': user,
         'authors': authors,
@@ -3455,11 +3445,14 @@ def add_note(request):
     d = request.POST.get('d',None)
     text = request.POST.get('note',None)
 
+    tag = Tag.objects.get(pk=tid)
+
     doc = Doc.objects.get(pk=doc_id)
     note = Note(
         doc=doc,
         user=request.user,
         date=timezone.now(),
+        project=tag.query.project,
         text=text
     )
     note.save()

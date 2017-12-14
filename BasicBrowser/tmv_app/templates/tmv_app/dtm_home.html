@@ -18,7 +18,10 @@
           <table>
               <th>{{p.title}}: {{p.ds.n_docs}} docs</th>
               {% for t in p.ts %}
-              <tr><td>{{t.title}} - {{t.score|floatformat}}</td></tr>
+              <tr><td class="wtopic wclick" data-pt="{{t.pt}}" id="{{t.id}}">
+                  <a href="{% url 'tmv_app:topic_detail' t.id stat.run_id %}">
+                      {{t.title}}
+                  </a> - {{t.score|floatformat}}</td></tr>
               {% endfor %}
           </table>
       </td>
@@ -27,7 +30,7 @@
           <table>
               <th>Dynamic Topics: {{dtopics.n_docs}}</th>
               {% for t in dtopics %}
-              <tr><td class="dtopic" data-run="{{t.run_id.run_id}}" id="{{t.id}}">{{t.title}} - {{t.score|floatformat}}</td></tr>
+              <tr><td class="dtopic wtopic clickable" data-run="{{t.run_id.run_id}}" id="{{t.id}}">{{t.title}} - {{t.score|floatformat}}</td></tr>
               {% endfor %}
           </table>
       <td>
@@ -37,8 +40,14 @@
 
 {% block script %}
 <script>
+$(".wclick").on("click", function() {
+    dtid = $(this).attr("data-pt")
+    $("#"+dtid).click()
+})
+
 $(".dtopic").on("click", function(){
     dtid = $(this)[0].id
+    dtopic = $(this)
     run_id = $(this).attr("data-run")
     $.ajax({
       url: '/tmv_app/highlight_dtm_w',
@@ -46,9 +55,29 @@ $(".dtopic").on("click", function(){
         'run_id': run_id,
         'dtid': dtid,
       },
-      datatype: 'json',
+      dataType: 'json',
       success: function(data) {
         console.log(data)
+        for (d in data) {
+            t = data[d]
+            c = "rgba(255,0,0,"+t.score+")"
+            topic = $("#"+t.id)
+            if (topic.hasClass(dtid)) {
+                topic.css("background-color", "white")
+            } else {
+                topic.css("background-color", c)
+            }
+            topic.toggleClass(dtid)
+        }
+        topic = dtopic
+        console.log(topic)
+        c = "rgb(255,0,0)"
+        if (topic.hasClass(dtid)) {
+            topic.css("background-color", "white")
+        } else {
+            topic.css("background-color", c)
+        }
+        topic.toggleClass(dtid)
       }
     })
 })

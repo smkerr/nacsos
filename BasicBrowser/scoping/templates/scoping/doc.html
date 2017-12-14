@@ -21,7 +21,7 @@
 <table width="100%">
 <td width="20%">
 
-{% for note in doc.note_set.all %}
+{% for note in notes %}
 <div class="note">
 <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
 <hr>
@@ -62,7 +62,6 @@
         <td><button onclick="review(1)">Yes</button>
   	    <td><button onclick="review(2)">No</button>
   	    <td><button onclick="review(3)">Maybe?</button>
-  	    <td><button onclick="review(4)">Yes but not this technology</button>
         {% endif %}
 	    </tr>
     </table>
@@ -80,7 +79,7 @@
 <div class="noteform">
     <form action="{% url 'scoping:add_note' %}" method="post">
       {% csrf_token %}
-      <input type="hidden" name="docn" value="{{doc.UT}}"></input>
+      <input type="hidden" name="docn" value="{{doc.id}}"></input>
       <input type="hidden" name="qid" value="{{query.id}}"></input>
       <input type="hidden" name="ctype" value="{{ctype}}"></input>
       <input type="hidden" name="tag" value="{{tag.id}}"></input>

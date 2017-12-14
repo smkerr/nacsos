@@ -387,10 +387,11 @@ def add_scopus_doc(r,q):
                     break
 
         if len(docs)==0: # if there's still nothing, create one
-            doc = Doc(UT=r['UT'])
+            ut, created = UT.objects.get_or_create(UT=r['UT'])
+            doc = Doc(UT=ut)
             #print(doc)
 
-    if doc is not None and "WOS:" not in doc.UT:
+    if doc is not None and "WOS:" not in doc.UT.UT:
 
         print("UPDATING")
         doc.title=get(r,'ti')

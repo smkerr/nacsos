@@ -1,5 +1,5 @@
 
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.template import Template, Context, RequestContext, loader
 from tmv_app.models import *
 from scoping.models import *
@@ -17,6 +17,7 @@ from .tasks import *
 from celery import group
 from utils.tm_mgmt import *
 import pandas as pd
+from sklearn.preprocessing import normalize
 
 # the following line will need to be updated to launch the browser on a web server
 TEMPLATE_DIR = sys.path[0] + '/templates/'
@@ -515,15 +516,16 @@ def topic_detail(request, topic_id, run_id=0):
 
     if topic.run_id.method=="BD":
         return(dtopic_detail(request,topic_id))
-    run_id = topic.run_id.pk
+    if run_id==0:
+        run_id = topic.run_id.pk
     stat = RunStats.objects.get(run_id=run_id)
 
     topic_template = loader.get_template('tmv_app/topic.html')
 
-    topic = Topic.objects.get(pk=topic_id,run_id=run_id)
+    topic = Topic.objects.get(pk=topic_id,run_id=stat.parent_run_id)
 
     topicterms = Term.objects.filter(
-        topicterm__topic=topic, run_id=run_id,
+        topicterm__topic=topic, #run_id=stat.parent_run_id,
         topicterm__score__gt=0.00001
     ).order_by('-topicterm__score')[:50]
 
@@ -563,11 +565,17 @@ def topic_detail(request, topic_id, run_id=0):
                 remainder_titles += ', ' + term.title
     term_bar.append((False, remainder_titles, remainder*100))
 
-    yts = TopicYear.objects.filter(run_id=run_id)
+    stat = RunStats.objects.get(pk=run_id)
+    if stat.method not in ["DT","BD"]:
+        yts = TopicYear.objects.filter(run_id=run_id)
+        ytarray = list(yts.values('PY','count','score','topic_id','topic__title'))
+    else:
+        yts = None
+        ytarray= None
 
-    ytarray = list(yts.values('PY','count','score','topic_id','topic__title'))
-
-    corrtops = TopicCorr.objects.filter(topic=topic_id,score__lt=1,ar=-1).order_by('-score')[:10]
+    corrtops = TopicCorr.objects.filter(
+        topic=topic_id,score__lt=1,ar=-1
+    ).order_by('-score')[:10]
     dtops = TopicDTopic.objects.filter(
         topic=topic_id,
         dynamictopic__run_id=run_id
@@ -1113,6 +1121,11 @@ def dtm_home(request, run_id):
         p.w = 100/periods.count()
         p.ds = TimeDocTotal.objects.get(run=stat,period=p)
         p.ts = wtopics.filter(period=p)
+        for wt in p.ts:
+            try:
+                wt.pt = wt.primary_dtopic.get(run_id=stat.run_id).id
+            except:
+                wt.pt = None
 
     dtopics.n_docs = stat.docs_seen
 
@@ -1130,13 +1143,20 @@ def highlight_dtm_w(request):
     dtid = int(request.GET.get('dtid',None))
     run_id = int(request.GET.get('run_id',None))
 
+    stat = RunStats.objects.get(pk=run_id)
+
     wts = Topic.objects.filter(
-        run_id=run_id,
+        run_id=stat.parent_run_id,
         topicdtopic__dynamictopic=dtid
     ).order_by('-topicdtopic__score').values(
         'id',
         'topicdtopic__score'
     )
+
+    ns = normalize([wts.values_list('topicdtopic__score',flat=True)])
+
+    for i, w in enumerate(wts):
+        w['score'] = ns[0][i]
 
 
 

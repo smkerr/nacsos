@@ -394,6 +394,7 @@ class EmailTokens(models.Model):
     sent_other_tech = models.BooleanField(default=False)
     sent_other_project = models.BooleanField(default=False)
     clicked = models.IntegerField(default=0)
+    valid_docs = models.IntegerField(default=0)
 
 #    class Meta:
 #        unique_together = ["email","AU"]
@@ -433,6 +434,7 @@ class DocRel(models.Model):
 class Note(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Notemaker")
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     date = models.DateTimeField()
     text = models.TextField(null=True)
     class Meta:

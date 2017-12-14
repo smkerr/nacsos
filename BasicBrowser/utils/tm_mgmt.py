@@ -84,9 +84,18 @@ def update_dtopics(run_id):
             tdt.n_docs = len(y_ids)
             tdt.dt_score = ds
             tdt.save()
+            wts = Topic.objects.filter(
+                run_id=stats.parent_run_id,
+                year = tp.n
+            )
+            for wt in wts:
+                wt.period = tp
+                wt.save()
 
     #if "a" in "ab":
-        dts = DynamicTopic.objects.filter(run_id=run_id).values_list('id',flat=True)
+        dts = DynamicTopic.objects.filter(
+            run_id=run_id
+        ).values_list('id',flat=True)
         jobs = group(update_dtopic.s(dt,parent_run_id) for dt in dts)
         result = jobs.apply_async()
         stats.topic_titles_current = True

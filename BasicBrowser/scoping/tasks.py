@@ -55,3 +55,12 @@ def upload_docs(qid, update):
     django.db.connections.close_all()
     q.r_count = r_count
     q.save()
+
+    t = Tag(
+        title="all",
+        text="all",
+        query=q
+    )
+    t.save()
+    for d in q.doc_set.all().iterator():
+        d.tag.add(t)
