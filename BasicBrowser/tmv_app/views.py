@@ -1121,20 +1121,27 @@ def dtm_home(request, run_id):
         p.w = 100/periods.count()
         p.ds = TimeDocTotal.objects.get(run=stat,period=p)
         p.ts = wtopics.filter(period=p)
-        for wt in p.ts:
-            try:
-                wt.pt = wt.primary_dtopic.get(run_id=stat.run_id).id
-            except:
-                wt.pt = None
+        # for wt in p.ts:
+        #     try:
+        #         wt.pt = wt.primary_dtopic.get(run_id=stat.run_id).id
+        #     except:
+        #         wt.pt = None
 
     dtopics.n_docs = stat.docs_seen
+
+    yscores = list(TimeDTopic.objects.filter(
+        dtopic__run_id=run_id,
+        score__isnull=False
+    ).values('period__n','dtopic__id','dtopic__title','score'))
+
 
     context = {
         'run_id': run_id,
         'wtopics': wtopics,
         'dtopics': dtopics,
         'periods': periods,
-        'stat': stat
+        'stat': stat,
+        'yts': yscores
     }
     return HttpResponse(template.render(context))
 

@@ -39,7 +39,7 @@ class Topic(models.Model):
     score = models.FloatField(null=True)
     size = models.IntegerField(null=True)
     growth = models.FloatField(null=True)
-    run_id = models.ForeignKey('RunStats',db_index=True)
+    run_id = models.ForeignKey('RunStats',db_index=True, on_delete=models.CASCADE)
     year = models.IntegerField(null=True)
     period = models.ForeignKey('TimePeriod',null=True)
     primary_dtopic = models.ManyToManyField('DynamicTopic')
@@ -165,21 +165,21 @@ class HTopicYear(models.Model):
 
 class DocTopic(models.Model):
     #doc = models.ForeignKey(Doc, null=True)
-    doc = models.ForeignKey('scoping.Doc', null=True)
-    topic = models.ForeignKey('Topic',null=True)
+    doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.CASCADE)
+    topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
     score = models.FloatField()
     scaled_score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
 
 class TopicTerm(models.Model):
-    topic = models.ForeignKey('Topic',null=True)
+    topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
     term = models.ForeignKey('Term',null=True)
     PY = models.IntegerField(db_index=True,null=True)
     score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
 
 class DynamicTopicTerm(models.Model):
-    topic = models.ForeignKey('DynamicTopic', null=True)
+    topic = models.ForeignKey('DynamicTopic', null=True, on_delete=models.CASCADE)
     term = models.ForeignKey('Term', null=True)
     PY = models.IntegerField(db_index=True, null=True)
     score = models.FloatField()
@@ -213,7 +213,7 @@ class RunStats(models.Model):
     alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter')
     max_iterations  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
 
-    query = models.ForeignKey('scoping.Query', null=True)
+    query = models.ForeignKey('scoping.Query', null=True, on_delete=models.CASCADE)
 
 
     ## Progress

@@ -165,9 +165,14 @@ class DocManager(models.Manager):
         random_index = randint(0, count - 1)
         return self.all()[random_index]
 
+class Institution(models.Model):
+    name = models.TextField()
+    email_ending = models.TextField()
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     type = models.TextField(null=True,default="default")
+    institution = models.ForeignKey('Institution', null=True, on_delete=models.CASCADE)
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -241,7 +246,7 @@ class Doc(models.Model):
     relevant = models.BooleanField(default=False)
     projects = models.ManyToManyField(Project, through='DocProject')
 
-    primary_topic = models.ManyToManyField('tmv_app.Topic')
+    #primary_topic = models.ManyToManyField('tmv_app.Topic', on_delete=models.SET_NULL)
 
     def __str__(self):
 

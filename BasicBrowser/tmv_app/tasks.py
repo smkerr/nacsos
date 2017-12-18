@@ -46,7 +46,7 @@ def update_dtopic(topic_id, parent_run_id):
     )['t']
     stats = topic.run_id
     for tp in stats.periods.all():
-        tdt, created = TimeDtopic.objects.get_or_create(
+        tdt, created = TimeDTopic.objects.get_or_create(
             period = tp,
             dtopic=topic
         )

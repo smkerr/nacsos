@@ -12,6 +12,9 @@
   <hr noshade>
   </div>
 
+
+      <div id="pyGraph" height="600"></div><br>
+
   <table>
       {% for p in periods %}
       <td width="{{p.w}}%">
@@ -81,5 +84,152 @@ $(".dtopic").on("click", function(){
       }
     })
 })
+var data = {{ yts|safe }};
+
+var topic_title = ""
+
+console.log(data)
+
+var width = $("#pyGraph").parent().width();
+var height = width /3
+
+var graph = d3.select("#pyGraph")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+graph.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .style("fill", "white")
+    .style("stroke", "black")
+    .style("stroke-width", 2)
+
+graph.append("line")
+    .attr("class", "axis")
+    .attr("x1", width*0.1)
+    .attr("x2", width* 0.9)
+    .attr("y1", height*0.9)
+    .attr("y2", height*0.9)
+    .attr("stroke-width", 1)
+    .attr("stroke", "black");
+
+graph.append("line")
+    .attr("class", "axis")
+    .attr("x1", width*0.1)
+    .attr("x2", width* 0.1)
+    .attr("y1", height*0.9)
+    .attr("y2", height*0.1)
+    .attr("stroke-width", 1)
+    .attr("stroke", "black");
+
+max_score = d3.max(data, function(d) { return d.score })
+
+yscale = d3.scaleLinear()
+    .domain([0, max_score])
+    .range([height*0.9, height*0.1]);
+
+min_PY = d3.min(data, function(d) { return d.period__n })
+max_PY = d3.max(data, function(d) { return d.period__n })
+
+
+xscale = d3.scaleLinear()
+    .domain([min_PY, max_PY])
+    .range([width*0.1, width*0.9]);
+
+
+var line = d3.line()
+    .x(function(d) {
+        return xscale(d.period__n);
+    })
+    .y(function(d) {
+        return yscale(d.score);
+    })
+
+var topics = d3.nest()
+.key(function(d) {
+    return d.dtopic__title;
+})
+.sortValues(function(a,b) { return a.period__n - b.period__n})
+.entries(data);
+
+var years = d3.nest()
+.key(function(d) {
+    return d.period__n;
+})
+.entries(data);
+
+console.log(topics)
+
+
+var topicClass = function(x) {
+    if (x == topic_title || x == topic){
+        return 'current_topic';
+            } else {
+        return 'other_topic';
+    }
+}
+
+div = graph.append("text")
+    .attr("text-anchor", "middle")
+    .attr("fill", "black")
+    .attr("font-size", "16px")
+    .attr("x", width/2)
+    .attr("y", 25)
+    .attr("id", "topic")
+    .text(topic_title)
+
+graph.selectAll("circle")
+    .data(data)
+    .enter()
+    .append("circle")
+    .attr("cx", function(d) { return xscale(d.period__n)})
+    .attr("cy", function(d) { return yscale(d.score)})
+    .attr('class', function(d) {
+        return topicClass(d.topic_id)
+    });
+
+topics.forEach(function(d) {
+    graph.append('svg:path')
+        .attr('d', line(d.values))
+        .attr('class', function() {
+            return topicClass(d.key)
+        })
+        .on("mouseover", function() {
+            d3.select(this).classed("hovered",true)
+            d3.select("#topic").transition().duration(200)
+                .style("fill", "#b3cde3")
+                .text(d.key);
+        })
+        .on("mouseout", function() {
+            d3.select(this).classed("hovered",false)
+            d3.select("#topic").transition().duration(200)
+                .style("fill", "#fbb4ae")
+                .text(topic_title);
+        })
+        .on("click", function() {
+            link = "/tmv_app/topic/"+d.values[0].topic_id
+            window.location.assign(link)
+        })
+        .attr('fill', 'none');
+});
+
+years.forEach(function(d) {
+    graph.append('svg:text')
+        .attr("text-anchor", "middle")
+        .attr("fill", "black")
+        .attr("font-size", "18px")
+        .attr("x", function() { return xscale(parseFloat(d.key))})
+        .attr("y", height*0.97)
+        .text(function() {
+            if(parseFloat(d.key) % 5==0) {
+                return d.key
+            }
+        });
+});
+
+
+
+
 </script>
 {% endblock %}
