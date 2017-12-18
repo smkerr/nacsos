@@ -12,10 +12,15 @@
   <hr noshade>
   </div>
 
-
-      <div id="pyGraph" height="600"></div><br>
-
   <table>
+      <td width="10%">
+      </td>
+      <td width="80%">
+          <div id="pyGraph" height="600"></div><br>
+      </td>
+  </table>
+
+  <table class="scroll">
       {% for p in periods %}
       <td width="{{p.w}}%">
           <table>
@@ -81,6 +86,8 @@ $(".dtopic").on("click", function(){
             topic.css("background-color", c)
         }
         topic.toggleClass(dtid)
+        topic = $('*[data-id="'+dtid+'"]');
+        topic.toggleClass("hovered")
       }
     })
 })
@@ -186,7 +193,7 @@ graph.selectAll("circle")
     .attr("cx", function(d) { return xscale(d.period__n)})
     .attr("cy", function(d) { return yscale(d.score)})
     .attr('class', function(d) {
-        return topicClass(d.topic_id)
+        return topicClass(d.dtopic__id)
     });
 
 topics.forEach(function(d) {
@@ -195,20 +202,25 @@ topics.forEach(function(d) {
         .attr('class', function() {
             return topicClass(d.key)
         })
+        .attr('data-id', function() {
+            return d.values[0].dtopic__id
+        })
         .on("mouseover", function() {
             d3.select(this).classed("hovered",true)
             d3.select("#topic").transition().duration(200)
                 .style("fill", "#b3cde3")
                 .text(d.key);
+            $("#"+d.values[0].dtopic__id).click()
         })
         .on("mouseout", function() {
             d3.select(this).classed("hovered",false)
             d3.select("#topic").transition().duration(200)
                 .style("fill", "#fbb4ae")
                 .text(topic_title);
+            $("#"+d.values[0].dtopic__id).click()
         })
         .on("click", function() {
-            link = "/tmv_app/topic/"+d.values[0].topic_id
+            link = "/tmv_app/dynamic_topic/"+d.values[0].dtopic__id
             window.location.assign(link)
         })
         .attr('fill', 'none');

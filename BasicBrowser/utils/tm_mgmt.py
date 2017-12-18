@@ -194,32 +194,54 @@ def update_dtopics(run_id):
         doc_ids = set(list(DocTopic.objects.filter(
             run_id=parent_run_id
         ).values_list('doc_id',flat=True)))
-        # for tp in stats.periods.all():
-        #     y_ids = list(Doc.objects.filter(
-        #         pk__in=doc_ids,
-        #         PY__in=tp.ys
-        #     ).values_list('id',flat=True))
-        #
-        #     ds = DocTopic.objects.filter(
-        #         doc__id__in=y_ids,
-        #         run_id=parent_run_id
-        #     ).aggregate(
-        #         tscore = Sum('score')
-        #     )['tscore']
-        #     tdt, created = TimeDocTotal.objects.get_or_create(
-        #         period=tp,
-        #         run=stats
-        #     )
-        #     tdt.n_docs = len(y_ids)
-        #     tdt.dt_score = ds
-        #     tdt.save()
-        #     wts = Topic.objects.filter(
-        #         run_id=stats.parent_run_id,
-        #         year = tp.n
-        #     )
-        #     for wt in wts:
-        #         wt.period = tp
-        #         wt.save()
+        if stats.periods.count() == 0:
+            ys = RunStats.objects.get(
+                pk=stats.parent_run_id
+            ).topic_set.distinct(
+                'year'
+            ).order_by('year').values_list('year',flat=True)
+            for i,y in enumerate(ys):
+                tp, created = TimePeriod.objects.get_or_create(
+                    title=str(y),
+                    n = i,
+                    ys = [y]
+                )
+                stats.periods.add(tp)
+
+
+        for tp in stats.periods.all():
+            y_ids = list(Doc.objects.filter(
+                pk__in=doc_ids,
+                PY__in=tp.ys
+            ).values_list('id',flat=True))
+
+            ds = DocTopic.objects.filter(
+                doc__id__in=y_ids,
+                run_id=parent_run_id
+            ).aggregate(
+                tscore = Sum('score')
+            )['tscore']
+            tdt, created = TimeDocTotal.objects.get_or_create(
+                period=tp,
+                run=stats
+            )
+            tdt.n_docs = len(y_ids)
+            tdt.dt_score = ds
+            tdt.save()
+            if len(tp.ys)==1:
+                wts = Topic.objects.filter(
+                    run_id=stats.parent_run_id,
+                    year = tp.ys[0]
+                )
+            else:
+                wts = Topic.objects.filter(
+                    run_id=stats.parent_run_id,
+                    year = tp.n
+                )
+
+            for wt in wts:
+                wt.period = tp
+                wt.save()
 
     #if "a" in "ab":
         dts = DynamicTopic.objects.filter(

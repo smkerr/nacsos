@@ -31,7 +31,7 @@
     {% if terms %}
 	    {% for term in terms %}
 	    <tr class="list" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')">
-                <td id="{{ term.title }}_list"><a href="{% url 'tmv_app:term_detail' run_id term.id %}">{{ term.title }}</a>
+                <td id="{{ term.title }}_list"><a href="{% url 'tmv_app:term_detail' run_id term.id %}">{{ term.title }} - {{term.score}}</a>
                 </td>
 
         </tr>

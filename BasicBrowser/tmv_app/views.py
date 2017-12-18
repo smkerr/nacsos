@@ -366,7 +366,7 @@ def dynamic_topic_detail(request,topic_id):
 
     yscores = list(DynamicTopicYear.objects.filter(
         topic=topic
-    ).values('PY','score'))
+    ).order_by('PY').values('PY','score'))
 
 
     wtopics = Topic.objects.filter(
@@ -420,7 +420,7 @@ def dynamic_topic_detail(request,topic_id):
     ysums = Topic.objects.filter(
         run_id=run_id,
         year__lt=2200
-    ).values('year').annotate(
+    ).order_by('year').values('year').annotate(
         sum = Sum('score'),
     )
 
@@ -510,9 +510,10 @@ def topic_detail(request, topic_id, run_id=0):
     template = loader.get_template('tmv_app/topic.html')
 
     try:
-        topic = Topic.objects.get(pk=topic_id)
+        topic = Topic.objects.get(pk=int(topic_id))
     except:
-        return(topic_detail_hlda(request, topic_id))
+        pass
+        #return(topic_detail_hlda(request, topic_id))
 
     if topic.run_id.method=="BD":
         return(dtopic_detail(request,topic_id))

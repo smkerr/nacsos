@@ -27,6 +27,17 @@ body.waiting, body.waiting * {
 	cursor:progress !important;
 }
 
+table.scroll thead {
+    display: block;
+}
+
+table.scroll > tbody {
+    display: block;
+    height: 1000px;       /* Just for the demo          */
+    overflow-y: scroll;    /* Trigger vertical scroll    */
+    overflow-x: hidden;  /* Hide the horizontal scroll */
+}
+
 div.explanation {
     width:60%;
 	margin-left: auto;
