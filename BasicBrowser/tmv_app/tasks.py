@@ -46,6 +46,11 @@ def update_dtopic(topic_id, parent_run_id):
     )['t']
     stats = topic.run_id
     for tp in stats.periods.all():
+
+        dtot, created = TimeDocTotal.objects.get_or_create(
+            period=tp,
+            run=stats
+        )
         tdt, created = TimeDTopic.objects.get_or_create(
             period = tp,
             dtopic=topic
@@ -53,13 +58,20 @@ def update_dtopic(topic_id, parent_run_id):
         tdt.score = DocTopic.objects.filter(
             run_id=parent_run_id,
             doc__PY__in=tp.ys,
-            topic__primary_dtopic=topic
+            topic__topicdtopic__dynamictopic=topic
+            #topic__primary_dtopic=topic
         ).annotate(
             dtopic_score = F('score') * F('topic__topicdtopic__score')
         ).aggregate(
             t=Sum('dtopic_score')
         )['t']
+        if tdt.score is not None:
+            tdt.year_share = tdt.score / dtot.dt_score
+        else:
+            tdt.score = 0
+            tdt.year_share = 0
         tdt.save()
+
     maxyear = DocTopic.objects.filter(
         run_id=parent_run_id,
         topic__primary_dtopic=topic
@@ -137,18 +149,6 @@ def yearly_topic_term(topic_id, run_id):
         ).aggregate(
             yscore = Sum('dtopic_score')
         )['yscore']
-
-        ##########
-        ## Create dty objects
-        dty, created = DynamicTopicYear.objects.get_or_create(
-            topic=dt,
-            PY=y,
-            run_id=run_id
-        )
-        if ytds is None:
-            ytds = 0
-        dty.score=ytds
-        dty.save()
 
 @shared_task
 def do_nmf(run_id):

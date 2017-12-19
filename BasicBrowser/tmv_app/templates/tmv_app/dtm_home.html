@@ -38,7 +38,7 @@
           <table>
               <th>Dynamic Topics: {{dtopics.n_docs}}</th>
               {% for t in dtopics %}
-              <tr><td class="dtopic wtopic clickable" data-run="{{t.run_id.run_id}}" id="{{t.id}}">{{t.title}} - {{t.score|floatformat}}</td></tr>
+              <tr><td class="dtopic wtopic clickable" data-run="{{t.run_id.run_id}}" id="{{t.id}}">{{t.title}} - {{t.score|floatformat}} <a href="{% url 'tmv_app:dynamic_topic_detail' t.id %}">Go</a></td></tr>
               {% endfor %}
           </table>
       <td>
@@ -130,7 +130,7 @@ graph.append("line")
     .attr("stroke-width", 1)
     .attr("stroke", "black");
 
-max_score = d3.max(data, function(d) { return d.score })
+max_score = d3.max(data, function(d) { return d.year_share })
 
 yscale = d3.scaleLinear()
     .domain([0, max_score])
@@ -150,7 +150,7 @@ var line = d3.line()
         return xscale(d.period__n);
     })
     .y(function(d) {
-        return yscale(d.score);
+        return yscale(d.year_share);
     })
 
 var topics = d3.nest()
@@ -191,10 +191,25 @@ graph.selectAll("circle")
     .enter()
     .append("circle")
     .attr("cx", function(d) { return xscale(d.period__n)})
-    .attr("cy", function(d) { return yscale(d.score)})
+    .attr("cy", function(d) { return yscale(d.year_share)})
+    .attr("r", 5)
     .attr('class', function(d) {
         return topicClass(d.dtopic__id)
     });
+
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};
+d3.selection.prototype.moveToBack = function() {
+    return this.each(function() {
+        var firstChild = this.parentNode.firstChild;
+        if (firstChild) {
+            this.parentNode.insertBefore(this, firstChild);
+        }
+    });
+};
 
 topics.forEach(function(d) {
     graph.append('svg:path')
@@ -207,6 +222,7 @@ topics.forEach(function(d) {
         })
         .on("mouseover", function() {
             d3.select(this).classed("hovered",true)
+            d3.select(this).moveToFront();
             d3.select("#topic").transition().duration(200)
                 .style("fill", "#b3cde3")
                 .text(d.key);

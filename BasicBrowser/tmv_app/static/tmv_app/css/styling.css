@@ -746,14 +746,14 @@ circle.other_topic {
 
 path.hovered {
 	stroke: #b3cde3;
-	stroke-width: 2
-	z-index: 1;
+	stroke-width: 2;
+	z-index: 99;
 }
 
 circle.hovered {
 	stroke: #b3cde3;
-	stroke-width: 2
-	z-index: 1;
+	stroke-width: 2;
+	z-index: 99;
 }
 
 circle.current_topic {

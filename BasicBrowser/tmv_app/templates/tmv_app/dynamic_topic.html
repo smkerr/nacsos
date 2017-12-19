@@ -34,7 +34,7 @@
       <table>
       {% for y in ytterms %}
       <tr class="wtopic">
-        
+
         <td>{{y.0.PY}}
           {% for tt in y %}
           <td class="word" data-word="{{tt.term.title|lower}}">
@@ -257,7 +257,7 @@ g.append("g")
       .attr("width", bwidth);
 
 var line = d3.line()
-  .x(function(d) { return x(d.PY); })
+  .x(function(d) { return x(d.period__n); })
   .y(function(d) { return y(Math.log1p(d.score)) });
 
 console.log(yscores)

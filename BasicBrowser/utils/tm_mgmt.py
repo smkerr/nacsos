@@ -210,24 +210,6 @@ def update_dtopics(run_id):
 
 
         for tp in stats.periods.all():
-            y_ids = list(Doc.objects.filter(
-                pk__in=doc_ids,
-                PY__in=tp.ys
-            ).values_list('id',flat=True))
-
-            ds = DocTopic.objects.filter(
-                doc__id__in=y_ids,
-                run_id=parent_run_id
-            ).aggregate(
-                tscore = Sum('score')
-            )['tscore']
-            tdt, created = TimeDocTotal.objects.get_or_create(
-                period=tp,
-                run=stats
-            )
-            tdt.n_docs = len(y_ids)
-            tdt.dt_score = ds
-            tdt.save()
             if len(tp.ys)==1:
                 wts = Topic.objects.filter(
                     run_id=stats.parent_run_id,
@@ -242,6 +224,30 @@ def update_dtopics(run_id):
             for wt in wts:
                 wt.period = tp
                 wt.save()
+
+            y_ids = list(Doc.objects.filter(
+                pk__in=doc_ids,
+                PY__in=tp.ys
+            ).values_list('id',flat=True))
+
+            ds = TopicDTopic.objects.filter(
+                dynamictopic__run_id=run_id,
+                topic__in=wts
+            ).annotate(
+                dtopic_score = F('score') * F('topic__score')
+            ).aggregate(
+                t=Sum('dtopic_score')
+            )['t']
+
+
+            tdt, created = TimeDocTotal.objects.get_or_create(
+                period=tp,
+                run=stats
+            )
+            tdt.n_docs = len(y_ids)
+            tdt.dt_score = ds
+            tdt.save()
+
 
     #if "a" in "ab":
         dts = DynamicTopic.objects.filter(

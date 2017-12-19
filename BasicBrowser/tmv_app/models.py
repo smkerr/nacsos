@@ -91,7 +91,8 @@ class TimeDocTotal(models.Model):
 class TimeDTopic(models.Model):
     period = models.ForeignKey(TimePeriod)
     dtopic = models.ForeignKey('DynamicTopic')
-    score = models.FloatField(null=True)
+    score = models.FloatField(default=0)
+    year_share = models.FloatField(default=0)
 
 
 class TopicDTopic(models.Model):
@@ -130,15 +131,6 @@ class TopicYear(models.Model):
     count = models.FloatField(null=True)
     run_id = models.IntegerField(db_index=True)
 
-#################################################
-## TopicYear holds per year topic totals
-class DynamicTopicYear(models.Model):
-    topic = models.ForeignKey('DynamicTopic',null=True)
-    PY = models.IntegerField()
-    score = models.FloatField(null=True)
-    count = models.FloatField(null=True)
-    year_share = models.FloatField(null=True)
-    run_id = models.IntegerField(db_index=True)
 
 class TopicARScores(models.Model):
     topic = models.ForeignKey('Topic',null=True)

@@ -364,9 +364,9 @@ def dynamic_topic_detail(request,topic_id):
 
     #x = y
 
-    yscores = list(DynamicTopicYear.objects.filter(
-        topic=topic
-    ).order_by('PY').values('PY','score'))
+    yscores = list(TimeDTopic.objects.filter(
+        dtopic=topic
+    ).order_by('period__n').values('period__n','score'))
 
 
     wtopics = Topic.objects.filter(
@@ -1132,8 +1132,8 @@ def dtm_home(request, run_id):
 
     yscores = list(TimeDTopic.objects.filter(
         dtopic__run_id=run_id,
-        score__isnull=False
-    ).values('period__n','dtopic__id','dtopic__title','score'))
+        year_share__isnull=False
+    ).values('period__n','dtopic__id','dtopic__title','score','year_share'))
 
 
     context = {
