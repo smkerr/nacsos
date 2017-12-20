@@ -249,6 +249,7 @@ def queries(request, pid):
     else:
         extended=False
 
+
     context = {
       'queries'      : queries,
       'query'        : query,
@@ -1982,6 +1983,9 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                         type="default",
                         text="uploaded_by_{}".format(authtoken)
                     )
+
+                    if em.user:
+                        q.creator=em.user
 
                     if did==0:
                         q.database = "manual"
