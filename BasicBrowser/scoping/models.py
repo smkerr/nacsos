@@ -391,9 +391,11 @@ class WC(models.Model):
 
 class EmailTokens(models.Model):
     category = models.ForeignKey(Technology,null=True)
+    project = models.ForeignKey(Project, null=True)
     email = models.TextField()
     AU = models.TextField()
     docset = models.TextField(null=True)
+    user = models.ForeignKey(User, null=True)
     id = models.UUIDField(primary_key=True,default=uuid.uuid4)
     sent = models.BooleanField(default=False)
     sent_other_tech = models.BooleanField(default=False)

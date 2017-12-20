@@ -22,12 +22,20 @@ def compare_topic_queryset(runs):
     runs = runs.order_by('K').values_list('run_id',flat=True)
 
     for i in range(1,len(runs)):
-        if dynamic==True:
+        s1 = RunStats.objects.get(pk=runs[i-1])
+        s2 = RunStats.objects.get(pk=runs[i])
+
+        if s1.method=="DT":
             topics1 = DynamicTopic.objects.filter(run_id=runs[i-1])
-            topics2 = DynamicTopic.objects.filter(run_id=runs[i])
         else:
             topics1 = Topic.objects.filter(run_id=runs[i-1])
+
+        if s2.method=="DT":
+            topics2 = DynamicTopic.objects.filter(run_id=runs[i])
+        else:
             topics2 = Topic.objects.filter(run_id=runs[i])
+
+
 
 
         df = pd.DataFrame.from_dict(list(topics2.values('title','score')))

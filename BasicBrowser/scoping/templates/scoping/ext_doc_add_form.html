@@ -1,6 +1,6 @@
 {% extends "scoping/base.html" %}
 {% block content %}
-<h1>NETS Systematic Review Project</h1>
+<h1>{{project.title}} Systematic Review Project</h1>
 <h2>Manual Document upload</h2>
 <br>
 
@@ -203,8 +203,10 @@
 
 {% block script %}
 <script type="text/javascript">
-
-$("#navigation").remove()
+{% if em.user %}
+{% else %}
+    $("#navigation").remove()
+{% endif %}
 
 $("#addAnother").on("click",function(){
     $(".authorForm.Add").show()

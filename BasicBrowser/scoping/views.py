@@ -1887,6 +1887,24 @@ def docrellist(request,sbsid,qid=0,q2id=0,q3id=0):
 
     return HttpResponse(template.render(context, request))
 
+def create_internal_et(request,pid):
+
+    p = Project.objects.get(pk=pid)
+
+    et, created = EmailTokens.objects.get_or_create(
+        user = request.user,
+        project = p,
+        email= request.user.email,
+        AU = request.user.username
+    )
+
+
+    return HttpResponseRedirect(reverse(
+        'scoping:add_doc_form', kwargs={
+            'authtoken': et.id
+        }
+    ))
+
 def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
     author_docs = None
     uf = None
@@ -1911,9 +1929,16 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
 
     if authtoken!=0:
         em = EmailTokens.objects.get(pk=authtoken)
-        p = em.category.project
+        if em.project is None:
+            em.project = em.category.project
+            em.save()
+        p = em.project
         pid = p.id
-        em.sname, em.initial = em.AU.split(',')
+        try:
+            em.sname, em.initial = em.AU.split(',')
+        except:
+            em.sname = em.AU
+            em.initial = ""
 
         author_docs = Doc.objects.filter(
             query__qtype='MN',
@@ -2113,184 +2138,11 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
         'afs': afs,
         'uf': uf,
         'techs': techs,
-        'doctechs': doctechs
+        'doctechs': doctechs,
+        'project': p
     }
     #return render_to_response('scoping/ext_doc_add_form.html',context)
     return HttpResponse(template.render(context, request))
-
-###########################################################
-## Manual docadd form
-def add_doc_form_bla(request,pid=0,authtoken=0,r=0):
-    author_docs = None
-    try:
-        project = Project.objects.get(pk=pid)
-    except:
-        project = None
-    if authtoken!=0:
-        em = EmailTokens.objects.get(pk=authtoken)
-        p = em.category.project
-        pid = p.id
-        em.sname, em.initial = em.AU.split(',')
-
-        author_docs = Doc.objects.filter(
-            query__qtype='MN',
-            query__upload_link=em
-        )
-        if author_docs.count()==0:
-            author_docs = False
-
-        template = loader.get_template('scoping/ext_doc_add.html')
-    else:
-        em = None
-        template = loader.get_template('scoping/doc_add.html')
-
-
-
-    basic_fields = [
-        {"path": "UT", "name": "Url", "ab": "UT","note": "This is used to uniquely identify the document"},
-        {"path": "title", "name": "Title", "ab": "TI", "note": "Enter the document's title"},
-        {"path": "PY", "name": "Publishing Year", "ab": "PY", "note": "Enter the year the document was published"},
-        {"path": "content", "name": "Abstract", "ab": "AB","note": "Enter the abstract of the document, or if it does not have an abstract, the first paragraph"},
-    ]
-
-    author_fields = []
-    for a in range(1,11):
-        author_fields.append({"path": "author__"+str(a), "name": "Author "+str(a)})
-
-    fields = []
-    if em is None:
-        for f in WoSArticle._meta.get_fields():
-            path = "wosarticle__"+f.name
-            if f.name !="doc" and f.name.upper() not in [x['ab'] for x in basic_fields]:
-                fields.append({"path": path, "name": f.verbose_name, "ab": f.name.upper()})
-
-    context = {
-        'fields': fields,
-        'query': query,
-        'basic_fields': basic_fields,
-        'author_fields': author_fields,
-        'author_docs': author_docs,
-        'techs': Technology.objects.filter(project=pid),
-        'em': em,
-        'r': r
-    }
-    return HttpResponse(template.render(context, request))
-
-## Manual docadd form HANDLER
-def do_add_doc(request, authtoken=0):
-
-    d = request.POST
-
-    tids = request.POST.getlist('technology[]',None)
-
-    ts = Technology.objects.filter(pk__in=tids)
-
-    t = ts.first()
-
-    p = t.project
-
-    if authtoken!=0:
-        et = EmailTokens.objects.get(pk=authtoken)
-        au = et.AU
-
-        q = Query(
-            title="uploaded_by_{}".format(au),
-            type="default",
-            text="uploaded_by_{}".format(authtoken)
-        )
-
-        q.database = "manual"
-        q.r_count = 1
-        q.technology = t
-        q.project = p
-        q.qtype='MN'
-        q.upload_link=et
-
-
-        q.save()
-
-    else:
-        # create new query
-        q = Query(
-            title="Manual add "+d['title'],
-            type="default",
-            text="Manually add "+d['title']+" at "+str(timezone.now()),
-            creator = request.user,
-            date = timezone.now(),
-            database = "manual",
-            r_count = 1,
-            technology=t,
-            qtype='MN'
-        )
-        q.save()
-
-
-    # create new doc
-    url, created = URLs.objects.get_or_create(url=d['UT'].strip())
-    surl = short_url.encode_url(url.id)
-    ut, created = UT.objects.get_or_create(UT=surl)
-    doc, created = Doc.objects.get_or_create(UT=ut)
-
-    if created:
-
-        doc.title=d['title'].strip()
-        doc.PY=d['PY'].strip()
-        doc.content=d['content'].strip()
-
-        doc.save()
-
-        article = WoSArticle(
-            doc=doc
-        )
-
-        article.ti=d['title']
-        article.py=d['PY']
-        article.ab=d['content']
-
-        pos = 0
-        for f in d:
-            # create new docauthors
-            if "author__" in f:
-                if len(d[f].strip()) > 0 :
-                    pos+=1
-                    if DocAuthInst.objects.filter(doc=doc,position=pos).count() == 1:
-                        dai = DocAuthInst.objects.get(doc=doc,position=pos)
-                    else:
-                        dai = DocAuthInst(doc=doc)
-                    dai.AU = d[f].strip()
-                    dai.position = pos
-                    dai.save()
-            # populate new wosarticle
-            if "wosarticle__" in f:
-                if len(d[f].strip()) > 0 :
-                    fn = f.split('__')[1]
-                    setattr(article,fn,d[f].strip())
-
-        article.save()
-
-    # Add doc to query
-    doc.query.add(q)
-    for t in ts:
-        doc.technology.add(t)
-
-    if authtoken!=0:
-        return HttpResponseRedirect(reverse('scoping:add_doc_form', kwargs={'authtoken': authtoken,'r':q.r_count}))
-    else:
-        return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'pid': p.id, 'qid': q.id}))
-
-
-from django.db.models.aggregates import Aggregate
-# class StringAgg(Aggregate):
-#     function = 'STRING_AGG'
-#     template = "%(function)s(%(expressions)s, '%(delimiter)s')"
-#
-#     def __init__(self, expression, delimiter, **extra):
-#         super(StringAgg, self).__init__(expression, delimiter=delimiter, **extra)
-#
-#     def convert_value(self, value, expression, connection, context):
-#         if not value:
-#             return ''
-#         return value
 
 from django.contrib.postgres.aggregates import StringAgg
 
@@ -3014,7 +2866,7 @@ Germany
         if s == 1:
             et.sent = True
             et.save()
-            time.sleep(15 + random.randrange(1,50,1)/10)
+            time.sleep(30 + random.randrange(1,50,1)/10)
 
     return HttpResponseRedirect(reverse('scoping:technology', kwargs={'tid': tid}))
 
