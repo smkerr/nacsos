@@ -487,18 +487,18 @@ def yearly_topic_term_scores(run_id):
     jobs = group(yearly_topic_term.s(dt,run_id) for dt in dt_ids)
     result = jobs.apply_async()
 
-    dtys = DynamicTopicYear.objects.filter(
-        run_id=run_id
-    )
-
-    yscores = dtys.values('PY').annotate(
-        ytotal=Sum('score')
-    )
-
-    for dty in dtys:
-        ytot = yscores.get(PY=dty.PY)['ytotal']
-        dty.year_share = dty.score/ytot
-        dty.save()
+    # dtys = DynamicTopicYear.objects.filter(
+    #     run_id=run_id
+    # )
+    #
+    # yscores = dtys.values('PY').annotate(
+    #     ytotal=Sum('score')
+    # )
+    #
+    # for dty in dtys:
+    #     ytot = yscores.get(PY=dty.PY)['ytotal']
+    #     dty.year_share = dty.score/ytot
+    #     dty.save()
 
 
 
