@@ -22,7 +22,7 @@
     function highlight(i) {
         piec.highlight(i);
     }
-    
+
     function unhighlight() {
         piec.unhighlight();
     }
@@ -32,7 +32,7 @@
     </script>
 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    
+
     <title>{{ doc.title }}</title>
 
 <link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
@@ -74,7 +74,7 @@
 				</tr>
 				{% if docs %}
 					{% for doc in docs %}
-					<tr class="list"><td id="{{ doc.title }}" onclick="window.location.href='/tmv_app/doc/{{ doc.UT }}'">{{ doc.title }}</td><tr>
+					<tr class="list"><td id="{{ doc.title }}" onclick="window.location.href='/tmv_app/doc/{{ doc.pk }}/{{run_id}}'">{{ doc.title }}</td><tr>
 					{% endfor %}
 				{% endif %}
 				</table>

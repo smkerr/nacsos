@@ -86,7 +86,8 @@ def author_detail(request, author_name, run_id):
         'author': author_name,
         'docs': documents,
         'topics': topics,
-        'pie_array': pie_array
+        'pie_array': pie_array,
+        'run_id': run_id
     }
 
     return HttpResponse(author_template.render(author_page_context))
