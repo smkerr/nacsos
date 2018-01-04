@@ -70,6 +70,10 @@ class DynamicTopic(models.Model):
     l5ys = models.FloatField(null=True)
     l1ys = models.FloatField(null=True)
 
+    wg_1 = models.FloatField(null=True)
+    wg_2 = models.FloatField(null=True)
+    wg_3 = models.FloatField(null=True)    
+
     def __unicode__(self):
         return str(self.title)
 

@@ -39,7 +39,7 @@
     <p style="text-align:left">
     {{ doc.docauthinst }}
     {% for au in authors %}
-	    <span>{{au.AF}} [{{au.institution}}];</span>
+	    <span>{{au.AF | safe }} [{{au.institution | safe}}];</span>
     {% endfor %}
     <p style="text-align:left">
         Author keywords: {{de | safe}}

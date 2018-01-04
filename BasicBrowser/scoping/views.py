@@ -3173,6 +3173,8 @@ def screen(request,qid,tid,ctype,d=0):
     ndocs = docs.count()
 
     authors = DocAuthInst.objects.filter(doc=doc)
+    for a in authors:
+        a.institution=highlight_words(a.institution,query)
     abstract = highlight_words(doc.content,query)
     title = highlight_words(doc.wosarticle.ti,query)
     if doc.wosarticle.de is not None:
@@ -3403,6 +3405,7 @@ def highlight_words(s,query):
             qwords = ["sustainab"]
     else:
         qwords = re.findall('\w+',query.text)
+        qwords = [q.lower() for q in qwords]
 
     nots = ["TS","AND","NOT","NEAR","OR","and","W"]
     transtable = {ord(c): None for c in string.punctuation + string.digits}

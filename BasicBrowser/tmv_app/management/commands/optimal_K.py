@@ -32,7 +32,7 @@ class Command(BaseCommand):
                 alpha=stat.alpha,
                 max_iterations=stat.max_iterations,
                 query=stat.query,
-                method='NM'
+                method=stat.method
             )
             s.save()
 
