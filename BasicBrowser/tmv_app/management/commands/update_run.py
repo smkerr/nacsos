@@ -34,18 +34,7 @@ class Command(BaseCommand):
 
 
         if stat.method == "DT":
-            update_topic_scores(parent_run_id)
-            update_dtopics(run_id)
-
-            pstat = RunStats.objects.get(run_id=parent_run_id)
-            pstat.topic_titles_current = False
-            pstat.save()
-            update_topic_titles(run_id)
-
-
-
             tops = Topic.objects.filter(run_id=parent_run_id)
-
             for t in tops:
                 try:
                     tpt = TopicDTopic.objects.filter(
@@ -57,6 +46,18 @@ class Command(BaseCommand):
                 except:
                     pass
 
+            update_topic_scores(parent_run_id)
+            update_dtopics(run_id)
+            update_ipcc_coverage(run_id)
+
+            pstat = RunStats.objects.get(run_id=parent_run_id)
+            pstat.topic_titles_current = False
+            pstat.save()
+            update_topic_titles(run_id)
+
+            yearly_topic_term_scores(run_id)
+            management.call_command('corr_topics',run_id)
+
         elif stat.method == "BD":
             update_bdtopics(run_id)
         else:
@@ -66,7 +67,3 @@ class Command(BaseCommand):
             update_ar_scores(run_id)
             update_ipcc_coverage(run_id)
             update_primary_topic(run_id)
-
-            yearly_topic_term_scores(run_id)
-
-            management.call_command('corr_topics',run_id)

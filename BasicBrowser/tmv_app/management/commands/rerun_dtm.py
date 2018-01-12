@@ -20,14 +20,14 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('run_id',type=int)
         parser.add_argument('K',type=int)
-        parser.add_argument('nWords',type=int,default=50)
-        parser.add_argument('fileDest',type=str,default='')
+        #parser.add_argument('nWords',type=int,default=50)
+        #parser.add_argument('fileDest',type=str,default='')
 
     def handle(self, *args, **options):
         parent_run_id = options['run_id']
         K = options['K']
-        nWords = options['nWords']
-        fileDest = options['fileDest']
+        nWords = 50 #options['nWords']
+        fileDest = ""#options['fileDest']
 
         parent_stat = RunStats.objects.get(pk=parent_run_id)
 

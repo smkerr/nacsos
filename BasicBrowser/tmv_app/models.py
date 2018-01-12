@@ -69,10 +69,13 @@ class DynamicTopic(models.Model):
     top_words = ArrayField(models.TextField(),null=True)
     l5ys = models.FloatField(null=True)
     l1ys = models.FloatField(null=True)
+    primary_wg = models.IntegerField(null=True)
+    ipcc_coverage = models.FloatField(null=True)
+    wg_prop = models.FloatField(null=True)
 
     wg_1 = models.FloatField(null=True)
     wg_2 = models.FloatField(null=True)
-    wg_3 = models.FloatField(null=True)    
+    wg_3 = models.FloatField(null=True)
 
     def __unicode__(self):
         return str(self.title)
@@ -85,6 +88,9 @@ class TimePeriod(models.Model):
     title = models.CharField(null=True, max_length=80)
     n = models.IntegerField()
     ys = ArrayField(models.IntegerField())
+
+    def __str__(self):
+        return str(self.title)
 
 class TimeDocTotal(models.Model):
     period = models.ForeignKey(TimePeriod)
@@ -107,6 +113,16 @@ class TopicDTopic(models.Model):
 class TopicCorr(models.Model):
     topic = models.ForeignKey('Topic',null=True)
     topiccorr = models.ForeignKey('Topic',null=True, related_name='Topiccorr')
+    score = models.FloatField(null=True)
+    ar = models.IntegerField(default=-1)
+    run_id = models.IntegerField(db_index=True)
+
+    def __unicode__(self):
+        return str(self.title)
+
+class DynamicTopicCorr(models.Model):
+    topic = models.ForeignKey('DynamicTopic',null=True)
+    topiccorr = models.ForeignKey('DynamicTopic',null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
     ar = models.IntegerField(default=-1)
     run_id = models.IntegerField(db_index=True)
@@ -144,6 +160,14 @@ class TopicARScores(models.Model):
     pgrowth = models.FloatField(null=True)
     pgrowthn = models.FloatField(null=True)
 
+class DynamicTopicARScores(models.Model):
+    topic = models.ForeignKey('DynamicTopic',null=True)
+    ar = models.ForeignKey('scoping.AR',null=True)
+    score = models.FloatField(null=True)
+    share = models.FloatField(null=True)
+    pgrowth = models.FloatField(null=True)
+    pgrowthn = models.FloatField(null=True)
+
 
 #################################################
 ## Separate topicyear for htopic
@@ -166,6 +190,8 @@ class DocTopic(models.Model):
     score = models.FloatField()
     scaled_score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
+
+
 
 class TopicTerm(models.Model):
     topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
@@ -272,6 +298,7 @@ class RunStats(models.Model):
     periods = models.ManyToManyField('TimePeriod')
 
     dthreshold = models.FloatField(default = 0.0005 )
+    dyn_win_threshold = models.FloatField(default = 0.1 )
 
     def save(self, *args, **kwargs):
         if not self.parent_run_id:

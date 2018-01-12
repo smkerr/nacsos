@@ -15,7 +15,7 @@
         <div id="pyGraph" height="600"></div><br>
     </div>
 
-<table width="100%">
+<table width="100%" >
   <td width="10%">
     <table class="dark">
     <tr class="title">
@@ -30,14 +30,29 @@
 
       <h1>Terms across all window topics</h1>
       <br>
-          <p>
-      <table>
+          <div style="align:left" class="explanation">
+              <p>Adjust threshold
+              <input type="range"
+                  id="dt_thresh"
+                  min=0.001
+                  max=0.5
+                  step=0.01
+                  value="{{stat.dyn_win_threshold}}"
+                  onchange="inputUpdate(value)"
+              />
+              <span><output
+                  id="out_dt_thresh"
+                  >{{stat.dyn_win_threshold}}</output>.
+              <br>Filter terms by the product of the term-window topic score and the window topic-dynamic topic scores.
+              </div>
+      <p>
+      <table class="sep">
       {% for y in ytterms %}
       <tr class="wtopic">
 
         <td>{{y.0.PY}}
           {% for tt in y %}
-          <td class="word" data-word="{{tt.term.title|lower}}">
+          <td class="word" style="background-color:rgba(255,0,0,{{tt.scaled_score}})" data-word="{{tt.term.title|lower}}">
             {{tt.term.title|lower}}
           </td>
           {% endfor %}
@@ -51,7 +66,7 @@
       <br>
           <p>
 
-    <table>
+    <table class="sep">
     {% for t in wtopics %}
 
     <tr class="wtopic">
@@ -59,7 +74,10 @@
       <td>{{t.score}}
       <td>{{t.year}}</td><td>{{t.title}}</td>
       {% for tt in t.tts %}
-      <td class="word" data-word="{{tt.title|lower}}">{{tt.title|lower}}
+      <td class="word"
+      data-word="{{tt.title|lower}}"
+      style="background-color:rgba(255,0,0,{{tt.scaled_score}})"
+      >{{tt.title|lower}}
       {% endfor %}
 
     </a>
@@ -79,11 +97,27 @@
 
 <script type="text/JavaScript">
 
+
+function inputUpdate(x) {
+    $('#out_dt_thresh').val(x)
+    $.ajax({
+        url: '{% url "tmv_app:adjust_threshold" stat.run_id "dyn_win_threshold" %}',
+        data: {
+            'value': x,
+        },
+        success: function(data) {
+            location.reload()
+        },
+    })
+}
+
+
+
 $(".word").on("click", function() {
   word = $(this).text().trim()
   words = $('[data-word="'+word+'"]')
-  $(".t1").removeClass("t1")
-  words.addClass("t1")
+  $(".selected").removeClass("selected")
+  words.addClass("selected")
 })
 
 var data = {{ wtvs|safe }};

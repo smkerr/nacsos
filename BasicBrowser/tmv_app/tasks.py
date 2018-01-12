@@ -126,7 +126,7 @@ def yearly_topic_term(topic_id, run_id):
             ytts = ytts.annotate(
                 dtopic_score = F('score') * F('topic__topicdtopic__score')
             ).filter(
-                dtopic_score__gt=0.01
+                dtopic_score__gt=0.001
             ).order_by('-dtopic_score')[:100]
         for ytt in ytts:
             dtt, created = DynamicTopicTerm.objects.get_or_create(

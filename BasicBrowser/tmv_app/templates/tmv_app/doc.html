@@ -103,7 +103,7 @@
 function inputUpdate(x) {
     $('#out_dt_thresh').val(x)
     $.ajax({
-        url: '{% url "tmv_app:adjust_threshold" run_id %}',
+        url: '{% url "tmv_app:adjust_threshold" run_id "dthreshold" %}',
         data: {
             'value': x,
         },

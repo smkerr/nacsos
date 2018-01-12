@@ -249,7 +249,12 @@ function drawgraph(graph,force) {
       function fade(opacity) {
           return function(d) {
               gtext = '<h3>Topic Selected:</h3>'
-              gtext += '<a href="/tmv_app/topic/'+d.id+'"><h2>'+d.title+'</h2></a>'
+              if ("{{stat.method}}"=="DT") {
+                  var method = "dynamic_topic"
+              } else {
+                  var method = "topic"
+              }
+              gtext += '<a href="/tmv_app/'+method+'/'+d.id+'"><h2>'+d.title+'</h2></a>'
               gtext += '<input type="hidden" id="topic_selected" value="'+d.id+'"'
               node.style("stroke-opacity", function(o) {
                   thisOpacity = isConnected(d, o) ? 1 : opacity;

@@ -151,10 +151,10 @@ var g = svg.append("g")
 
   var size = d3.scaleLinear()
       .domain([0, smax])
-      .range([0, 15]);
+      .range([5, 25]);
   var swidth = d3.scaleLinear()
       .domain([lmin, lmax])
-      .range([0.5, 2]);
+      .range([1, 4]);
 
   var link = svg.append("g")
     .attr("class", "links")

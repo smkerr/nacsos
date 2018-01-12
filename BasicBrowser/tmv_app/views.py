@@ -3,7 +3,7 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.template import Template, Context, RequestContext, loader
 from tmv_app.models import *
 from scoping.models import *
-from django.db.models import Q, F, Sum, Count, FloatField, Case, When, Value
+from django.db.models import Q, F, Sum, Count, FloatField, Case, When, Value, Max
 from django.shortcuts import *
 from django.forms import ModelForm
 import random, sys, datetime
@@ -129,49 +129,24 @@ def institution_detail(request, run_id, institution_name):
 
     return HttpResponse(institution_template.render(institution_page_context))
 
-def index(request):
-    template = loader.get_template('tmv_app/network.html')
-    run_id = find_run_id(request.session)
-
-    nodes = json.dumps(list(Topic.objects.filter(run_id=run_id).values('id','title','score')),indent=4,sort_keys=True)
-    links = TopicCorr.objects.filter(run_id=run_id,ar=-1).filter(score__gt=0.05,score__lt=1).annotate(
-        source=F('topic'),
-        target=F('topiccorr')
-    )
-    links = json.dumps(list(links.values('source','target','score')),indent=4,sort_keys=True)
-    context = {
-        "nodes":nodes,
-        "links":links
-    }
-
-    return HttpResponse(template.render(context, request))
-
 def network(request,run_id):
     ar = -1
+    stat = RunStats.objects.get(pk=run_id)
+    if stat.method=="DT":
+        topics = DynamicTopic
+        topiccorrs = DynamicTopicCorr
+    else:
+        topics = Topic
+        topiccorrs = TopicCorr
     template = loader.get_template('tmv_app/network.html')
-    nodes = Topic.objects.filter(run_id=run_id)
+    nodes = topics.objects.filter(run_id=run_id)
     nodes = nodes.annotate(
                 arscore = F('score')
             )
 
-    for n in nodes.filter(primary_wg__isnull=True):
-        wgs = list(IPCCRef.objects.filter(
-            doc__doctopic__topic=n
-        ).values('wg__wg').annotate(
-            tscore = models.Sum('doc__doctopic__score')
-        ))
-        try:
-            pwg = max(wgs, key=lambda x:x['tscore'])
-            n.primary_wg =  pwg['wg__wg']
-            total = sum(wg['tscore'] for wg in wgs)
-            n.wg_prop = pwg['tscore'] / total
-        except:
-            n.primary_wg = None
-        n.save()
-
     nodes = nodes.values('id','title','arscore','score')
     nodes = json.dumps(list(nodes),indent=4,sort_keys=True)
-    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1,ar=ar).annotate(
+    links = topiccorrs.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1,ar=ar).annotate(
         source=F('topic'),
         target=F('topiccorr')
     )
@@ -189,63 +164,52 @@ def return_corrs(request):
     cor = float(request.GET.get('cor',None))
     run_id = int(request.GET.get('run_id',None))
     ar = int(request.GET.get('ar',None))
-    nodes = Topic.objects.filter(run_id=run_id)
+    stat = RunStats.objects.get(pk=run_id)
+    if stat.method=="DT":
+        topics = DynamicTopic
+        topiccorrs = DynamicTopicCorr
+        tars = DynamicTopicARScores
+        field = 'dynamictopicarscores__score'
+    else:
+        topics = Topic
+        topiccorrs = TopicCorr
+        tars = TopicARScores
+        field = 'topicarscores__score'
+    nodes = topics.objects.filter(run_id=run_id)
     if ar > -1:
         a = AR.objects.get(ar=ar)
-        nodes = Topic.objects.filter(run_id=run_id)
-        if TopicARScores.objects.filter(topic=nodes[0],ar=a).count() == 0:
+        nodes = topics.objects.filter(run_id=run_id)
+
+        if stat.method=="DT":
             nodes = nodes.annotate(
                 arscore = Sum(
                     Case(When(
-                        doctopic__doc__PY__gte=a.start,
-                        doctopic__doc__PY__lte=a.end,
-                        then=F('doctopic__score')),
-                        #default=0,
+                        dynamictopicarscores__ar=a,
+                        then=F(field)),
                         output_field=models.FloatField()
                     )
                 )
             )
-            for node in nodes:
-                tar = TopicARScores(
-                    topic=node,
-                    ar=a,
-                    score=node.arscore
-                )
-                tar.save()
         else:
             nodes = nodes.annotate(
                 arscore = Sum(
                     Case(When(
                         topicarscores__ar=a,
-                        #doctopic__doc__PY__lte=a.end,
-                        then=F('topicarscores__score')),
-                        #default=0,
+                        then=F(field)),
                         output_field=models.FloatField()
                     )
                 )
             )
-            for node in nodes:
-                node.arscore = TopicARScores.objects.get(topic=node,ar=a).score
     else:
         nodes = nodes.annotate(
             arscore = F('score')
         )
-        for n in nodes.filter(primary_wg__isnull=True):
-            wgs = list(IPCCRef.objects.filter(
-                doc__doctopic__topic=n
-            ).values('wg__wg').annotate(
-                tscore = models.Sum('doc__doctopic__score')
-            ))
-            try:
-                pwg = max(wgs, key=lambda x:x['tscore'])
-                n.primary_wg =  pwg['wg__wg']
-                total = sum(wg['tscore'] for wg in wgs)
-                n.wg_prop = pwg['tscore'] / total
-            except:
-                n.primary_wg = None
-            n.save()
     nodes = list(nodes.values('id','title','score','arscore'))
-    links = TopicCorr.objects.filter(run_id=run_id).filter(score__gt=cor,score__lt=1,ar=ar).annotate(
+    links = topiccorrs.objects.filter(run_id=run_id).filter(
+        score__gt=cor,
+        score__lt=1,
+        ar=ar
+    ).annotate(
         source=F('topic'),
         target=F('topiccorr')
     )
@@ -358,10 +322,26 @@ def dynamic_topic_detail(request,topic_id):
         topic=topic,
         PY__isnull=False
     )
+
+    m = tts.aggregate(models.Max('score'))['score__max']
+    if m is None:
+        m = 0
+    min = stat.dyn_win_threshold
+
     for py in tts.distinct('PY') \
         .order_by('PY').values_list('PY',flat=True):
-        ytts = tts.filter(PY=py).order_by('-score')[:10]
-        ytterms.append(ytts)
+        ytts = tts.filter(
+            PY=py,
+            score__gt=stat.dyn_win_threshold
+        ).order_by('-score')[:10]
+
+        for t in ytts:
+            #t.scaled_score=t.score/m
+            t.scaled_score=np.log(1+t.score)/np.log(1+m)
+
+
+        if ytts.count() > 0:
+            ytterms.append(ytts)
 
     #x = y
 
@@ -377,17 +357,25 @@ def dynamic_topic_detail(request,topic_id):
     ).distinct().order_by('year')
 
     for t in wtopics:
-        if t.top_words is not None:
+        #if t.top_words is not None:
+        if "x" is "y":
             t.tts = t.top_words
         else:
             t.tts = Term.objects.filter(
                 topicterm__topic=t,
                 #run_id=run_id,
                 topicterm__score__gt=0.00001
-            ).order_by('-topicterm__score')[:10]
+            ).order_by('-topicterm__score')[:10].annotate(
+                score=F('topicterm__score')
+            )
+
         score = TopicDTopic.objects.get(
             topic=t,dynamictopic=topic
         ).score
+
+        for term in t.tts:
+            tot_score = term.score*score
+            term.scaled_score = np.log(1+tot_score)/np.log(1+m)
         t.score = round(score,2)
 
     docs = DocTopic.objects.filter(
@@ -395,7 +383,8 @@ def dynamic_topic_detail(request,topic_id):
         #run_id=run_id,
         topic__topicdtopic__dynamictopic=topic,
         topic__topicdtopic__score__gt=0.05,
-        score__gt=0.05
+        score__gt=0.05#,
+        #doc__ipccref__isnull=False
     )
 
     docs = docs.annotate(
@@ -428,6 +417,7 @@ def dynamic_topic_detail(request,topic_id):
 
     context = {
         'project': stat.query.project,
+        'stat': stat,
         'run_id': run_id,
         'topic': topic,
         'topicterms': topicterms,
@@ -462,44 +452,6 @@ def dtopic_detail(request,topic_id):
     }
 
     return HttpResponse(template.render(context))
-
-def yearly_topic_term_scores(run_id):
-
-    stat=RunStats.objects.get(pk=run_id)
-    if stat.parent_run_id is not None:
-        parent_run_id = stat.parent_run_id
-    else:
-        parent_run_id = run_id
-
-    ytds = DocTopic.objects.filter(
-        run_id=parent_run_id
-    ).values('topic__year').annotate(
-        dtopic_score = F('score') * F('topic__topicdtopic__score')
-    ).annotate(
-        yscore = Sum('dtopic_score')
-    )
-
-
-    dt_ids = DynamicTopic.objects.filter(
-        run_id=run_id#,
-        #dynamictopicyear__isnull=True
-    ).values_list('id',flat=True)
-
-    jobs = group(yearly_topic_term.s(dt,run_id) for dt in dt_ids)
-    result = jobs.apply_async()
-
-    # dtys = DynamicTopicYear.objects.filter(
-    #     run_id=run_id
-    # )
-    #
-    # yscores = dtys.values('PY').annotate(
-    #     ytotal=Sum('score')
-    # )
-    #
-    # for dty in dtys:
-    #     ytot = yscores.get(PY=dty.PY)['ytotal']
-    #     dty.year_share = dty.score/ytot
-    #     dty.save()
 
 
 
@@ -795,7 +747,15 @@ def network_wg(request, run_id, t=5, f=100,top=0):
 
     template = loader.get_template('tmv_app/network_wg.html')
 
-    nodes = Topic.objects.filter(run_id=run_id)
+    stat = RunStats.objects.get(pk=run_id)
+    if stat.method =="DT":
+        nodes = DynamicTopic.objects.filter(run_id=run_id)
+        tc = DynamicTopicCorr
+        topic_type = DynamicTopic
+    else:
+        nodes = Topic.objects.filter(run_id=run_id)
+        tc = TopicCorr
+        topic_type = Topic
 
     for n in nodes.filter(primary_wg__isnull=True):
         wgs = list(IPCCRef.objects.filter(
@@ -818,10 +778,27 @@ def network_wg(request, run_id, t=5, f=100,top=0):
 
     if int(top) != 0:
         if top < 0:
-            topic = Topic.objects.filter(
+            topic = topic_type.objects.filter(
                 run_id=run_id,
                 primary_wg=abs(top)
-            ).annotate(
+            )
+
+            if stat.method=="DT":
+                topic = topic.annotate(
+                    links = models.Sum(
+                        models.Case(
+                            models.When(
+                                dynamictopiccorr__score__gt=t,
+                                dynamictopiccorr__ar=ar,
+                                then=1
+                            ),
+                            default=0,
+                            output_field=models.IntegerField()
+                        )
+                    )
+                ).order_by('-score').first()
+            else:
+                topic = topic.annotate(
                 links = models.Sum(
                     models.Case(
                         models.When(
@@ -833,12 +810,20 @@ def network_wg(request, run_id, t=5, f=100,top=0):
                 )
             ).order_by('-score').first()
         else:
-            topic = Topic.objects.get(pk=int(top))
-        corrs = list(Topic.objects.filter(
-            topiccorr__topiccorr=topic,
-            topiccorr__score__gt=t,
-            topiccorr__ar=ar
-        ).values_list('id',flat=True))
+            topic = topic_type.objects.get(pk=int(top))
+
+        if stat.method!="DT":
+            corrs = list(topic_type.objects.filter(
+                topiccorr__topiccorr=topic,
+                topiccorr__score__gt=t,
+                topiccorr__ar=ar
+            ).values_list('id',flat=True))
+        else:
+            corrs = list(topic_type.objects.filter(
+                dynamictopiccorr__topiccorr=topic,
+                dynamictopiccorr__score__gt=t,
+                dynamictopiccorr__ar=ar
+            ).values_list('id',flat=True))
         top_id = topic.id
     else:
         top_id = 0
@@ -860,7 +845,7 @@ def network_wg(request, run_id, t=5, f=100,top=0):
 
     #x = y
     nodes = json.dumps(nodes,indent=4,sort_keys=True)
-    links = TopicCorr.objects.filter(run_id=run_id).filter(
+    links = tc.objects.filter(run_id=run_id).filter(
         score__gt=t,
         score__lt=1,
         ar=ar
@@ -983,10 +968,10 @@ def doc_detail(request, doc_id, run_id):
 
     return HttpResponse(template.render(request=request, context=context))
 
-def adjust_threshold(request,run_id):
-    value = request.GET.get('value',None)
+def adjust_threshold(request,run_id,what):
+    value = float(request.GET.get('value',None))
     stat = RunStats.objects.get(run_id=run_id)
-    stat.dthreshold = value
+    setattr(stat,what,value)
     stat.save()
     response = 0
     return HttpResponse(response)

@@ -8,32 +8,41 @@ import pandas as pd
 
 def compare_topic_queryset(runs):
 
-    stat = runs.first()
-    if stat.method == "DT":
-        dynamic = True
-    else:
-        dynamic = False
-
     col1s = []
     col2s = []
     ss = []
     scols = []
 
-    runs = runs.order_by('K').values_list('run_id',flat=True)
+    stat = runs.first()
+
+    if runs.count() == 1 and runs.first().method=="DT":
+        windows = True
+        runs = stat.periods.all().order_by('n')
+    else:
+        windows = False
+        runs = runs.order_by('K').values_list('run_id',flat=True)
 
     for i in range(1,len(runs)):
-        s1 = RunStats.objects.get(pk=runs[i-1])
-        s2 = RunStats.objects.get(pk=runs[i])
 
-        if s1.method=="DT":
-            topics1 = DynamicTopic.objects.filter(run_id=runs[i-1])
-        else:
-            topics1 = Topic.objects.filter(run_id=runs[i-1])
+        if windows:
+            s1 = runs[i-1]
+            s2 = runs[i]
+            topics1 = Topic.objects.filter(run_id=stat.parent_run_id,period=s1)
+            topics2 = Topic.objects.filter(run_id=stat.parent_run_id,period=s2)
 
-        if s2.method=="DT":
-            topics2 = DynamicTopic.objects.filter(run_id=runs[i])
         else:
-            topics2 = Topic.objects.filter(run_id=runs[i])
+            s1 = RunStats.objects.get(pk=runs[i-1])
+            s2 = RunStats.objects.get(pk=runs[i])
+
+            if s1.method=="DT":
+                topics1 = DynamicTopic.objects.filter(run_id=runs[i-1])
+            else:
+                topics1 = Topic.objects.filter(run_id=runs[i-1])
+
+            if s2.method=="DT":
+                topics2 = DynamicTopic.objects.filter(run_id=runs[i])
+            else:
+                topics2 = Topic.objects.filter(run_id=runs[i])
 
 
 
@@ -41,6 +50,7 @@ def compare_topic_queryset(runs):
         df = pd.DataFrame.from_dict(list(topics2.values('title','score')))
         df2 = pd.DataFrame.from_dict([{'title': 'None','score': 0}])
         df = df.append(df2)
+
         col1 = "run_{}_topics_{}".format(runs[i-1],topics1.count())
         scol = "scores_{}".format(runs[i])
         bscol = "scores_{}".format(runs[i-1])
@@ -191,6 +201,31 @@ def update_bdtopics(run_id):
             topic.title = new_topic_title
             topic.save()
 
+def yearly_topic_term_scores(run_id):
+
+    stat=RunStats.objects.get(pk=run_id)
+    if stat.parent_run_id is not None:
+        parent_run_id = stat.parent_run_id
+    else:
+        parent_run_id = run_id
+
+    ytds = DocTopic.objects.filter(
+        run_id=parent_run_id
+    ).values('topic__year').annotate(
+        dtopic_score = F('score') * F('topic__topicdtopic__score')
+    ).annotate(
+        yscore = Sum('dtopic_score')
+    )
+
+
+    dt_ids = DynamicTopic.objects.filter(
+        run_id=run_id#,
+        #dynamictopicyear__isnull=True
+    ).values_list('id',flat=True)
+
+    jobs = group(yearly_topic_term.s(dt,run_id) for dt in dt_ids)
+    result = jobs.apply_async()
+
 def update_dtopics(run_id):
     stats = RunStats.objects.get(pk=run_id)
     if stats.parent_run_id is not None:
@@ -320,15 +355,6 @@ def update_topic_scores(session):
         stats.topic_scores_current = True
         stats.save()
 
-# class TopicARScores(models.Model):
-#     topic = models.ForeignKey('Topic',null=True)
-#     ar = models.ForeignKey('scoping.AR',null=True)
-#     score = models.FloatField(null=True)
-#     share = models.FloatField(null=True)
-#     pgrowth = models.FloatField(null=True)
-#     pgrowthn = models.FloatField(null=True)
-
-
 def update_ar_scores(run_id):
     stat = RunStats.objects.get(pk=run_id)
     for ar in AR.objects.all().order_by('ar'):
@@ -382,29 +408,123 @@ def update_ar_scores(run_id):
         )
 
 def update_ipcc_coverage(run_id):
-    runstat = RunStats.objects.get(pk=run_id)
-    dts = DocTopic.objects.filter(
-        run_id=run_id,
-        doc__PY__lt=2014,
-        score__gt=runstat.dthreshold
-    ).values('topic_id')
 
-    dts = dts.annotate(
-        ipcc = models.Sum(
-            models.Case(
-                models.When(doc__ipccref__isnull=False,then=F('score')),default=0, output_field=models.FloatField()
-            )
-        ),
-        no_ipcc = models.Sum(
-            models.Case(
-                models.When(doc__ipccref__isnull=True,then=F('score')),default=0, output_field=models.FloatField()
+    wgs = [
+        {"WG":1, "score": 0},
+        {"WG":2, "score": 0},
+        {"WG":3, "score": 0}
+    ]
+    runstat = RunStats.objects.get(pk=run_id)
+    if runstat.method=="DT":
+        dts = DocTopic.objects.filter(
+            run_id=run_id,
+            doc__PY__lt=2014,
+            score__gt=runstat.dthreshold,
+            topic__topicdtopic__dynamictopic__run_id=run_id,
+            topic__topicdtopic__score__gt=runstat.dthreshold
+        ).values('topic__topicdtopic__dynamictopic__id')
+
+        dts = dts.annotate(
+            ipcc = models.Sum(
+                models.Case(
+                    models.When(
+                        doc__ipccref__isnull=False,
+                        then=F('score')*F('topic__topicdtopic__score')
+                    ),
+                    default=0,
+                    output_field=models.FloatField()
+                )
+            ),
+            no_ipcc = models.Sum(
+                models.Case(
+                    models.When(
+                        doc__ipccref__isnull=True,
+                        then=F('score')*F('topic__topicdtopic__score')
+                    ),
+                    default=0,
+                    output_field=models.FloatField()
+                )
             )
         )
-    )
-    for dt in dts:
-        t = Topic.objects.get(pk=dt['topic_id'])
-        t.ipcc_coverage = dt['ipcc'] / (dt['ipcc'] + dt['no_ipcc'])
-        t.save()
+        for dt in dts:
+            t = DynamicTopic.objects.get(
+                pk=dt['topic__topicdtopic__dynamictopic__id']
+            )
+            t.ipcc_coverage = dt['ipcc'] / (dt['ipcc'] + dt['no_ipcc'])
+            t.save()
+
+        for topic in DynamicTopic.objects.filter(run_id=run_id):
+            tdocs = Doc.objects.filter(
+                doctopic__topic__topicdtopic__dynamictopic=topic,
+                doctopic__topic__topicdtopic__score__gt=0.05,
+                doctopic__score__gt=0.05
+            )
+
+            tdocs = tdocs.annotate(
+                topic_combination = F('doctopic__score') * F('doctopic__topic__topicdtopic__score')
+            )
+
+
+            for wg in wgs:
+                wgdocs = tdocs.filter(ipccref__wg__wg=wg["WG"])
+                if wgdocs.count() == 0:
+                    wg['score'] = 0
+                else:
+                    wg['score'] = wgdocs.aggregate(
+                        s = Sum('topic_combination')
+                    )['s']
+            maxwg =  max(wgs, key=lambda x:x['score'])
+            tscore = sum(x['score'] for x in wgs)
+            if tscore==0:
+                tscore=1
+            topic.wg_1 = wgs[0]['score'] / tscore
+            topic.wg_2 = wgs[1]['score'] / tscore
+            topic.wg_3 = wgs[2]['score'] / tscore
+            topic.primary_wg = maxwg['WG']
+            #topic.wg_prop = maxwg['score'] / tscore
+            topic.save()
+    else:
+        dts = DocTopic.objects.filter(
+            run_id=run_id,
+            doc__PY__lt=2014,
+            score__gt=runstat.dthreshold
+        ).values('topic_id')
+
+        dts = dts.annotate(
+            ipcc = models.Sum(
+                models.Case(
+                    models.When(doc__ipccref__isnull=False,then=F('score')),default=0, output_field=models.FloatField()
+                )
+            ),
+            no_ipcc = models.Sum(
+                models.Case(
+                    models.When(doc__ipccref__isnull=True,then=F('score')),default=0, output_field=models.FloatField()
+                )
+            )
+        )
+        for dt in dts:
+            t = Topic.objects.get(pk=dt['topic_id'])
+            t.ipcc_coverage = dt['ipcc'] / (dt['ipcc'] + dt['no_ipcc'])
+            t.save()
+
+        for topic in Topic.objects.filter(run_id=run_id):
+            tdocs = Doc.objects.filter(doctopic__topic=topic,doctopic__score__gt=runstat.dthreshold)
+            for wg in wgs:
+                wgdocs = tdocs.filter(ipccref__wg__wg=wg["WG"])
+                if wgdocs.count() == 0:
+                    wg['score'] = 0
+                else:
+                    wg['score'] = wgdocs.aggregate(s = Sum('doctopic__score'))['s']
+            maxwg =  max(wgs, key=lambda x:x['score'])
+            tscore = sum(x['score'] for x in wgs)
+            if tscore==0:
+                tscore=1
+            topic.wg_1 = wgs[0]['score'] / tscore
+            topic.wg_2 = wgs[1]['score'] / tscore
+            topic.wg_3 = wgs[2]['score'] / tscore
+            topic.primary_wg = maxwg['WG']
+            topic.wg_prop = maxwg['score'] / tscore
+            topic.save()
 
 def update_primary_topic(run_id):
     return None
@@ -412,7 +532,10 @@ def update_primary_topic(run_id):
     docs = Doc.objects.filter(query=runstat.query)
     docs = docs.filter(ipccref__isnull=False)
     for d in docs.iterator():
-        t = Topic.objects.filter(doctopic__doc=d,run_id=run_id).order_by('-doctopic__score').first()
+        t = Topic.objects.filter(
+            doctopic__doc=d,
+            run_id=run_id
+        ).order_by('-doctopic__score').first()
         if t is not None:
             d.primary_topic.add(t)
 

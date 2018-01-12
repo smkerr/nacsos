@@ -51,10 +51,11 @@ div.explanation {
 .wtopic {
     background-color: white;
 		outline: 3px solid #FFE5CC;
+        cursor: pointer;
 }
 
 tr.wtopic td {
-	padding: 10px !important;
+	padding: 5px 10px !important;
 }
 
 .rotate {
@@ -694,10 +695,26 @@ table#xscale {
 	width: 100%;
 }
 
+table.sep {
+    border-collapse: separate !important;
+}
+
+.word {
+    border-style: inset !important;
+    border-color: transparent !important;
+    border-width: 8px 5px !important;
+}
+
+.word.selected {
+    border-color: black !important;
+}
+
 
 .t1 {
 	background-color: #fbb4ae;
 }
+
+
 
 .t2 {
 	background-color: #b3cde3;

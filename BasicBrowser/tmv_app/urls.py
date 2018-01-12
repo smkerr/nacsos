@@ -46,7 +46,7 @@ urlpatterns = [
 
     url(r'^queries$', login_required(queries), name='queries'),
 
-    url(r'^adjust_threshold/(?P<run_id>\d+)/$', login_required(adjust_threshold), name='adjust_threshold'),
+    url(r'^adjust_threshold/(?P<run_id>\d+)/(?P<what>.+)$', login_required(adjust_threshold), name='adjust_threshold'),
 
     url(r'^update/(?P<run_id>\d+)$', login_required(update_run), name='update'),
     url(r'^runs/apply/(?P<new_run_id>\d+)$', login_required(apply_run_filter)),
