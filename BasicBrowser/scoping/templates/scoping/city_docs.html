@@ -23,7 +23,7 @@
 
 {% for d in docs %}
 <p>
-{{d.title}} [<a href="{% url 'scoping:document' d.pk %}">Link</a>]
+{{d.title}} [<a href="{% url 'scoping:document' project.id d.pk %}">Link</a>]
 
 {% endfor %}
 

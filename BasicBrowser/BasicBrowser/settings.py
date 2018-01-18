@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'debug_toolbar',
     'cities',
+    'parliament',
     'django_tables2',
 ]
 

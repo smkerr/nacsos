@@ -2916,7 +2916,8 @@ def cities(request,qid):
     template = loader.get_template('scoping/cities.html')
     query = Query.objects.get(pk=qid)
     context = {
-        'query':query
+        'query':query,
+        'project': query.project
     }
     return HttpResponse(template.render(context, request))
 
@@ -2943,6 +2944,8 @@ def city_data(request,qid):
 def city_docs(request,qid):
     template = loader.get_template('scoping/city_docs.html')
     place = request.GET.get('name',None)
+    query = Query.objects.get(pk=qid)
+    run_id = RunStats.objects.filter(query=query).last().run_id
     badcities = ['Metro','Most','Sim','Young','University','Green','Much','Mobile','Federal','Along','Of','Laplace']
     city = City.objects.filter(
         alt_names__name__unaccent=place
@@ -2954,7 +2957,8 @@ def city_docs(request,qid):
 
     topics = DocTopic.objects.filter(
         doc__cities=city,
-        scaled_score__gt=0.00002,run_id=96
+        scaled_score__gt=0.00002,
+        run_id=run_id
     )
 
     topics = topics.annotate(total=(Sum('scaled_score')))
@@ -2974,7 +2978,8 @@ def city_docs(request,qid):
         'city': city,
         'ndocs': cdocs.count(),
         'pie_array': pie_array,
-        'topics': topics
+        'topics': topics,
+        'project': query.project
     }
     return HttpResponse(template.render(context, request))
 
