@@ -952,6 +952,15 @@ def doc_detail(request, doc_id, run_id):
                 wt = t
         words.append({'title': word, 'topic':"t"+str(wt)})
 
+    if doc.wosarticle.de is not None:
+        de = doc.wosarticle.de
+    else:
+        de = None
+    if doc.wosarticle.kwp is not None:
+        kwp = doc.wosarticle.kwp
+    else:
+        kwp = None
+
     context = {
         'doc': doc,
         'topics': topics,
@@ -961,7 +970,9 @@ def doc_detail(request, doc_id, run_id):
         'run_id': run_id,
 
         'dt_threshold': dt_threshold,
-        'ipccrefs': ipccrefs
+        'ipccrefs': ipccrefs,
+        'de': de,
+        'kwp': kwp
 
     }
 

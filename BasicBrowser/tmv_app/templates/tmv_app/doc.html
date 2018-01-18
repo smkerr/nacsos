@@ -49,6 +49,10 @@
                 <p>
                     DOI: <a href="https://dx.doi.org/{{dox.wosarticle.di}}">{{ doc.wosarticle.di }}</a>
                 </p>
+                <p style="text-align:left">
+                    Author keywords: {{de | safe}}
+                <p style="text-align:left">
+                    WoS Keywords Plus: {{kwp | safe}}
                 <p>
                     IPCC Citations:
                     {% if ipccrefs %}

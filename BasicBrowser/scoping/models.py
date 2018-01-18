@@ -235,6 +235,8 @@ class Doc(models.Model):
     source = models.TextField(null=True)
     wos = models.BooleanField(default=False)
     scopus = models.BooleanField(default=False)
+    uploaded = models.BooleanField(default=False)
+
     uploader = models.ForeignKey(User, null=True, related_name="uploaded_docs", on_delete=models.CASCADE, verbose_name="Uploader")
     date = models.DateTimeField(null=True)
     ymentions = ArrayField(models.IntegerField(),null=True)
