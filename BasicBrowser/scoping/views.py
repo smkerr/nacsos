@@ -564,7 +564,10 @@ def doquery(request, pid):
         time.sleep(1)
 
     # run "scrapeQuery.py" on the text file in the background
-    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
+    if request.user.username=="galm":
+        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", qdb, fname])
+    else:
+        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
 
     return HttpResponseRedirect(reverse(
         'scoping:querying',
@@ -1517,6 +1520,7 @@ def query_tm(request,qid):
             return HttpResponseRedirect(reverse('scoping:query_tm_manager', kwargs={'qid': qid}))
 
         else:
+            print(form.errors)
             print("INVALID")
     # if a GET (or any other method) we'll create a blank form
     else:
@@ -1526,7 +1530,7 @@ def query_tm(request,qid):
         'query': query,
         'form': form,
         'project': query.project,
-        'fields_1': ['min_freq','max_df','max_features','limit','ngram'],
+        'fields_1': ['min_freq','max_df','max_features','limit','ngram','fulltext'],
         'fields_2': ['K','alpha','max_iterations','db'],
         'fields_3': ['method']
     }

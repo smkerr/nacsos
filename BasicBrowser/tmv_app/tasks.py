@@ -194,7 +194,7 @@ def do_nmf(run_id):
 and {} topics\n'.format(qid, docs.count(),K))
 
     # Get the docs into lists
-    abstracts, docsizes, ids = proc_docs(docs, stoplist)
+    abstracts, docsizes, ids = proc_docs(docs, stoplist, stat.fulltext)
 
     #############################################
     # Use tf-idf features for NMF.

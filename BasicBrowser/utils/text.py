@@ -18,9 +18,12 @@ class snowball_stemmer(object):
         return [self.stemmer.stem(t) for t in tokenize(doc)]
 
 
-def proc_docs(docs, stoplist):
+def proc_docs(docs, stoplist, fulltext=False):
     docs = [x for x in docs.iterator() if x.word_count() > 10]
-    abstracts = [x.content.split("Copyright (C)")[0] for x in docs]
+    if fulltext:
+        abstracts = [x.fulltext.split("Copyright (C)")[0] for x in docs]
+    else:
+        abstracts = [x.content.split("Copyright (C)")[0] for x in docs]
     abstracts = [re.split("\([C-c]\) [1-2][0-9]{3} Elsevier",x)[0] for x in abstracts]
     abstracts = [x.split("Published by Elsevier")[0] for x in abstracts]
     abstracts = [x.split("Copyright. (C)")[0] for x in abstracts]

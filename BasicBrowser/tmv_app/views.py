@@ -944,7 +944,11 @@ def doc_detail(request, doc_id, run_id):
 
 
     words = []
-    for word in doc.content.split():
+    if stat.fulltext:
+        word_hoard = doc.fulltext.split()
+    else:
+        word_hoard = doc.content.split()
+    for word in word_hoard:
         wt = ""
         for t in reversed(range(1,ntopic+1)):
             if snowball_stemmer.stem(word) in topicwords[t] or word in topicwords[t]:

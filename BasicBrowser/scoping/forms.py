@@ -148,6 +148,7 @@ class TopicModelForm(forms.ModelForm):
             'max_topics',
             'term_count',
             'dthreshold',
-            'periods'
+            'dyn_win_threshold',
+            'periods',
         )
         #fields = ('K','alpha','limit','ngram','min_freq','max_df','max_features','max_iterations')
