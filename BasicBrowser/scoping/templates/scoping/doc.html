@@ -47,6 +47,11 @@
         WoS Keywords Plus: {{kwp | safe}}
     <p style="text-align:left">
       Document ID: <a href="{% url 'scoping:document' query.project.id doc.id %}">{{doc.pk}}</a>
+    {% if doc.docfile %}
+        <p style="text-align;left">
+            PDF: <a href="{% url 'scoping:download_pdf' doc.docfile.id %}">View</a>
+        </p>
+    {% endif %}
     <p style="text-align:left">
     {{ abstract | safe }}
     </div>

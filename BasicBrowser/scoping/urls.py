@@ -94,6 +94,7 @@ urlpatterns = [
 
 
     url(r'^download/(?P<qid>[0-9]+)', views.download, name='download'),
+    url(r'^download_pdf/(?P<id>[0-9]+)', views.download_pdf, name='download_pdf'),    
     url(r'^delete/(?P<thing>[a-zA-Z]+)/(?P<thingid>[0-9]+)$', views.delete, name='delete'),
     url(r'^manual_add/(?P<pid>[0-9]+)$', views.create_internal_et, name='manual_add_doc_form'),
 

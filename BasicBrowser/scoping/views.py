@@ -3238,6 +3238,16 @@ def screen(request,qid,tid,ctype,d=0):
     return HttpResponse(template.render(context, request))
 
 @login_required
+def download_pdf(request,id):
+    f = DocFile.objects.get(pk=id)
+    filename= f.file.name
+    with open("/var/www/tmv/BasicBrowser/media/{}".format(filename),'rb') as pdf:
+        response = HttpResponse(pdf.read(), content_type='application/pdf')
+        response['Content-Disposition'] = 'inline;filename=some_file.pdf'
+        return response
+
+
+@login_required
 def do_review(request):
 
     import time
