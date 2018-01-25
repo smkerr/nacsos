@@ -183,7 +183,10 @@ def do_nmf(run_id):
     stat.status = 1
     stat.save()
 
-    docs = Doc.objects.filter(query=qid,content__iregex='\w')
+    if stat.fulltext:
+        docs = Doc.objects.filter(query=qid,fulltext__iregex='\w')
+    else:
+        docs = Doc.objects.filter(query=qid,content__iregex='\w')
 
     # if we are limiting, probably for testing, then do that
     if limit > 0:
