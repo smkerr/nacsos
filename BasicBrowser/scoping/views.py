@@ -1696,6 +1696,7 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
     wos_fields = []
     basic_field_names = ['Title', 'Abstract', 'Year'] #, str(request.user)]
 
+    relevance_fields.append({"path": "docfile__id", "name": "PDF"})
     relevance_fields.append({"path": "tech_technology", "name": "Technology"})
     relevance_fields.append({"path": "tech_innovation", "name": "Innovation"})
     relevance_fields.append({"path": "relevance_netrelevant", "name": "NETs relevant"})
@@ -2376,6 +2377,7 @@ def sortdocs(request):
         filt_docs = filt_docs.annotate(
             wosarticle__doc=Concat(V('<a href="/scoping/document/'+str(p.id)+'/'),'pk',V('">'),'pk',V('</a>'))
         )
+    #if
     #x = y
     for i in range(len(f_fields)):
         if "tag__title" in f_fields[i]:
@@ -2543,6 +2545,8 @@ def sortdocs(request):
                         adoc = [x.text for x in Doc.objects.get(pk=d['pk']).note_set.filter(
                             project=query.project
                         )]
+                    if "docfile__" in mult_fields_tuple[m]:
+                        adoc = "/scoping/download_pdf/"+str(d['pk'])
                     d[mult_fields[m]] = "; <br>".join(str(x) for x in (list(itertools.chain(*adoc))))
                     if "note__" in mult_fields_tuple[m]:
                         d[mult_fields[m]] = "; <br>".join(x.strip() for x in  adoc)
@@ -2554,8 +2558,13 @@ def sortdocs(request):
         max = 8
         min = 5
 
+    print(fields)
     for d in docs:
         # work out total relevance
+        if "docfile__id" in fields:
+            if d['docfile__id']:
+                d['docfile__id'] = '<a href="/scoping/download_pdf/'+str(d['docfile__id'])+'"">PDF'
+
         if "wosarticle__cr" in fields:
             d['wosarticle__cr'] = ';<br>'.join(d['wosarticle__cr'])
 

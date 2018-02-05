@@ -217,6 +217,12 @@ class DocTerm(models.Model):
     term = models.IntegerField()
     score = models.FloatField()
 
+
+class KFold(models.Model):
+    model = models.ForeignKey('RunStats')
+    K = models.IntegerField()
+    error = models.FloatField(null=True)
+
 #################################################
 ## RunStats and Settings....
 class RunStats(models.Model):
@@ -288,6 +294,7 @@ class RunStats(models.Model):
         default=LDA,
     )
     error = models.FloatField(null=True, default = 0)
+    coherence = models.FloatField(null=True)
     errortype = models.TextField(null=True)
 
     empty_topics = models.IntegerField(null=True)

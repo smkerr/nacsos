@@ -19,7 +19,9 @@ from utils.utils import flatten
 import utils.db as db
 from utils.text import *
 import os
-
+import gensim
+import random
+from sklearn.decomposition.nmf import _beta_divergence  # needs sklearn 0.19!!!
 
 @shared_task
 def update_dtopic(topic_id, parent_run_id):
@@ -151,6 +153,152 @@ def yearly_topic_term(topic_id, run_id):
         )['yscore']
 
 @shared_task
+def get_coherence(run_id):
+    stat = RunStats.objects.get(run_id=run_id)
+    qid = stat.query.id
+    K = stat.K
+
+    if stat.fulltext:
+        docs = Doc.objects.filter(query=qid,fulltext__iregex='\w')
+    else:
+        docs = Doc.objects.filter(query=qid,content__iregex='\w')
+
+    abstracts, docsizes, ids = proc_docs(docs, stoplist, stat.fulltext)
+
+    sentences = [get_sentence(x) for x in abstracts]
+    model = gensim.models.Word2Vec(sentences)
+    validation_measure = WithinTopicMeasure(
+        ModelSimilarity(model)
+    )
+
+    term_rankings = []
+
+    topics = Topic.objects.filter(
+        run_id=run_id
+    )
+
+    for topic in topics:
+        term_ranking = list(Term.objects.filter(
+            topicterm__topic=topic
+        ).order_by(
+            '-topicterm__score'
+        ).values_list('title',flat=True)[:50])
+        term_rankings.append(term_ranking)
+
+    stat.coherence = validation_measure.evaluate_rankings(
+        term_rankings
+    )
+    stat.save()
+
+    return
+
+@shared_task
+def k_fold(run_id,k_folds):
+    stat = RunStats.objects.get(run_id=run_id)
+    qid = stat.query.id
+    K = stat.K
+    alpha = stat.alpha
+    n_features = stat.max_features
+    if n_features == 0:
+        n_features = 100000000000
+    limit = stat.limit
+    ng = stat.ngram
+
+    if stat.method=="LD":
+        if stat.max_iterations == 200:
+            stat.max_iterations = 10
+        if stat.max_iterations > 100:
+            stat.max_iterations = 90
+
+    n_samples = stat.max_iterations
+
+    if stat.fulltext:
+        docs = Doc.objects.filter(query=qid,fulltext__iregex='\w')
+    else:
+        docs = Doc.objects.filter(query=qid,content__iregex='\w')
+
+    # if we are limiting, probably for testing, then do that
+    if limit > 0:
+        docs = docs[:limit]
+
+
+    tfidf_vectorizer = TfidfVectorizer(
+        max_df=stat.max_df,
+        min_df=stat.min_freq,
+        max_features=n_features,
+        ngram_range=(ng,ng),
+        tokenizer=snowball_stemmer(),
+        stop_words=stoplist
+    )
+
+    count_vectorizer = CountVectorizer(
+        max_df=stat.max_df,
+        min_df=stat.min_freq,
+        max_features=n_features,
+        ngram_range=(ng,ng),
+        tokenizer=snowball_stemmer(),
+        stop_words=stoplist
+    )
+
+    abstracts, docsizes, ids = proc_docs(docs, stoplist, stat.fulltext)
+
+    doc_ids = ids
+    random.shuffle(doc_ids)
+
+    if stat.method=="NM":
+        tfidf = tfidf_vectorizer.fit_transform(abstracts)
+        vectorizer = tfidf_vectorizer
+    else:
+        tfidf = count_vectorizer.fit_transform(abstracts)
+        vectorizer = count_vectorizer
+
+    for k in range(k_folds):
+        train_set = [i for i,x in enumerate(doc_ids) if i % k_folds !=k]
+        test_set = [i for i,x in enumerate(doc_ids) if i % k_folds ==k]
+
+        X_train = tfidf[train_set,]
+        X_test = tfidf[test_set,]
+
+        if stat.method=="NM":
+            model = NMF(
+                n_components=K, random_state=1,
+                alpha=alpha, l1_ratio=.1, verbose=False,
+                init='nndsvd', max_iter=n_samples
+            ).fit(X_train)
+            w_test = model.transform(X_test)
+            rec_error = _beta_divergence(
+                X_test,
+                w_test,
+                model.components_,
+                'frobenius',
+                square_root=True
+            )
+
+        else:
+            model = LDA(
+                n_components=K,
+                doc_topic_prior=stat.alpha,
+                max_iter=stat.max_iterations,
+                n_jobs=6
+            ).fit(X_test)
+            w_test = model.transform(X_test)
+            rec_error = _beta_divergence(
+                X_test,
+                w_test,
+                model.components_,
+                'frobenius',
+                square_root=True
+            )
+        kf, created = KFold.objects.get_or_create(
+            model=stat,
+            K=k
+        )
+        kf.error = rec_error
+        kf.save()
+
+    return
+
+@shared_task
 def do_nmf(run_id):
     stat = RunStats.objects.get(run_id=run_id)
     qid = stat.query.id
@@ -198,6 +346,12 @@ and {} topics\n'.format(qid, docs.count(),K))
 
     # Get the docs into lists
     abstracts, docsizes, ids = proc_docs(docs, stoplist, stat.fulltext)
+
+    sentences = [get_sentence(x) for x in abstracts]
+    w2v = gensim.models.Word2Vec(sentences)
+    validation_measure = WithinTopicMeasure(
+        ModelSimilarity(w2v)
+    )
 
     #############################################
     # Use tf-idf features for NMF.
@@ -362,6 +516,24 @@ and {} topics\n'.format(qid, docs.count(),K))
     stat.iterations = model.n_iter_
     stat.last_update=timezone.now()
     stat.status=3
+
+    term_rankings = []
+
+    topics = Topic.objects.filter(
+        run_id=run_id
+    )
+
+    for topic in topics:
+        term_ranking = list(Term.objects.filter(
+            topicterm__topic=topic
+        ).order_by(
+            '-topicterm__score'
+        ).values_list('title',flat=True)[:50])
+        term_rankings.append(term_ranking)
+
+    stat.coherence = validation_measure.evaluate_rankings(
+        term_rankings
+    )
     stat.save()
     if stat.db:
         management.call_command('update_run',run_id)

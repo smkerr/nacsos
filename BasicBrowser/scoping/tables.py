@@ -16,12 +16,18 @@ class ProjectTable(tables.Table):
         fields = ('id','title','description','role','queries','docs','tms')
 
 class FloatColumn(tables.Column):
+    # def __init__(self, **kwargs):
+    #     if 'digits' in kwargs:
+    #         self.digits = kwargs['digits']
+    #     else:
+    #         self.digits = 2
     def render(self, value):
-        return round(value,2)
+        return round(value,3)
 
 class TopicTable(tables.Table):
     run_id = tables.LinkColumn('tmv_app:topics', args=[A('pk')])
     error = FloatColumn()
+    coherence = FloatColumn()
     # queries = tables.LinkColumn('scoping:queries', args=[A('pk')])
     # tms = tables.LinkColumn('tmv_app:runs', args=[A('pk')])
     #id = tables.LinkColumn('scoping:project', args=[A('pk')])
@@ -32,6 +38,12 @@ class TopicTable(tables.Table):
     # )
     class Meta:
         model = RunStats
-        fields = ('run_id','method','start','status','K','alpha','min_freq','max_df','error',)#'startit')
+        fields = (
+            'run_id','method',
+            'start','status',
+            'K','alpha',
+            'min_freq','max_df',
+            'error','coherence',
+        )#'startit')
 
 #from .urls import urlpatterns

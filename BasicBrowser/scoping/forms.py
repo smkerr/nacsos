@@ -150,5 +150,6 @@ class TopicModelForm(forms.ModelForm):
             'dthreshold',
             'dyn_win_threshold',
             'periods',
+            'coherence',
         )
         #fields = ('K','alpha','limit','ngram','min_freq','max_df','max_features','max_iterations')
