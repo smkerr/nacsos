@@ -12,7 +12,12 @@
     <p><b>Year:</b> {{doc.PY}}</p>
     <p><b>Authors:</b>
     {% for au in authors %}
-      <span>{{au.AF}} [{{au.institution}}];</span>
+      <span>{% if au.AF %}
+          {{au.AF}}
+          {% else %}
+          {{au.AU}}
+          {% endif %}
+          [{{au.institution}}];</span>
     {% endfor %}
     <p><b>Journal:</b> {{ doc.wosarticle.so }}
     <p><b>DOI</b> <a target="_blank" href="http://dx.doi.org/{{ doc.wosarticle.di }}">{{ doc.wosarticle.di}}</a>
@@ -33,6 +38,17 @@
     </p>
     <p><b>In WoS:</b> {{doc.wos}}</p>
     <p><b>In Scopus:</b> {{doc.wos}}</p>
+    <p><b>PDF:<p></b>
+        <form method="POST" class="post-form" enctype="multipart/form-data">{% csrf_token %}
+          {{ uf.as_p }}
+          {% ifequal uf.action "Delete" %}
+          <a href="{% url 'scoping:download_pdf' doc.docfile.id %}">
+          {{uf.filename}}</a>
+          {% else %}
+          {{ uf.filename }}
+          {% endifequal %}
+          <button type="submit" class="save btn btn-default"  style="border:solid orange 3px; border-radius: 20px; background:orange; color: white; font-weight: bolder;">{{uf.action}}</button>
+        </form>
     <p>Show: </p>
     {% if extended %}
     <table style="text-align:center">
@@ -96,7 +112,7 @@
       </td>
 
     {% endfor %}
-    
+
     <tr>
         <td width="50%">
             <select id="techtoadd">

@@ -18,8 +18,7 @@ from utils.text import *
 import os
 
 class Command(BaseCommand):
-    help = 'rerun a dynamic topic model with a different number \
-    or dynamic topics'
+    help = 'run a topic model'
 
     def add_arguments(self, parser):
         parser.add_argument('qid',type=int)

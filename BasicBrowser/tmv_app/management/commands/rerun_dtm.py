@@ -62,7 +62,7 @@ class Command(BaseCommand):
                     continue
                 print(topic)
             for tt in tts:
-                B[wt,tt.term.id] = tt.score
+                B[wt,tt.term.id] = tt.score*np.log1p(topic.score)
             wt+=1
 
         col_sum = np.sum(B,axis=0)

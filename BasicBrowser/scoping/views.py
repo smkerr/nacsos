@@ -2893,6 +2893,15 @@ def document(request, pid, doc_id):
 
     if request.method == "POST":
         x = 1
+        if request.FILES.get('file', False):
+
+            print("DOCCCFILE")
+            doc = Doc.objects.get(pk=doc_id)
+            uf = UploadDocFile(request.POST, request.FILES)
+            if uf.is_valid():
+                uf.save()
+            else:
+                e = uf.errors
 
     template = loader.get_template('scoping/document.html')
     doc = Doc.objects.get(pk=doc_id)
@@ -2907,7 +2916,16 @@ def document(request, pid, doc_id):
     else:
         extended=False
 
-
+    if hasattr(doc,'docfile') is False:
+        uf = UploadDocFile()
+        uf.fields["doc"].initial=doc_id
+        uf.action="Upload"
+    else:
+        df = doc.docfile
+        uf = DeleteDocField()
+        uf.fields["delete"].initial=1
+        uf.filename = df.file
+        uf.action="Delete"
 
     ptechs = Technology.objects.filter(project=project).exclude(pk__in=technologies)
 
@@ -2921,7 +2939,8 @@ def document(request, pid, doc_id):
         'queries': queries,
         'extended': extended,
         'ptechs': ptechs,
-        'project': project
+        'project': project,
+        'uf': uf
     }
     return HttpResponse(template.render(context, request))
 
