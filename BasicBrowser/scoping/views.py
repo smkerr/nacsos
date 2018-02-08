@@ -3224,7 +3224,10 @@ def screen(request,qid,tid,ctype,d=0):
         kwp = None
 
     # Create the tags for clicking on
-    tags = {'Technology': {}}#,'Innovation': {}}
+    if request.user.username in ["rogers","nemet","galm"]:
+        tags = {'Technology': {},'Innovation': {}}
+    else:
+        tags = {'Technology': {}}#,'Innovation': {}}
     for t in tags:
         m = apps.get_model(app_label='scoping',model_name=t)
         ctags = m.objects.filter(query__doc=doc) | m.objects.filter(doc=doc)
@@ -3232,8 +3235,8 @@ def screen(request,qid,tid,ctype,d=0):
         tags[t]['ctags'] = ctags.distinct()
         tags[t]['ntags'] = m.objects.filter(project=query.project).exclude(query__doc=doc).exclude(doc=doc)
 
-
-    if request.user.profile.type == "default":
+    if not request.user.username in ["rogers","nemet","galm"]:
+    #if request.user.profile.type == "default":
         innovation=False
     else:
         innovation=True

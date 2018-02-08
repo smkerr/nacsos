@@ -132,6 +132,9 @@ class Technology(models.Model):
 class Innovation(models.Model):
     name = models.TextField(null = True, verbose_name="Innovation Name")
     description = models.TextField(null=True, verbose_name="Innovation Description")
+    project = models.ForeignKey(Project, null=True)
+    ndocs = models.IntegerField(null=True)
+    nqs = models.IntegerField(null=True)
 
     def __str__(self):
       return self.name
