@@ -1696,6 +1696,7 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
     wos_fields = []
     basic_field_names = ['Title', 'Abstract', 'Year'] #, str(request.user)]
 
+    relevance_fields.append({"path": "fulltext", "name": "Full Text"})
     relevance_fields.append({"path": "docfile__id", "name": "PDF"})
     relevance_fields.append({"path": "tech_technology", "name": "Technology"})
     relevance_fields.append({"path": "tech_innovation", "name": "Innovation"})
@@ -2230,7 +2231,7 @@ def doclistsbs(request,sbsid):
 
     fields.append({"path": "tag__title", "name": "Tag name"})
 
-    basic_fields = ['Title', 'Abstract', 'Year'] #, str(request.user)]
+    basic_fields = ['Title', 'Abstract', 'Year','fulltext'] #, str(request.user)]
 
     context = {
         'sbs': sbs,
