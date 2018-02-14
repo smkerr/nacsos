@@ -42,6 +42,8 @@ class Command(BaseCommand):
             stat.parent_run_id = parent_run_id
             stat.save()
 
+        for tp in parent_stat.periods.all():
+            stat.periods.add(tp)
 
         tops = Topic.objects.filter(
             run_id=parent_run_id,

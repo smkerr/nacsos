@@ -38,12 +38,15 @@ def update_dtopic(topic_id, parent_run_id):
     topic.title = new_topic_title
     topic.score = 0
     #
-    score = DocTopic.objects.filter(
+
+    all_scores = DocTopic.objects.filter(
         run_id=parent_run_id,
-        topic__primary_dtopic=topic
+        topic__topicdtopic__dynamictopic=topic
     ).annotate(
         dtopic_score = F('score') * F('topic__topicdtopic__score')
-    ).aggregate(
+    )
+
+    score = all_scores.aggregate(
         t=Sum('dtopic_score')
     )['t']
     stats = topic.run_id
@@ -57,13 +60,9 @@ def update_dtopic(topic_id, parent_run_id):
             period = tp,
             dtopic=topic
         )
-        tdt.score = DocTopic.objects.filter(
-            run_id=parent_run_id,
-            doc__PY__in=tp.ys,
-            topic__topicdtopic__dynamictopic=topic
-            #topic__primary_dtopic=topic
-        ).annotate(
-            dtopic_score = F('score') * F('topic__topicdtopic__score')
+
+        tdt.score = all_scores.filter(
+            doc__PY__in=tp.ys
         ).aggregate(
             t=Sum('dtopic_score')
         )['t']

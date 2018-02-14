@@ -230,11 +230,24 @@ def growth_heatmap(request, run_id):
 
 def growth_json(request, run_id, v='pgrowthn'):
 
-    ars = TopicARScores.objects.filter(
-        topic__run_id=run_id,
-        ar__ar__isnull=False,
-        ar__ar__gt=0
-    )
+    stat = RunStats.objects.get(pk=run_id)
+
+    if stat.method == "DT":
+
+        ars = DynamicTopicARScores.objects.filter(
+            topic__run_id=run_id,
+            ar__ar__isnull=False,
+            ar__ar__gt=0
+        )
+
+    else:
+
+        ars = TopicARScores.objects.filter(
+            topic__run_id=run_id,
+            ar__ar__isnull=False,
+            ar__ar__gt=0
+        )
+
     df = pd.DataFrame.from_dict(
         list(ars.values('topic__title','ar__name', v, 'topic__ipcc_coverage'))
         )
