@@ -241,6 +241,8 @@ def read_wos(res, q, update):
 
 def add_doc_text(r,q):
 
+    django.db.connections.close_all()
+
     scopus2WoSFields = {
         'TY': 'dt',
         'TI': 'ti',
@@ -325,6 +327,7 @@ def add_doc_text(r,q):
         print("don't want to add this record, it has no id!")
         return
     add_scopus_doc(record,q)
+    return
 
 def add_scopus_doc(r,q):
     django.db.connections.close_all()
@@ -335,12 +338,12 @@ def add_scopus_doc(r,q):
         print(r)
         return
 
-    docs = Doc.objects.filter(UT=r['UT'])
+    docs = Doc.objects.filter(UT__UT=r['UT'])
     if docs.count()==1: # If it's just there - great!
         doc = docs.first()
         article = WoSArticle(doc=doc)
         article.save()
-        try:
+        try: # if it has no references, add them
             if doc.wosarticle.cr is None and get(r,'cr') is not None:
                 doc.wosarticle.cr = r['CR']
                 doc.wosarticle.save()
@@ -359,10 +362,13 @@ def add_scopus_doc(r,q):
 
         if did=='NA':
             docs = Doc.objects.filter(
-                    wosarticle__ti=get(r,'ti')).filter(PY=get(r,'py')
+                    wosarticle__ti=get(r,'ti'),
+                    PY=get(r,'py')
             )
         else:
-            docs = Doc.objects.filter(wosarticle__di=did)
+            docs = Doc.objects.filter(
+                wosarticle__di=did
+            )
 
 
         if len(docs)==1:
@@ -376,7 +382,18 @@ def add_scopus_doc(r,q):
         if len(docs)==0: # if there are none, try with the title and jaccard similarity
             #print("no matching docs")
             s1 = shingle(get(r,'ti'))
-            py_docs = Doc.objects.filter(PY=get(r,'py'))
+
+            twords = get(r,'ti').split()
+            if len(twords) > 1:
+                twords = ' '.join([x for x in twords[0:1]])
+            else:
+                twords = twords[0]
+
+            py_docs = Doc.objects.filter(
+                PY=get(r,'py'),
+                title__iregex='\w',
+                title__icontains=twords
+            )
             docs = []
             for d in py_docs:
                 j = jaccard(s1,d.shingle())
@@ -387,7 +404,9 @@ def add_scopus_doc(r,q):
                     break
 
         if len(docs)==0: # if there's still nothing, create one
-            ut, created = UT.objects.get_or_create(UT=r['UT'])
+            ut, created = UT.objects.get_or_create(
+                UT=r['UT']
+            )
             doc = Doc(UT=ut)
             #print(doc)
 
@@ -436,6 +455,9 @@ def add_scopus_doc(r,q):
         except:
             print("couldn't add authors")
 
+    django.db.connections.close_all()
+    return
+
 def read_scopus(res, q, update):
 
     n_records = 0
@@ -460,7 +482,7 @@ def read_scopus(res, q, update):
             if chunk_size==max_chunk_size:
                 # parallely add docs
                 pool = Pool(processes=32)
-                pool.map(add_doc_text, records)
+                pool.map(partial(add_doc_text,q=q), records)
                 pool.terminate()
                 records = []
                 chunk_size = 0

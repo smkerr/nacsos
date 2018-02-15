@@ -3232,11 +3232,17 @@ def screen(request,qid,tid,ctype,d=0):
     for t in tags:
         m = apps.get_model(app_label='scoping',model_name=t)
         ctags = m.objects.filter(query__doc=doc) | m.objects.filter(doc=doc)
+
         tags[t]['thing'] = t
         tags[t]['ctags'] = ctags.distinct()
-        tags[t]['ntags'] = m.objects.filter(project=query.project).exclude(query__doc=doc).exclude(doc=doc)
+        tags[t]['ntags'] = m.objects.filter(
+            project=query.project
+        ).exclude(
+            query__doc=doc
+        ).exclude(doc=doc)
+        print(tags)
 
-    if not request.user.username in ["rogers","nemet","galm"]:
+    if not request.user.username in ["rogers","nemet"]:
     #if request.user.profile.type == "default":
         innovation=False
     else:

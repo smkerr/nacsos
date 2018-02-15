@@ -234,11 +234,30 @@ def growth_json(request, run_id, v='pgrowthn'):
 
     if stat.method == "DT":
 
-        ars = DynamicTopicARScores.objects.filter(
-            topic__run_id=run_id,
-            ar__ar__isnull=False,
-            ar__ar__gt=0
+        if v == "share":
+            v = "year_share"
+
+        ars = TimeDTopic.objects.filter(
+            dtopic__run_id=run_id#,
+            #ar__ar__isnull=False,
+            #ar__ar__gt=0
         )
+
+        df = pd.DataFrame.from_dict(
+            list(ars.values(
+                'dtopic__title',
+                'period__title',
+                v,
+                'dtopic__ipcc_coverage'
+            ))
+        )
+        ppdf = df.pivot('dtopic__title','period__title',v).fillna(0)
+
+        col_ids = DynamicTopic.objects.filter(
+            run_id=run_id,
+            timedtopic__isnull=False
+        ).order_by('title').values_list('id',flat=True)
+
 
     else:
 
@@ -248,18 +267,19 @@ def growth_json(request, run_id, v='pgrowthn'):
             ar__ar__gt=0
         )
 
-    df = pd.DataFrame.from_dict(
-        list(ars.values('topic__title','ar__name', v, 'topic__ipcc_coverage'))
-        )
-    ppdf = df.pivot('topic__title','ar__name', v).fillna(0)
+        df = pd.DataFrame.from_dict(
+            list(ars.values('topic__title','ar__name', v, 'topic__ipcc_coverage'))
+            )
+        ppdf = df.pivot('topic__title','ar__name', v).fillna(0)
 
-    #ndf =
-    col_ids = Topic.objects.filter(
-        run_id=run_id,
-        topicarscores__isnull=False
-    ).order_by('title').values_list(
-        'id',flat=True
-    )
+        #ndf =
+        col_ids = Topic.objects.filter(
+            run_id=run_id,
+            topicarscores__isnull=False
+        ).order_by('title').values_list(
+            'id',flat=True
+        )
+
     json = ppdf.to_json(orient="split")
 
     return JsonResponse([json,list(col_ids)], safe=False)

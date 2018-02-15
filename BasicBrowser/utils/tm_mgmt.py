@@ -407,6 +407,25 @@ def update_ar_scores(run_id):
             pgrowthn = F('pgrowth') / n
         )
 
+def normalise_tdts(run_id):
+    stat = RunStats.objects.get(pk=run_id)
+    tdts = TimeDTopic.objects.filter(
+        dtopic__run_id=run_id
+    )
+    tdts_av = tdts.values('period').annotate(
+        av_growth = Avg('pgrowth')
+    )
+    for tp in tdts_av:
+        tptdts = tdts.filter(period=tp['period'])
+        try:
+            n = abs(tp['av_growth'])
+        except:
+            pass
+        tptdts.update(
+            pgrowthn = F('pgrowth') / n
+        )
+
+
 def update_ipcc_coverage(run_id):
 
     wgs = [

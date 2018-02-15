@@ -50,7 +50,9 @@ def update_dtopic(topic_id, parent_run_id):
         t=Sum('dtopic_score')
     )['t']
     stats = topic.run_id
-    for tp in stats.periods.all():
+
+    ptdt = None # Previous tdt
+    for tp in stats.periods.all().order_by('n'):
 
         dtot, created = TimeDocTotal.objects.get_or_create(
             period=tp,
@@ -72,6 +74,13 @@ def update_dtopic(topic_id, parent_run_id):
             tdt.score = 0
             tdt.year_share = 0
         tdt.save()
+        if ptdt:
+            if ptdt.score == 0 or ptdt.score is None:
+                tdt.pgrowth=0
+            else:
+                tdt.pgrowth = (tdt.score - ptdt.score) / ptdt.score * 100
+            tdt.save()
+        ptdt = tdt
 
     maxyear = DocTopic.objects.filter(
         run_id=parent_run_id,

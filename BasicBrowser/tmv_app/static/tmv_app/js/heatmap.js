@@ -60,7 +60,7 @@ function heatmap_display(url, heatmapId, paletteName) {
     //==================================================
     d3.json(url, function(error, data) {
 
-
+        console.log(data)
         col_ids = data[1]
         data = data[0]
         if (typeof data=="string") {

@@ -103,6 +103,8 @@ class TimeDTopic(models.Model):
     dtopic = models.ForeignKey('DynamicTopic')
     score = models.FloatField(default=0)
     year_share = models.FloatField(default=0)
+    pgrowth = models.FloatField(null=True)
+    pgrowthn = models.FloatField(null=True)
 
 
 class TopicDTopic(models.Model):
