@@ -69,10 +69,10 @@ def update_dtopic(topic_id, parent_run_id):
             t=Sum('dtopic_score')
         )['t']
         if tdt.score is not None:
-            tdt.year_share = tdt.score / dtot.dt_score
+            tdt.share = tdt.score / dtot.dt_score
         else:
             tdt.score = 0
-            tdt.year_share = 0
+            tdt.share = 0
         tdt.save()
         if ptdt:
             if ptdt.score == 0 or ptdt.score is None:

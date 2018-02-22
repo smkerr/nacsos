@@ -48,7 +48,7 @@ class Command(BaseCommand):
 
             update_topic_scores(parent_run_id)
             update_dtopics(run_id)
-            update_ipcc_coverage(run_id)
+
 
             pstat = RunStats.objects.get(run_id=parent_run_id)
             pstat.topic_titles_current = False
@@ -57,6 +57,8 @@ class Command(BaseCommand):
 
             yearly_topic_term_scores(run_id)
             management.call_command('corr_topics',run_id)
+            update_ipcc_coverage(run_id)
+            normalise_tdts(run_id)
 
         elif stat.method == "BD":
             update_bdtopics(run_id)

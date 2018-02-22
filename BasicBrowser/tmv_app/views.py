@@ -234,9 +234,6 @@ def growth_json(request, run_id, v='pgrowthn'):
 
     if stat.method == "DT":
 
-        if v == "share":
-            v = "year_share"
-
         ars = TimeDTopic.objects.filter(
             dtopic__run_id=run_id#,
             #ar__ar__isnull=False,
@@ -313,13 +310,13 @@ def topics_time(request, run_id, stype):
         'topic__title',
         'PY',
         'score',
-        'year_share'
+        'share'
     )
 
     if int(stype)==0:
         stype='score'
     else:
-        stype='year_share'
+        stype='share'
 
     context = {
         'yts': list(yts),
@@ -1151,7 +1148,7 @@ def dtm_home(request, run_id):
         run_id=run_id
     ).order_by('-score')
 
-    periods = stat.periods.all()
+    periods = stat.periods.order_by('n')
     for p in periods:
         p.w = 100/periods.count()
         p.ds = TimeDocTotal.objects.get(run=stat,period=p)
@@ -1166,8 +1163,8 @@ def dtm_home(request, run_id):
 
     yscores = list(TimeDTopic.objects.filter(
         dtopic__run_id=run_id,
-        year_share__isnull=False
-    ).values('period__n','dtopic__id','dtopic__title','score','year_share'))
+        share__isnull=False
+    ).values('period__n','dtopic__id','dtopic__title','score','share'))
 
 
     context = {

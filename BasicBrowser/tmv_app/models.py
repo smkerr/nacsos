@@ -64,13 +64,17 @@ class Topic(models.Model):
 class DynamicTopic(models.Model):
     title = models.CharField(null=True, max_length=80)
     score = models.FloatField(null=True)
+    share = models.FloatField(null=True)
     size = models.IntegerField(null=True)
     run_id = models.ForeignKey('RunStats',db_index=True)
     top_words = ArrayField(models.TextField(),null=True)
     l5ys = models.FloatField(null=True)
     l1ys = models.FloatField(null=True)
     primary_wg = models.IntegerField(null=True)
+    ipcc_time_score = models.FloatField(null=True)
     ipcc_coverage = models.FloatField(null=True)
+    ipcc_score = models.FloatField(null=True)
+    ipcc_share = models.FloatField(null=True)
     wg_prop = models.FloatField(null=True)
 
     wg_1 = models.FloatField(null=True)
@@ -102,9 +106,12 @@ class TimeDTopic(models.Model):
     period = models.ForeignKey(TimePeriod)
     dtopic = models.ForeignKey('DynamicTopic')
     score = models.FloatField(default=0)
-    year_share = models.FloatField(default=0)
+    share = models.FloatField(default=0)
     pgrowth = models.FloatField(null=True)
     pgrowthn = models.FloatField(null=True)
+    ipcc_score = models.FloatField(null=True)
+    ipcc_coverage=models.FloatField(null=True)
+    ipcc_share = models.FloatField(null=True)
 
 
 class TopicDTopic(models.Model):
@@ -149,7 +156,7 @@ class TopicYear(models.Model):
     topic = models.ForeignKey('Topic',null=True)
     PY = models.IntegerField()
     score = models.FloatField(null=True)
-    year_share = models.FloatField(null=True)
+    share = models.FloatField(null=True)
     count = models.FloatField(null=True)
     run_id = models.IntegerField(db_index=True)
 

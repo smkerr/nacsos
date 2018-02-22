@@ -433,16 +433,8 @@ def update_ipcc_coverage(run_id):
         {"WG":2, "score": 0},
         {"WG":3, "score": 0}
     ]
-    runstat = RunStats.objects.get(pk=run_id)
-    if runstat.method=="DT":
-        dts = DocTopic.objects.filter(
-            run_id=run_id,
-            doc__PY__lt=2014,
-            score__gt=runstat.dthreshold,
-            topic__topicdtopic__dynamictopic__run_id=run_id,
-            topic__topicdtopic__score__gt=runstat.dthreshold
-        ).values('topic__topicdtopic__dynamictopic__id')
 
+    def ipcc_annotate_dts(dts,run_id,tp=None):
         dts = dts.annotate(
             ipcc = models.Sum(
                 models.Case(
@@ -469,8 +461,75 @@ def update_ipcc_coverage(run_id):
             t = DynamicTopic.objects.get(
                 pk=dt['topic__topicdtopic__dynamictopic__id']
             )
-            t.ipcc_coverage = dt['ipcc'] / (dt['ipcc'] + dt['no_ipcc'])
-            t.save()
+            if tp:
+                tdt, created = TimeDTopic.objects.get_or_create(
+                    dtopic=t,
+                    period=tp
+                )
+                tdt.ipcc_score = dt['ipcc']
+                tdt.ipcc_coverage = dt['ipcc'] / (dt['ipcc'] + dt['no_ipcc'])
+                tdt.save()
+
+            else:
+
+                t.ipcc_score = dt['ipcc']
+                t.ipcc_time_score = dt['ipcc'] + dt['no_ipcc']
+                t.ipcc_coverage = dt['ipcc'] / (dt['ipcc'] + dt['no_ipcc'])
+                t.save()
+
+        if tp:
+            topics = TimeDTopic.objects.filter(
+                dtopic__run_id=run_id,
+                period=tp
+            )
+            tsums = topics.aggregate(
+                ip_score=Sum('ipcc_score'),
+                score=Sum('score')
+            )
+            
+            topics.update(
+                ipcc_share=F('ipcc_score')/tsums['ip_score'],
+                share=F('score')/tsums['score']
+            )
+        else:
+            topics = DynamicTopic.objects.filter(
+                run_id=run_id
+            )
+            tsums = topics.aggregate(
+                ip_score=Sum('ipcc_score'),
+                score=Sum('ipcc_time_score')
+            )
+
+            topics.update(
+                ipcc_share=F('ipcc_score')/tsums['ip_score'],
+                share=F('ipcc_time_score')/tsums['score']
+            )
+
+        return
+
+    runstat = RunStats.objects.get(pk=run_id)
+
+    if runstat.method=="DT":
+        dts = DocTopic.objects.filter(
+            run_id=run_id,
+            doc__PY__lt=2014,
+            score__gt=runstat.dthreshold,
+            topic__topicdtopic__dynamictopic__run_id=run_id,
+            topic__topicdtopic__score__gt=runstat.dthreshold
+        ).values('topic__topicdtopic__dynamictopic__id')
+
+        ipcc_annotate_dts(dts, run_id)
+
+        for tp in runstat.periods.all():
+            dts = DocTopic.objects.filter(
+                run_id=run_id,
+                doc__PY__in=tp.ys,
+                score__gt=runstat.dthreshold,
+                topic__topicdtopic__dynamictopic__run_id=run_id,
+                topic__topicdtopic__score__gt=runstat.dthreshold
+            ).values('topic__topicdtopic__dynamictopic__id')
+
+            ipcc_annotate_dts(dts, run_id, tp)
 
         for topic in DynamicTopic.objects.filter(run_id=run_id):
             tdocs = Doc.objects.filter(

@@ -130,7 +130,7 @@ graph.append("line")
     .attr("stroke-width", 1)
     .attr("stroke", "black");
 
-max_score = d3.max(data, function(d) { return d.year_share })
+max_score = d3.max(data, function(d) { return d.share })
 
 yscale = d3.scaleLinear()
     .domain([0, max_score])
@@ -150,7 +150,7 @@ var line = d3.line()
         return xscale(d.period__n);
     })
     .y(function(d) {
-        return yscale(d.year_share);
+        return yscale(d.share);
     })
 
 var topics = d3.nest()
@@ -191,7 +191,7 @@ graph.selectAll("circle")
     .enter()
     .append("circle")
     .attr("cx", function(d) { return xscale(d.period__n)})
-    .attr("cy", function(d) { return yscale(d.year_share)})
+    .attr("cy", function(d) { return yscale(d.share)})
     .attr("r", 5)
     .attr('class', function(d) {
         return topicClass(d.dtopic__id)
