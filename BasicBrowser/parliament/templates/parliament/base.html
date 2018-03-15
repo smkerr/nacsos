@@ -1,0 +1,19 @@
+<html>
+<head>
+{% load static %}
+{% load render_table from django_tables2 %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Parliament</title>
+<link href="{% static 'parliament/css/styling.css' %}" rel="stylesheet" type="text/css">
+<link href="https://afeld.github.io/emoji-css/emoji.css" rel="stylesheet">
+
+</head>
+<body>
+      {% include 'parliament/nav_bar.html'%}
+<div id="main">
+    {% block content %} {% endblock %}
+</div>
+
+    </body>
+    {% block script %} {% endblock %}
+</html>

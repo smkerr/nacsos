@@ -13,6 +13,7 @@ class Search(models.Model):
         #related_name="user_creations",
         #reverse_n
     )
+    par_count=models.IntegerField(default=0,verbose_name="Paragraphs")
 
 class Parl(models.Model):
     LEVEL_CHOICES = (
@@ -23,25 +24,30 @@ class Parl(models.Model):
     region = models.ForeignKey(cities.models.Region, null=True)
     level = models.CharField(max_length=1, choices=LEVEL_CHOICES)
 
+    def __str__(self):
+      return self.country.name + " - " + self.level
+
 class ParlSession(models.Model):
     parliament = models.ForeignKey(Parl)
     n = models.IntegerField()
-    years = ArrayField(models.IntegerField())
-    total_seats = models.IntegerField()
+    years = ArrayField(models.IntegerField(),null=True)
+    total_seats = models.IntegerField(null=True)
 
 class Document(models.Model):
     parlsession = models.ForeignKey(ParlSession)
     date = models.DateField(null=True)
-    parl_period = models.IntegerField(null=True)
+    #parl_period = models.IntegerField(null=True)
     search_matches = models.ManyToManyField(Search)
     doc_type = models.TextField()
 
 class Party(models.Model):
     name = models.TextField()
+    colour = models.CharField(max_length=7, null=True)
 
 class Person(models.Model):
     surname = models.TextField()
     first_name = models.TextField()
+    clean_name = models.TextField(null=True)
     dob = models.DateField(null=True)
 
 class Utterance(models.Model):
@@ -51,6 +57,7 @@ class Utterance(models.Model):
 class Paragraph(models.Model):
     utterance = models.ForeignKey(Utterance)
     text = models.TextField()
+    search_matches = models.ManyToManyField(Search)
 
 class Constituency(models.Model):
     country = models.ForeignKey(cities.models.Country)
@@ -84,12 +91,40 @@ class Post(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
 
+
+
 class Interjection(models.Model):
+
+    APPLAUSE = 1
+    SPEECH = 2
+    OBJECTION = 3
+    AMUSEMENT = 4
+    OUTCRY = 5
+
+
+    REACTION_CHOICES = (
+        (APPLAUSE,'Applause'),
+        (SPEECH, 'Speech'),
+        (OBJECTION, 'Objection'),
+        (AMUSEMENT, 'Laughter'),
+        (OUTCRY, 'Outcry')
+    )
     paragraph = models.ForeignKey(Paragraph)
     parties = models.ManyToManyField(Party)
     persons = models.ManyToManyField(Person)
+    type = models.IntegerField(choices=REACTION_CHOICES)
+    text = models.TextField(null=True)
 
-
+    EMOJIS = {
+        APPLAUSE:'em-clap',
+        SPEECH:'em-speech_balloon',
+        OBJECTION:'em-raised_hand_with_fingers_splayed',
+        AMUSEMENT:'em-laughing',
+        OUTCRY: ''
+    }
+    @property
+    def emoji(self):
+        return self.EMOJIS[self.type]
 
 
 

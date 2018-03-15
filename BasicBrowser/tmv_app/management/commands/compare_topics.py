@@ -28,7 +28,7 @@ class Command(BaseCommand):
         runs = [int(x) for x in options['list']]
 
         print(runs)
-        runs = RunStats.objects.filter(pk__in=runs)
+        runs = RunStats.objects.filter(pk__in=runs).order_by('K')
 
         stat = runs.first()
 
@@ -40,7 +40,7 @@ class Command(BaseCommand):
         if runs.count()==1 and runs.first().method=="DT":
             fname = "/tmp/run_compare_{}_windows.xlsx".format(stat.run_id)
         else:
-            fname = "/tmp/run_compare_{}_{}.xlsx".format(runs[0],runs[len(runs)-1])
+            fname = "/tmp/run_compare_{}_{}.xlsx".format(runs[0].run_id,runs[len(runs)-1].run_id)
 
         writer = pd.ExcelWriter(fname, engine='xlsxwriter')
 

@@ -1,0 +1,10 @@
+{% extends "parliament/base.html" %}
+{% load render_table from django_tables2 %}
+
+{% block content %}
+
+<h1>{{ ps.parliament.country.name}}: Parliament #{{ps.n}}</h1>
+
+{% render_table docs %}
+
+{% endblock %}

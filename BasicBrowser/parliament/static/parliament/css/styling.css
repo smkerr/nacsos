@@ -1,0 +1,67 @@
+p.speaker {
+    font-weight: bold
+}
+
+p.paragraph {
+    margin-left: 3em;
+}
+
+p.interjection {
+    margin-left: 5em;
+}
+
+span.speaker, span.party {
+    font-weight: bold;
+    border-radius:3px;
+    padding: 4px;
+    margin: 2px;
+}
+
+span.cducsu {
+    border: 2px solid #000000;
+    background-color: rgba(0,0,0,0.1);
+}
+span.spd {
+    border: 2px solid rgb(235,0,31);
+    background-color: rgba(235,0,31,0.1);;
+}
+span.linke {
+    border: 2px solid rgb(140,52,115);
+    background-color: rgba(140,52,115,0.1);;
+}
+span.fdp {
+    border: 2px solid rgb(255,237,0);
+    background-color: rgba(255,237,0,0.1);;
+}
+span.afd {
+    border: 2px solid rgb(0,158,224);
+    background-color: rgba(0,158,224,0.1);;
+}
+span.gruene {
+    border: 2px solid rgb(100,161,45);
+    background-color: rgba(100,161,45,0.1);;
+}
+
+span.h1 {
+    background-color: #fbb4ae;
+}
+
+#main {
+    width: 1000px;
+    margin: 0 auto;
+}
+
+#navigation td {
+    padding: 0 25px;
+}
+
+/*
+pcolours = [
+    {'party':'cducsu','colour':'#000000'},
+    {'party':'spd','colour':'#EB001F'},
+    {'party':'linke','colour':'#8C3473'}, rgb(140,52,115)
+    {'party':'fdp','colour':'#FFED00'}, rgb(255,237,0)
+    {'party':'afd','colour':'#009EE0'}, rgb(0,158,224)
+    {'party':'gruene','colour':'#64A12D'}, rgb(100,161,45)
+]
+*/
