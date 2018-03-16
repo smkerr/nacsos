@@ -2,9 +2,17 @@
 
 {% block content %}
 
+<h1>Document</h1>
+<h2>{{document}}</h2>
+
 {% for ut in uts %}
     <div class="utterance" id="utterance_{{ut.id}}">
-    <p class="speaker">{{ut.speaker.clean_name}}:</p>
+    <p class="speaker"><a href="{% url 'parliament:person' ut.speaker.id %}">{{ut.speaker.clean_name}}</a>
+        {% if ut.speaker.party %}
+        <a href="{% url 'parliament:party' ut.speaker.party.id %}"><span class="{{ut.speaker.party.name}}">[{{ut.speaker.party}}]</span></a>:</p>
+        {% else %}
+            <span class="{{ut.speaker.party.name}}">[{{ut.speaker.party}}]</span>:</p>
+        {% endif %}
     {% for p in ut.paragraph_set.all %}
         <p class="paragraph">{{p.text}}</p>
         {% for ij in p.interjection_set.all %}

@@ -25,7 +25,7 @@ class Parl(models.Model):
     level = models.CharField(max_length=1, choices=LEVEL_CHOICES)
 
     def __str__(self):
-      return self.country.name + " - " + self.level
+      return self.country.name + " - " + self.get_level_display()
 
 class ParlSession(models.Model):
     parliament = models.ForeignKey(Parl)
@@ -40,15 +40,23 @@ class Document(models.Model):
     search_matches = models.ManyToManyField(Search)
     doc_type = models.TextField()
 
+    def __str__(self):
+        return "{} - {} , {}".format(self.date, self.doc_type,self.parlsession.n)
+
 class Party(models.Model):
     name = models.TextField()
+    parliament = models.ForeignKey(Parl,null=True)
     colour = models.CharField(max_length=7, null=True)
+
+    def __str__(self):
+        return self.name.upper()
 
 class Person(models.Model):
     surname = models.TextField()
     first_name = models.TextField()
     clean_name = models.TextField(null=True)
     dob = models.DateField(null=True)
+    party = models.ForeignKey(Party,null=True)
 
 class Utterance(models.Model):
     document = models.ForeignKey(Document)
@@ -58,6 +66,11 @@ class Paragraph(models.Model):
     utterance = models.ForeignKey(Utterance)
     text = models.TextField()
     search_matches = models.ManyToManyField(Search)
+    word_count = models.IntegerField(null=True)
+    char_len = models.IntegerField(null=True)
+
+    class Meta:
+        ordering = ['id']
 
 class Constituency(models.Model):
     country = models.ForeignKey(cities.models.Country)

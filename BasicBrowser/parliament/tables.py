@@ -26,13 +26,34 @@ class ParlSessionTable(tables.Table):
         #fields = ('id','title','description','role','queries','docs','tms')
 
 class PersonTable(tables.Table):
+    clean_name = tables.LinkColumn(
+        'parliament:person',
+        args=[A('pk')],
+        verbose_name="Full Name"
+    )
     contributions = tables.Column()
+    words = tables.Column()
+    applauded = tables.Column()
     class Meta:
         model=Person
+        exclude=('id',)
+
+
+class PartyTable(tables.Table):
+    name = tables.LinkColumn(
+        'parliament:party',
+        args=[A('pk')],
+    )
+    members = tables.Column()
+    #contributions = tables.Column()
+    class Meta:
+        model=Party
+        exclude=('id','colour','parliament')
 
 
 class DocumentTable(tables.Table):
     id = tables.LinkColumn('parliament:document', args=[A('pk')])
+
     class Meta:
         model = Document
         exclude = ('parlsession')
@@ -56,6 +77,7 @@ class SearchParTable(tables.Table):
     )
     def __init__(self,*args,**kwargs):
         super(SearchParTable, self).__init__(*args, **kwargs)
+        self.pattern=None
 
     def render_utterance(self,value):
         d = value.document
@@ -67,9 +89,12 @@ class SearchParTable(tables.Table):
         self.pattern = '('+pattern+')'
 
     def render_text(self,value):
-        parts = re.split(self.pattern,value,flags=re.IGNORECASE)
-        parts_span = ['<span class="h1">'+x+'</span>' if re.match(self.pattern,x,re.IGNORECASE) else x for x in parts]
-        return format_html(''.join(parts_span))
+        if self.pattern is not None:
+            parts = re.split(self.pattern,value,flags=re.IGNORECASE)
+            parts_span = ['<span class="h1">'+x+'</span>' if re.match(self.pattern,x,re.IGNORECASE) else x for x in parts]
+            return format_html(''.join(parts_span))
+        else:
+            return value
 
     class Meta:
         model = Paragraph

@@ -42,6 +42,43 @@ span.gruene {
     background-color: rgba(100,161,45,0.1);;
 }
 
+span.sparty.cducsu {
+    border: 0;
+    background-color: inherit;
+    text-decoration: underline;
+    text-decoration-color: #000000
+}
+span.sparty.spd {
+    border: 0;
+    background-color: inherit;
+    text-decoration: underline;
+    text-decoration-color: #EB001F
+}
+span.sparty.linke {
+    border: 0;
+    background-color: inherit;
+    text-decoration: underline;
+    text-decoration-color: #8C3473
+}
+span.sparty.fdp {
+    border: 0;
+    background-color: inherit;
+    text-decoration: underline;
+    text-decoration-color: #FFED00
+}
+span.sparty.afd {
+    border: 0;
+    background-color: inherit;
+    text-decoration: underline;
+    text-decoration-color: #009EE0
+}
+span.sparty.gruene {
+    border: 0;
+    background-color: inherit;
+    text-decoration: underline;
+    text-decoration-color: #64A12D
+}
+
 span.h1 {
     background-color: #fbb4ae;
 }

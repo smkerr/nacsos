@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django_tables2.config import RequestConfig
+from django.db.models import Q, Count, Func, F, Sum, Value, Case, When, IntegerField
 from parliament.models import *
 from .tables import *
 from .forms import *
@@ -26,6 +27,22 @@ def index(request):
 
     return HttpResponse(template.render(context, request))
 
+def person_table(persons):
+    persons = persons.annotate(
+        contributions=Count('utterance'),
+        words = Sum('utterance__paragraph__word_count'),
+        applauded = Sum(
+            Case(
+                When(utterance__paragraph__interjection__type=Interjection.APPLAUSE,then=1),
+                default=0,
+                output_field=IntegerField()
+            )
+
+        )
+    )
+    persons = PersonTable(persons)
+    return persons
+
 @login_required
 def parliament(request,pid):
 
@@ -37,21 +54,24 @@ def parliament(request,pid):
     )
     ps = ParlSessionTable(ps, order_by="id")
 
-    persons = Person.objects.filter(
-        utterance__document__parlsession__parliament=parl
-    ).annotate(
-        contributions=Count('utterance')
+    persons = person_table(Person.objects.filter(
+        utterance__document__parlsession__parliament=parl,
+    ))
+
+    RequestConfig(request).configure(persons)
+
+    parties = Party.objects.filter(parliament=parl).annotate(
+        members=Count('person')
     )
 
-    persons = PersonTable(persons)#.paginate()
-    persons.paginate(page=request.GET.get('page',1),per_page=25)
-    RequestConfig(request).configure(persons)
+    parties = PartyTable(parties)
 
 
     context = {
         'ps': ps,
         'parl': parl,
-        'persons': persons
+        'persons': persons,
+        'parties': parties
     }
 
     return HttpResponse(template.render(context, request))
@@ -91,7 +111,8 @@ def document(request,did,page=1):
             'speaker',
             'paragraph_set__interjection_set__persons',
             'paragraph_set__interjection_set__parties',
-        )
+        ),
+        'document': doc
     }
 
     return HttpResponse(template.render(context, request))
@@ -128,12 +149,54 @@ def search_pars(request,sid):
 
     s = Search.objects.get(pk=sid)
     pars = Paragraph.objects.filter(search_matches=s)
-    pt = SearchParTable(pars,"bla")
+    pt = SearchParTable(pars)
     pt.reg_replace(s.text)
     RequestConfig(request).configure(pt)
 
     context = {
         'pars': pt,
+    }
+
+    return HttpResponse(template.render(context, request))
+
+@login_required
+def person(request,tid):
+
+    template = loader.get_template('parliament/person.html')
+    p = Person.objects.get(pk=tid)
+    pars = Paragraph.objects.filter(utterance__speaker=p)
+    pt = SearchParTable(pars)
+    RequestConfig(request).configure(pt)
+
+    context = {
+        'p':p,
+        'pars': pt
+    }
+
+    return HttpResponse(template.render(context, request))
+
+@login_required
+def party(request,tid):
+
+    template = loader.get_template('parliament/party.html')
+
+    party = Party.objects.get(pk=tid)
+
+    persons = person_table(Person.objects.filter(
+        utterance__document__parlsession__parliament=parl,
+    ))
+    RequestConfig(request).configure(persons)
+
+    pars = Paragraph.objects.filter(utterance__speaker__party=party)
+    pt = SearchParTable(pars)
+    RequestConfig(request).configure(pt)
+
+
+
+    context = {
+        'party': party,
+        'persons': persons,
+        'pars': pt
     }
 
     return HttpResponse(template.render(context, request))

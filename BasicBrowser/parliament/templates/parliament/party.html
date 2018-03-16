@@ -1,17 +1,13 @@
 {% extends "parliament/base.html" %}
 {% load render_table from django_tables2 %}
-
 {% block content %}
 
-<h1>{{ parl.country.name}}</h1>
-
-<h2>Sessions</h2>
-{% render_table ps %}
-
-<h2>Parties</h2>
-{% render_table parties %}
-
-<h2>People</h2>
+<h1>Party</h1>
+<h2>{{party}}</h2>
+<h3>Members</h3>
 {% render_table persons %}
+
+<h3>Contributions</h3>
+{% render_table pars %}
 
 {% endblock %}
