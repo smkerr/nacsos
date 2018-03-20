@@ -2647,10 +2647,8 @@ def sortdocs(request):
         'n_docs': filt_docs.count()
     }
 
-    template = loader.get_template('scoping/doc.html')
-    context = {
-
-    }
+    #template = loader.get_template('scoping/index.html')
+    context = response
     #return HttpResponse(template.render(context, request))
 
     #x = y
@@ -3457,6 +3455,8 @@ def add_manually():
 
 import string
 def highlight_words(s,query):
+    if query.text is None or s is None:
+        return s
     if query.database == "intern":
         args = query.text.split(" ")
         if args[0]=="*":
