@@ -35,6 +35,7 @@ class ParlSession(models.Model):
 
 class Document(models.Model):
     parlsession = models.ForeignKey(ParlSession)
+    sitting = models.IntegerField(null=True)
     date = models.DateField(null=True)
     #parl_period = models.IntegerField(null=True)
     search_matches = models.ManyToManyField(Search)
@@ -73,6 +74,8 @@ class Paragraph(models.Model):
         ordering = ['id']
 
 class Constituency(models.Model):
+    name = models.TextField(null=True)
+    number = models.IntegerField(null=True)
     country = models.ForeignKey(cities.models.Country)
     region = models.ForeignKey(cities.models.Region, null=True)
     parliament = models.ForeignKey(Parl)
@@ -83,10 +86,14 @@ class SeatResult(models.Model):
     person = models.ForeignKey(Person)
     party = models.ForeignKey(Party)
     constituency = models.ForeignKey(Constituency)
-    total_votes_cast = models.FloatField()
-    votes_received = models.FloatField()
+    total_votes_cast = models.IntegerField()
+    votes_received = models.IntegerField()
     incumbent = models.BooleanField()
     majority = models.FloatField()
+
+class Seat(models.Model):
+    parlsession = models.ForeignKey(ParlSession)
+
 
 class SeatSum(models.Model):
     parlsession = models.ForeignKey(ParlSession)

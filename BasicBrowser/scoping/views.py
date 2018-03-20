@@ -524,24 +524,24 @@ def doquery(request, pid):
                     else:
                         cids = tids
                     q1ids = cids
-                    combine = Doc.objects.filter(UT__in=cids)
+                    combine = Doc.objects.filter(pk__in=cids)
                 # Deal with relevance filters
                 if parts[0] == "IS":
                     if parts[1] == "RELEVANT":
                         combine = Doc.objects.filter(
-                            UT__in=cids,
+                            pk__in=cids,
                             docownership__relevant=1
                         ) | Doc.objects.filter(
-                            UT__in=cids,
+                            pk__in=cids,
                             technology__isnull=False
                         )
                     if parts[1] == "TRELEVANT":
                         combine = Doc.objects.filter(
-                            UT__in=cids,
+                            pk__in=cids,
                             docownership__relevant=1,
                             docownership__query__technology=tobj
                         ) | Doc.objects.filter(
-                            UT__in=cids,
+                            pk__in=cids,
                             technology=tobj
                         )
 
@@ -1339,7 +1339,7 @@ def query(request,qid,q2id='0',sbsid='0'):
                         docownership__user=u,
                         docownership__relevant__gt=0,
                         docownership__tag=tag['id']
-                    ).distinct('UT').order_by('UT').values_list('docownership__relevant', flat=True)
+                    ).distinct('pk').order_by('pk').values_list('docownership__relevant', flat=True)
                     scores[i] = list(l)
                     i+=1
                 dscores = [None] + scores
@@ -1369,7 +1369,7 @@ def query(request,qid,q2id='0',sbsid='0'):
         for u in qusers:
             l = qdocs.filter(
                 docownership__user=u
-            ).distinct('UT').order_by('UT').values_list('docownership__relevant', flat=True)
+            ).distinct('pk').order_by('pk').values_list('docownership__relevant', flat=True)
             scores[i] = list(l)
             i+=1
         dscores = [None] + scores
@@ -2443,6 +2443,8 @@ def sortdocs(request):
                 })
 
 
+    print(filt_docs)
+    all_docs = Doc.objects.filter(id__in=all_docs)
     tag_text = ""
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
@@ -2475,6 +2477,7 @@ def sortdocs(request):
                 kwargs = {
                     '{0}__{1}'.format(f_fields[i],op): f_text[i]
                 }
+                print(kwargs)
                 if joiner=="AND":
                     if exclude:
                         filt_docs = filt_docs.exclude(**kwargs)
@@ -2485,6 +2488,9 @@ def sortdocs(request):
                         filt_docs = filt_docs | all_docs.exclude(**kwargs)
                     else:
                         filt_docs = filt_docs | all_docs.filter(**kwargs)
+
+                print(filt_docs)
+                print(all_docs)
                 tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
         except:
             break
@@ -2510,6 +2516,7 @@ def sortdocs(request):
 
 
     #print(len(filt_docs))
+    print(sort_dirs)
 
     if sort_dirs is not None:
         order_by = ('-PY','pk')
@@ -2523,34 +2530,34 @@ def sortdocs(request):
             null_filter = field+'__isnull'
             order_by.append(sortdir+field)
             filt_docs = filt_docs.filter(**{null_filter:False})
-        if download != "true":
-            x = filt_docs.values()
-            docs = filt_docs.order_by(*order_by).values(*single_fields)[:100]
-        else:
-            docs = filt_docs.order_by(*order_by).values(*single_fields)
+    if download != "true":
+        x = filt_docs.values()
+        docs = filt_docs.order_by(*order_by).values(*single_fields)[:100]
+    else:
+        docs = filt_docs.order_by(*order_by).values(*single_fields)
 
 
-        if len(mult_fields) > 0:
+    if len(mult_fields) > 0:
 
-            for d in docs:
-                for m in range(len(mult_fields)):
-                    f = (mult_fields_tuple[m],)
-                    if "tag__" in mult_fields_tuple[m]:
-                        if q2id!='0':
-                            adoc = Tag.objects.all().filter(doc__pk=d['pk'],query=qid).values_list("title") | Tag.objects.all().filter(doc__pk=d['pk'],query=q2id).values_list("title")
-                        else:
-                            adoc = Tag.objects.all().filter(doc__pk=d['pk'],query=qid).values_list("title")
+        for d in docs:
+            for m in range(len(mult_fields)):
+                f = (mult_fields_tuple[m],)
+                if "tag__" in mult_fields_tuple[m]:
+                    if q2id!='0':
+                        adoc = Tag.objects.all().filter(doc__pk=d['pk'],query=qid).values_list("title") | Tag.objects.all().filter(doc__pk=d['pk'],query=q2id).values_list("title")
                     else:
-                        adoc = filt_docs.filter(pk=d['pk']).values_list(*f).order_by('docauthinst__position')
-                    if "note__" in mult_fields_tuple[m]:
-                        adoc = [x.text for x in Doc.objects.get(pk=d['pk']).note_set.filter(
-                            project=query.project
-                        )]
-                    if "docfile__" in mult_fields_tuple[m]:
-                        adoc = "/scoping/download_pdf/"+str(d['pk'])
-                    d[mult_fields[m]] = "; <br>".join(str(x) for x in (list(itertools.chain(*adoc))))
-                    if "note__" in mult_fields_tuple[m]:
-                        d[mult_fields[m]] = "; <br>".join(x.strip() for x in  adoc)
+                        adoc = Tag.objects.all().filter(doc__pk=d['pk'],query=qid).values_list("title")
+                else:
+                    adoc = filt_docs.filter(pk=d['pk']).values_list(*f).order_by('docauthinst__position')
+                if "note__" in mult_fields_tuple[m]:
+                    adoc = [x.text for x in Doc.objects.get(pk=d['pk']).note_set.filter(
+                        project=query.project
+                    )]
+                if "docfile__" in mult_fields_tuple[m]:
+                    adoc = "/scoping/download_pdf/"+str(d['pk'])
+                d[mult_fields[m]] = "; <br>".join(str(x) for x in (list(itertools.chain(*adoc))))
+                if "note__" in mult_fields_tuple[m]:
+                    d[mult_fields[m]] = "; <br>".join(x.strip() for x in  adoc)
 
     if request.user.profile.type == "default":
         max = 4
@@ -2680,28 +2687,28 @@ def technology(request,tid):
     tech, docs, tobj, nqdocs = get_tech_docs(tid,other=True)
     project = tobj.project
     docinfo={}
-    docinfo['nqdocs'] = nqdocs.distinct('UT').count()
-    docinfo['tdocs'] = docs.distinct('UT').count()
+    docinfo['nqdocs'] = nqdocs.distinct('pk').count()
+    docinfo['tdocs'] = docs.distinct('pk').count()
     docinfo['reldocs'] = docs.filter(
         docownership__relevant=1,
         docownership__query__technology__in=tech
-    ).distinct('UT').count() + nqdocs.distinct('UT').count()
+    ).distinct('pk').count() + nqdocs.distinct('pk').count()
 
     docs = docs.order_by('PY').filter(PY__gt=1985)
 
     rdocids = docs.filter(
         docownership__relevant=1,
         docownership__query__technology__in=tech
-    ).values_list('UT',flat=True)
+    ).values_list('pk',flat=True)
 
     rdocids = list(rdocids)
 
-    rdocs = docs.filter(UT__in=rdocids).values('PY').annotate(
-        n=models.Count("UT"),
+    rdocs = docs.filter(pk__in=rdocids).values('PY').annotate(
+        n=models.Count("pk"),
         relevant=models.Value("Relevant", models.TextField())
     )
-    nrdocs = docs.exclude(UT__in=rdocids).values('PY').annotate(
-        n=models.Count("UT"),
+    nrdocs = docs.exclude(pk__in=rdocids).values('PY').annotate(
+        n=models.Count("pk"),
         relevant=models.Value("Not Relevant", models.TextField())
     )
 
@@ -2739,17 +2746,17 @@ def download_tdocs(request,tid):
     )
     trdocs = docs.filter(technology__in=tech).exclude(query__technology__in=tech)
     rdocs = rdocs | trdocs
-    rdocs = rdocs.distinct('UT')
+    rdocs = rdocs.distinct('pk')
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="documents.csv"'
 
     writer = csv.writer(response)
 
-    writer.writerow(['UT','PY','CITATION','DOI'])
+    writer.writerow(['pk','PY','CITATION','DOI'])
 
     for d in rdocs.iterator():
 
-        row = [d.UT,d.PY,d.citation(),'http://dx.doi.org/'+str(d.wosarticle.di)]
+        row = [d.pk,d.PY,d.citation(),'http://dx.doi.org/'+str(d.wosarticle.di)]
         writer.writerow(row)
 
     return response
@@ -2760,9 +2767,9 @@ def prepare_authorlist(request,tid):
         docownership__relevant=1,
         docownership__query__technology__in=tech
     )
-    docids = docs.values_list('UT',flat=True)
+    docids = docs.values_list('pk',flat=True)
 
-    emails = Doc.objects.filter(UT__in=docids,wosarticle__em__isnull=False).annotate(
+    emails = Doc.objects.filter(pk__in=docids,wosarticle__em__isnull=False).annotate(
         em_lower=Func(F('wosarticle__em'), function='lower')
     ).distinct('em_lower')#.values('em_lower').distinct()
 
@@ -2776,7 +2783,7 @@ def prepare_authorlist(request,tid):
                 if d.docauthinst_set.count() == 0:
                     continue
                 au = d.docauthinst_set.order_by('position').first().AU
-                audocs = docs.filter(docauthinst__AU=au,query__technology__isnull=False).distinct('UT')
+                audocs = docs.filter(docauthinst__AU=au,query__technology__isnull=False).distinct('pk')
                 docset = "; ".join([x.citation() for x in audocs])
                 et, created = EmailTokens.objects.get_or_create(
                     email=evalue,
@@ -3039,7 +3046,7 @@ def cycle_score(request):
         else:
             new_score = score+1
         new_score = score
-        docown = DocOwnership.objects.filter(query__id=qid, doc__UT=doc_id, user__id=user, tag__id=tag).first()
+        docown = DocOwnership.objects.filter(query__id=qid, doc__pk=doc_id, user__id=user, tag__id=tag).first()
         docown.relevant = new_score
         docown.save()
     else:
@@ -3050,9 +3057,9 @@ def cycle_score(request):
             new_score = score+1
 
         # Check
-        docown = DocOwnership.objects.filter(query__id=qid, doc__UT=doc_id, user__id=user, tag__id=tag).first()
+        docown = DocOwnership.objects.filter(query__id=qid, doc__pk=doc_id, user__id=user, tag__id=tag).first()
         if (docown == None):
-            docown = DocOwnership.objects.filter(query__id=q2id, doc__UT=doc_id, user__id=user, tag__id=tag).first()
+            docown = DocOwnership.objects.filter(query__id=q2id, doc__pk=doc_id, user__id=user, tag__id=tag).first()
 
         docown.relevant = new_score
         docown.save()
@@ -3130,9 +3137,9 @@ def assign_docs(request):
             for user in user_list:
                 docs = docs.exclude(docownership__user=user,docownership__relevant__gt=0)
 
-        my_ids = list(docs.values_list('UT', flat=True))
+        my_ids = list(docs.values_list('pk', flat=True))
         rand_ids = random.sample(my_ids, ssize)
-        sample = docs.filter(UT__in=rand_ids).all()
+        sample = docs.filter(pk__in=rand_ids).all()
 
 
         s = 0
@@ -3305,7 +3312,7 @@ def do_review(request):
     print(docown.relevant)
 
     print(docown.user.username)
-    print(docown.doc.UT)
+    print(docown.doc.pk)
 
     docown.relevant=int(d)
     docown.date=timezone.now()
