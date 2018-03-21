@@ -2443,8 +2443,9 @@ def sortdocs(request):
                 })
 
 
-    print(filt_docs)
-    all_docs = Doc.objects.filter(id__in=all_docs)
+    all_docs = filt_docs
+
+    fids = []
     tag_text = ""
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
@@ -2487,10 +2488,13 @@ def sortdocs(request):
                     if exclude:
                         filt_docs = filt_docs | all_docs.exclude(**kwargs)
                     else:
-                        filt_docs = filt_docs | all_docs.filter(**kwargs)
+                        fids = []
+                        fids = fids + list(filt_docs.values_list('id',flat=True))
+                        fids = fids + list(all_docs.filter(**kwargs).values_list('id',flat=True))
+                        print(len(fids))
 
-                print(filt_docs)
-                print(all_docs)
+                        filt_docs = all_docs.filter(id__in=set(fids))
+
                 tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
         except:
             break
@@ -2498,7 +2502,6 @@ def sortdocs(request):
     if "k" in fields:
         filt_docs = filt_docs.filter(citation_objects=True)
 
-    print(len(filt_docs))
 
 
     if tag_title is not None:
@@ -2514,9 +2517,7 @@ def sortdocs(request):
         sortdir=""
 
 
-
-    #print(len(filt_docs))
-    print(sort_dirs)
+    n_docs = len(filt_docs)
 
     if sort_dirs is not None:
         order_by = ('-PY','pk')
@@ -2530,11 +2531,12 @@ def sortdocs(request):
             null_filter = field+'__isnull'
             order_by.append(sortdir+field)
             filt_docs = filt_docs.filter(**{null_filter:False})
+
+        docs = filt_docs.order_by(*order_by).values(*single_fields)
+        n_docs = len(docs)
     if download != "true":
         x = filt_docs.values()
-        docs = filt_docs.order_by(*order_by).values(*single_fields)[:100]
-    else:
-        docs = filt_docs.order_by(*order_by).values(*single_fields)
+        docs = docs[:100]
 
 
     if len(mult_fields) > 0:
@@ -2566,7 +2568,7 @@ def sortdocs(request):
         max = 8
         min = 5
 
-    print(fields)
+
     for d in docs:
         # work out total relevance
         if "docfile__id" in fields:
@@ -2586,9 +2588,7 @@ def sortdocs(request):
         if len(users) > 0:
             for u in users:
                 uname = u.split("__")[1]
-                #print(uname)
                 doc = Doc.objects.get(pk=d['pk'])
-                #print(d['UT'])
                 if q2id!='0':
                     do = DocOwnership.objects.filter(doc_id=d['pk'],query__id=qid,user__username=uname) | DocOwnership.objects.filter(doc_id=d['pk'],query__id=q2id,user__username=uname)
                 else:
@@ -2644,10 +2644,10 @@ def sortdocs(request):
     #x = zu
     response = {
         'data': list(docs),
-        'n_docs': filt_docs.count()
+        'n_docs': n_docs
     }
 
-    #template = loader.get_template('scoping/index.html')
+    template = loader.get_template('scoping/base.html')
     context = response
     #return HttpResponse(template.render(context, request))
 
