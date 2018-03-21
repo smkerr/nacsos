@@ -168,9 +168,12 @@ def person(request,tid):
     pt = SearchParTable(pars)
     RequestConfig(request).configure(pt)
 
+    seats = Seat.objects.filter(occupant=p)
+
     context = {
         'p':p,
-        'pars': pt
+        'pars': pt,
+        'seats': seats
     }
 
     return HttpResponse(template.render(context, request))
