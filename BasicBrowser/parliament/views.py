@@ -186,7 +186,7 @@ def party(request,tid):
     party = Party.objects.get(pk=tid)
 
     persons = person_table(Person.objects.filter(
-        utterance__document__parlsession__parliament=parl,
+        party=party
     ))
     RequestConfig(request).configure(persons)
 

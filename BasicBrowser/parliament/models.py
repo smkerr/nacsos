@@ -25,10 +25,13 @@ class ParlSession(models.Model):
     years = ArrayField(models.IntegerField(),null=True)
     total_seats = models.IntegerField(null=True)
 
+    def __str__(self):
+        return "{} - {}".format(self.parliament,self.n)
 
 
 class Party(models.Model):
     name = models.TextField()
+    alt_names = ArrayField(models.TextField(),null=True)
     parliament = models.ForeignKey(Parl,null=True)
     colour = models.CharField(max_length=7, null=True)
 
@@ -36,13 +39,44 @@ class Party(models.Model):
         return self.name.upper()
 
 class Person(models.Model):
+    FEMALE = 1
+    MALE = 2
+
+
+    GENDERS = (
+        (FEMALE,'Female'),
+        (MALE, 'Male'),
+    )
+
+
+    #### Names
     surname = models.TextField()
     first_name = models.TextField()
+    title = models.TextField(null=True)
+    academic_title = models.TextField(null=True)
+    ortszusatz = models.TextField(null=True)
+    adel = models.TextField(null=True)
+    prefix = models.TextField(null=True)
+
     clean_name = models.TextField(null=True)
+
+    ## Bio
     dob = models.DateField(null=True)
     year_of_birth = models.IntegerField(null=True)
+    place_of_birth = models.TextField(null=True)
+    country_of_birth = models.ForeignKey(cities.models.Country,null=True)
+    date_of_death = models.DateField(null=True)
+
+    gender = models.IntegerField(null=True,choices=GENDERS)
+    family_status = models.TextField(null=True)
+    religion = models.TextField(null=True)
+    occupation = models.TextField(null=True)
+    short_bio = models.TextField(null=True)
+
     party = models.ForeignKey(Party,null=True)
-    bio = models.TextField(null=True)
+
+    def __str__(self):
+        return self.clean_name
 
 ##################################
 ## Texts
@@ -125,6 +159,10 @@ class PartyList(models.Model):
     name = models.TextField(null=True)
     region = models.ForeignKey(cities.models.Region,null=True)
     parlsession = models.ForeignKey(ParlSession)
+    party = models.ForeignKey(Party,null=True)
+
+    def __str__(self):
+        return self.name
 
 class ListMembership(models.Model):
     person = models.ForeignKey(Person)
@@ -142,6 +180,8 @@ class Seat(models.Model):
 
     parlsession=models.ForeignKey(ParlSession)
     occupant = models.ForeignKey(Person)
+    start_date = models.DateField(null=True)
+    end_date = models.DateField(null=True)
     party = models.ForeignKey(Party,null=True)
     seat_type = models.IntegerField(choices=SEAT_TYPES,null=True)
     constituency = models.ForeignKey(Constituency, null=True)
