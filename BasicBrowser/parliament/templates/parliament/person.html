@@ -3,7 +3,11 @@
 {% block content %}
 
 <h1>Person</h1>
-<h2>{{p.clean_name}} - {{p.party}}</h2>
+<h2>{{p.clean_name}} ({{p.dob}} - {{p.date_of_death}}) - {{p.party}}</h2>
+<p><b>Occupation</b>: {{p.occupation}}</p>
+<p><b>Family Status</b>: {{p.family_status}}</p>
+<p><b>Religion</b>: {{p.religion}}</p>
+<p><b>Bio</b>: {{p.short_bio}}</p>
 <h3>Seats</h3>
 {% render_table seats %}
 <h3>Contributions</h3>

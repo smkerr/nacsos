@@ -173,9 +173,11 @@ class Seat(models.Model):
 
     DIRECT = 1
     LIST = 2
+    VOLKSKAMMER = 3
     SEAT_TYPES = (
         (DIRECT,'Direct'),
         (LIST, 'List'),
+        (VOLKSKAMMER, 'Volkskammer')
     )
 
     parlsession=models.ForeignKey(ParlSession)
