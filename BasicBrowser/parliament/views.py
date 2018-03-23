@@ -9,6 +9,8 @@ from parliament.models import *
 from .tables import *
 from .forms import *
 from .tasks import *
+from django.db.models.functions import TruncDate, TruncMonth, TruncYear
+import datetime
 # Create your views here.
 @login_required
 def index(request):
@@ -154,9 +156,69 @@ def search_pars(request,sid):
     RequestConfig(request).configure(pt)
 
     context = {
-        'pars': pt,
+        'pars': pt
     }
 
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def search_home(request,sid):
+    template = loader.get_template('parliament/search-home.html')
+
+    s = Search.objects.get(pk=sid)
+    pars = Paragraph.objects.filter(search_matches=s)
+
+    graph = list(pars.filter(utterance__document__date__isnull=False).order_by().annotate(
+        year=TruncMonth('utterance__document__date')
+    ).order_by('year').values('year').annotate(n = Count('id')))
+
+    for i in range(len(graph)):
+        graph[i]['year']=graph[i]['year'].strftime('%Y-%m')
+
+    stat = RunStats.objects.filter(psearch=s).last()
+    topics = stat.topic_set.all()
+
+    context = {
+        'pars': pars,
+        'graph': list(graph),
+        's': s,
+        'x': 'year',
+        'y': 'n',
+        'stat': stat,
+        'topics': topics
+    }
+    return HttpResponse(template.render(context, request))
+
+@login_required
+def parl_topic(request,tid):
+    template = loader.get_template('parliament/parl-topic.html')
+
+    topic = Topic.objects.get(pk=tid)
+    stat = topic.run_id
+    s = stat.psearch
+    pars = Paragraph.objects.filter(
+        search_matches=s,doctopic__topic=topic
+    ).order_by(
+        '-doctopic__score'
+    )
+
+    pt = SearchParTable(pars)
+
+    pt.reg_replace("|".join([s.text]+[x for x in topic.top_words]))
+    RequestConfig(request).configure(pt)
+
+    stat = RunStats.objects.filter(psearch=s).last()
+    topics = stat.topic_set.all()
+
+    context = {
+        'pars': pt,
+        's': s,
+        'x': 'year',
+        'y': 'n',
+        'stat': stat,
+        'topic': topic
+    }
     return HttpResponse(template.render(context, request))
 
 @login_required

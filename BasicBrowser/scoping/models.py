@@ -189,6 +189,7 @@ def save_user_profile(sender, instance, **kwargs):
 
 class UT(models.Model):
     UT = models.CharField(max_length=30,db_index=True,primary_key=True, verbose_name='Document ID')
+    sid = models.CharField(max_length=50,db_index=True,verbose_name='Scopus_id',null=True)
 
 class Doc(models.Model):
     random = DocManager

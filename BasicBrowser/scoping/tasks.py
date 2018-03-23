@@ -64,3 +64,5 @@ def upload_docs(qid, update):
     t.save()
     for d in q.doc_set.all().iterator():
         d.tag.add(t)
+
+    return(q)

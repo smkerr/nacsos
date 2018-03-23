@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
-import scoping
+import scoping, parliament
+
 
 class MinMaxFloat(models.FloatField):
     def __init__(self, min_value=None, max_value=None, *args, **kwargs):
@@ -195,6 +196,7 @@ class HTopicYear(models.Model):
 class DocTopic(models.Model):
     #doc = models.ForeignKey(Doc, null=True)
     doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.CASCADE)
+    par = models.ForeignKey('parliament.Paragraph',null=True, on_delete=models.CASCADE)
     topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
     score = models.FloatField()
     scaled_score = models.FloatField()
@@ -251,8 +253,9 @@ class RunStats(models.Model):
     max_iterations  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
     fulltext  = models.BooleanField(default=False, help_text='do analysis on fullText? (dependent on availability)')
 
-    query = models.ForeignKey('scoping.Query', null=True, on_delete=models.CASCADE)
 
+    query = models.ForeignKey('scoping.Query', null=True, on_delete=models.CASCADE)
+    psearch = models.ForeignKey('parliament.Search',null=True, on_delete=models.CASCADE)
 
     ## Progress
     process_id = models.IntegerField(null=True)

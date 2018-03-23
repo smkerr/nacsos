@@ -38,6 +38,14 @@ def proc_docs(docs, stoplist, fulltext=False):
 
     return [abstracts, docsizes, ids]
 
+def proc_texts(docs, stoplist, fulltext=False):
+    docs = [x for x in docs.iterator()]
+    docsizes = [len(x.text) for x in docs]
+    ids = [x.pk for x in docs]
+    abstracts = [x.text for x in docs]
+
+    return [abstracts, docsizes, ids]
+
 class ModelSimilarity:
 	'''
 	Uses a model (e.g. Word2Vec model) to calculate the similarity between two terms.

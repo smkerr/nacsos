@@ -36,7 +36,11 @@ class PersonTable(tables.Table):
     applauded = tables.Column()
     class Meta:
         model=Person
-        exclude=('id',)
+        exclude=(
+            'id','short_bio','alt_surnames',
+            'alt_first_names','title','ortszusatz',
+            'year_of_birth','year_of_death'
+        )
 
 
 class PartyTable(tables.Table):

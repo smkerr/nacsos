@@ -51,7 +51,9 @@ class Person(models.Model):
 
     #### Names
     surname = models.TextField()
+    alt_surnames = ArrayField(models.TextField(),null=True)
     first_name = models.TextField()
+    alt_first_names = ArrayField(models.TextField(),null=True)
     title = models.TextField(null=True)
     academic_title = models.TextField(null=True)
     ortszusatz = models.TextField(null=True)

@@ -338,7 +338,8 @@ def add_scopus_doc(r,q):
         print(r)
         return
 
-    docs = Doc.objects.filter(UT__UT=r['UT'])
+    docs = Doc.objects.filter(UT__sid=r['UT'])
+    docs = Doc.objects.filter(query=2724)
     if docs.count()==1: # If it's just there - great!
         doc = docs.first()
         article = WoSArticle(doc=doc)
@@ -362,7 +363,7 @@ def add_scopus_doc(r,q):
 
         if did=='NA':
             docs = Doc.objects.filter(
-                    wosarticle__ti=get(r,'ti'),
+                    wosarticle__ti__iexact=get(r,'ti'),
                     PY=get(r,'py')
             )
         else:
@@ -376,9 +377,12 @@ def add_scopus_doc(r,q):
             doc = docs.first()
         if len(docs)>1: # if there are two, that's bad!
             print("more than one doc matching!!!!!")
-            for d in docs:
-                print(d.title)
-                print(d.UT)
+            wdocs = docs.filter(UT__UT__contains='WOS:')
+            if wdocs.count()==1:
+                docs.exclude(UT__UT__contains='WOS:').delete()
+                doc = wdocs.first()
+            else:
+                doc = docs.first()
         if len(docs)==0: # if there are none, try with the title and jaccard similarity
             #print("no matching docs")
             s1 = shingle(get(r,'ti'))
@@ -394,6 +398,7 @@ def add_scopus_doc(r,q):
                 title__iregex='\w',
                 title__icontains=twords
             )
+            print(py_docs.count())
             docs = []
             for d in py_docs:
                 j = jaccard(s1,d.shingle())
@@ -409,10 +414,8 @@ def add_scopus_doc(r,q):
             )
             doc = Doc(UT=ut)
             #print(doc)
-
+    doc.UT.sid = r['scopus_id']
     if doc is not None and "WOS:" not in doc.UT.UT:
-
-        print("UPDATING")
         doc.title=get(r,'ti')
         doc.content=get(r,'ab')
         doc.PY=get(r,'py')
