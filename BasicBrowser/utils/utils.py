@@ -265,7 +265,8 @@ def add_doc_text(r,q):
         #N1 means we need to read the next bit as key
 
         'Correspondence Address': '',
-        'References': 'CR',
+        'Cited By ': 'tc',
+        'References': 'cr',
         'UR': 'UT', # use url as ut, that's the only unique identifier...
         'PB': ''
         #'ER': , #End record
@@ -338,15 +339,22 @@ def add_scopus_doc(r,q):
         print(r)
         return
 
-    docs = Doc.objects.filter(UT__sid=r['UT'])
-    docs = Doc.objects.filter(query=2724)
+    docs = Doc.objects.filter(UT__sid=r['UT']) | Doc.objects.filter(UT__UT=r['UT'])
     if docs.count()==1: # If it's just there - great!
         doc = docs.first()
         article, created = WoSArticle.objects.get_or_create(doc=doc)
         article.save()
+        if doc.wosarticle.tc is None:
+            doc.wosarticle.tc=get(r,'tc')
+        try:
+            doc.wosarticle.dt = r['dt']
+            doc.wosarticle.save()
+            doc.save()
+        except:
+            pass
         try: # if it has no references, add them
             if doc.wosarticle.cr is None and get(r,'cr') is not None:
-                doc.wosarticle.cr = r['CR']
+                doc.wosarticle.cr = r['cr']
                 doc.wosarticle.save()
                 doc.save()
         except:
@@ -414,7 +422,9 @@ def add_scopus_doc(r,q):
             )
             doc = Doc(UT=ut)
             #print(doc)
-    doc.UT.sid = r['scopus_id']
+    if doc is not None:
+        doc.UT.sid = r['scopus_id']
+        doc.save()
     if doc is not None and "WOS:" not in doc.UT.UT:
         doc.title=get(r,'ti')
         doc.content=get(r,'ab')

@@ -21,6 +21,12 @@ class snowball_stemmer(object):
     def __call__(self, doc):
         return [self.stemmer.stem(t) for t in tokenize(doc)]
 
+class german_stemmer(object):
+    def __init__(self):
+        self.stemmer = SnowballStemmer("german")
+    def __call__(self, doc):
+        return [self.stemmer.stem(t) for t in tokenize(doc)]
+
 
 def proc_docs(docs, stoplist, fulltext=False):
     docs = [x for x in docs.iterator() if x.word_count() > 10]

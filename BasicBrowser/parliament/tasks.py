@@ -52,7 +52,7 @@ def model_parset(s, K):
         min_df=stat.min_freq,
         max_features=n_features,
         ngram_range=(stat.ngram,stat.ngram),
-        tokenizer=snowball_stemmer(),
+        tokenizer=german_stemmer(),
         stop_words=set(nltk.corpus.stopwords.words("german"))
     )
     tfidf = tfidf_vectorizer.fit_transform(abstracts)

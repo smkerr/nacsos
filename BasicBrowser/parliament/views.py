@@ -206,9 +206,9 @@ def parl_topic(request,tid):
         '-doctopic__score'
     )
 
-    pt = SearchParTable(pars)
+    pt = SearchParTableTopic(pars)
 
-    pt.reg_replace("|".join([s.text]+[x for x in topic.top_words]))
+    pt.reg_replace("|".join([s.text]+[x for x in topic.top_words]),stemmer=SnowballStemmer("german").stemmer)
     RequestConfig(request).configure(pt)
 
     stat = RunStats.objects.filter(psearch=s).last()

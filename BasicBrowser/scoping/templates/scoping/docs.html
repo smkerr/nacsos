@@ -247,7 +247,10 @@ function button_filter(event, element) {
 function join_filter(element) {
     if ($(element).val() != "") {
         table = $("#filtertable")
-        table.append('<tr><td><input class="f_field" type="text"></td><td><select class="f_operator"><option value="icontains">CONTAINS</option><option value="noticontains">NOT</option><option>EQUALS</option><option>IS GREATER THAN</option><option>IS LESS THAN</option></select></td><td><input type="text" class="f_text"> </td><td><select class="f_join" onchange="join_filter(this)"><option></option><option>AND</option><option>OR</option></select></td></tr>')
+        table.append(
+
+'<tr><td><input class="f_field" type="text"></td><td><select class="f_operator"><option value="icontains">CONTAINS</option><option value="noticontains">NOT CONTAINS</option><option value="exact">EQUALS</option><option value="notexact">NOT EQUALS</option><option value="gt">IS GREATER THAN</option><option value="lt">IS LESS THAN</option><option value="iregex">IREGEX</option></select></td><td><input type="text" class="f_text"></td><td><select class="f_join" onchange="join_filter(this)"><option></option><option>AND</option><option>OR</option></select></td></tr>'
+        )
     }
 }
 

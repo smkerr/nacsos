@@ -2458,7 +2458,7 @@ def sortdocs(request):
         if f_operators[i] == "noticontains":
             op = "icontains"
             exclude = True
-        if f_operators[i] == "notexact":
+        elif f_operators[i] == "notexact":
             op = "exact"
             exclude = True
         else:

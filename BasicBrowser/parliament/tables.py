@@ -6,6 +6,7 @@ from django.db.models import Q, Count, Func, F, Sum, Value as V
 from django.utils.html import format_html
 from django.urls import reverse
 from .urls import *
+from utils.text import *
 
 class ParlTable(tables.Table):
     id = tables.LinkColumn('parliament:parliament', args=[A('pk')])
@@ -73,12 +74,21 @@ class SearchTable(tables.Table):
 
 class SearchParTable(tables.Table):
     text = tables.Column()
-    speaker = tables.Column(
-        accessor='utterance.speaker.clean_name',verbose_name='Speaker'
+    speaker = tables.LinkColumn(
+        'parliament:person',args=[A('utterance.speaker.id')],
+        accessor='utterance.speaker.clean_name',verbose_name='Speaker',
+    )
+    party = tables.LinkColumn(
+        'parliament:party',args=[A('utterance.speaker.party.id')],
+        accessor='utterance.speaker.party'
     )
     utterance = tables.Column(
         accessor='utterance',
         verbose_name='Document'
+    )
+    date = tables.DateColumn(
+        accessor='utterance.document.date',
+        verbose_name='Date'
     )
     def __init__(self,*args,**kwargs):
         super(SearchParTable, self).__init__(*args, **kwargs)
@@ -90,17 +100,28 @@ class SearchParTable(tables.Table):
         t = "{} - {} , {}".format(d.date, d.doc_type,d.parlsession.n)
         return format_html('<a href="{}">{}</a>'.format(l,t))
 
-    def reg_replace(self,pattern):
+    def reg_replace(self,pattern,stemmer=None):
         self.pattern = '('+pattern+')'
+        self.stemmer=stemmer
 
     def render_text(self,value):
         if self.pattern is not None:
             parts = re.split(self.pattern,value,flags=re.IGNORECASE)
-            parts_span = ['<span class="h1">'+x+'</span>' if re.match(self.pattern,x,re.IGNORECASE) else x for x in parts]
-            return format_html(''.join(parts_span))
+            parts = value.split()
+            if self.stemmer is not None:
+                parts_span = ['<span class="h1">'+x+'</span>' if re.match(self.pattern,self.stemmer.stem(x),re.IGNORECASE) else x for x in parts]
+            else:
+                parts_span = ['<span class="h1">'+x+'</span>' if re.match(self.pattern,x,re.IGNORECASE) else x for x in parts]
+            return format_html(' '.join(parts_span))
         else:
             return value
 
     class Meta:
         model = Paragraph
         exclude = ('id',)
+
+
+class SearchParTableTopic(SearchParTable):
+    score = tables.Column(
+        accessor='doctopic.score'
+    )

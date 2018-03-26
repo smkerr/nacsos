@@ -8,7 +8,13 @@ from psycopg2.extras import *
 
 def add_features(title, run_id):
     django.db.connections.close_all()
-    term, created = Term.objects.get_or_create(title=title)
+    try:
+        term, created = Term.objects.get_or_create(title=title)
+    except:
+        ts = Term.objects.filter(title=title).order_by('id')
+        if ts.count() > 0:
+            ts.last().delete()
+        term = ts.first()
     term.run_id.add(run_id)
     django.db.connections.close_all()
     return term.pk
