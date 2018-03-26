@@ -244,7 +244,7 @@ def add_doc_text(r,q):
     django.db.connections.close_all()
 
     scopus2WoSFields = {
-        'TY': 'dt',
+        'M3': 'dt',
         'TI': 'ti',
         'T2': '',
         'C3': '',
@@ -342,7 +342,7 @@ def add_scopus_doc(r,q):
     docs = Doc.objects.filter(query=2724)
     if docs.count()==1: # If it's just there - great!
         doc = docs.first()
-        article = WoSArticle(doc=doc)
+        article, created = WoSArticle.objects.get_or_create(doc=doc)
         article.save()
         try: # if it has no references, add them
             if doc.wosarticle.cr is None and get(r,'cr') is not None:

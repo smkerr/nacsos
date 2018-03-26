@@ -44,6 +44,7 @@ class TopicTable(tables.Table):
             'K','alpha',
             'min_freq','max_df',
             'error','coherence',
+            'psearch'
         )#'startit')
 
 #from .urls import urlpatterns

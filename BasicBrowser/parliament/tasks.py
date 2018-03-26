@@ -45,7 +45,6 @@ def model_parset(s, K):
     docs = ps.filter(text__iregex='\w')
     abstracts, docsizes, ids = proc_texts(docs, stoplist, stat.fulltext)
     doc_ids = ids
-    random.shuffle(doc_ids)
     if stat.max_features == 0:
         n_features=1000000
     tfidf_vectorizer = TfidfVectorizer(

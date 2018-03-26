@@ -177,7 +177,10 @@ def search_home(request,sid):
         graph[i]['year']=graph[i]['year'].strftime('%Y-%m')
 
     stat = RunStats.objects.filter(psearch=s).last()
-    topics = stat.topic_set.all()
+    if stat is None:
+        topics = None
+    else:
+        topics = stat.topic_set.all()
 
     context = {
         'pars': pars,

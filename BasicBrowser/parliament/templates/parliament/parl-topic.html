@@ -4,6 +4,7 @@
 
 
 <h2>{{topic.title}}</h2>
+<h3>{{topic.top_words}}</h3>
 
 {% render_table pars %}
 
@@ -11,8 +12,5 @@
 
 <p>Topic {{stat.pk}}:
 
-{% for t in topics %}
-    <p><a href={% url 'parliament:parl-topic' t.id %}>view</a> {{ t.top_words }}
-{% endfor %}
 
 {% endblock %}

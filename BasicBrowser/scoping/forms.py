@@ -141,6 +141,7 @@ class TopicModelForm(forms.ModelForm):
             'parent_run_id',
             'docs_seen',
             'notes',
+            'psearch',
             #'method',
             'error',
             'errortype',
