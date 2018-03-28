@@ -234,6 +234,13 @@ class KFold(models.Model):
     K = models.IntegerField()
     error = models.FloatField(null=True)
 
+
+class TermPolarity(models.Model):
+    term = models.ForeignKey(Term)
+    polarity = models.FloatField(null=True)
+    POS = models.TextField(null=True)
+    source = models.TextField()
+
 #################################################
 ## RunStats and Settings....
 class RunStats(models.Model):

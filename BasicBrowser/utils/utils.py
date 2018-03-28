@@ -265,7 +265,7 @@ def add_doc_text(r,q):
         #N1 means we need to read the next bit as key
 
         'Correspondence Address': '',
-        'Cited By ': 'tc',
+        'Cited By': 'tc',
         'References': 'cr',
         'UR': 'UT', # use url as ut, that's the only unique identifier...
         'PB': ''
@@ -339,8 +339,15 @@ def add_scopus_doc(r,q):
         print(r)
         return
 
+    if get(r,'tc') == "":
+        r['tc'] = None
+        print("NOTC")
+    else:
+        print(r['tc'])
+
     docs = Doc.objects.filter(UT__sid=r['UT']) | Doc.objects.filter(UT__UT=r['UT'])
     if docs.count()==1: # If it's just there - great!
+        print("found it")
         doc = docs.first()
         article, created = WoSArticle.objects.get_or_create(doc=doc)
         article.save()
@@ -361,6 +368,8 @@ def add_scopus_doc(r,q):
             pass
         doc.query.add(q)
         #return
+    if docs.count() > 1:
+        print("OH no! multiple matches!")
 
     else: # Otherwise try and match by doi
         try:
@@ -381,6 +390,7 @@ def add_scopus_doc(r,q):
 
 
         if len(docs)==1:
+            print("found it through stage 2")
             docs.first().query.add(q)
             doc = docs.first()
         if len(docs)>1: # if there are two, that's bad!
@@ -392,7 +402,8 @@ def add_scopus_doc(r,q):
             else:
                 doc = docs.first()
         if len(docs)==0: # if there are none, try with the title and jaccard similarity
-            #print("no matching docs")
+            print("no matching docs")
+            return
             s1 = shingle(get(r,'ti'))
 
             twords = get(r,'ti').split()
@@ -421,10 +432,15 @@ def add_scopus_doc(r,q):
                 UT=r['UT']
             )
             doc = Doc(UT=ut)
+            doc.save()
             #print(doc)
     if doc is not None:
-        doc.UT.sid = r['scopus_id']
+        doc.UT.sid = r['UT']
+        doc.UT.save()
+        doc.wosarticle.tc=r['tc']
+        doc.wosarticle.save()
         doc.save()
+        doc.query.add(q)
     if doc is not None and "WOS:" not in doc.UT.UT:
         doc.title=get(r,'ti')
         doc.content=get(r,'ab')
@@ -461,7 +477,7 @@ def add_scopus_doc(r,q):
                 au = r['au'][a]
                 dai = DocAuthInst(doc=doc)
                 dai.AU = au
-                dai.position = a
+                dai.position = a+1
                 dais.append(dai)
                 #dai.save()
             DocAuthInst.objects.bulk_create(dais)
@@ -481,11 +497,12 @@ def read_scopus(res, q, update):
     max_chunk_size = 2000
     chunk_size = 0
 
+    q.doc_set.clear()
+
     for line in res:
         if '\ufeff' in line: # BOM on first line
             continue
         if 'ER  -' in line:
-
             # end of record - save it and start a new one
             n_records +=1
             records.append(record)
@@ -507,7 +524,7 @@ def read_scopus(res, q, update):
 
     print(chunk_size)
 
-    if chunk_size < max_chunk_size:
+    if chunk_size < max_chunk_size and chunk_size > 0:
         # parallely add docs
         pool = Pool(processes=32)
         pool.map(partial(add_doc_text, q=q), records)

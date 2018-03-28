@@ -214,13 +214,36 @@ def parl_topic(request,tid):
     stat = RunStats.objects.filter(psearch=s).last()
     topics = stat.topic_set.all()
 
+    party_totals = Paragraph.objects.filter(
+        search_matches=s,
+        doctopic__topic__run_id=stat,
+        utterance__speaker__party__name__isnull=False,
+        utterance__speaker__party__colour__isnull=False
+    ).order_by().values('utterance__speaker__party__name').annotate(
+        topic_score=Sum(
+            Case(
+                When(doctopic__topic=topic, then=F('doctopic__score')),
+                default=0,
+                output_field=models.FloatField()
+            )
+        ),
+        total_score=Sum('doctopic__score'),
+    ).annotate(
+        topic_proportion=F('topic_score') / F('total_score')
+    ).values(
+        'topic_score',
+        'utterance__speaker__party__name',
+        'utterance__speaker__party__colour'
+    ).order_by('-topic_score')
+
     context = {
         'pars': pt,
         's': s,
         'x': 'year',
         'y': 'n',
         'stat': stat,
-        'topic': topic
+        'topic': topic,
+        'graph': list(party_totals)
     }
     return HttpResponse(template.render(context, request))
 

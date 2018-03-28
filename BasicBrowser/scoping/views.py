@@ -2469,8 +2469,21 @@ def sortdocs(request):
                 if q2id != '0':
                     filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i]) | filt_docs.filter(tag__query__id=q2id,tag__title__icontains=f_text[i])
                 else:
-                    filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i])
+                    if joiner=="AND":
+                        filt_docs = filt_docs.filter(
+                            tag__query__id=qid,
+                            tag__title__icontains=f_text[i]
+                        )
+                    else:
+                        fids = []
+                        fids = fids + list(filt_docs.values_list('id',flat=True))
+                        fids = fids + list(all_docs.filter(
+                            tag__query__id=qid,
+                            tag__title__icontains=f_text[i]
+                        ).values_list('id',flat=True))
+                        filt_docs = all_docs.filter(id__in=set(fids))
                 tag_filter = f_text[i]
+
             else:
                 if "docownership__" in f_fields[i]:
                     f_text[i] = getattr(DocOwnership,f_text[i].upper())
