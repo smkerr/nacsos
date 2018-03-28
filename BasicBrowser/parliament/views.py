@@ -231,10 +231,10 @@ def parl_topic(request,tid):
     ).annotate(
         topic_proportion=F('topic_score') / F('total_score')
     ).values(
-        'topic_score',
+        'topic_proportion',
         'utterance__speaker__party__name',
         'utterance__speaker__party__colour'
-    ).order_by('-topic_score')
+    ).order_by('-topic_proportion')
 
     context = {
         'pars': pt,

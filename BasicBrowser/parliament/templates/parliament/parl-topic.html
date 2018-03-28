@@ -28,25 +28,24 @@ var data = {{graph|safe}};
 
 console.log(data)
 
-
+xs = []
 for (i=0;i<data.length;i++) {
     data[i].n = i
+    xs.push(data[i].utterance__speaker__party__name)
 }
-
 
 var height = 400;
 var width = 600;
 var barPadding = 2;
 var barWidth = (width / data.length) - barPadding;
 
-console.log(d3.max(data, function(d){return d.topic_score}))
 
 var yScale = d3.scale.linear()
-	.domain([0, d3.max(data, function(d){return d.topic_score})])
+	.domain([0, d3.max(data, function(d){return d.topic_proportion})])
 	.range([0, height]);
 
 var xScale = d3.scale.ordinal()
-	.domain(data.n)
+	.domain(xs)
 	.rangeBands([0, width], 0.1, 0.3);
 
 var svg = d3.select("#chartarea")
@@ -59,7 +58,7 @@ svg.selectAll('rect')
 	.append('rect')
 	.attr('class', 'bar')
 	.attr("x", function (d, i) {
-		return xScale(i);
+		return xScale(d.utterance__speaker__party__name);
 	})
 	.attr("y", function (d, i) {
 		return height;
@@ -77,10 +76,10 @@ svg.selectAll('rect')
 		return i * 50;
 	})
 	.attr("y", function (d, i) {
-		return height - yScale(d.topic_score);
+		return height - yScale(d.topic_proportion);
 	})
 	.attr("height", function (d, i) {
-		return yScale(d.topic_score);
+		return yScale(d.topic_proportion);
 	});
 
 </script>
