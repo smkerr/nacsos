@@ -69,7 +69,7 @@ def get(r, k):
     try:
         x = r[k]
     except:
-        x = ""
+        x = None
     return(x)
 
 def jaccard(s1,s2):
@@ -265,6 +265,8 @@ def add_doc_text(r,q):
         #N1 means we need to read the next bit as key
 
         'Correspondence Address': '',
+        'Funding details': 'fu',
+        'Funding text': 'fx',
         'Cited By': 'tc',
         'References': 'cr',
         'UR': 'UT', # use url as ut, that's the only unique identifier...
@@ -311,10 +313,18 @@ def add_doc_text(r,q):
             except:
                 pass
 
+
+
             if key in mfields:
-                record[key] = [value]
+                if key in record:
+                    record[key].append(value)
+                else:
+                    record[key] = [value]
             else:
-                record[key] = value
+                if key in record:
+                    record[key] += "; " + value
+                else:
+                    record[key] = value
 
         elif len(line) > 1:
             if key in mfields:
@@ -339,11 +349,7 @@ def add_scopus_doc(r,q):
         print(r)
         return
 
-    if get(r,'tc') == "":
-        r['tc'] = None
-        print("NOTC")
-    else:
-        print(r['tc'])
+    print(get(r,'fu'))
 
     docs = Doc.objects.filter(UT__sid=r['UT']) | Doc.objects.filter(UT__UT=r['UT'])
     if docs.count()==1: # If it's just there - great!
@@ -351,6 +357,10 @@ def add_scopus_doc(r,q):
         doc = docs.first()
         article, created = WoSArticle.objects.get_or_create(doc=doc)
         article.save()
+        if doc.wosarticle.fu is None:
+            doc.wosarticle.fu = get(r,'fu')
+        if doc.wosarticle.fx is None:
+            doc.wosarticle.fx = get(r,'fx')
         if doc.wosarticle.tc is None:
             doc.wosarticle.tc=get(r,'tc')
         try:
@@ -368,7 +378,7 @@ def add_scopus_doc(r,q):
             pass
         doc.query.add(q)
         #return
-    if docs.count() > 1:
+    elif docs.count() > 1:
         print("OH no! multiple matches!")
 
     else: # Otherwise try and match by doi
@@ -403,7 +413,6 @@ def add_scopus_doc(r,q):
                 doc = docs.first()
         if len(docs)==0: # if there are none, try with the title and jaccard similarity
             print("no matching docs")
-            return
             s1 = shingle(get(r,'ti'))
 
             twords = get(r,'ti').split()
@@ -437,7 +446,7 @@ def add_scopus_doc(r,q):
     if doc is not None:
         doc.UT.sid = r['UT']
         doc.UT.save()
-        doc.wosarticle.tc=r['tc']
+        doc.wosarticle.tc=get(r,'tc')
         doc.wosarticle.save()
         doc.save()
         doc.query.add(q)

@@ -119,9 +119,13 @@ class SearchParTable(tables.Table):
     class Meta:
         model = Paragraph
         exclude = ('id',)
+        attrs = {'class': 'partable'}
 
 
 class SearchParTableTopic(SearchParTable):
     score = tables.Column(
         accessor='doctopic.score'
     )
+
+    class Meta:
+        attrs = {'class': 'partable'}

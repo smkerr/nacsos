@@ -24,6 +24,7 @@ def do_search(s):
     Through.objects.bulk_create(tms)
     s.par_count=ps.count()
     s.save()
+    model_parset(s.id,15)
     return tms
 
 

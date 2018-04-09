@@ -18,6 +18,7 @@ urlpatterns = [
     url(r'^search-pars/(?P<sid>[0-9]+)/$', views.search_pars, name='search-pars'),
 
     url(r'^parl-topic/(?P<tid>[0-9]+)/$', views.parl_topic, name='parl-topic'),
+    url(r'^parl-topic/(?P<tid>[0-9]+)/(?P<pid>[0-9]+)$', views.parl_topic, name='parl-topic-party'),
 
     url(r'^person/(?P<tid>[0-9]+)/$', views.person, name='person'),
     url(r'^party/(?P<tid>[0-9]+)/$', views.party, name='party'),

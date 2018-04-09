@@ -102,3 +102,22 @@ pcolours = [
     {'party':'gruene','colour':'#64A12D'}, rgb(100,161,45)
 ]
 */
+table.partable  td {
+    padding: 1em;
+    border-bottom: 1px solid black;
+}
+
+svg {
+    border: 1px solid black;
+    padding: 5px;
+    background-color: rgba(240,230,230,0.5);
+}
+
+rect {
+    cursor: pointer;
+}
+rect.hovered {
+    border: 15px solid black;
+    stroke-width: 2;
+    stroke: black;
+}

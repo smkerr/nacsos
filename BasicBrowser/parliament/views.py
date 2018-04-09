@@ -194,7 +194,7 @@ def search_home(request,sid):
     return HttpResponse(template.render(context, request))
 
 @login_required
-def parl_topic(request,tid):
+def parl_topic(request,tid, pid=0):
     template = loader.get_template('parliament/parl-topic.html')
 
     topic = Topic.objects.get(pk=tid)
@@ -205,6 +205,9 @@ def parl_topic(request,tid):
     ).order_by(
         '-doctopic__score'
     )
+
+    if pid !=0:
+        pars = pars.filter(utterance__speaker__party=Party.objects.get(pk=pid))
 
     pt = SearchParTableTopic(pars)
 
@@ -232,6 +235,7 @@ def parl_topic(request,tid):
         topic_proportion=F('topic_score') / F('total_score')
     ).values(
         'topic_proportion',
+        'utterance__speaker__party__id',
         'utterance__speaker__party__name',
         'utterance__speaker__party__colour'
     ).order_by('-topic_proportion')
