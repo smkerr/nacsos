@@ -129,3 +129,9 @@ class SearchParTableTopic(SearchParTable):
 
     class Meta:
         attrs = {'class': 'partable'}
+
+class SeatTable(tables.Table):
+
+    class Meta:
+        model = Seat
+        exclude = ('id',)

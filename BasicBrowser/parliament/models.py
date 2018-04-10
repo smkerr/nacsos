@@ -36,6 +36,8 @@ class Party(models.Model):
     colour = models.CharField(max_length=7, null=True)
 
     def __str__(self):
+        if self is None:
+            return("NA")
         return self.name.upper()
 
 class Person(models.Model):
@@ -164,7 +166,11 @@ class PartyList(models.Model):
     party = models.ForeignKey(Party,null=True)
 
     def __str__(self):
-        return self.name
+        return self.region.name
+    # def __str__(self):
+    #     if self is None:
+    #         return None
+    #     return self.name
 
 class ListMembership(models.Model):
     person = models.ForeignKey(Person)

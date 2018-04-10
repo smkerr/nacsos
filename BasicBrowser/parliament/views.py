@@ -260,7 +260,10 @@ def person(request,tid):
     pt = SearchParTable(pars)
     RequestConfig(request).configure(pt)
 
-    seats = Seat.objects.filter(occupant=p)
+    seats = SeatTable(
+        Seat.objects.filter(occupant=p)
+    )
+    #RequestConfig(request).configure(seats)
 
     context = {
         'p':p,
