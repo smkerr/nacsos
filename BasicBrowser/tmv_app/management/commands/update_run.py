@@ -56,8 +56,8 @@ class Command(BaseCommand):
             update_topic_titles(run_id)
 
             yearly_topic_term_scores(run_id)
-            management.call_command('corr_topics',run_id)
-            update_ipcc_coverage(run_id)
+            #management.call_command('corr_topics',run_id)
+            #update_ipcc_coverage(run_id)
             normalise_tdts(run_id)
 
         elif stat.method == "BD":

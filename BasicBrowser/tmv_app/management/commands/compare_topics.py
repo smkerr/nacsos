@@ -21,11 +21,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('-l','--list', nargs='+', help='<Required> list', required=True)
+        parser.add_argument('-f','--fname',type=str, help='fname', required=False)
 
 
     def handle(self, *args, **options):
 
         runs = [int(x) for x in options['list']]
+        print(options["fname"])
 
         print(runs)
         runs = RunStats.objects.filter(pk__in=runs).order_by('K')
@@ -41,6 +43,8 @@ class Command(BaseCommand):
             fname = "/tmp/run_compare_{}_windows.xlsx".format(stat.run_id)
         else:
             fname = "/tmp/run_compare_{}_{}.xlsx".format(runs[0].run_id,runs[len(runs)-1].run_id)
+            if options["fname"] is not None:
+                fname = "{}/run_compare_{}_{}.xlsx".format(options["fname"],runs[0].run_id,runs[len(runs)-1].run_id)
 
         writer = pd.ExcelWriter(fname, engine='xlsxwriter')
 
