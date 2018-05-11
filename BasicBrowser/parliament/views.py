@@ -51,13 +51,13 @@ def parliament(request,pid):
     template = loader.get_template('parliament/parliament.html')
 
     parl = Parl.objects.get(pk=pid)
-    ps  = ParlSession.objects.filter(parliament=parl).annotate(
+    ps  = ParlPeriod.objects.filter(parliament=parl).annotate(
         docs = Count('document')
     )
-    ps = ParlSessionTable(ps, order_by="id")
+    ps = ParlPeriodTable(ps, order_by="id")
 
     persons = person_table(Person.objects.filter(
-        utterance__document__parlsession__parliament=parl,
+        utterance__document__parlperiod__parliament=parl,
     ))
 
     RequestConfig(request).configure(persons)
@@ -80,13 +80,13 @@ def parliament(request,pid):
 
 
 @login_required
-def psession(request,pid):
+def parlperiod(request,pid):
 
-    template = loader.get_template('parliament/psession.html')
+    template = loader.get_template('parliament/parlperiod.html')
 
-    ps  = ParlSession.objects.get(pk=pid)
+    ps  = ParlPeriod.objects.get(pk=pid)
 
-    docs = Document.objects.filter(parlsession=ps).order_by('date')
+    docs = Document.objects.filter(parlperiod=ps).order_by('date')
     docs = DocumentTable(docs)
     RequestConfig(request).configure(docs)
 

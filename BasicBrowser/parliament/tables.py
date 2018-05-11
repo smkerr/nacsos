@@ -17,13 +17,13 @@ class ParlTable(tables.Table):
         model = Parl
         #fields = ('id','title','description','role','queries','docs','tms')
 
-class ParlSessionTable(tables.Table):
-    docs = tables.LinkColumn('parliament:psession',args=[A('pk')])
+class ParlPeriodTable(tables.Table):
+    docs = tables.LinkColumn('parliament:parlperiod',args=[A('pk')])
     #id = tables.LinkColumn('scoping:project', args=[A('pk')])
     #queries = tables.LinkColumn('scoping:queries', args=[A('pk')])
     #tms = tables.LinkColumn('tmv_app:runs', args=[A('pk')])
     class Meta:
-        model = ParlSession
+        model = ParlPeriod
         #fields = ('id','title','description','role','queries','docs','tms')
 
 class PersonTable(tables.Table):
@@ -61,7 +61,7 @@ class DocumentTable(tables.Table):
 
     class Meta:
         model = Document
-        exclude = ('parlsession')
+        exclude = ('parlperiod')
 
 
 class SearchTable(tables.Table):
@@ -97,7 +97,7 @@ class SearchParTable(tables.Table):
     def render_utterance(self,value):
         d = value.document
         l = reverse("parliament:document",args=[d.pk])+'#utterance_'+str(value.id)
-        t = "{} - {} , {}".format(d.date, d.doc_type,d.parlsession.n)
+        t = "{} - {} , {}".format(d.date, d.doc_type,d.parlperiod.n)
         return format_html('<a href="{}">{}</a>'.format(l,t))
 
     def reg_replace(self,pattern,stemmer=None):

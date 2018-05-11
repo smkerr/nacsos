@@ -11,7 +11,7 @@ urlpatterns = [
 
     #Parliament page
     url(r'^parliament/(?P<pid>[0-9]+)/$', views.parliament, name='parliament'),
-    url(r'^session/(?P<pid>[0-9]+)/$', views.psession, name='psession'),
+    url(r'^session/(?P<pid>[0-9]+)/$', views.parlperiod, name='parlperiod'),
 
     url(r'^search/$', views.search, name='search'),
     url(r'^search-home/(?P<sid>[0-9]+)/$', views.search_home, name='search-home'),
