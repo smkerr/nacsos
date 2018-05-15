@@ -13,6 +13,7 @@ import random
 import utils.db as db
 from multiprocess import Pool
 from functools import partial
+from nltk.stem import SnowballStemmer
 
 
 @shared_task
@@ -48,13 +49,15 @@ def model_parset(s, K):
     doc_ids = ids
     if stat.max_features == 0:
         n_features=1000000
+
+    german_stopwords = [SnowballStemmer.stemmer.stem(t) for t in nltk.corpus.stopwords.words("german")]
     tfidf_vectorizer = TfidfVectorizer(
         max_df=stat.max_df,
         min_df=stat.min_freq,
         max_features=n_features,
         ngram_range=(stat.ngram,stat.ngram),
         tokenizer=german_stemmer(),
-        stop_words=set(nltk.corpus.stopwords.words("german"))
+        stop_words=german_stopwords
     )
     tfidf = tfidf_vectorizer.fit_transform(abstracts)
     vectorizer = tfidf_vectorizer
