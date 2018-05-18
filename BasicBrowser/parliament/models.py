@@ -158,8 +158,8 @@ class Interjection(models.Model):
 class Constituency(models.Model):
     name = models.TextField(null=True)
     number = models.IntegerField(null=True)
-    region = models.ForeignKey(cities.models.Region, null=True)
-    parliament = models.ForeignKey(Parl)
+    region = models.ForeignKey(cities.models.Region, on_delete=models.CASCADE, null=True)
+    parliament = models.ForeignKey(Parl, on_delete=models.CASCADE)
     has_coal = models.NullBooleanField(null=True)
     def __str__(self):
         return "Wahlkreis {}: {} ({})".format(self.number, self.name, self.region)
@@ -197,10 +197,10 @@ class Seat(models.Model):
     occupant = models.ForeignKey(Person, on_delete=models.CASCADE)
     start_date = models.DateField(null=True)
     end_date = models.DateField(null=True)
-    party = models.ForeignKey(Party,null=True)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
     seat_type = models.IntegerField(choices=SEAT_TYPES,null=True)
-    constituency = models.ForeignKey(Constituency, null=True)
-    list = models.ForeignKey(PartyList,null=True)
+    constituency = models.ForeignKey(Constituency, null=True, on_delete=models.CASCADE,)
+    list = models.ForeignKey(PartyList, on_delete=models.CASCADE, null=True)
 
 
 
@@ -249,7 +249,7 @@ class Post(models.Model):
 class Search(models.Model):
     title = models.TextField()
     text = models.TextField()
-    party = models.ForeignKey(Party, null=True)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
     speaker_regions = models.ManyToManyField(cities.models.Region)
     creator = models.ForeignKey(
         User,
