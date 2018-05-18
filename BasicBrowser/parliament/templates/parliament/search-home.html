@@ -9,7 +9,7 @@
 
 <svg width="960" height="500"></svg>
 
-<p>Topics {{stat.pk}}:
+<p>Topics for search id {{stat.pk}}:
 
 {% for t in topics %}
     <p><a href={% url 'parliament:parl-topic' t.id %}>view</a> {{ t.top_words }}

@@ -251,6 +251,8 @@ class Post(models.Model):
 class Search(models.Model):
     title = models.TextField()
     text = models.TextField()
+    party = models.ForeignKey(Party, null=True)
+    speaker_regions = models.ManyToManyField(cities.models.Region)
     creator = models.ForeignKey(
         User,
         null=True,
