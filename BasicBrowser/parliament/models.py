@@ -12,16 +12,15 @@ class Parl(models.Model):
         ('N','National'),
         ('R','Regional')
     )
-    country = models.ForeignKey(cities.models.Country)
-    region = models.ForeignKey(cities.models.Region, null=True)
+    country = models.ForeignKey(cities.models.Country, on_delete=models.CASCADE)
+    region = models.ForeignKey(cities.models.Region, on_delete=models.CASCADE, null=True)
     level = models.CharField(max_length=1, choices=LEVEL_CHOICES)
 
     def __str__(self):
       return self.country.name + " - " + self.get_level_display()
 
-
 class ParlPeriod(models.Model):
-    parliament = models.ForeignKey(Parl)
+    parliament = models.ForeignKey(Parl, on_delete=models.CASCADE)
     n = models.IntegerField()
     years = ArrayField(models.IntegerField(),null=True)
     total_seats = models.IntegerField(null=True)
@@ -33,7 +32,7 @@ class ParlPeriod(models.Model):
 class Party(models.Model):
     name = models.TextField()
     alt_names = ArrayField(models.TextField(),null=True)
-    parliament = models.ForeignKey(Parl,null=True)
+    parliament = models.ForeignKey(Parl, on_delete=models.CASCADE,null=True)
     colour = models.CharField(max_length=7, null=True)
 
     def __str__(self):
@@ -72,7 +71,7 @@ class Person(models.Model):
     dob = models.DateField(null=True)
     year_of_birth = models.IntegerField(null=True)
     place_of_birth = models.TextField(null=True)
-    country_of_birth = models.ForeignKey(cities.models.Country,null=True)
+    country_of_birth = models.ForeignKey(cities.models.Country, on_delete=models.CASCADE,null=True)
     date_of_death = models.DateField(null=True)
 
     gender = models.IntegerField(null=True,choices=GENDERS)
@@ -81,7 +80,7 @@ class Person(models.Model):
     occupation = models.TextField(null=True)
     short_bio = models.TextField(null=True)
 
-    party = models.ForeignKey(Party,null=True)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE ,null=True)
 
     def __str__(self):
         return self.clean_name
@@ -90,7 +89,7 @@ class Person(models.Model):
 ## Texts
 
 class Document(models.Model):
-    parlperiod = models.ForeignKey(ParlPeriod)
+    parlperiod = models.ForeignKey(ParlSession, on_delete=models.CASCADE )
     sitting = models.IntegerField(null=True)
     date = models.DateField(null=True)
     #parl_period = models.IntegerField(null=True)
@@ -101,11 +100,11 @@ class Document(models.Model):
         return "{} - {} , {}".format(self.date, self.doc_type,self.parlperiod.n)
 
 class Utterance(models.Model):
-    document = models.ForeignKey(Document)
-    speaker = models.ForeignKey(Person)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE)
+    speaker = models.ForeignKey(Person, on_delete=models.CASCADE)
 
 class Paragraph(models.Model):
-    utterance = models.ForeignKey(Utterance)
+    utterance = models.ForeignKey(Utterance, on_delete=models.CASCADE)
     text = models.TextField()
     search_matches = models.ManyToManyField('Search')
     word_count = models.IntegerField(null=True)
@@ -132,7 +131,7 @@ class Interjection(models.Model):
         (LAUGHTER, 'Laughter'),
         (OUTCRY, 'Outcry')
     )
-    paragraph = models.ForeignKey(Paragraph)
+    paragraph = models.ForeignKey(Paragraph, on_delete=models.CASCADE)
     parties = models.ManyToManyField(Party)
     persons = models.ManyToManyField(Person)
     type = models.IntegerField(choices=REACTION_CHOICES)
@@ -142,8 +141,7 @@ class Interjection(models.Model):
         APPLAUSE:'em-clap',
         SPEECH:'em-speech_balloon',
         OBJECTION:'em-raised_hand_with_fingers_splayed',
-        LAUGHTER:'em-laughing',
-        AMUSEMENT: 'em-smiley',
+        AMUSEMENT:'em-laughing',
         OUTCRY: ''
     }
     @property
@@ -168,9 +166,9 @@ class Constituency(models.Model):
 
 class PartyList(models.Model):
     name = models.TextField(null=True)
-    region = models.ForeignKey(cities.models.Region,null=True)
-    parlperiod = models.ForeignKey(ParlPeriod)
-    party = models.ForeignKey(Party,null=True)
+    region = models.ForeignKey(cities.models.Region, on_delete=models.CASCADE,null=True)
+    parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE,null=True)
 
     def __str__(self):
         return self.region.name
@@ -180,8 +178,8 @@ class PartyList(models.Model):
     #     return self.name
 
 class ListMembership(models.Model):
-    person = models.ForeignKey(Person)
-    list = models.ForeignKey(PartyList)
+    person = models.ForeignKey(Person, on_delete=models.CASCADE)
+    list = models.ForeignKey(PartyList, on_delete=models.CASCADE)
     position = models
 
 class Seat(models.Model):
@@ -195,8 +193,8 @@ class Seat(models.Model):
         (VOLKSKAMMER, 'Volkskammer')
     )
 
-    parlperiod=models.ForeignKey(ParlPeriod)
-    occupant = models.ForeignKey(Person)
+    parlperiod=models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
+    occupant = models.ForeignKey(Person, on_delete=models.CASCADE)
     start_date = models.DateField(null=True)
     end_date = models.DateField(null=True)
     party = models.ForeignKey(Party,null=True)
@@ -207,9 +205,9 @@ class Seat(models.Model):
 
 
 class ConstituencyVote1(models.Model):
-    parlperiod = models.ForeignKey(ParlPeriod)
-    person = models.ForeignKey(Person)
-    constituency = models.ForeignKey(Constituency)
+    parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
+    person = models.ForeignKey(Person, on_delete=models.CASCADE)
+    constituency = models.ForeignKey(Constituency, on_delete=models.CASCADE)
     votes = models.IntegerField(null=True)
     votes_cast = models.IntegerField(null=True)
     eligible_votes = models.IntegerField(null=True)
@@ -217,10 +215,10 @@ class ConstituencyVote1(models.Model):
     proportion = models.FloatField(null=True)
 
 class ConstituencyVote2(models.Model):
-    parlperiod = models.ForeignKey(ParlPeriod)
-    party = models.ForeignKey(Party)
-    constituency = models.ForeignKey(Constituency)
-    list = models.ForeignKey(PartyList)
+    parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE)
+    constituency = models.ForeignKey(Constituency, on_delete=models.CASCADE)
+    list = models.ForeignKey(PartyList, on_delete=models.CASCADE)
     votes = models.IntegerField()
     votes_cast = models.IntegerField(null=True)
     eligible_votes = models.IntegerField(null=True)
@@ -228,17 +226,17 @@ class ConstituencyVote2(models.Model):
 
 
 class SeatSum(models.Model):
-    parlperiod = models.ForeignKey(ParlPeriod)
-    party = models.ForeignKey(Party)
+    parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE)
     seats = models.IntegerField()
     government = models.BooleanField()
     majority = models.BooleanField()
 
 class Post(models.Model):
     title = models.TextField()
-    person = models.ForeignKey(Person)
-    party = models.ForeignKey(Party)
-    parlperiod = models.ForeignKey(ParlPeriod)
+    person = models.ForeignKey(Person, on_delete=models.CASCADE)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE)
+    parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
     cabinet = models.BooleanField(default=False)
     years = ArrayField(models.IntegerField())
     start_date = models.DateField()
@@ -255,6 +253,7 @@ class Search(models.Model):
     speaker_regions = models.ManyToManyField(cities.models.Region)
     creator = models.ForeignKey(
         User,
+        on_delete=models.CASCADE,
         null=True,
         verbose_name="Query Creator",
         #related_name="user_creations",

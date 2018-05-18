@@ -39,7 +39,7 @@ class SnowballingSession(models.Model):
     working_pb2    = models.BooleanField(default=False) # This a marker for when the last step is going on
     users          = models.ManyToManyField(User)
     database       = models.CharField(max_length=6,null=True, verbose_name="Query database")
-    technology     = models.ForeignKey('Technology', null=True)
+    technology     = models.ForeignKey('Technology', on_delete=models.CASCADE, null=True)
 
     def __str__(self):
       return self.name
@@ -92,7 +92,7 @@ class Query(models.Model):
         ('MN','Manual Add')
     )
 
-    project = models.ForeignKey(Project, null=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     qtype       = models.CharField(max_length=2, choices=TYPE_CHOICES, default='DE')
     type        = models.TextField(null=True, verbose_name="Query Type", default="default")
     title       = models.TextField(null=True, verbose_name="Query Title")
@@ -100,17 +100,17 @@ class Query(models.Model):
     database    = models.CharField(max_length=6,null=True, verbose_name="Query database")
     date        = models.DateTimeField(auto_now_add=True,verbose_name="Query Date")
     r_count     = models.IntegerField(null=True, verbose_name="Query Results Count")
-    creator     = models.ForeignKey(User,null=True, verbose_name="Query Creator", related_name="user_creations")
-    upload_link = models.ForeignKey('EmailTokens', null=True)
+    creator     = models.ForeignKey(User, on_delete=models.CASCADE, null=True, verbose_name="Query Creator", related_name="user_creations")
+    upload_link = models.ForeignKey('EmailTokens', on_delete=models.CASCADE, null=True)
     users       = models.ManyToManyField(User)
     criteria    = models.TextField(null=True)
     #snowball    = models.IntegerField(null=True, verbose_name="Snowball ID")
-    snowball    = models.ForeignKey(SnowballingSession, null=True, verbose_name="Snowball ID")
+    snowball    = models.ForeignKey(SnowballingSession, on_delete=models.CASCADE, null=True, verbose_name="Snowball ID")
     step        = models.IntegerField(null=True, verbose_name="Snowball steps")
     substep     = models.IntegerField(null=True, verbose_name="Snowball query substeps")
     dlstat      = models.CharField(max_length=6,null=True, verbose_name="Query download status")
-    technology  = models.ForeignKey('Technology', null=True)
-    innovation  = models.ForeignKey('Innovation', null=True)
+    technology  = models.ForeignKey('Technology', on_delete=models.CASCADE, null=True)
+    innovation  = models.ForeignKey('Innovation', on_delete=models.CASCADE, null=True)
 
     def __str__(self):
       return self.title
@@ -122,7 +122,7 @@ class Query(models.Model):
 class Technology(models.Model):
     name = models.TextField(null = True, verbose_name="Technology Name")
     description = models.TextField(null=True, verbose_name="Technology Description")
-    project = models.ForeignKey(Project, null=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     ndocs = models.IntegerField(null=True)
     nqs = models.IntegerField(null=True)
 
@@ -132,7 +132,7 @@ class Technology(models.Model):
 class Innovation(models.Model):
     name = models.TextField(null = True, verbose_name="Innovation Name")
     description = models.TextField(null=True, verbose_name="Innovation Description")
-    project = models.ForeignKey(Project, null=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     ndocs = models.IntegerField(null=True)
     nqs = models.IntegerField(null=True)
 
@@ -149,7 +149,7 @@ class SBSDocCategory(models.Model):
 class Tag(models.Model):
     title = models.TextField(null=True, verbose_name="Tag Title")
     text = models.TextField(null=True, verbose_name="Tag Text")
-    query = models.ForeignKey('Query',null=True, verbose_name="TagQuery")
+    query = models.ForeignKey('Query',null=True, on_delete=models.CASCADE, verbose_name="TagQuery")
 
     def __str__(self):
       return self.title
@@ -175,7 +175,7 @@ class Institution(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     type = models.TextField(null=True,default="default")
-    institution = models.ForeignKey('Institution', null=True, on_delete=models.CASCADE)
+    institution = models.ForeignKey('Institution', on_delete=models.CASCADE, null=True)
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -211,7 +211,7 @@ class Doc(models.Model):
         ('WP','Working Paper')
     )
 
-    UT = models.OneToOneField(UT)
+    UT = models.OneToOneField(UT, on_delete=models.CASCADE)
     url = models.URLField(null=True, max_length=500)
     dtype = models.CharField(
         max_length=2,
@@ -232,7 +232,7 @@ class Doc(models.Model):
     first_author = models.TextField(null=True, verbose_name='First Author')
     authors = models.TextField(null=True, verbose_name='All Authors')
     users = models.ManyToManyField(User, through='DocOwnership')
-    journal = models.ForeignKey('JournalAbbrev',null=True)
+    journal = models.ForeignKey('JournalAbbrev', on_delete=models.CASCADE, null=True)
 
     technology = models.ManyToManyField('Technology',db_index=True)
     innovation = models.ManyToManyField('Innovation',db_index=True)
@@ -242,7 +242,7 @@ class Doc(models.Model):
     scopus = models.BooleanField(default=False)
     uploaded = models.BooleanField(default=False)
 
-    uploader = models.ForeignKey(User, null=True, related_name="uploaded_docs", on_delete=models.CASCADE, verbose_name="Uploader")
+    uploader = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name="uploaded_docs", verbose_name="Uploader")
     date = models.DateTimeField(null=True)
     ymentions = ArrayField(models.IntegerField(),null=True)
     cities = models.ManyToManyField('cities.City')
@@ -277,7 +277,7 @@ class Doc(models.Model):
 
 
 class DocFile(models.Model):
-    doc = models.OneToOneField(Doc)
+    doc = models.OneToOneField(Doc, on_delete=models.CASCADE)
     file = models.FileField(validators=[validate_pdf])
 
 
@@ -300,20 +300,20 @@ class Bigram(models.Model):
 
 
 class DocBigram(models.Model):
-    doc = models.ForeignKey(Doc)
-    bigram = models.ForeignKey(Bigram)
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE )
+    bigram = models.ForeignKey(Bigram, on_delete=models.CASCADE)
     n = models.IntegerField(null=True)
 
 class Network(models.Model):
     title = models.TextField(unique=True)
     type = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
-    query = models.ForeignKey(Query)
+    query = models.ForeignKey(Query, on_delete=models.CASCADE)
 
 
 class NetworkProperties(models.Model):
-    doc = models.ForeignKey(Doc)
-    network = models.ForeignKey(Network)
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
+    network = models.ForeignKey(Network, on_delete=models.CASCADE)
     value = models.IntegerField(null=True)
     fvalue = models.FloatField(null=True)
 
@@ -328,7 +328,7 @@ class Citation(models.Model):
     ftext = models.TextField(db_index=True)
     alt_text = ArrayField(models.TextField(),null=True)
     ## Link the citation to the document it refers to if possible
-    referent = models.ForeignKey(Doc, null=True)
+    referent = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True)
     docmatches = models.IntegerField(null=True)
 
 class JournalAbbrev(models.Model):
@@ -337,15 +337,15 @@ class JournalAbbrev(models.Model):
 
 
 class CDO(models.Model):
-    doc = models.ForeignKey(Doc)
-    citation = models.ForeignKey(Citation)
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
+    citation = models.ForeignKey(Citation, on_delete=models.CASCADE)
 
 
 
 
 class BibCouple(models.Model):
-    doc1 = models.ForeignKey(Doc, related_name="node1")
-    doc2 = models.ForeignKey(Doc, related_name="node2")
+    doc1 = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="node1")
+    doc2 = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="node2")
     cocites = models.IntegerField(default=0)
 
 
@@ -359,7 +359,7 @@ class AR(models.Model):
       return str(self.ar)
 
 class WG(models.Model):
-    ar = models.ForeignKey(AR)
+    ar = models.ForeignKey(AR, on_delete=models.CASCADE)
     wg = models.IntegerField()
 
     def __str__(self):
@@ -372,7 +372,7 @@ class IPCCRef(models.Model):
     words = ArrayField(models.TextField(),null=True)
     ar = models.ManyToManyField('AR')
     wg = models.ManyToManyField('WG')
-    doc = models.ForeignKey(Doc,null=True)
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True)
     chapter = models.TextField(null=True)
 
     def shingle(self):
@@ -397,12 +397,12 @@ class WC(models.Model):
     oecd_fos_text = models.TextField(null=True)
 
 class EmailTokens(models.Model):
-    category = models.ForeignKey(Technology,null=True)
-    project = models.ForeignKey(Project, null=True)
+    category = models.ForeignKey(Technology, on_delete=models.CASCADE ,null=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     email = models.TextField()
     AU = models.TextField()
     docset = models.TextField(null=True)
-    user = models.ForeignKey(User, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     id = models.UUIDField(primary_key=True,default=uuid.uuid4)
     sent = models.BooleanField(default=False)
     sent_other_tech = models.BooleanField(default=False)
@@ -435,7 +435,7 @@ class DocRel(models.Model):
     timatch_q = models.BooleanField(default=False)
     indb = models.IntegerField(null=True,default=0)
     sametech = models.IntegerField(null=True,default=0)
-    referent = models.ForeignKey(Doc, null=True, on_delete=models.CASCADE, related_name="document")
+    referent = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True, related_name="document")
 
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
@@ -496,7 +496,7 @@ class DocOwnership(models.Model):
 
 
 class DocAuthInst(models.Model):
-    doc = models.ForeignKey('Doc',null=True, verbose_name="Author - Document")
+    doc = models.ForeignKey('Doc', on_delete=models.CASCADE,null=True, verbose_name="Author - Document")
     surname = models.CharField(max_length=60, null=True)
     initials = models.CharField(max_length=10, null=True)
     AU = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author")
@@ -518,7 +518,7 @@ class DocAuthInst(models.Model):
 # A simple form of the table below, just to store the dois as we parse them
 
 class DocReferences(models.Model):
-    doc = models.ForeignKey('Doc',null=True)
+    doc = models.ForeignKey('Doc', on_delete=models.CASCADE,null=True)
     refdoi = models.CharField(null=True, max_length=150, verbose_name="DOI")
     refall = models.TextField(null=True, verbose_name="All reference information") #in case we want to use this later...
 

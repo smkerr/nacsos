@@ -19,7 +19,7 @@ class MinMaxFloat(models.FloatField):
 
 class HTopic(models.Model):
     topic = models.AutoField(primary_key=True)
-    parent = models.ForeignKey('self', null=True)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True)
     title = models.CharField(max_length=80, null=True)
     n_docs = models.IntegerField(null=True)
     n_words = models.IntegerField(null=True)
@@ -27,8 +27,8 @@ class HTopic(models.Model):
     run_id = models.IntegerField(null=True, db_index=True)
 
 class HTopicTerm(models.Model):
-    topic = models.ForeignKey('HTopic')
-    term = models.ForeignKey('Term')
+    topic = models.ForeignKey('HTopic', on_delete=models.CASCADE)
+    term = models.ForeignKey('Term', on_delete=models.CASCADE)
     count = models.IntegerField()
     run_id = models.IntegerField(null=True, db_index=True)
 
@@ -42,7 +42,7 @@ class Topic(models.Model):
     growth = models.FloatField(null=True)
     run_id = models.ForeignKey('RunStats',db_index=True, on_delete=models.CASCADE)
     year = models.IntegerField(null=True)
-    period = models.ForeignKey('TimePeriod',null=True)
+    period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE,null=True)
     primary_dtopic = models.ManyToManyField('DynamicTopic')
     top_words = ArrayField(models.TextField(),null=True)
     primary_wg = models.IntegerField(null=True)
@@ -67,7 +67,7 @@ class DynamicTopic(models.Model):
     score = models.FloatField(null=True)
     share = models.FloatField(null=True)
     size = models.IntegerField(null=True)
-    run_id = models.ForeignKey('RunStats',db_index=True)
+    run_id = models.ForeignKey('RunStats', on_delete=models.CASCADE,db_index=True)
     top_words = ArrayField(models.TextField(),null=True)
     l5ys = models.FloatField(null=True)
     l1ys = models.FloatField(null=True)
@@ -98,14 +98,14 @@ class TimePeriod(models.Model):
         return str(self.title)
 
 class TimeDocTotal(models.Model):
-    period = models.ForeignKey(TimePeriod)
-    run = models.ForeignKey('RunStats')
+    period = models.ForeignKey(TimePeriod, on_delete=models.CASCADE)
+    run = models.ForeignKey('RunStats', on_delete=models.CASCADE)
     n_docs = models.IntegerField(null=True)
     dt_score = models.FloatField(null=True)
 
 class TimeDTopic(models.Model):
-    period = models.ForeignKey(TimePeriod)
-    dtopic = models.ForeignKey('DynamicTopic')
+    period = models.ForeignKey(TimePeriod, on_delete=models.CASCADE)
+    dtopic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE)
     score = models.FloatField(default=0)
     share = models.FloatField(default=0)
     pgrowth = models.FloatField(null=True)
@@ -116,13 +116,13 @@ class TimeDTopic(models.Model):
 
 
 class TopicDTopic(models.Model):
-    topic = models.ForeignKey('Topic', null=True)
-    dynamictopic = models.ForeignKey('DynamicTopic',null=True)
+    topic = models.ForeignKey('Topic', on_delete=models.CASCADE, null=True)
+    dynamictopic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
     score = models.FloatField(null=True)
 
 class TopicCorr(models.Model):
-    topic = models.ForeignKey('Topic',null=True)
-    topiccorr = models.ForeignKey('Topic',null=True, related_name='Topiccorr')
+    topic = models.ForeignKey('Topic', on_delete=models.CASCADE,null=True)
+    topiccorr = models.ForeignKey('Topic', on_delete=models.CASCADE ,null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
     ar = models.IntegerField(default=-1)
     run_id = models.IntegerField(db_index=True)
@@ -131,8 +131,8 @@ class TopicCorr(models.Model):
         return str(self.title)
 
 class DynamicTopicCorr(models.Model):
-    topic = models.ForeignKey('DynamicTopic',null=True)
-    topiccorr = models.ForeignKey('DynamicTopic',null=True, related_name='Topiccorr')
+    topic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
+    topiccorr = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
     ar = models.IntegerField(default=-1)
     run_id = models.IntegerField(db_index=True)
@@ -154,7 +154,7 @@ class Term(models.Model):
 #################################################
 ## TopicYear holds per year topic totals
 class TopicYear(models.Model):
-    topic = models.ForeignKey('Topic',null=True)
+    topic = models.ForeignKey('Topic', on_delete=models.CASCADE,null=True)
     PY = models.IntegerField()
     score = models.FloatField(null=True)
     share = models.FloatField(null=True)
@@ -163,16 +163,16 @@ class TopicYear(models.Model):
 
 
 class TopicARScores(models.Model):
-    topic = models.ForeignKey('Topic',null=True)
-    ar = models.ForeignKey('scoping.AR',null=True)
+    topic = models.ForeignKey('Topic', on_delete=models.CASCADE,null=True)
+    ar = models.ForeignKey('scoping.AR', on_delete=models.CASCADE,null=True)
     score = models.FloatField(null=True)
     share = models.FloatField(null=True)
     pgrowth = models.FloatField(null=True)
     pgrowthn = models.FloatField(null=True)
 
 class DynamicTopicARScores(models.Model):
-    topic = models.ForeignKey('DynamicTopic',null=True)
-    ar = models.ForeignKey('scoping.AR',null=True)
+    topic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
+    ar = models.ForeignKey('scoping.AR', on_delete=models.CASCADE,null=True)
     score = models.FloatField(null=True)
     share = models.FloatField(null=True)
     pgrowth = models.FloatField(null=True)
@@ -182,7 +182,7 @@ class DynamicTopicARScores(models.Model):
 #################################################
 ## Separate topicyear for htopic
 class HTopicYear(models.Model):
-    topic = models.ForeignKey('HTopic',null=True)
+    topic = models.ForeignKey('HTopic', on_delete=models.CASCADE,null=True)
     PY = models.IntegerField()
     score = models.FloatField()
     count = models.FloatField()
@@ -206,14 +206,14 @@ class DocTopic(models.Model):
 
 class TopicTerm(models.Model):
     topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
-    term = models.ForeignKey('Term',null=True)
+    term = models.ForeignKey('Term', on_delete=models.CASCADE,null=True)
     PY = models.IntegerField(db_index=True,null=True)
     score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
 
 class DynamicTopicTerm(models.Model):
     topic = models.ForeignKey('DynamicTopic', null=True, on_delete=models.CASCADE)
-    term = models.ForeignKey('Term', null=True)
+    term = models.ForeignKey('Term', on_delete=models.CASCADE, null=True)
     PY = models.IntegerField(db_index=True, null=True)
     score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
@@ -230,13 +230,13 @@ class DocTerm(models.Model):
 
 
 class KFold(models.Model):
-    model = models.ForeignKey('RunStats')
+    model = models.ForeignKey('RunStats', on_delete=models.CASCADE)
     K = models.IntegerField()
     error = models.FloatField(null=True)
 
 
 class TermPolarity(models.Model):
-    term = models.ForeignKey(Term)
+    term = models.ForeignKey(Term, on_delete=models.CASCADE)
     polarity = models.FloatField(null=True)
     POS = models.TextField(null=True)
     source = models.TextField()
