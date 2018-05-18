@@ -4,10 +4,10 @@ from django.conf import settings
 from django.contrib.auth import views as auth_views
 from scoping import views
 import BasicBrowser.views as site_views
-from django.urls import include, path
+# from django.urls import include, path
 
 urlpatterns = [
-    path('lotto/', include('lotto.urls')),
+    # path('lotto/', include('lotto.urls')),
     url(r'^tmv_app/', include('tmv_app.urls')),
     url(r'^scoping/', include('scoping.urls')),
     url(r'^parliament/', include('parliament.urls')),
