@@ -89,7 +89,7 @@ class Person(models.Model):
 ## Texts
 
 class Document(models.Model):
-    parlperiod = models.ForeignKey(ParlSession, on_delete=models.CASCADE )
+    parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE )
     sitting = models.IntegerField(null=True)
     date = models.DateField(null=True)
     #parl_period = models.IntegerField(null=True)

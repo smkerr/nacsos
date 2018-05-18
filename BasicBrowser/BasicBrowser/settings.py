@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'cities',
     'parliament',
     'django_tables2',
-    'lotto',
+    #'lotto',
 ]
 
 MIDDLEWARE = [
