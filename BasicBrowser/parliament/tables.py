@@ -7,6 +7,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from .urls import *
 from utils.text import *
+from tmv_app import models
 
 class ParlTable(tables.Table):
     id = tables.LinkColumn('parliament:parliament', args=[A('pk')])
@@ -72,6 +73,21 @@ class SearchTable(tables.Table):
         model = Search
 
 
+# class to generate model table
+class ModelsTable(tables.Table):
+    run_id = tables.LinkColumn('parliament:model-home', args=[A('pk')])
+
+    class Meta:
+        model = models.RunStats
+        fields = (
+            'run_id','method',
+            'start','status',
+            'K','alpha',
+            'min_freq','max_df',
+            'error','coherence',
+            'psearch'
+            )
+
 class SearchParTable(tables.Table):
     text = tables.Column()
     speaker = tables.LinkColumn(
@@ -135,3 +151,4 @@ class SeatTable(tables.Table):
     class Meta:
         model = Seat
         exclude = ('id',)
+

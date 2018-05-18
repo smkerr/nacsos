@@ -9,12 +9,15 @@
 
 <svg width="960" height="500"></svg>
 
+<p>Topics {{stat.pk}}:
 
-<h3> View topic models for the search "{{ search_title }}" </h3>
-
-{% render_table tm_table %}
+{% for t in topics %}
+    <p><a href={% url 'parliament:parl-topic' t.id %}>view</a> {{ t.top_words }}
+{% endfor %}
 
 {% endblock %}
+
+
 
 
 

@@ -241,6 +241,7 @@ class TermPolarity(models.Model):
     POS = models.TextField(null=True)
     source = models.TextField()
 
+
 #################################################
 ## RunStats and Settings....
 class RunStats(models.Model):

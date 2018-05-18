@@ -68,7 +68,7 @@ def do_search(s):
 @shared_task
 def model_parset(s, K):
     s = Search.objects.get(pk=s)
-    RunStats.objects.filter(psearch=s).delete()
+    #RunStats.objects.filter(psearch=s).delete()
     ps = Paragraph.objects.filter(search_matches=s).filter()
 
     stat = RunStats(
@@ -120,6 +120,7 @@ def model_parset(s, K):
     ).fit(tfidf)
     dtm = csr_matrix(model.transform(tfidf))
 
+    # term topic matrix
     ldalambda = find(csr_matrix(model.components_))
     topics = range(len(ldalambda[0]))
     tts = []
@@ -134,7 +135,7 @@ def model_parset(s, K):
     django.db.connections.close_all()
     TopicTerm.objects.bulk_create(tts)
 
-
+    #document topic matrix
     gamma =  find(dtm)
     glength = len(gamma[0])
 
@@ -175,4 +176,5 @@ def model_parset(s, K):
         gc.collect()
         sys.stdout.flush()
 
-        update_topic_titles(run_id)
+    update_topic_titles(run_id)
+

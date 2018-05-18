@@ -11,6 +11,8 @@ from .forms import *
 from .tasks import *
 from django.db.models.functions import TruncDate, TruncMonth, TruncYear
 import datetime
+
+
 # Create your views here.
 @login_required
 def index(request):
@@ -29,10 +31,11 @@ def index(request):
 
     return HttpResponse(template.render(context, request))
 
+
 def person_table(persons):
     persons = persons.annotate(
         contributions=Count('utterance'),
-        words = Sum('utterance__paragraph__word_count'),
+        words=Sum('utterance__paragraph__word_count'),
         applauded = Sum(
             Case(
                 When(utterance__paragraph__interjection__type=Interjection.APPLAUSE,then=1),
@@ -44,6 +47,7 @@ def person_table(persons):
     )
     persons = PersonTable(persons)
     return persons
+
 
 @login_required
 def parliament(request,pid):
@@ -67,7 +71,6 @@ def parliament(request,pid):
     )
 
     parties = PartyTable(parties)
-
 
     context = {
         'ps': ps,
@@ -97,6 +100,7 @@ def parlperiod(request,pid):
 
     return HttpResponse(template.render(context, request))
 
+
 @login_required
 def document(request,did,page=1):
 
@@ -120,6 +124,7 @@ def document(request,did,page=1):
     return HttpResponse(template.render(context, request))
 
 
+# list of all searches
 @login_required
 def search(request):
 
@@ -144,6 +149,7 @@ def search(request):
 
     return HttpResponse(template.render(context, request))
 
+
 @login_required
 def search_pars(request,sid):
 
@@ -162,11 +168,20 @@ def search_pars(request,sid):
     return HttpResponse(template.render(context, request))
 
 
+# page for listing all models for a given search
 @login_required
-def search_home(request,sid):
+def search_home(request, sid):
+
     template = loader.get_template('parliament/search-home.html')
 
+    # query searches
     s = Search.objects.get(pk=sid)
+
+    tms = RunStats.objects.filter(psearch=s).order_by('-pk')
+
+    tm_table = ModelsTable(tms)
+
+    # count paragraphs per year
     pars = Paragraph.objects.filter(search_matches=s)
 
     graph = list(pars.filter(utterance__document__date__isnull=False).order_by().annotate(
@@ -183,6 +198,9 @@ def search_home(request,sid):
         topics = stat.topic_set.all()
 
     context = {
+        'search': sid,
+        'search_title': s.title,
+        'tm_table': tm_table,
         'pars': pars,
         'graph': list(graph),
         's': s,
@@ -191,10 +209,45 @@ def search_home(request,sid):
         'stat': stat,
         'topics': topics
     }
+
     return HttpResponse(template.render(context, request))
 
+
+# page for showing topics of a model
 @login_required
-def parl_topic(request,tid, pid=0):
+def model_home(request, model_id):
+
+    template = loader.get_template('parliament/model-home.html')
+
+    stat = RunStats.objects.get(pk=model_id)
+    pars = Paragraph.objects.filter(search_matches=stat.psearch)
+
+    graph = list(pars.filter(utterance__document__date__isnull=False).order_by().annotate(
+        year=TruncMonth('utterance__document__date')
+    ).order_by('year').values('year').annotate(n = Count('id')))
+
+    for i in range(len(graph)):
+        graph[i]['year']=graph[i]['year'].strftime('%Y-%m')
+
+    if stat is None:
+        topics = None
+    else:
+        topics = stat.topic_set.all()
+
+    context = {
+        'pars': pars,
+        'graph': list(graph),
+        's': stat.psearch,
+        'x': 'year',
+        'y': 'n',
+        'stat': stat,
+        'topics': topics
+    }
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def parl_topic(request, tid, pid=0):
     template = loader.get_template('parliament/parl-topic.html')
 
     topic = Topic.objects.get(pk=tid)
@@ -251,6 +304,7 @@ def parl_topic(request,tid, pid=0):
     }
     return HttpResponse(template.render(context, request))
 
+
 @login_required
 def person(request,tid):
 
@@ -263,7 +317,7 @@ def person(request,tid):
     seats = SeatTable(
         Seat.objects.filter(occupant=p)
     )
-    #RequestConfig(request).configure(seats)
+    # RequestConfig(request).configure(seats)
 
     context = {
         'p':p,
@@ -272,6 +326,7 @@ def person(request,tid):
     }
 
     return HttpResponse(template.render(context, request))
+
 
 @login_required
 def party(request,tid):
@@ -288,8 +343,6 @@ def party(request,tid):
     pars = Paragraph.objects.filter(utterance__speaker__party=party)
     pt = SearchParTable(pars)
     RequestConfig(request).configure(pt)
-
-
 
     context = {
         'party': party,
