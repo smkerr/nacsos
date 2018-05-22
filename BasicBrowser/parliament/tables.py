@@ -7,6 +7,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from .urls import *
 from utils.text import *
+from tmv_app import models
 
 class ParlTable(tables.Table):
     id = tables.LinkColumn('parliament:parliament', args=[A('pk')])
@@ -17,13 +18,13 @@ class ParlTable(tables.Table):
         model = Parl
         #fields = ('id','title','description','role','queries','docs','tms')
 
-class ParlSessionTable(tables.Table):
-    docs = tables.LinkColumn('parliament:psession',args=[A('pk')])
+class ParlPeriodTable(tables.Table):
+    docs = tables.LinkColumn('parliament:parlperiod',args=[A('pk')])
     #id = tables.LinkColumn('scoping:project', args=[A('pk')])
     #queries = tables.LinkColumn('scoping:queries', args=[A('pk')])
     #tms = tables.LinkColumn('tmv_app:runs', args=[A('pk')])
     class Meta:
-        model = ParlSession
+        model = ParlPeriod
         #fields = ('id','title','description','role','queries','docs','tms')
 
 class PersonTable(tables.Table):
@@ -61,7 +62,7 @@ class DocumentTable(tables.Table):
 
     class Meta:
         model = Document
-        exclude = ('parlsession')
+        exclude = ('parlperiod')
 
 
 class SearchTable(tables.Table):
@@ -71,6 +72,21 @@ class SearchTable(tables.Table):
     class Meta:
         model = Search
 
+
+# class to generate model table
+class ModelsTable(tables.Table):
+    run_id = tables.LinkColumn('parliament:model-home', args=[A('pk')])
+
+    class Meta:
+        model = models.RunStats
+        fields = (
+            'run_id','method',
+            'start','status',
+            'K','alpha',
+            'min_freq','max_df',
+            'error','coherence',
+            'psearch'
+            )
 
 class SearchParTable(tables.Table):
     text = tables.Column()
@@ -97,7 +113,7 @@ class SearchParTable(tables.Table):
     def render_utterance(self,value):
         d = value.document
         l = reverse("parliament:document",args=[d.pk])+'#utterance_'+str(value.id)
-        t = "{} - {} , {}".format(d.date, d.doc_type,d.parlsession.n)
+        t = "{} - {} , {}".format(d.date, d.doc_type,d.parlperiod.n)
         return format_html('<a href="{}">{}</a>'.format(l,t))
 
     def reg_replace(self,pattern,stemmer=None):
@@ -135,3 +151,4 @@ class SeatTable(tables.Table):
     class Meta:
         model = Seat
         exclude = ('id',)
+
