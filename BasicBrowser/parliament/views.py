@@ -267,7 +267,7 @@ def parl_topic(request, tid, pid=0):
     pt.reg_replace("|".join([s.text]+[x for x in topic.top_words]),stemmer=SnowballStemmer("german").stemmer)
     RequestConfig(request).configure(pt)
 
-    stat = RunStats.objects.filter(psearch=s).last()
+    stat = topic.run_id
     topics = stat.topic_set.all()
 
     party_totals = Paragraph.objects.filter(
