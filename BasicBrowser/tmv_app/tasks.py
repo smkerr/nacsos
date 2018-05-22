@@ -22,6 +22,7 @@ import os
 import gensim
 import random
 from sklearn.decomposition.nmf import _beta_divergence  # needs sklearn 0.19!!!
+from sklearn.preprocessing import RobustScaler
 
 @shared_task
 def update_dtopic(topic_id, parent_run_id):
@@ -353,7 +354,9 @@ def do_nmf(run_id):
 and {} topics\n'.format(qid, docs.count(),K))
 
     # Get the docs into lists
-    abstracts, docsizes, ids = proc_docs(docs, stoplist, stat.fulltext)
+    abstracts, docsizes, ids, citations = proc_docs(docs, stoplist, stat.fulltext, stat.citations)
+
+    scaled_citations = 1 + RobustScaler(with_centering=False).fit_transform(np.array(citations).reshape(-1,1))
 
     sentences = [get_sentence(x) for x in abstracts]
     w2v = gensim.models.Word2Vec(sentences)
@@ -392,6 +395,9 @@ and {} topics\n'.format(qid, docs.count(),K))
     print("done in %0.3fs." % (time() - t0))
     stat.tfidf_time = time() - t0
     stat.save()
+
+    if citations is not False:
+        tfidf = tfidf.multiply(scaled_citations)
 
     del abstracts
     gc.collect()

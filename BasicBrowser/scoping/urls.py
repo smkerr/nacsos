@@ -1,6 +1,7 @@
 from django.conf.urls import url
 from django.contrib.auth.decorators import login_required
 from scoping import views
+from django.urls import path
 
 app_name = 'scoping'
 
@@ -27,6 +28,11 @@ urlpatterns = [
     url(r'^docs/(?P<pid>[0-9]+)/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
 
     url(r'^doquery/(?P<pid>[0-9]+)$', views.doquery, name='doquery'),
+
+    ### Paragraph stuff
+    path('paragraphs/<int:qid>', views.par_manager, name="par_manager"),
+    path('screen_par/<int:qid>/<int:tid>', views.screen_par, name="screen_par"),
+    path('screen_par/<int:qid>/<int:tid>/<int:doid>', views.screen_par, name="screen_par"),
 
 
     url(r'^snowball$', views.snowball, name='snowball'),
@@ -94,7 +100,7 @@ urlpatterns = [
 
 
     url(r'^download/(?P<qid>[0-9]+)', views.download, name='download'),
-    url(r'^download_pdf/(?P<id>[0-9]+)', views.download_pdf, name='download_pdf'),    
+    url(r'^download_pdf/(?P<id>[0-9]+)', views.download_pdf, name='download_pdf'),
     url(r'^delete/(?P<thing>[a-zA-Z]+)/(?P<thingid>[0-9]+)$', views.delete, name='delete'),
     url(r'^manual_add/(?P<pid>[0-9]+)$', views.create_internal_et, name='manual_add_doc_form'),
 

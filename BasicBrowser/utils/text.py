@@ -2,6 +2,8 @@ import string
 import nltk
 import re
 from nltk.stem import SnowballStemmer
+import uuid
+import os, shutil
 
 def tokenize(text):
     transtable = {ord(c): None for c in string.punctuation + string.digits}
@@ -28,7 +30,8 @@ class german_stemmer(object):
         return [self.stemmer.stem(t) for t in tokenize(doc)]
 
 
-def proc_docs(docs, stoplist, fulltext=False):
+def proc_docs(docs, stoplist, fulltext=False, citations=False):
+
     docs = [x for x in docs.iterator() if x.word_count() > 10]
     if fulltext:
         abstracts = [x.fulltext.replace("Copyright (C)","") for x in docs]
@@ -42,7 +45,31 @@ def proc_docs(docs, stoplist, fulltext=False):
     docsizes = [len(x) for x in abstracts]
     ids = [x.pk for x in docs]
 
-    return [abstracts, docsizes, ids]
+    if citations:
+        citations = []
+        for x in docs:
+            try:
+                if x.wosarticle.tc is not None:
+                    citations.append(x.wosarticle.tc)
+                else:
+                    citations.append(0)
+            except:
+                citations.append(0)
+    return [abstracts, docsizes, ids, citations]
+
+def docset_to_corpus(docset):
+    dirname = '/tmp/{}/'.format(uuid.uuid4())
+    os.mkdir(dirname)
+    for doc in docset.iterator():
+        fname=str(doc.id)+'.txt'
+        corpusfile=open(dirname+fname,'a')
+        corpusfile.write(str(doc.content))
+        corpusfile.close()
+
+    my_corpus = nltk.corpus.reader.PlaintextCorpusReader(dirname,r'.*')
+
+    shutil.rmtree()
+
 
 def proc_texts(docs, stoplist, fulltext=False):
     docs = [x for x in docs.iterator()]

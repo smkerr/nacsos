@@ -259,6 +259,7 @@ class RunStats(models.Model):
     alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter')
     max_iterations  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
     fulltext  = models.BooleanField(default=False, help_text='do analysis on fullText? (dependent on availability)')
+    citations = models.BooleanField(default=False, help_text='scale term scores by citations?')
 
 
     query = models.ForeignKey('scoping.Query', null=True, on_delete=models.CASCADE)
