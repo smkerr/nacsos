@@ -12,8 +12,6 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 
 import os
 
-from .settings_local import *
-
 # SECURITY WARNING: keep the secret key used in production secret!
 #SECRET_KEY = '@-*jt+re$+w6i1nd53x&p5e&#@rv##*yv_fkebk_1%0z!=#3q4'
 
@@ -159,3 +157,5 @@ BROKER_URL = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+
+from .settings_local import *
