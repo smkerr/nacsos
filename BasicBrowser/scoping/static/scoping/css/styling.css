@@ -182,7 +182,7 @@ h2 {
     margin-right: auto;
 }
 
-#main table {
+/*#main table {
     align:center;
     margin-left: auto;
     margin-right: auto;
@@ -193,9 +193,10 @@ h2 {
 }
 
 #main table {
-    padding: 5px; /**/
+    padding: 5px; /*
     border-collapse: collapse;
 }
+
 #main table table{
 width: 100%
 }
@@ -276,7 +277,7 @@ width: 100%
 #main table.light tr.doc td {
     background-color: #FFF;
     padding: 10px 15px;
-    /*border-width: 5px 10px;*/
+    /*border-width: 5px 10px;
 }
 
 #main table.light tr.doc a:link {
@@ -299,7 +300,7 @@ width: 100%
     background-color: '#FFF';
     padding-left: 12px;
     padding-right: 12px;
-}
+}*/
 
 #terms {
     align: center;

@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'django_tables2',
     'lotto',
     'django_filters',
-    'bootstrap3',
+    'bootstrap4',
+    'crispy_forms',
 ]
 
 MIDDLEWARE = [

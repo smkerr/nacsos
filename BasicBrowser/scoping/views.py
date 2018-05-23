@@ -3266,19 +3266,37 @@ def par_manager(request, qid):
     pars = DocPar.objects.filter(
         doc__query=query
     ).order_by('doc','n')#.values(
-    #     'doc__title',
-    #     'text'
-    # )
 
     filter = DocParFilter(request.GET, queryset=pars)
 
     tab = DocParTable(filter.qs)
+    RequestConfig(request).configure(tab)
+
+    print(filter)
+
+    print(dir(filter))
+    print(request.GET)
+
+    d = filter.data.urlencode()
+
+    if request.method=="POST":
+        tagform = TagForm(request.POST)
+        if tagform.is_valid():
+            tag = tagform.save()
+            tag.query = query
+            tag.text = d
+            tag.save()
+    else:
+        tagform = TagForm()
+
+
 
     context = {
         'query': query,
         'project': query.project,
-        'pars': DocParTable(filter.qs),
-        'filter': filter
+        'pars': tab,
+        'filter': filter,
+        'tagform': tagform
     }
     return render(request, 'scoping/par_manager.html',context)
 

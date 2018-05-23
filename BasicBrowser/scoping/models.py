@@ -285,6 +285,7 @@ class DocPar(models.Model):
     text = models.TextField()
     n = models.IntegerField()
     section = models.ForeignKey(DocSection, on_delete=models.CASCADE, null=True)
+    tag = models.ManyToManyField(Tag)
 
 class DocFile(models.Model):
     doc = models.OneToOneField(Doc, on_delete=models.CASCADE)

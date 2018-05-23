@@ -109,6 +109,11 @@ class UpdateProjectRoleForm(forms.ModelForm):
         fields = ('user', 'role',)
         #widgets = {'user': forms.HiddenInput()}
 
+class TagForm(forms.ModelForm):
+    title = forms.CharField(label='Tag title', max_length=100)
+    class Meta:
+        model = (Tag)
+        fields = ('title',)
 
 
 class TopicModelForm(forms.ModelForm):

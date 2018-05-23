@@ -64,6 +64,8 @@ class DocParTable(tables.Table):
         fields = (
             'document','text',
         )
+        template_name = 'django_tables2/bootstrap.html'
+        attrs = {'class': 'table'}
 
 
 class FilteredDocPar(SingleTableMixin, FilterView):
