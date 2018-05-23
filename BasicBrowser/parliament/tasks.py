@@ -36,23 +36,13 @@ def do_search(s):
             # list: speaker -> seat -> partylist -> region
             ps_list = ps.filter(utterance__speaker__seat__seat_type=2).distinct()
             ps_list = ps_list.filter(utterance__speaker__seat__list__region__in=s.speaker_regions.all())
-            print("paragraphs attributed to list mandates: {}".format(ps_list.count()))
+            print("paragraphs attributed to list mandates in regions: {}".format(ps_list.count()))
 
             # direct: speaker -> seat -> consituency -> region
             ps_direct = ps.filter(utterance__speaker__seat__seat_type=1).distinct()
             ps_direct = ps_direct.filter(utterance__speaker__seat__constituency__region__in=s.speaker_regions.all())
             ps = ps_list.union(ps_direct)
-            print("paragraphs attributed to direct mandates: {}".format(ps_direct.count()))
-
-            """
-            speakers = pm.Person.objects.filter(utterance__paragraph__in=ps).distinct()
-            print("# of distinct speakers: {}".format(speakers.count()))
-            speakers_direct = speakers.filter(seat__seat_type=1)
-            speakers_list = speakers.filter(seat__seat_type=2)
-            print("speakers with direct seat: {}".format(speakers_direct.count()))
-            print("speakers with list seat: {}".format(speakers_list.count()))
-            print("total: {}".format(speakers_list.count() + speakers_direct.count()))
-            """
+            print("paragraphs attributed to direct mandates in regions: {}".format(ps_direct.count()))
 
             print("{} paragraphs left after filtering for regions: {}".format(ps.count(), [r.name for r in s.speaker_regions.all()]))
 
