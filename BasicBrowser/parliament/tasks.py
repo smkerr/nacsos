@@ -5,7 +5,7 @@ from cities.models import Region
 from tmv_app.models import *
 from utils.utils import *
 import os
-from utils.text import german_stemmer
+from utils.text import german_stemmer, snowball_stemmer, proc_texts
 from utils.tm_mgmt import *
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from scipy.sparse import csr_matrix, find
@@ -51,12 +51,11 @@ def do_search(s):
     Through.objects.bulk_create(tms)
     s.par_count=ps.count()
     s.save()
-    model_parset(s.id,15)
     return tms
 
 
 @shared_task
-def model_parset(s, K):
+def run_tm(s, K, language="german", verbosity=1):
     s = Search.objects.get(pk=s)
     #RunStats.objects.filter(psearch=s).delete()
     ps = Paragraph.objects.filter(search_matches=s).filter()
@@ -70,28 +69,55 @@ def model_parset(s, K):
     stat.save()
     run_id=stat.run_id
 
+    if verbosity > 0:
+        print("creating term frequency-inverse document frequency matrix")
     docs = ps.filter(text__iregex='\w')
     abstracts, docsizes, ids = proc_texts(docs, stoplist, stat.fulltext)
     doc_ids = ids
     if stat.max_features == 0:
         n_features=1000000
+    else:
+        n_features = stat.max_features
 
-    stemmer = SnowballStemmer("german")
-    german_stopwords = [stemmer.stem(t) for t in stopwords.words("german")]
-    tfidf_vectorizer = TfidfVectorizer(
-        max_df=stat.max_df,
-        min_df=stat.min_freq,
-        max_features=n_features,
-        ngram_range=(stat.ngram,stat.ngram),
-        tokenizer=german_stemmer(),
-        stop_words=german_stopwords
-    )
+    if language is "german":
+        stemmer = SnowballStemmer("german")
+        german_stopwords = [stemmer.stem(t) for t in stopwords.words("german")]
+        # get term frequency-inverse document frequency matrix (using log weighting)
+        # and min/max document frequency (min_df, max_df)
+
+        tfidf_vectorizer = TfidfVectorizer(
+            max_df=stat.max_df,
+            min_df=stat.min_freq,
+            max_features=n_features,
+            ngram_range=(stat.ngram,stat.ngram),
+            tokenizer=german_stemmer(),
+            stop_words=german_stopwords
+        )
+    elif language is "english":
+        stemmer = SnowballStemmer("english")
+        stopword_list = [stemmer.stem(t) for t in stopwords.words("english")]
+        tfidf_vectorizer = TfidfVectorizer(
+            max_df=stat.max_df,
+            min_df=stat.min_freq,
+            max_features=n_features,
+            ngram_range=(stat.ngram,stat.ngram),
+            tokenizer=snowball_stemmer(),
+            stop_words=stopword_list
+        )
+    else:
+        raise KeyError("Language not set correctly.")
+
+
     tfidf = tfidf_vectorizer.fit_transform(abstracts)
     vectorizer = tfidf_vectorizer
 
-
     vocab = vectorizer.get_feature_names()
     vocab_ids = []
+
+    if verbosity > 0:
+        print("save terms to db")
+
+    # multiprocessing: add vocabulary as Term
     pool = Pool(processes=8)
     vocab_ids.append(pool.map(partial(db.add_features,run_id=run_id),vocab))
     pool.terminate()
@@ -103,30 +129,44 @@ def model_parset(s, K):
     topic_ids = db.add_topics(K, run_id)
     gc.collect()
 
+    if verbosity > 0:
+        v=True
+    else:
+        v=False
+
+    if verbosity > 0:
+        print("running matrix factorization")
+    # NMF = non-negative matrix factorization
     model = NMF(
         n_components=K, random_state=1,
-        alpha=stat.alpha, l1_ratio=.1, verbose=True,
+        alpha=stat.alpha, l1_ratio=.1, verbose=v,
         init='nndsvd', max_iter=stat.max_iterations
     ).fit(tfidf)
     dtm = csr_matrix(model.transform(tfidf))
 
     # term topic matrix
     ldalambda = find(csr_matrix(model.components_))
+    # find returns the indices and values of the nonzero elements of a matrix
     topics = range(len(ldalambda[0]))
     tts = []
-    pool = Pool(processes=8)
 
+    # multiprocessing: add TopicTerms and scores
+    pool = Pool(processes=8)
     tts.append(pool.map(partial(db.f_lambda, m=ldalambda,
                     v_ids=vocab_ids,t_ids=topic_ids,run_id=run_id),topics))
     pool.terminate()
+
     tts = flatten(tts)
     gc.collect()
     sys.stdout.flush()
     django.db.connections.close_all()
     TopicTerm.objects.bulk_create(tts)
 
+    if verbosity > 0:
+        print("saving docuemt topic matrix to db")
+
     #document topic matrix
-    gamma =  find(dtm)
+    gamma = find(dtm)
     glength = len(gamma[0])
 
     chunk_size = 100000
@@ -166,5 +206,12 @@ def model_parset(s, K):
         gc.collect()
         sys.stdout.flush()
 
+    stat.status = 3  # 3 = finished
+    stat.save()
     update_topic_titles(run_id)
+
+    if verbosity > 0:
+        print("topic model run done")
+
+    return 0
 
