@@ -11,6 +11,9 @@
   <p/>
   This query is used in <b>[{{ query.tms }}]</b> topic models. Click <a href="{% url 'scoping:query_tm_manager' query.id %}">here</a>
       to manage topic models with this query
+      {% if pars %}
+        <p>View/Manage document <a href="{% url 'scoping:par_manager' query.id %}">paragraphs</a> 
+      {% endif %}
   </div>
 
   <p>

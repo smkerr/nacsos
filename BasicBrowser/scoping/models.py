@@ -275,6 +275,16 @@ class Doc(models.Model):
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
 
+class DocSection(models.Model):
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
+    title = models.TextField()
+    n = models.IntegerField()
+
+class DocPar(models.Model):
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
+    text = models.TextField()
+    n = models.IntegerField()
+    section = models.ForeignKey(DocSection, on_delete=models.CASCADE, null=True)
 
 class DocFile(models.Model):
     doc = models.OneToOneField(Doc, on_delete=models.CASCADE)

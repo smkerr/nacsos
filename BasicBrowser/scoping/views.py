@@ -29,6 +29,7 @@ from django.apps import apps
 import difflib
 from sklearn.metrics import cohen_kappa_score
 from django.core import management
+from django.shortcuts import render
 
 from django_tables2 import RequestConfig
 
@@ -1420,13 +1421,18 @@ def query(request,qid,q2id='0',sbsid='0'):
                     'user_docs': user_docs
                 })
 
+        if DocPar.objects.filter(doc__query=query).count() > 0:
+            pars = True
+        else:
+            pars = False
         context = {
             'query': query,
             'project': query.project,
             'tags': list(tags),
             'untagged': untagged,
             'users': user_list,
-            'user': request.user
+            'user': request.user,
+            'pars': pars
         }
     else:
         sbs    = SnowballingSession.objects.get(pk=sbsid)
@@ -1530,7 +1536,7 @@ def query_tm(request,qid):
         'query': query,
         'form': form,
         'project': query.project,
-        'fields_1': ['min_freq','max_df','max_features','limit','ngram','fulltext'],
+        'fields_1': ['min_freq','max_df','max_features','limit','ngram','fulltext','citations'],
         'fields_2': ['K','alpha','max_iterations','db'],
         'fields_3': ['method']
     }
@@ -2841,6 +2847,77 @@ def prepare_authorlist(request,tid):
 
 from django.core.mail import send_mail, EmailMessage
 import random
+
+def send_publication(request):
+
+    ems = EmailTokens.objects.filter(user_id__isnull=True,sent=True)
+
+    message = '''Dear colleague,
+
+Some months ago we contacted you regarding our project - a systematic review of Negative Emissions Technologies (NETs) - to ask if you had additional literature that we had not considered.
+
+We are grateful to those who sent us additional documents. Thanks to your assistance we considered over 6000 papers, regarding nearly 2000 as relevant, and extracted and synthesized costs, potentials and side-effects from 861 studies. Unfortunately, it was not possible to include, or to reference, every paper related to negative emissions, but we aimed to transparently document those that informed our analysis and how we selected them (http://www.co2removal.org/methods/).
+
+We are very happy to announce the publication of our three-part review on NETs today. As requested by many of you, we would like to share it with you and point you as well to the data resources the project generated. The latter we made available on a mini-website alongside with some of the headline results from the study in an interactive format (www.co2removal.org). We hope that you will find the studies a useful contribution to the field. They are published in a special issue of ERL on negative emissions
+
+Minx, Jan C. et al. (2018): Negative emissions - Part 1: research landscape and synthesis. Environmental Research Letters 13, 063001. https://doi.org/10.1088/1748-9326/aabf9b
+
+Fuss, Sabine et al. (2018): Negative emissions - Part 2: Costs, potentials and side effects. Environmental Research Letters 13, 063002. https://doi.org/10.1088/1748-9326/aabf9f
+
+Nemet, Gregory F. et al. (2018): Negative emissions - Part 3: Innovation and upscaling. Environmental Research Letters 13, 063003. https://doi.org/10.1088/1748-9326/aabff4
+
+We would like to thank you once again for contributing to the project, by authoring a study or by contributing further studies.
+Kind regards,
+
+Jan Minx
+'''
+
+    emessage = EmailMessage(
+        subject = 'Systematic review of negative emissions technologies',
+        body = message,
+        from_email = 'nets@mcc-berlin.net',
+        to = ['callaghan@mcc-berlin.net'],
+        #cc = ['nets@mcc-berlin.net'],
+    )
+    s = emessage.send()
+    if s == 1:
+        et.sent = True
+        et.save()
+        time.sleep(30 + random.randrange(1,50,1)/10)
+
+    chunk_size = 25
+
+    for i in range(2,ems.count()//chunk_size+1):
+        try:
+            chunk_emails = ems[i*chunk_size:(i+1)*chunk_size]
+        except:
+            chunk_emails = ems[i*chunk_size:ems.count()]
+        print(i)
+        print(chunk_emails.count())
+
+        emails = list(chunk_emails.values_list(
+            'email',flat=True
+        ))
+
+        print(emails)
+
+        emessage = EmailMessage(
+            subject = 'Systematic review of negative emissions technologies',
+            body = message,
+            from_email = 'nets@mcc-berlin.net',
+            to = ['nets@mcc-berlin.net'],
+            bcc = emails
+        )
+
+        s = emessage.send()
+        if s == 1:
+            #et.sent = True
+            #et.save()
+            time.sleep(30 + random.randrange(1,50,1)/10)
+
+
+    return
+
 def send_authorlist(request,tid):
 
     message = '''Dear {},
@@ -3179,6 +3256,37 @@ def assign_docs(request):
     return HttpResponse("<body>xyzxyz</body>")
 
 import re
+
+
+
+@login_required
+def par_manager(request, qid):
+    query = Query.objects.get(pk=qid)
+
+    pars = DocPar.objects.filter(
+        doc__query=query
+    ).order_by('doc','n')#.values(
+    #     'doc__title',
+    #     'text'
+    # )
+
+    filter = DocParFilter(request.GET, queryset=pars)
+
+    tab = DocParTable(filter.qs)
+
+    context = {
+        'query': query,
+        'project': query.project,
+        'pars': DocParTable(filter.qs),
+        'filter': filter
+    }
+    return render(request, 'scoping/par_manager.html',context)
+
+
+@login_required
+def screen_par(request, qid, tid, doid=None):
+    context = {}
+    return render(request, 'scoping/screen_par.html',context)
 
 ## Universal screening function, ctype = type of documents to show
 @login_required

@@ -1,8 +1,11 @@
 import django_tables2 as tables
 from django_tables2.utils import A
 from .models import *
-
+from django_filters.views import FilterView
+from django_tables2.views import SingleTableMixin
 from tmv_app.models import *
+from .filters import *
+import django_filters
 
 #from .urls import urlpatterns
 
@@ -48,3 +51,24 @@ class TopicTable(tables.Table):
         )#'startit')
 
 #from .urls import urlpatterns
+
+class DocParTable(tables.Table):
+
+    document = tables.Column(
+        accessor='doc.title',
+        verbose_name='Document'
+    )
+
+    class Meta:
+        model = DocPar
+        fields = (
+            'document','text',
+        )
+
+
+class FilteredDocPar(SingleTableMixin, FilterView):
+    table_class = DocParTable
+    model = DocPar
+    template_name = 'par_manager.html'
+
+    filterset_class = DocParFilter
