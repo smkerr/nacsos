@@ -20,10 +20,12 @@
   <body>
       {% include 'scoping/nav_bar_bs.html' with user=user qid=query.id query=query qid=query.id %}
 
-
-<div id="main" class="container bg-light">
+<div id="main" class="container bg-light col-md-10">
+    <div class="row-fluid columns content">
     {% block content %} {% endblock %}
+    </div>
 </div>
+
 
     </body>
     {% block script %} {% endblock %}

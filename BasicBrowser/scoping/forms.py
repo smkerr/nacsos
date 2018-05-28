@@ -9,6 +9,17 @@ class ProjectForm(forms.ModelForm):
         model = (Project)
         fields = ('title', 'description',)
 
+class CategoryForm(forms.ModelForm):
+    level = forms.IntegerField(
+        min_value=1, max_value=9
+    )
+    class Meta:
+        model = (Technology)
+        fields = ('name','level','description',)
+        widgets = {
+          'name': forms.Textarea(attrs={'rows':1, 'cols':15}),
+          'description': forms.Textarea(attrs={'rows':1, 'cols':15}),
+        }
 
 class NewDoc(forms.ModelForm):
 

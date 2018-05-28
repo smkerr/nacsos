@@ -11,7 +11,6 @@ from django.dispatch import receiver
 import tmv_app
 import uuid
 import os
-
 from .validators import *
 # Create your models here.
 
@@ -120,8 +119,9 @@ class Query(models.Model):
 
 
 class Technology(models.Model):
-    name = models.TextField(null = True, verbose_name="Technology Name")
-    description = models.TextField(null=True, verbose_name="Technology Description")
+    name = models.TextField(null = True, verbose_name="Category Name")
+    level = models.IntegerField(default=1)
+    description = models.TextField(null=True, verbose_name="Category Description")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     ndocs = models.IntegerField(null=True)
     nqs = models.IntegerField(null=True)
@@ -150,6 +150,7 @@ class Tag(models.Model):
     title = models.TextField(null=True, verbose_name="Tag Title")
     text = models.TextField(null=True, verbose_name="Tag Text")
     query = models.ForeignKey('Query',null=True, on_delete=models.CASCADE, verbose_name="TagQuery")
+    document_linked = models.BooleanField(default=True)
 
     def __str__(self):
       return self.title
@@ -286,6 +287,26 @@ class DocPar(models.Model):
     n = models.IntegerField()
     section = models.ForeignKey(DocSection, on_delete=models.CASCADE, null=True)
     tag = models.ManyToManyField(Tag)
+    technology = models.ManyToManyField('Technology',db_index=True)
+
+    # xml paragraph properties
+    endColor = models.CharField(null=True, max_length=50)
+    endFont = models.CharField(null=True, max_length=50)
+    endFontsize = models.FloatField(null=True)
+    maxX = models.FloatField(null=True)
+    maxY = models.FloatField(null=True)
+    minX = models.FloatField(null=True)
+    minY = models.FloatField(null=True)
+    mostCommonColor = models.CharField(null=True, max_length=50)
+    mostCommonFont = models.CharField(null=True, max_length=50)
+    mostCommonFontsize = models.FloatField(null=True)
+    page = models.IntegerField(null=True)
+    role = models.CharField(null=True, max_length=50)
+    startColor = models.CharField(null=True, max_length=50)
+    startFont = models.CharField(null=True, max_length=50)
+    startFontsize = models.FloatField(null=True)
+    height = models.FloatField(null=True)
+    width = models.FloatField(null=True)
 
 class DocFile(models.Model):
     doc = models.OneToOneField(Doc, on_delete=models.CASCADE)
@@ -457,11 +478,13 @@ class DocRel(models.Model):
 
 
 class Note(models.Model):
-    doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE,null=True)
+    par = models.ForeignKey(DocPar, on_delete=models.CASCADE, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Notemaker")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     date = models.DateTimeField()
     text = models.TextField(null=True)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
     class Meta:
         ordering = ['date']
 
@@ -492,7 +515,9 @@ class DocOwnership(models.Model):
         (NONO, 'Tech Irrelevant & Innovation Irrelevant'),
     )
 
-    doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
+    doc = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True)
+    docpar = models.ForeignKey(DocPar, on_delete=models.CASCADE, null=True)
+    document_linked = models.BooleanField(default=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Reviewer")
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)

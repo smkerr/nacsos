@@ -1,0 +1,25 @@
+{% extends "scoping/base_bs.html" %}
+{% load static %}
+
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+
+{% block content %}
+<br>
+<h1> Scoping Review Helper</h1>
+
+    <div class="container explanation">
+    <h2> Query #{{query.id}} ({{query.title}}) Overview - <a href="{% url 'scoping:doclist' query.project.id query.id %}">View Docs</a></h2>
+    <p/>
+    This query is used in <b>[{{ query.tms }}]</b> topic models. Click <a href="{% url 'scoping:query_tm_manager' query.id %}">here</a>
+        to manage topic models with this query
+        {% if pars %}
+          <p>View/Manage document <a href="{% url 'scoping:par_manager' query.id %}">paragraphs</a>
+        {% endif %}
+    </div>
+
+    <h3>Tags
+
+    {% render_table tags %}
+
+{% endblock %}

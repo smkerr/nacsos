@@ -1,8 +1,5 @@
-{% extends "scoping/base.html" %}
+{% extends "scoping/base_bs.html" %}
 {% block content %}
-  <div id="main">
-    <div id="graph">
-
       {% if request.session.appmode == "snowballing" %}
 
       <h4>My snowballing sessions and associated queries</h4>
@@ -72,7 +69,7 @@
 
       <h4>Scoping queries</h4>
 
-      <table class="light" style="width:80%">
+      <table class="table" style="width:80%">
         <tr class="title">
           <td>Query ID</td>
           <td>Query Title</td>

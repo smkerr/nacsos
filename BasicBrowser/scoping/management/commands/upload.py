@@ -20,5 +20,5 @@ class Command(BaseCommand):
         if celery == 1:
             upload_docs.delay(qid,update)
         else:
-            result = upload_docs.delay(qid, update)
-            result.get()
+            upload_docs(qid, update)
+            

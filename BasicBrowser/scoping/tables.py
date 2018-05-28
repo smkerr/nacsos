@@ -74,3 +74,10 @@ class FilteredDocPar(SingleTableMixin, FilterView):
     template_name = 'par_manager.html'
 
     filterset_class = DocParFilter
+
+class TagTable(tables.Table):
+    class Meta:
+        model = Tag
+        fields = (
+            'title',
+        )
