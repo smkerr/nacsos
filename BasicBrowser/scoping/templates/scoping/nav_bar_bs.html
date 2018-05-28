@@ -1,0 +1,28 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-info">
+
+     <div class="collapse navbar-collapse" id="navbarSupportedContent">
+       <ul class="navbar-nav mr-auto">
+         <li class="nav-item active">
+           <a class="nav-link" href="{% url 'scoping:index' %}">Home <span class="sr-only">(current)</span></a>
+         </li>
+         {% if project %}
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'scoping:technologies' project.id %}">Categories</a>
+         </li>
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'scoping:queries' project.id %}">Queries</a>
+         </li>
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'scoping:userpage' project.id %}">{{user}}</a>
+         </li>
+         {% if qid %}
+             <li class="nav-item"><a class="nav-link" href="{% url 'scoping:doclist' project.id qid %}">Documents</a></li>
+         {% endif %}
+         <li class="nav-item"><a class="nav-link" href="{% url 'scoping:manual_add_doc_form' project.id %}">Add Reference Manually</a></li>
+
+         <!-- <li class="nav-item">
+           <a class="nav-link" href="#">Link</a>
+         </li> -->
+         {% endif %}
+     </div>
+</nav>

@@ -9,6 +9,17 @@ class ProjectForm(forms.ModelForm):
         model = (Project)
         fields = ('title', 'description',)
 
+class CategoryForm(forms.ModelForm):
+    level = forms.IntegerField(
+        min_value=1, max_value=9
+    )
+    class Meta:
+        model = (Technology)
+        fields = ('name','level','description',)
+        widgets = {
+          'name': forms.Textarea(attrs={'rows':1, 'cols':15}),
+          'description': forms.Textarea(attrs={'rows':1, 'cols':15}),
+        }
 
 class NewDoc(forms.ModelForm):
 
@@ -109,6 +120,11 @@ class UpdateProjectRoleForm(forms.ModelForm):
         fields = ('user', 'role',)
         #widgets = {'user': forms.HiddenInput()}
 
+class TagForm(forms.ModelForm):
+    title = forms.CharField(label='Tag title', max_length=100)
+    class Meta:
+        model = (Tag)
+        fields = ('title',)
 
 
 class TopicModelForm(forms.ModelForm):

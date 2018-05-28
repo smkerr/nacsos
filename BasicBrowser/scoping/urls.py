@@ -31,8 +31,10 @@ urlpatterns = [
 
     ### Paragraph stuff
     path('paragraphs/<int:qid>', views.par_manager, name="par_manager"),
-    path('screen_par/<int:qid>/<int:tid>', views.screen_par, name="screen_par"),
-    path('screen_par/<int:qid>/<int:tid>/<int:doid>', views.screen_par, name="screen_par"),
+
+    path('screen_par/<int:tid>/<int:ctype>/<int:doid>/<int:todo>/<int:done>/<int:last_doid>', views.screen_par, name="screen_par"),
+
+    path('rate_par/<int:tid>/<int:ctype>/<int:doid>/<int:todo>/<int:done>', views.rate_par, name="rate_par"),
 
 
     url(r'^snowball$', views.snowball, name='snowball'),
@@ -48,6 +50,7 @@ urlpatterns = [
 
     #### Manage Query
     url(r'^query/(?P<qid>[0-9]+)/$', views.query, name='query'),
+    path('query_dev/<int:qid>/', views.query_dev, name='query_dev'),
     url(r'^query-tm-manager/(?P<qid>[0-9]+)/$', views.query_tm_manager, name='query_tm_manager'),
     url(r'^query-tm/(?P<qid>[0-9]+)/$', views.query_tm, name='query_tm'),
     url(r'^run_model-tm/(?P<run_id>[0-9]+)/$', views.run_model, name='run_model'),
@@ -75,7 +78,7 @@ urlpatterns = [
     url(r'^sendauthorlist/(?P<tid>[0-9]+)$',views.send_authorlist, name='send_authorlist'),
 
     url(r'^add_tech',views.add_tech, name='add_tech'),
-    url(r'^update_tech',views.update_tech, name='update_tech'),
+    path('update_tech/<int:tid>',views.update_tech, name='update_tech'),
 
     url(r'^user/(?P<pid>[0-9]+)$', views.userpage, name='userpage'),
 

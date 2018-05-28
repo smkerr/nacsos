@@ -6,5 +6,5 @@ class DocParFilter(django_filters.FilterSet):
         model = DocPar
         fields = {
             #'document',
-            'text': ['exact','icontains'],
+            'text': ['icontains','iregex'],
         }

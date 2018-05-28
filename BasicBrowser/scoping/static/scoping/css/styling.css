@@ -29,8 +29,8 @@ div.authorform.add {
 ul.errorlist {
     background-color: rgba(255,0,0,0.5);
     list-style-type: none;
-    margin: 20 40;
-    padding: 5 0;
+    margin: 20px 40px;
+    padding: 5px 0px;
 }
 
 span.highlight {
@@ -147,7 +147,6 @@ h2 {
 
 #header hr {
     width:80%;
-    size:3;
     border-color: #000;
     color: #000;
     background-color: #000;
@@ -161,7 +160,6 @@ h2 {
 
 #footer hr {
     width:80%;
-    size:3;
     border-color: #000;
     color: #000;
     background-color: #000;
@@ -176,14 +174,13 @@ h2 {
     text-align: center;
     padding: 0px 15px;
 }
+
 #main {
-    align: center;
     margin-left: auto;
     margin-right: auto;
 }
 
 #main table {
-    align:center;
     margin-left: auto;
     margin-right: auto;
 	width: 80%
@@ -193,11 +190,12 @@ h2 {
 }
 
 #main table {
-    padding: 5px; /**/
+    padding: 5px;
     border-collapse: collapse;
 }
+
 #main table table{
-width: 100%
+    width: 100%
 }
 
 #main table.dark {
@@ -227,14 +225,14 @@ width: 100%
 
 #main table.light td {
     text-align: left;
-    background-color: '#FFF';
+    background-color: #FFF;
     padding-left: 12px;
     padding-right: 12px;
 }
 
 #main table.light_unclickable td {
     text-align: center;
-    background-color: '#FFF';
+    background-color: #FFF;
     padding-left: 12px;
     padding-right: 12px;
 }
@@ -296,13 +294,12 @@ width: 100%
 
 #term table.light td {
     text-align: left;
-    background-color: '#FFF';
+    background-color: #FFF;
     padding-left: 12px;
     padding-right: 12px;
 }
 
-#terms {
-    align: center;
+#terms  {
     margin-left: auto;
     margin-right: auto;
     width: 80%;
@@ -452,7 +449,6 @@ border-spacing: 2px 2px;*/
 }
 
 #topics {
-    align: center;
     margin-left: auto;
     margin-right: auto;
     width: 80%;
@@ -470,9 +466,9 @@ border-spacing: 2px 2px;*/
     border-color: #D5DFF5;
     border-width: 0px 10px;
     text-align: center;
-    background-color: $middle;
+    background-color: middle;
     padding: 5px;
-    width: 250px; /*TODO: make this work for as a percentage (for smaller browser widths) */
+    width: 250px; /*  TO DO: make this work for as a percentage (for smaller browser widths) */
 }
 
 #topics tr.titles td {
@@ -572,15 +568,15 @@ canvas {
     margin-left: auto;
     margin-right: auto;
     background-color: #799FF2;
-    margin: 0;
-    padding: 0;
+    margin: 0px;
+    padding: 0px;
     border-bottom: 1px solid #547DD6;
 }
 
 #navigation table td {
     vertical-align: center;
     position: relative;
-    padding: 2 10;
+    padding: 2px 10px;
 }
 
 #navigation table td.navtext {
@@ -699,7 +695,7 @@ ul.inline-list li.None {
     border: none;
 }
 
-#navigarion ul {
+#navigation ul {
   list-style-type: none;
 }
 
@@ -1196,7 +1192,7 @@ span.username {
 	cursor: pointer;
 }
 
-.waiting * { cursor: 'wait' !important}
+.waiting * { cursor: wait !important}
 
 div.explanation {
     width:60%;
@@ -1221,7 +1217,7 @@ div.addbox {
     padding: 15px;
 }
 
-.tech, . {
+.tech {
     margin: 60px 40px
 }
 

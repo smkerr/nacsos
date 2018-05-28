@@ -121,7 +121,7 @@ def add_doc(r, q, update):
 
         ## Add authors
         # try:
-        if get(r,'AU') == "":
+        if get(r,'AU') is None:
             return
 
         for a in range(len(r['AU'])):

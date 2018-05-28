@@ -64,6 +64,8 @@ class DocParTable(tables.Table):
         fields = (
             'document','text',
         )
+        template_name = 'django_tables2/bootstrap.html'
+        attrs = {'class': 'table'}
 
 
 class FilteredDocPar(SingleTableMixin, FilterView):
@@ -72,3 +74,10 @@ class FilteredDocPar(SingleTableMixin, FilterView):
     template_name = 'par_manager.html'
 
     filterset_class = DocParFilter
+
+class TagTable(tables.Table):
+    class Meta:
+        model = Tag
+        fields = (
+            'title',
+        )

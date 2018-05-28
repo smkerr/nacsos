@@ -1,4 +1,4 @@
-{% extends "scoping/base.html" %}
+{% extends "scoping/base_bs.html" %}
 {% block content %}
 {% load scoping_extras %}
 {% if request.session.appmode == "scoping" %}
@@ -12,14 +12,14 @@
   This query is used in <b>[{{ query.tms }}]</b> topic models. Click <a href="{% url 'scoping:query_tm_manager' query.id %}">here</a>
       to manage topic models with this query
       {% if pars %}
-        <p>View/Manage document <a href="{% url 'scoping:par_manager' query.id %}">paragraphs</a> 
+        <p>View/Manage document <a href="{% url 'scoping:par_manager' query.id %}">paragraphs</a>
       {% endif %}
   </div>
 
   <p>
 
 
-  <table class="light" style="width:100%">
+  <table class="table" style="width:100%">
 <tr class="title">
       <td>Tag ID </td>
       <td>Tag Title </td>
@@ -41,7 +41,7 @@
           <td>{{tag.relevance}}%</td>
         {% else %}
           <td><input type="range" min="0" max="{{tag.docs}}" oninput="inputUpdate(value, {{tag.id}})" value="{{tag.docs}}" autocomplete="off"></td>
-          <td class="data-ndocs">{{tag.docs}} [Assign <output id="out_{{tag.id}}" class="tag_assignment" data-tagid="{{ tag.id }}">{{tag.docs}}</output> documents for review?]</td>
+          <td class="data-ndocs">{{tag.docs}} [Assign <output id="out_{{tag.id}}" class="tag_assignment bg-primary text-light" data-tagid="{{ tag.id }} ">{{tag.docs}}</output> <b>{{tag.doctype}}</b> for review?]</td>
 
         {% endif %}
         <td>{{tag.users}}</td>
@@ -71,8 +71,9 @@
 
   <br/><hr/><br/>
 
+  <div class="container">
   <h2> Users </h2>
-  <table class="light" style="width:100%">
+  <table class="table" style="width:100%">
     <tr class="title">
       <td>Username</td>
       <td>Email</td>
@@ -117,10 +118,11 @@
       </tr>
     {% endfor %}
   </table>
+  </div>
   <p style="text-align:left">
-    <div class="assignment_box">
+    <div class="container bg-white border rounded">
       <p>
-        <table id="split_table">
+        <!-- <table id="split_table">
           <tr>
               <td>Double Check Documents
             <td>
@@ -131,13 +133,28 @@
             </td>
             <td>Split Documents</td>
           </tr>
-        </table>
+        </table> -->
+        <div class="row">
+            <div class="col-sm text-right">
+                Double Check Documents
+            </div>
+            <div class="col-sm text-center">
+                <label class="switch">
+                  <input type="checkbox" id="split" onclick="updateAssignment()" checked />
+                  <div class="slider round"></div>
+                </label>
+            </div>
+            <div class="col-sm text-left">
+                Split Documents
+            </div>
+        </div>
       </p>
       <p>Assign a total of <span id="docUserTotal"></span> documents each to <span id="userTotal"></span> users? <button onclick="do_assignment()">Assign</button></p>
 
       <p>Clear all document-user assignments from this query? WARNING: This cannot be undone <button onclick="remove_assignments({{ query.id }})">Remove</button></p>
 
     </div>
+    <br>
   </p>
 
 {% else %}
