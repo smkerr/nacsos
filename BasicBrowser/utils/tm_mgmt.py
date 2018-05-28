@@ -79,6 +79,7 @@ def compare_topic_queryset(runs):
             titles = [""]
             tscores = [0]
             for ct in topics1:
+                # compare overlap between top words
                 score = len(set(t.top_words).intersection(set(ct.top_words)))
                 if score>0:
                     scores.append(score)

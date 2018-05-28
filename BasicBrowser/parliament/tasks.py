@@ -16,6 +16,7 @@ from multiprocess import Pool
 from functools import partial
 from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
+import time
 
 
 @shared_task
@@ -31,20 +32,19 @@ def do_search(s):
 
     # filter for regions
     if s.speaker_regions.exists():
-        if s.speaker_regions.exists():
-            # differentiate between different seat types (list or direct mandate):
-            # list: speaker -> seat -> partylist -> region
-            ps_list = ps.filter(utterance__speaker__seat__seat_type=2).distinct()
-            ps_list = ps_list.filter(utterance__speaker__seat__list__region__in=s.speaker_regions.all())
-            print("paragraphs attributed to list mandates in regions: {}".format(ps_list.count()))
+        # differentiate between different seat types (list or direct mandate):
+        # list: speaker -> seat -> partylist -> region
+        ps_list = ps.filter(utterance__speaker__seat__seat_type=2).distinct()
+        ps_list = ps_list.filter(utterance__speaker__seat__list__region__in=s.speaker_regions.all())
+        print("paragraphs attributed to list mandates in regions: {}".format(ps_list.count()))
 
-            # direct: speaker -> seat -> consituency -> region
-            ps_direct = ps.filter(utterance__speaker__seat__seat_type=1).distinct()
-            ps_direct = ps_direct.filter(utterance__speaker__seat__constituency__region__in=s.speaker_regions.all())
-            ps = ps_list.union(ps_direct)
-            print("paragraphs attributed to direct mandates in regions: {}".format(ps_direct.count()))
+        # direct: speaker -> seat -> consituency -> region
+        ps_direct = ps.filter(utterance__speaker__seat__seat_type=1).distinct()
+        ps_direct = ps_direct.filter(utterance__speaker__seat__constituency__region__in=s.speaker_regions.all())
+        ps = ps_list.union(ps_direct)
+        print("paragraphs attributed to direct mandates in regions: {}".format(ps_direct.count()))
 
-            print("{} paragraphs left after filtering for regions: {}".format(ps.count(), [r.name for r in s.speaker_regions.all()]))
+        print("{} paragraphs left after filtering for regions: {}".format(ps.count(), [r.name for r in s.speaker_regions.all()]))
 
     Through = Paragraph.search_matches.through
     tms = [Through(paragraph=p,search=s) for p in ps]
@@ -55,7 +55,9 @@ def do_search(s):
 
 
 @shared_task
-def run_tm(s, K, language="german", verbosity=1):
+def run_tm(s, K, language="german", verbosity=1, method='NM'):
+    start_time = time.time()
+
     s = Search.objects.get(pk=s)
     #RunStats.objects.filter(psearch=s).delete()
     ps = Paragraph.objects.filter(search_matches=s).filter()
@@ -70,7 +72,7 @@ def run_tm(s, K, language="german", verbosity=1):
     run_id=stat.run_id
 
     if verbosity > 0:
-        print("creating term frequency-inverse document frequency matrix")
+        print("creating term frequency-inverse document frequency matrix ({})".format(time.time() - start_time))
     docs = ps.filter(text__iregex='\w')
     abstracts, docsizes, ids = proc_texts(docs, stoplist, stat.fulltext)
     doc_ids = ids
@@ -115,7 +117,7 @@ def run_tm(s, K, language="german", verbosity=1):
     vocab_ids = []
 
     if verbosity > 0:
-        print("save terms to db")
+        print("save terms to db ({})".format(time.time() - start_time))
 
     # multiprocessing: add vocabulary as Term
     pool = Pool(processes=8)
@@ -124,31 +126,44 @@ def run_tm(s, K, language="german", verbosity=1):
     del vocab
     vocab_ids = vocab_ids[0]
 
+    # without multiprocessing
+    # vocab_ids = [db.add_features(term_title, run_id) for term_title in vocab]
+
     ## Make some topics
     django.db.connections.close_all()
     topic_ids = db.add_topics(K, run_id)
     gc.collect()
 
-    if verbosity > 0:
-        v=True
+    if verbosity > 1:
+        v = True
     else:
-        v=False
+        v = False
 
-    if verbosity > 0:
-        print("running matrix factorization")
-    # NMF = non-negative matrix factorization
-    model = NMF(
-        n_components=K, random_state=1,
-        alpha=stat.alpha, l1_ratio=.1, verbose=v,
-        init='nndsvd', max_iter=stat.max_iterations
-    ).fit(tfidf)
-    dtm = csr_matrix(model.transform(tfidf))
+    if method in ["NM", "nmf"]:
+        if verbosity > 0:
+            print("running matrix factorization ({})".format(time.time() - start_time))
+        # NMF = non-negative matrix factorization
+        model = NMF(
+            n_components=K, random_state=1,
+            alpha=stat.alpha, l1_ratio=.1, verbose=v,
+            init='nndsvd', max_iter=stat.max_iterations
+        ).fit(tfidf)
+        # initialization with Nonnegative Double Singular Value Decomposition (nndsvd)
+        print("Reconstruction error of nmf: {}".format(model.reconstruction_err_))
 
-    # term topic matrix
-    ldalambda = find(csr_matrix(model.components_))
-    # find returns the indices and values of the nonzero elements of a matrix
-    topics = range(len(ldalambda[0]))
-    tts = []
+        # document topic matrix
+        dtm = csr_matrix(model.transform(tfidf))
+        # term topic matrix
+        ldalambda = find(csr_matrix(model.components_))
+        # find returns the indices and values of the nonzero elements of a matrix
+        topics = range(len(ldalambda[0]))
+        tts = []
+
+    elif method in ["LD", "lda"]:
+        pass
+    else:
+        print("Method {} not available.".format(method))
+        return 1
 
     # multiprocessing: add TopicTerms and scores
     pool = Pool(processes=8)
@@ -163,7 +178,7 @@ def run_tm(s, K, language="german", verbosity=1):
     TopicTerm.objects.bulk_create(tts)
 
     if verbosity > 0:
-        print("saving docuemt topic matrix to db")
+        print("saving docuemt topic matrix to db ({})".format(time.time() - start_time))
 
     #document topic matrix
     gamma = find(dtm)
@@ -207,11 +222,13 @@ def run_tm(s, K, language="german", verbosity=1):
         sys.stdout.flush()
 
     stat.status = 3  # 3 = finished
+    stat.method = method
     stat.save()
     update_topic_titles(run_id)
+    update_topic_scores(run_id)
 
     if verbosity > 0:
-        print("topic model run done")
+        print("topic model run done ({})".format(time.time() - start_time))
 
     return 0
 
