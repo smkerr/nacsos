@@ -62,7 +62,7 @@ class DocParTable(tables.Table):
     class Meta:
         model = DocPar
         fields = (
-            'document','text',
+            'document','text','n'
         )
         template_name = 'django_tables2/bootstrap.html'
         attrs = {'class': 'table'}

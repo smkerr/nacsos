@@ -503,7 +503,9 @@ def doquery(request, pid):
     if qdb=="intern":
         args = qtext.split(" ")
         # Original one for combining qs
-        if args[1].strip() in ["AND", "OR", "NOT"]:
+        if "manually uploaded" in qtext:
+            print("manually uploaded")
+        elif args[1].strip() in ["AND", "OR", "NOT"]:
             q1 = Doc.objects.filter(query=args[0])
             op = args[1]
             q2 = Doc.objects.filter(query=args[2])
