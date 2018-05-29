@@ -302,11 +302,13 @@ class DocPar(models.Model):
     mostCommonFontsize = models.FloatField(null=True)
     page = models.IntegerField(null=True)
     role = models.CharField(null=True, max_length=50)
+    imputed_role = models.CharField(null=True, max_length=50)
     startColor = models.CharField(null=True, max_length=50)
     startFont = models.CharField(null=True, max_length=50)
     startFontsize = models.FloatField(null=True)
     height = models.FloatField(null=True)
     width = models.FloatField(null=True)
+    text_length = models.IntegerField(null=True)
 
 class DocFile(models.Model):
     doc = models.OneToOneField(Doc, on_delete=models.CASCADE)
@@ -502,6 +504,7 @@ class DocOwnership(models.Model):
     YESNO = 6
     NOYES = 7
     NONO = 8
+    BADLYPARSED = 9
 
     Status = (
         (UNRATED, 'Unrated'),
@@ -513,6 +516,7 @@ class DocOwnership(models.Model):
         (YESNO, 'Tech Relevant & Innovation Irrelevant'),
         (NOYES, 'Tech Irrelevant & Innovation Relevant'),
         (NONO, 'Tech Irrelevant & Innovation Irrelevant'),
+        (BADLYPARSED, 'Badly Parsed')
     )
 
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True)

@@ -108,7 +108,7 @@
     <div class="border rounded bg-white my-3 p-2">
         <p class="lead">Is this document relevant to the tag: {{tag.title}}?
             <hr>
-            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+            <!-- <div class="btn-group btn-group-toggle" data-toggle="buttons"> -->
               <label class="btn btn-secondary">
                 <input type="radio" name="relevant" id="option1" autocomplete="off" value=1>Yes
               </label>
@@ -118,7 +118,10 @@
               <label class="btn btn-secondary">
                 <input type="radio" name="relevant" id="option3" autocomplete="off" value=3>Maybe
               </label>
-            </div>
+              <label class="btn btn-secondary">
+                <input type="radio" name="relevant" id="option3" autocomplete="off" value=9>Parse error
+              </label>
+            <!-- </div> -->
     </div>
         {% for l in levels %}
             <div class="border rounded bg-white my-3 p-2">
@@ -144,6 +147,12 @@
 
 {% block script %}
 <script>
+
+$("#main").css("width", "100%");
+$("#main").removeClass("col-md-10");
+$("#main").removeClass("container");
+$("#main").addClass("p-4");
+
 $(function () {
   $('[data-toggle="tooltip"]').tooltip()
 })
