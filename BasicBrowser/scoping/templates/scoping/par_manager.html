@@ -43,6 +43,30 @@
 </form>
 {% endif %}
 
+<p>Fields</p>
+<div class="btn-group btn-group-toggle" data-toggle="buttons">
+{% for c in pars.columns %}
+    <button class="btn colselect True" value="{{c}}">{{c}}</button>
+{% endfor %}
+</div>
+<p>
+
 {% render_table pars  %}
+
+{% endblock %}
+
+
+{% block script %}
+
+<script>
+
+$(".colselect").click(function() {
+    console.log($(this).val())
+    $("th."+$(this).val()).toggleClass("hidden")
+    $("td."+$(this).val()).toggleClass("hidden")
+    $(this).toggleClass("True")
+})
+
+</script>
 
 {% endblock %}

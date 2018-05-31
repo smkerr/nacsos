@@ -58,11 +58,25 @@ class DocParTable(tables.Table):
         accessor='doc.title',
         verbose_name='Document'
     )
+    authors = tables.Column(
+        accessor='doc.authors',
+        verbose_name='Authors'
+    )
+    py = tables.Column(
+        accessor='doc.PY',
+        verbose_name='Publication Year'
+    )
+    file = tables.LinkColumn(
+        'scoping:download_pdf',args=[A('doc.docfile.id')],
+        accessor='doc.docfile',
+        verbose_name="File"
+    )
+
 
     class Meta:
         model = DocPar
         fields = (
-            'document','text','n'
+            'document','authors','py','text','n'
         )
         template_name = 'django_tables2/bootstrap.html'
         attrs = {'class': 'table'}

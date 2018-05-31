@@ -12,6 +12,11 @@ class DocParFilter(django_filters.FilterSet):
         name="text",
         label="Case insensitive regex"
     )
+    doc_authors = django_filters.CharFilter(
+        lookup_expr='icontains',
+        name='doc__docauthinst__au',
+        label="Authors include"
+    )
     doc_tag = django_filters.NumberFilter(
         lookup_expr='exact',
         name="doc__tag__id",
@@ -20,6 +25,5 @@ class DocParFilter(django_filters.FilterSet):
     class Meta:
         model = DocPar
         fields = {
-            #'document',
-            'text': ['icontains'],
+        
         }

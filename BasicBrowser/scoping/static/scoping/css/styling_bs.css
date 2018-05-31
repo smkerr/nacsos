@@ -80,7 +80,9 @@ button.True {
 }
 
 
-
+.hidden{
+    display: none;
+}
 
 
 /* SWITCHES */
