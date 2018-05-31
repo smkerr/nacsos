@@ -2566,6 +2566,9 @@ def sortdocs(request):
         t.text = tag_text
         t.query = query
         t.save()
+        Through = Doc.tag.through
+        tms = [Through(doc=d,tag=t) for d in filt_docs]
+        Through.objects.bulk_create(tms)
         for doc in filt_docs:
             doc.tag.add(t)
         return(JsonResponse("",safe=False))
@@ -3268,8 +3271,11 @@ def assign_docs(request):
                 docs = docs.exclude(docownership__user=user,docownership__relevant__gt=0)
 
         my_ids = list(docs.values_list('pk', flat=True))
-        rand_ids = random.sample(my_ids, ssize)
-        sample = docs.filter(pk__in=rand_ids).all()
+        try:
+            rand_ids = random.sample(my_ids, ssize)
+            sample = docs.filter(pk__in=rand_ids).all()
+        except:
+            continue
 
 
         s = 0

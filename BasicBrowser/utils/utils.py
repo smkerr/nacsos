@@ -276,7 +276,7 @@ def add_doc_text(r,q):
     }
 
     record = {}
-    mfields = ['au','AF','CR','C1']
+    mfields = ['au','AF','cr','C1']
     for line in r:
         if re.search("([A-Z][A-Z1-9])(\s{2}-\s*)",line):
             s = re.search("([A-Z][A-Z1-9])(\s{2}-\s*)(.*)",line)
@@ -446,8 +446,10 @@ def add_scopus_doc(r,q):
     if doc is not None:
         doc.UT.sid = r['UT']
         doc.UT.save()
-        doc.wosarticle.tc=get(r,'tc')
-        doc.wosarticle.save()
+        article, created = WoSArticle.objects.get_or_create(doc=doc)
+        article.save()
+        article.tc=get(r,'tc')
+        article.save()
         doc.save()
         doc.query.add(q)
     if doc is not None and "WOS:" not in doc.UT.UT:
