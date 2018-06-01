@@ -14,7 +14,7 @@ class DocParFilter(django_filters.FilterSet):
     )
     doc_authors = django_filters.CharFilter(
         lookup_expr='icontains',
-        name='doc__docauthinst__au',
+        name='doc__docauthinst__AU',
         label="Authors include"
     )
     doc_tag = django_filters.NumberFilter(
@@ -25,5 +25,5 @@ class DocParFilter(django_filters.FilterSet):
     class Meta:
         model = DocPar
         fields = {
-        
+
         }
