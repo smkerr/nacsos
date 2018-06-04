@@ -21,13 +21,17 @@
 
     {% for field in filter.form %}
         <div class="form-group is-valid row">
+            <label class="col-md-1 col-form-label">
+                {% if forloop.counter > 1 %}<input type="checkbox" name="ors" value="{{field.html_name}}"
+                {% if field.html_name in ors %} checked {% endif %}> OR
+                {% endif %}
+            </label>
         <label class="col-md-3 col-form-label" for="{{field.auto_id}}">
             {{field.label}}
-            {{field.label.for}}
         </label>
-        <div class="col-md-9">
+        <div class="col-md-8">
         <input id="{{field.auto_id}}" name="{{field.html_name}}" class="form-control"
-        type="{{field.field.widget.input_type}}">
+        type="{{field.field.widget.input_type}}" value="{{field.value}}">
     </div>
         </div>
     {% endfor %}
@@ -42,6 +46,8 @@
     {% bootstrap_button 'Save' %}
 </form>
 {% endif %}
+
+<p>{{ n_pars }} paragraphs
 
 <p>Fields</p>
 <div class="btn-group btn-group-toggle" data-toggle="buttons">

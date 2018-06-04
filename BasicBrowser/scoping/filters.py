@@ -8,7 +8,7 @@ class DocParFilter(django_filters.FilterSet):
         label="Case sensitive regex"
     )
     iregex = django_filters.CharFilter(
-        lookup_expr='regex',
+        lookup_expr='iregex',
         name="text",
         label="Case insensitive regex"
     )

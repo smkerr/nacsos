@@ -3345,9 +3345,30 @@ def par_manager(request, qid):
         doc__query=query
     ).order_by('doc','n')#.values(
 
-    filter = DocParFilter(request.GET, queryset=pars)
+    filtered_pars = pars
+    ors = []
+    if request.method=="GET":
+        ors = request.GET.getlist('ors', None)
+        filter = DocParFilter(request.GET, queryset=pars)
+        if len(ors) > 0:
+            filters = [filtered_pars]
+            i = 0
+            for key, value in filter.filters.items():
+                v = request.GET[key]
+                if v == "":
+                    continue
+                f = '{}__{}'.format(value.name, value.lookup_expr)
+                if key in ors:
+                    filtered_pars = filtered_pars | filters[i-1].filter(**{f:v})
+                    #x = y
+                else:
+                    filtered_pars = filtered_pars.filter(**{f:v})
+                i += 1
+                filters.append(filtered_pars)
+        else:
+            filtered_pars = filter.qs
+        tab = DocParTable(filtered_pars)
 
-    tab = DocParTable(filter.qs)
     RequestConfig(request).configure(tab)
 
     if request.method=="POST":
@@ -3377,7 +3398,9 @@ def par_manager(request, qid):
         'project': query.project,
         'pars': tab,
         'filter': filter,
-        'tagform': tagform
+        'tagform': tagform,
+        'n_pars': filtered_pars.count(),
+        'ors': ors
     }
     return render(request, 'scoping/par_manager.html',context)
 
@@ -3626,7 +3649,7 @@ def download_pdf(request,id):
     filename= f.file.name
     with open("/var/www/tmv/BasicBrowser/media/{}".format(filename),'rb') as pdf:
         response = HttpResponse(pdf.read(), content_type='application/pdf')
-        response['Content-Disposition'] = 'inline;filename=some_file.pdf'
+        response['Content-Disposition'] = 'inline;filename={}.pdf'.format(filename)
         return response
 
 

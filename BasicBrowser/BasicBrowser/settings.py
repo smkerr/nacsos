@@ -141,6 +141,7 @@ STATIC_ROOT = '/var/www/tmv/BasicBrowser/static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = '/var/www/tmv/BasicBrowser/media'
 
 CACHES = {
     'default': {
