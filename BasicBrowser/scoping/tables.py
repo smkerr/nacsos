@@ -68,7 +68,7 @@ class DocParTable(tables.Table):
     )
     file = tables.LinkColumn(
         'scoping:download_pdf',args=[A('doc.docfile.id')],
-        accessor='doc.docfile',
+        accessor='doc.docfile.file',
         verbose_name="File"
     )
 

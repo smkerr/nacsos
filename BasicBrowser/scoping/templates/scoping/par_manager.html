@@ -31,7 +31,10 @@
         </label>
         <div class="col-md-8">
         <input id="{{field.auto_id}}" name="{{field.html_name}}" class="form-control"
-        type="{{field.field.widget.input_type}}" value="{{field.value}}">
+        type="{{field.field.widget.input_type}}"
+        {% if field.value %}
+        value="{{field.value}}"
+        {% endif %}>
     </div>
         </div>
     {% endfor %}
