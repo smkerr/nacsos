@@ -3914,9 +3914,9 @@ def highlight_words_new(s,query):
         qwords = [q.lower() for q in qwords]
     
     # WORK IN PROGRESS: To be saved in the database
-    pattern = re.compile("NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|EW|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|SCS|[Oocean].[Ff]ertili[sz]ation|OF")
+    pattern = re.compile("[Ee]mission[s]?.\\w+.negative|NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|EW|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|SCS|[Oocean].[Ff]ertili[sz]ation|OF")
     
-    # Initialise variables	
+    # Initialise variables
     text_highlighted = []
     kpos = 0
     iter = 1
@@ -3926,6 +3926,7 @@ def highlight_words_new(s,query):
     m = pattern.search(s)    
     # If no match could be found, simply save text input...
     if m is None:
+        print("No match could be found")
         text_highlighted = s
     # ... Otherwise
     else:
@@ -3949,6 +3950,7 @@ def highlight_words_new(s,query):
         # Append remaining text if needed
         if kpos <= nchar:
             text_highlighted.append(s[kpos:nchar])
+    print(text_highlighted)
     print("  Highlighted paragraph:"+" ".join(text_highlighted))
     
     print("< Exiting highlight_words_new")
