@@ -3881,12 +3881,12 @@ def highlight_words(s,query):
 
 
 def highlight_words_new(s,query):
-    print("> Entering highlight_words_new")    
+    #print("> Entering highlight_words_new")    
     # Check validity of input parameters before proceeding
     if query.text is None or s is None:
         return s
     
-    print("  Paragraph to be processed: " + s)
+    #print("  Paragraph to be processed: " + s)
     
     # This is relevant to the tags in paragraphs	
     if not hasattr(query,'database'):
@@ -3926,12 +3926,12 @@ def highlight_words_new(s,query):
     m = pattern.search(s)    
     # If no match could be found, simply save text input...
     if m is None:
-        print("No match could be found")
+        #print("No match could be found")
         text_highlighted = s
     # ... Otherwise
     else:
-        print("  Match #"+str(iter)+": ")
-        print(m)
+        #print("  Match #"+str(iter)+": ")
+        #print(m)
         match_found = True
         if m.start() == 0:
             text_highlighted.append('<span class="t1">'+s[m.start():m.end()]+'</span>')
@@ -3944,8 +3944,8 @@ def highlight_words_new(s,query):
             match_found = False 
             m = pattern.search(s, kpos)
             if m is not None:
-                print("  Match #"+str(iter)+": ")
-                print(m)
+                #print("  Match #"+str(iter)+": ")
+                #print(m)
                 match_found = True
                 text_highlighted.append(s[kpos:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
                 kpos = m.end()+1
@@ -3953,9 +3953,9 @@ def highlight_words_new(s,query):
         # Append remaining text if needed
         if kpos <= nchar:
             text_highlighted.append(s[kpos:nchar])
-    print(text_highlighted)
-    print("  Highlighted paragraph:"+" ".join(text_highlighted))
+    #print(text_highlighted)
+    #print("  Highlighted paragraph:"+" ".join(text_highlighted))
     
-    print("< Exiting highlight_words_new")
+    #print("< Exiting highlight_words_new")
     
     return(" ".join(text_highlighted))
