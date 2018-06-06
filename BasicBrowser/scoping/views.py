@@ -3933,7 +3933,10 @@ def highlight_words_new(s,query):
         print("  Match #"+str(iter)+": ")
         print(m)
         match_found = True
-        text_highlighted.append(s[0:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
+        if m.start() == 0:
+            text_highlighted.append('<span class="t1">'+s[m.start():m.end()]+'</span>')
+        else:
+            text_highlighted.append(s[0:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
         kpos = m.end()+1
         # Loop over potential other matches
         while kpos <= nchar and match_found:
