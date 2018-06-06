@@ -3408,31 +3408,38 @@ def par_manager(request, qid):
 
 @login_required
 def screen_par(request,tid,ctype,doid,todo,done,last_doid):
-    tag = Tag.objects.get(pk=tid)
-    query=tag.query
-    do = DocOwnership.objects.get(pk=doid)
-    doc = do.docpar.doc
+	# Get tag, query, authors ...
+    tag     = Tag.objects.get(pk=tid)
+    query   = tag.query
+    do      = DocOwnership.objects.get(pk=doid)
+    doc     = do.docpar.doc
     authors = DocAuthInst.objects.filter(doc=doc)
+	
     for a in authors:
-        a.institution=highlight_words(a.institution,tag)
-    abstract = highlight_words(doc.content,tag)
-    title = highlight_words(doc.wosarticle.ti,tag)
+        a.institution = highlight_words(a.institution, tag)
+		
+    abstract = highlight_words(doc.content, tag)
+    title    = highlight_words(doc.wosarticle.ti, tag)
+	
     if doc.wosarticle.de is not None:
-        de = highlight_words(doc.wosarticle.de,tag)
+        de = highlight_words(doc.wosarticle.de, tag)
     else:
         de = None
+		
     if doc.wosarticle.kwp is not None:
-        kwp = highlight_words(doc.wosarticle.kwp,tag)
+        kwp = highlight_words(doc.wosarticle.kwp, tag)
     else:
         kwp = None
 
     notes = Note.objects.filter(
-        par=do.docpar,
-        project=tag.query.project
+        par     = do.docpar,
+        project = tag.query.project
     )
 
-    pars = [(highlight_words(x.text,tag),x.id) for x in doc.docpar_set.all()]
+	# Highlight filter words in paragraphs
+    pars = [(highlight_words_new(x.text, tag), x.id) for x in doc.docpar_set.all()]
 
+	# Get technologies/statements
     techs = Technology.objects.filter(project=tag.query.project)
     for t in techs:
         if do.docpar.technology.all().filter(pk=t.pk).exists():
@@ -3442,8 +3449,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     levels = [techs.filter(level=l) for l in techs.values_list('level',flat=True).distinct()]
     levels = [[(do.docpar.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).distinct()]
 
-
-
+    # Create context for web page
     context = {
         'project':tag.query.project,
         'tag': tag,
@@ -3832,43 +3838,109 @@ def add_manually():
 
 import string
 def highlight_words(s,query):
+
+
+def highlight_words_new(s,query):
+	# Check validity of input parameters before proceeding
     if query.text is None or s is None:
         return s
+		
+	# This is relevant to the tags in paragraphs	
     if not hasattr(query,'database'):
         query.database = "tag"
+	
+    # In the paragraph case query.database == "intern"	
     if query.database == "intern":
         args = query.text.split(" ")
         if args[0]=="*":
             return(s)
         q1 = Query.objects.get(id=args[0])
         q2 = Query.objects.get(id=args[2])
-        qwords = [re.findall('\w+',query.text) for query in [q1,q2]]
+        qwords = [re.findall('\w+', query.text) for query in [q1,q2]]
         qwords = [item for sublist in qwords for item in sublist]
+		
+		# This is not relevant for NETs in IAMs
         if "sustainability" in query.title:
             qwords = ["sustainab"]
     else:
+		# Here we need some processing of the tags
+		args = query.text.split("&")
+		
+		# Get all words in paragraph and lower case them
         qwords = re.findall('\w+',query.text)
         qwords = [q.lower() for q in qwords]
 
-    nots = ["TS","AND","NOT","NEAR","OR","and","W"]
-    transtable = {ord(c): None for c in string.punctuation + string.digits}
-    try:
-        qwords = set([x.split('*')[0].translate(transtable) for x in qwords if x not in nots and len(x.translate(transtable)) > 0])
-    except:
-        qwords = set()
-    print(qwords)
-    abstract = []
-    try:
-        words = s.split(" ")
-    except:
-        words = []
-    for word in words:
-        h = False
-        for q in qwords:
-            if q in word.lower():
-                h = True
-        if h:
-            abstract.append('<span class="t1">'+word+'</span>')
-        else:
-            abstract.append(word)
-    return(" ".join(abstract))
+	# WORK IN PROGRESS: To be saved in the database
+	pattern = re.compile("NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration")	
+		
+	# # Define 
+    # nots       = ["TS","AND","NOT","NEAR","OR","and","W"]
+    # transtable = {ord(c): None for c in string.punctuation + string.digits}
+	
+	# # Loop over qwords and process them
+    # try:
+        # qwords = set([x.split('*')[0].translate(transtable) for x in qwords if x not in nots and len(x.translate(transtable)) > 0])
+    # except:
+        # qwords = set()
+    
+	# # Print list of tags (qwords)	
+	# print(qwords)    
+	
+	# # Get words from paragraph
+    # try:
+        # words = s.split(" ")
+    # except:
+        # words = []
+	
+	# # Initialise output text (e.g. abstract, paragraph ...)
+	# abstract = []
+    # # Loop over paragraph words	
+    # for word in words:
+	    # # Set flag h to FALSE
+        # h = False
+		
+		# # Loop over tags
+        # for q in qwords:
+		    # # If a match is found et the flag h to TRUE
+            # if q in word.lower():
+                # h = True
+				
+		# # If the current text word matches a tag, highlight it and append it
+        # if h:
+            # abstract.append('<span class="t1">'+word+'</span>')
+		# # Otherwise just append it
+        # else:
+            # abstract.append(word)
+			
+	
+    # Initialise variables	
+	text_highlighted = []
+	kpos = 0
+    nchar = s.length()
+	
+	# Search for pattern
+	m = pattern.search(s)
+	
+	# If no match could be found, simply save text input...
+	if m is None:
+		text_highlighted = s
+    # ... Otherwise
+	else
+		match_found = True
+	    text_highlighted.append(s[0:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
+		kpos <- m.end()+1
+		# Loop over potential other matches
+		while kpos <= nchar and match_found
+			match_found = False 
+			m = pattern.search(s, kpos)
+			if m is not None:
+				match_found = True
+		        text_highlighted.append(s[kpos:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
+		        kpos <- m.end()+1
+	
+	    # Append remaining text if needed
+    	if kpos <= nchar:
+			text_highlighted.append(s[kpos:nchar])
+			
+			
+    return(" ".join(text_highlighted))
