@@ -3838,6 +3838,46 @@ def add_manually():
 
 import string
 def highlight_words(s,query):
+    if query.text is None or s is None:
+        return s
+    if not hasattr(query,'database'):
+        query.database = "tag"
+    if query.database == "intern":
+        args = query.text.split(" ")
+        if args[0]=="*":
+            return(s)
+        q1 = Query.objects.get(id=args[0])
+        q2 = Query.objects.get(id=args[2])
+        qwords = [re.findall('\w+',query.text) for query in [q1,q2]]
+        qwords = [item for sublist in qwords for item in sublist]
+        if "sustainability" in query.title:
+            qwords = ["sustainab"]
+    else:
+        qwords = re.findall('\w+',query.text)
+        qwords = [q.lower() for q in qwords]
+
+    nots = ["TS","AND","NOT","NEAR","OR","and","W"]
+    transtable = {ord(c): None for c in string.punctuation + string.digits}
+    try:
+        qwords = set([x.split('*')[0].translate(transtable) for x in qwords if x not in nots and len(x.translate(transtable)) > 0])
+    except:
+        qwords = set()
+    print(qwords)
+    abstract = []
+    try:
+        words = s.split(" ")
+    except:
+        words = []
+    for word in words:
+        h = False
+        for q in qwords:
+            if q in word.lower():
+                h = True
+        if h:
+            abstract.append('<span class="t1">'+word+'</span>')
+        else:
+            abstract.append(word)
+    return(" ".join(abstract))
 
 
 def highlight_words_new(s,query):
