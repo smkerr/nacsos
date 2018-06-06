@@ -3949,7 +3949,7 @@ def highlight_words_new(s,query):
         # Append remaining text if needed
         if kpos <= nchar:
             text_highlighted.append(s[kpos:nchar])
-    print("  Highlighted paragraph: "+text_highlighted)
+    print("  Highlighted paragraph:"+" ".join(text_highlighted))
     
     print("< Exiting highlight_words_new")
     
