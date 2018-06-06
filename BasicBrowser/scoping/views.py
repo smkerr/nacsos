@@ -3930,7 +3930,7 @@ def highlight_words_new(s,query):
         text_highlighted.append(s[0:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
         kpos <- m.end()+1
         # Loop over potential other matches
-        while kpos <= nchar and match_found
+        while kpos <= nchar and match_found:
             match_found = False 
             m = pattern.search(s, kpos)
             if m is not None:
