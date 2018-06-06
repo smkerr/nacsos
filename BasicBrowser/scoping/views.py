@@ -3911,7 +3911,7 @@ def highlight_words_new(s,query):
         qwords = [q.lower() for q in qwords]
     
     # WORK IN PROGRESS: To be saved in the database
-    pattern = re.compile("NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration")
+    pattern = re.compile("NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|EW|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|SCS|[Oocean].[Ff]ertili[sz]ation|OF")
     
     # Initialise variables	
     text_highlighted = []
@@ -3924,10 +3924,8 @@ def highlight_words_new(s,query):
     # If no match could be found, simply save text input...
     if m is None:
         text_highlighted = s
-        print("No match could be found for this paragraph")
     # ... Otherwise
     else:
-        print("At least one match was found")
         match_found = True
         text_highlighted.append(s[0:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
         kpos = m.end()+1
@@ -3938,8 +3936,6 @@ def highlight_words_new(s,query):
             match_found = False 
             m = pattern.search(s, kpos)
             if m is not None:
-                print("New match found!")
-                print(m)
                 match_found = True
                 text_highlighted.append(s[kpos:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
                 kpos = m.end()+1
