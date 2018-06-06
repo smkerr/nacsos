@@ -3881,9 +3881,12 @@ def highlight_words(s,query):
 
 
 def highlight_words_new(s,query):
+    print("> Entering highlight_words_new")    
     # Check validity of input parameters before proceeding
     if query.text is None or s is None:
         return s
+    
+    print("  Paragraph to be processed: " + s)
     
     # This is relevant to the tags in paragraphs	
     if not hasattr(query,'database'):
@@ -3916,26 +3919,29 @@ def highlight_words_new(s,query):
     # Initialise variables	
     text_highlighted = []
     kpos = 0
+    iter = 1
     nchar = len(s)
     
     # Search for pattern
-    m = pattern.search(s)
-    print(m)
+    m = pattern.search(s)    
     # If no match could be found, simply save text input...
     if m is None:
         text_highlighted = s
     # ... Otherwise
     else:
+        print("  Match #"+str(iter)+": ")
+        print(m)
         match_found = True
         text_highlighted.append(s[0:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
         kpos = m.end()+1
         # Loop over potential other matches
-        iter = 1
         while kpos <= nchar and match_found:
-            print(iter)
+            iter = iter +1
             match_found = False 
             m = pattern.search(s, kpos)
             if m is not None:
+                print("  Match #"+str(iter)+": ")
+                print(m)
                 match_found = True
                 text_highlighted.append(s[kpos:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
                 kpos = m.end()+1
@@ -3943,6 +3949,8 @@ def highlight_words_new(s,query):
         # Append remaining text if needed
         if kpos <= nchar:
             text_highlighted.append(s[kpos:nchar])
-    print(text_highlighted)
+    print("  Highlighted paragraph: "+text_highlighted)
+    
+    print("< Exiting highlight_words_new")
     
     return(" ".join(text_highlighted))
