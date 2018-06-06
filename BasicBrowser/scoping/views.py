@@ -3942,7 +3942,7 @@ def highlight_words_new(s,query):
                 print(m)
                 match_found = True
                 text_highlighted.append(s[kpos:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
-                kpos <- m.end()+1
+                kpos = m.end()+1
     
         # Append remaining text if needed
         if kpos <= nchar:
