@@ -144,9 +144,9 @@
 </div>
 
 <ul class="tools">
-    <li>1</li>
-    <li>2</li>
-    <li>3</li>
+    {% for t in l %}
+    <li><button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button></li>
+    {% endfor %}
 </ul>
 
 {% endblock %}
