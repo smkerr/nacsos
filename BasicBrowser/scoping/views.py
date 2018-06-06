@@ -3904,7 +3904,7 @@ def highlight_words_new(s,query):
             qwords = ["sustainab"]
     else:
 		# Here we need some processing of the tags
-		args = query.text.split("&")
+		# args = query.text.split("&")
 		
 		# Get all words in paragraph and lower case them
         qwords = re.findall('\w+',query.text)
