@@ -148,11 +148,6 @@
 {% block script %}
 <script>
 
-$("#main").css("width", "100%");
-$("#main").removeClass("col-md-10");
-$("#main").removeClass("container");
-$("#main").addClass("p-4");
-
 if (!window.x) {
     x = {};
 }
@@ -191,6 +186,10 @@ $(document).ready(function() {
     });
 });
 
+$("#main").css("width", "100%");
+$("#main").removeClass("col-md-10");
+$("#main").removeClass("container");
+$("#main").addClass("p-4");
 
 $(function () {
   $('[data-toggle="tooltip"]').tooltip()
