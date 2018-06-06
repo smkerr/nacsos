@@ -3881,14 +3881,14 @@ def highlight_words(s,query):
 
 
 def highlight_words_new(s,query):
-	# Check validity of input parameters before proceeding
+    # Check validity of input parameters before proceeding
     if query.text is None or s is None:
         return s
-		
-	# This is relevant to the tags in paragraphs	
+    
+    # This is relevant to the tags in paragraphs	
     if not hasattr(query,'database'):
         query.database = "tag"
-	
+    
     # In the paragraph case query.database == "intern"	
     if query.database == "intern":
         args = query.text.split(" ")
@@ -3898,89 +3898,49 @@ def highlight_words_new(s,query):
         q2 = Query.objects.get(id=args[2])
         qwords = [re.findall('\w+', query.text) for query in [q1,q2]]
         qwords = [item for sublist in qwords for item in sublist]
-		
-		# This is not relevant for NETs in IAMs
+        
+        # This is not relevant for NETs in IAMs
         if "sustainability" in query.title:
             qwords = ["sustainab"]
     else:
-		# Here we need some processing of the tags
-		# args = query.text.split("&")
-		
-		# Get all words in paragraph and lower case them
+        # Here we need some processing of the tags
+        # args = query.text.split("&")
+        
+        # Get all words in paragraph and lower case them
         qwords = re.findall('\w+',query.text)
         qwords = [q.lower() for q in qwords]
-
-	# WORK IN PROGRESS: To be saved in the database
-	pattern = re.compile("NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration")	
-		
-	# # Define 
-    # nots       = ["TS","AND","NOT","NEAR","OR","and","W"]
-    # transtable = {ord(c): None for c in string.punctuation + string.digits}
-	
-	# # Loop over qwords and process them
-    # try:
-        # qwords = set([x.split('*')[0].translate(transtable) for x in qwords if x not in nots and len(x.translate(transtable)) > 0])
-    # except:
-        # qwords = set()
     
-	# # Print list of tags (qwords)	
-	# print(qwords)    
-	
-	# # Get words from paragraph
-    # try:
-        # words = s.split(" ")
-    # except:
-        # words = []
-	
-	# # Initialise output text (e.g. abstract, paragraph ...)
-	# abstract = []
-    # # Loop over paragraph words	
-    # for word in words:
-	    # # Set flag h to FALSE
-        # h = False
-		
-		# # Loop over tags
-        # for q in qwords:
-		    # # If a match is found et the flag h to TRUE
-            # if q in word.lower():
-                # h = True
-				
-		# # If the current text word matches a tag, highlight it and append it
-        # if h:
-            # abstract.append('<span class="t1">'+word+'</span>')
-		# # Otherwise just append it
-        # else:
-            # abstract.append(word)
-			
-	
+    # WORK IN PROGRESS: To be saved in the database
+    pattern = re.compile("NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration")	
+    
     # Initialise variables	
-	text_highlighted = []
-	kpos = 0
+    text_highlighted = []
+    kpos = 0
     nchar = s.length()
-	
-	# Search for pattern
-	m = pattern.search(s)
-	
-	# If no match could be found, simply save text input...
-	if m is None:
-		text_highlighted = s
+    
+    # Search for pattern
+    m = pattern.search(s)
+    
+    # If no match could be found, simply save text input...
+    if m is None:
+        text_highlighted = s
     # ... Otherwise
-	else
-		match_found = True
-	    text_highlighted.append(s[0:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
-		kpos <- m.end()+1
-		# Loop over potential other matches
-		while kpos <= nchar and match_found
-			match_found = False 
-			m = pattern.search(s, kpos)
-			if m is not None:
-				match_found = True
-		        text_highlighted.append(s[kpos:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
-		        kpos <- m.end()+1
-	
-	    # Append remaining text if needed
-    	if kpos <= nchar:
-			text_highlighted.append(s[kpos:nchar])
-			
-			
+    else
+        match_found = True
+        text_highlighted.append(s[0:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
+        kpos <- m.end()+1
+        # Loop over potential other matches
+        while kpos <= nchar and match_found
+            match_found = False 
+            m = pattern.search(s, kpos)
+            if m is not None:
+                match_found = True
+                text_highlighted.append(s[kpos:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
+                kpos <- m.end()+1
+    
+        # Append remaining text if needed
+        if kpos <= nchar:
+            text_highlighted.append(s[kpos:nchar])
+        
+    
     return(" ".join(text_highlighted))
