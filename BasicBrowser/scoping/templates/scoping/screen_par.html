@@ -162,6 +162,10 @@ if (!window.x) {
     x = {};
 }
 
+function escapeRegExp(str) {
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
 x.Selector = {};
 x.Selector.getSelected = function() {
     var t = '';
@@ -194,13 +198,16 @@ $(document).ready(function() {
         var selectedText = x.Selector.getSelected();
         if(selectedText != ''){
             // Add new DocStatement
-            text_paragraph = window.getSelection().anchorNode.parentNode.innerText;
+            s = window.getSelection();
+            text_paragraph = s.baseNode.parentNode.innerText;
             text_selection = selectedText;
 
-            match_text_par = text_paragraph.match(text_selection);
+            match_text_par = text_paragraph.match(escapeRegExp(text_selection));
+            alert(match_text_par);
             startSelection = match_text_par.index; // Get start of selection in paragraph
+            alert(startSelection);
             endSelection   = startSelection + text_selection.length;
-            
+            alert(endSelection);
             $.ajax({
                 url: "{% url 'scoping:add_statement' %}",
                 data: {
