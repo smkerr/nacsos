@@ -194,23 +194,23 @@ $(document).ready(function() {
         var selectedText = x.Selector.getSelected();
         if(selectedText != ''){
             // Add new DocStatement
-            text_paragraph = window.getSelection().anchorNode.parentNode.innerText
-            text_selection = selectedText
+            text_paragraph = window.getSelection().anchorNode.parentNode.innerText;
+            text_selection = selectedText;
 
-            match_text_par = text_paragraph.match(text_selection)
-            startSelection = match_text_par.index # Get start of selection in paragraph
-            endSelection   = startSelection + text_selection.length
+            match_text_par = text_paragraph.match(text_selection);
+            startSelection = match_text_par.index; // Get start of selection in paragraph
+            endSelection   = startSelection + text_selection.length;
             
             $.ajax({
                 url: "{% url 'scoping:add_statement' %}",
                 data: {
                   "idpar" : "{{do.docpar.pk}}",
-                  "text"  : selectedText",
+                  "text"  : selectedText,
                   "start" : startSelection,
                   "end"   : endSelection
                 },
                 success: function(data) {
-
+                    alert('New statement successfully saved in DB');
                 }
             })
             
