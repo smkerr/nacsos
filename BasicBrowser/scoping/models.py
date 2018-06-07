@@ -125,6 +125,7 @@ class Technology(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     ndocs = models.IntegerField(null=True)
     nqs = models.IntegerField(null=True)
+    group = models.TextField(null = True, verbose_name="Broad Category Name")
 
     def __str__(self):
       return self.name
