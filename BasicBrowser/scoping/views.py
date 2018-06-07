@@ -3404,7 +3404,25 @@ def par_manager(request, qid):
     }
     return render(request, 'scoping/par_manager.html',context)
 
+@login_required
+def add_statement(request):
+    idpar = request.GET.get('idpar', None)
+    text  = request.GET.get('text', None)
+    start = request.GET.get('start', None)
+    end   = request.GET.get('end', None)
 
+    par = DocPar.objects.get(pk=idpar)
+    
+    docStat = docStatement(
+        par   = par,
+        text  = text,
+        start = start,
+        end   = end,
+        #technology = ,
+        text_length = len(text))
+    docStat.save()
+    
+    return HttpResponse()
 
 @login_required
 def screen_par(request,tid,ctype,doid,todo,done,last_doid):
@@ -3887,31 +3905,6 @@ def highlight_words_new(s,query):
         return s
     
     #print("  Paragraph to be processed: " + s)
-    
-    # This is relevant to the tags in paragraphs	
-    if not hasattr(query,'database'):
-        query.database = "tag"
-    
-    # In the paragraph case query.database == "intern"	
-    if query.database == "intern":
-        args = query.text.split(" ")
-        if args[0]=="*":
-            return(s)
-        q1 = Query.objects.get(id=args[0])
-        q2 = Query.objects.get(id=args[2])
-        qwords = [re.findall('\w+', query.text) for query in [q1,q2]]
-        qwords = [item for sublist in qwords for item in sublist]
-        
-        # This is not relevant for NETs in IAMs
-        if "sustainability" in query.title:
-            qwords = ["sustainab"]
-    else:
-        # Here we need some processing of the tags
-        # args = query.text.split("&")
-        
-        # Get all words in paragraph and lower case them
-        qwords = re.findall('\w+',query.text)
-        qwords = [q.lower() for q in qwords]
     
     # WORK IN PROGRESS: To be saved in the database
     pattern = re.compile("[Ee]mission[s]?\\s(\\w+\\s){1,3}negative|NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|EW|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|SCS|[Oocean].[Ff]ertili[sz]ation|OF")

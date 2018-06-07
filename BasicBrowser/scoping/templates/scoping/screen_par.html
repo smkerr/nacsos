@@ -92,7 +92,7 @@
 <div class="container text-con bg-white my-3 p-2 border rounded col-md-6 ">
     {% for d in pars %}
         {% if d.1 == do.docpar.id %}
-            <p class="" id={{d.1}}><strong>{{ d.0 | safe}}</strong></p>
+            <p class="text-selected" id={{d.1}}><strong>{{ d.0 | safe}}</strong></p>
         {% else %}
             <p class="text-muted" id={{d.0}}>{{ d.0 | safe }}</p>
         {% endif %}
@@ -123,7 +123,7 @@
               </label>
             <!-- </div> -->
     </div>
-        {% for l in levels %}
+<!--         {% for l in levels %}
             <div class="border rounded bg-white my-3 p-2">
                 Which level {{l.0.1.level}} categories is this paragraph relevant to?
                 (hover for more info)
@@ -133,7 +133,7 @@
 
                     {% endfor %}
             </div>
-        {% endfor %}
+        {% endfor %} -->
 
 
     {% bootstrap_button 'Save/Next >>>' %}
@@ -171,9 +171,17 @@ x.Selector.getSelected = function() {
             t = s;
         }
     } else if (document.getSelection) {
-        t = document.getSelection();
+        s = document.getSelection();
+        if (s.baseNode.parentNode.tagName.toLowerCase() == "strong") {
+            t = s;
+        }
+        //t = document.getSelection();
     } else if (document.selection) {
-        t = document.selection.createRange().text;
+        s = document.selection.createRange().text;
+        if (s.baseNode.parentNode.tagName.toLowerCase() == "strong") {
+            t = s;
+        }
+        //t = document.selection.createRange().text;
     }
     return t;
 }
@@ -185,6 +193,27 @@ $(document).ready(function() {
     $(document).bind("mouseup", function() {
         var selectedText = x.Selector.getSelected();
         if(selectedText != ''){
+            // Add new DocStatement
+            text_paragraph = window.getSelection().anchorNode.parentNode.innerText
+            text_selection = selectedText
+
+            match_text_par = text_paragraph.match(text_selection)
+            startSelection = match_text_par.index # Get start of selection in paragraph
+            endSelection   = startSelection + text_selection.length
+            
+            $.ajax({
+                url: "{% url 'scoping:add_statement' %}",
+                data: {
+                  "idpar" : "{{do.docpar.pk}}",
+                  "text"  : selectedText",
+                  "start" : startSelection,
+                  "end"   : endSelection
+                },
+                success: function(data) {
+
+                }
+            })
+            
             $('div.tools').css({
                 'left': pageX + 5,
                 'top' : pageY - 55
@@ -223,11 +252,17 @@ $(".cat").click(function(){
 
     $(this).toggleClass("True")
 
+    // Check if statement already exists in DB. If not add it
+    if (method == "add") {
+        
+    }
+
+    // 
     $.ajax({
         url: "{% url 'scoping:update_thing' %}",
         data: {
-          "thing1": "DocPar",
-          "id1": "{{do.docpar.pk}}",
+          "thing1": "DocStatement",
+          "id1": "{{do.docstatement.pk}}",
           'thing2': 'Technology',
           'id2': id2,
           "method": method

@@ -152,6 +152,7 @@ output {
 }
 
 
+p.text-selected::selection{background:#ff0; color:#f00}
 
 div.tools {
     display: none;

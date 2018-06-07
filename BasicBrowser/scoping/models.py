@@ -312,11 +312,10 @@ class DocPar(models.Model):
     text_length = models.IntegerField(null=True)
 
 class DocStatement(models.Model):
-    doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
+    par = models.ForeignKey(DocPar, on_delete=models.CASCADE)
     text = models.TextField()
     start = models.IntegerField(null=False)
     end = models.IntegerField(null=False)
-    tag = models.ManyToManyField(Tag)
     technology = models.ManyToManyField('Technology',db_index=True)
     text_length = models.IntegerField(null=True)
 
