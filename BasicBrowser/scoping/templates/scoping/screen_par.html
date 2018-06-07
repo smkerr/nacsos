@@ -166,7 +166,10 @@ x.Selector = {};
 x.Selector.getSelected = function() {
     var t = '';
     if (window.getSelection) {
-        t = window.getSelection();
+        s = window.getSelection();
+        if (s.baseNode.parentNode.tagName.toLowerCase() == "strong") {
+            t = s;
+        }
     } else if (document.getSelection) {
         t = document.getSelection();
     } else if (document.selection) {
