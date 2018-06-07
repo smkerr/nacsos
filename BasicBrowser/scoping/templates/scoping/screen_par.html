@@ -209,15 +209,19 @@ $(document).ready(function() {
             console.log(startSelection)
             endSelection   = startSelection + text_selection.length;
             console.log(endSelection)
+            
+            var data = {
+                  "idpar" : "{{do.docpar.pk}}",
+                  "text"  : text_selection,
+                  "start" : startSelection,
+                  "end"   : endSelection
+                }
+                
+            console.log(data)
 
             $.ajax({
                 url: "{% url 'scoping:add_statement' %}",
-                data: {
-                  "idpar" : "{{do.docpar.pk}}",
-                  "text"  : selectedText,
-                  "start" : startSelection,
-                  "end"   : endSelection
-                },
+                data: data,
                 success: function(data) {
                     alert('New statement successfully saved in DB');
                 }
