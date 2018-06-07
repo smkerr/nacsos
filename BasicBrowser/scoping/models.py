@@ -316,7 +316,6 @@ class DocStatement(models.Model):
     text = models.TextField()
     start = models.IntegerField(null=False)
     end = models.IntegerField(null=False)
-    tag = models.ManyToManyField(Tag)
     technology = models.ManyToManyField('Technology',db_index=True)
     text_length = models.IntegerField(null=True)
 
