@@ -312,7 +312,7 @@ class DocPar(models.Model):
     text_length = models.IntegerField(null=True)
 
 class DocStatement(models.Model):
-    par = models.ForeignKey(DocPar, on_delete=models.CASCADE)
+    par = models.ForeignKey(DocPar, on_delete=models.CASCADE, null=True)
     text = models.TextField()
     start = models.IntegerField(null=False)
     end = models.IntegerField(null=False)
