@@ -153,15 +153,14 @@ output {
 
 
 
-ul.tools {
+div.tools {
     display: none;
-    list-style: none;
     box-shadow: 0px 0px 4px rgba(0,0,0,.5);
     border: solid 1px #000;
     position: absolute;
     background: #fff;
 }
-ul.tools li {
+/* ul.tools li {
     display: inline-block;
     width: 10px;
     height: 20px;
@@ -169,4 +168,4 @@ ul.tools li {
     margin: 5px;
     padding: 5px 10px;
     cursor: pointer;
-}
+} */

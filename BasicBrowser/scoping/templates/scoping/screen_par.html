@@ -143,11 +143,15 @@
 
 </div>
 
-<ul class="tools">
-    {% for t in l %}
-    <li><button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button></li>
+<div class="tools">
+    {% for l in levels %}
+    <div class="border rounded bg-white my-3 p-2">
+        {% for t in l %}
+        <button value="{{t.1.id}}" type="button" " data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button> 
+        {% endfor %}
+    </div>
     {% endfor %}
-</ul>
+</div>
 
 {% endblock %}
 
