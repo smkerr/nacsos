@@ -167,18 +167,18 @@ x.Selector.getSelected = function() {
     var t = '';
     if (window.getSelection) {
         s = window.getSelection();
-        if (s.baseNode.parentNode.tagName.toLowerCase() == "strong") {
+        if (s.baseNode.parentNode.className.toLowerCase() == "text-selected") {
             t = s;
         }
     } else if (document.getSelection) {
         s = document.getSelection();
-        if (s.baseNode.parentNode.tagName.toLowerCase() == "strong") {
+        if (s.baseNode.parentNode.className.toLowerCase() == "text-selected") {
             t = s;
         }
         //t = document.getSelection();
     } else if (document.selection) {
         s = document.selection.createRange().text;
-        if (s.baseNode.parentNode.tagName.toLowerCase() == "strong") {
+        if (s.baseNode.parentNode.className.toLowerCase() == "text-selected") {
             t = s;
         }
         //t = document.selection.createRange().text;
