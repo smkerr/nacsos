@@ -92,7 +92,7 @@
 <div class="container text-con bg-white my-3 p-2 border rounded col-md-6 ">
     {% for d in pars %}
         {% if d.1 == do.docpar.id %}
-            <p class="text-selected" id={{d.1}}><strong>{{ d.0 | safe}}</strong></p>
+            <p class="text-selected" id={{d.1}}>{{ d.0 | safe}}</p>
         {% else %}
             <p class="text-muted" id={{d.0}}>{{ d.0 | safe }}</p>
         {% endif %}

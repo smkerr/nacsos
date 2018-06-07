@@ -151,8 +151,9 @@ output {
 	width: 3em;
 }
 
-
+p.text-selected{font-weight: bold;}
 p.text-selected::selection{background:#ff0; color:#f00}
+p.text-selected::moz-selection{background:#ff0; color:#f00}
 
 div.tools {
     display: none;
