@@ -506,15 +506,16 @@ def doquery(request, pid):
         if "manually uploaded" in qtext:
             print("manually uploaded")
         elif args[1].strip() in ["AND", "OR", "NOT"]:
-            q1 = Doc.objects.filter(query=args[0])
+            q1 = set(Doc.objects.filter(query=args[0]).values_list('id',flat=True))
             op = args[1]
-            q2 = Doc.objects.filter(query=args[2])
+            q2 = set(Doc.objects.filter(query=args[2]).values_list('id',flat=True))
             if op =="AND":
-                combine = q1.filter(query=args[2])
-            if op =="OR":
-                combine = q1 | q2
-            if op == "NOT":
-                combine = q1.exclude(query=args[2])
+                ids = q1 & q2
+            elif op =="OR":
+                ids = q1 | q2
+            elif op == "NOT":
+                ids = q1 - q2
+            combine = Doc.objects.filter(id__in=ids)
         else:
             # more complicated filters
             if args[0].strip()=="*":

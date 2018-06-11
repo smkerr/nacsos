@@ -21,4 +21,3 @@ class Command(BaseCommand):
             upload_docs.delay(qid,update)
         else:
             upload_docs(qid, update)
-            

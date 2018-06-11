@@ -239,9 +239,7 @@ def read_wos(res, q, update):
 
     return n_records
 
-def add_doc_text(r,q):
-
-    django.db.connections.close_all()
+def add_doc_text(r,q,update):
 
     scopus2WoSFields = {
         'M3': 'dt',
@@ -337,50 +335,22 @@ def add_doc_text(r,q):
     except:
         print("don't want to add this record, it has no id!")
         return
-    add_scopus_doc(record,q)
+    add_scopus_doc(record,q,update)
     return
 
-def add_scopus_doc(r,q):
-    django.db.connections.close_all()
+def add_scopus_doc(r,q,update):
     doc = None
     try:
-        r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid']
+        r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid'].strip()
     except:
         print(r)
         return
 
-    print(get(r,'fu'))
-
     docs = Doc.objects.filter(UT__sid=r['UT']) | Doc.objects.filter(UT__UT=r['UT'])
     if docs.count()==1: # If it's just there - great!
-        print("found it")
         doc = docs.first()
-        article, created = WoSArticle.objects.get_or_create(doc=doc)
-        article.save()
-        if doc.wosarticle.fu is None:
-            doc.wosarticle.fu = get(r,'fu')
-        if doc.wosarticle.fx is None:
-            doc.wosarticle.fx = get(r,'fx')
-        if doc.wosarticle.tc is None:
-            doc.wosarticle.tc=get(r,'tc')
-        try:
-            doc.wosarticle.dt = r['dt']
-            doc.wosarticle.save()
-            doc.save()
-        except:
-            pass
-        try: # if it has no references, add them
-            if doc.wosarticle.cr is None and get(r,'cr') is not None:
-                doc.wosarticle.cr = r['cr']
-                doc.wosarticle.save()
-                doc.save()
-        except:
-            pass
-        doc.query.add(q)
-        #return
     elif docs.count() > 1:
         print("OH no! multiple matches!")
-
     else: # Otherwise try and match by doi
         try:
             did = r['di']
@@ -436,12 +406,12 @@ def add_scopus_doc(r,q):
                     docs = Doc.objects.filter(UT=doc.UT)
                     break
 
-        if len(docs)==0: # if there's still nothing, create one
-            ut, created = UT.objects.get_or_create(
-                UT=r['UT']
-            )
-            doc = Doc(UT=ut)
-            doc.save()
+            if len(docs)==0: # if there's still nothing, create one
+                ut, created = UT.objects.get_or_create(
+                    UT=r['UT']
+                )
+                doc = Doc(UT=ut)
+                doc.save()
             #print(doc)
     if doc is not None:
         doc.UT.sid = r['UT']
@@ -449,52 +419,76 @@ def add_scopus_doc(r,q):
         article, created = WoSArticle.objects.get_or_create(doc=doc)
         article.save()
         article.tc=get(r,'tc')
-        article.save()
-        doc.save()
-        doc.query.add(q)
-    if doc is not None and "WOS:" not in doc.UT.UT:
-        doc.title=get(r,'ti')
-        doc.content=get(r,'ab')
-        doc.PY=get(r,'py')
-        doc.save()
-        doc.query.add(q)
-        doc.save()
-        article, created = WoSArticle.objects.get_or_create(doc=doc)
-
-
-        for field in r:
-            f = field.lower()
-            try:
-                article.f = r[field]
-                setattr(article,f,r[field])
-                #article.save()
-                #print(r[field])
-            except:
-                print(field)
-                print(r[field])
-
+        if article.fu is None:
+            article.fu = get(r,'fu')
+        if article.fx is None:
+            article.fx = get(r,'fx')
         try:
-            article.save()
-
+            article.dt = r['dt']
         except:
             pass
 
-
-        ## Add authors
-        try:
-            dais = []
-            for a in range(len(r['au'])):
-                #af = r['AF'][a]
-                au = r['au'][a]
-                dai = DocAuthInst(doc=doc)
-                dai.AU = au
-                dai.position = a+1
-                dais.append(dai)
-                #dai.save()
-            DocAuthInst.objects.bulk_create(dais)
+        try: # if it has no references, add them
+            if article.cr is None and get(r,'cr') is not None:
+                article.cr = r['cr']
         except:
-            print("couldn't add authors")
+            pass
+        doc.save()
+        article.save()
+        doc.query.add(q)
+    if doc is not None and "WOS:" not in doc.UT.UT:
+        if update:
+            doc.title=get(r,'ti')
+            doc.content=get(r,'ab')
+            doc.PY=get(r,'py')
+            doc.save()
 
+            for field in r:
+                f = field.lower()
+                try:
+                    article.f = r[field]
+                    setattr(article,f,r[field])
+                    #article.save()
+                    #print(r[field])
+                except:
+                    print(field)
+                    print(r[field])
+
+            try:
+                article.save()
+
+            except:
+                pass
+
+
+            ## Add authors
+            #try:
+            dais = []
+            if get(r,'au') is not None:
+                doc.docauthinst_set.clear()
+                for a in range(len(get(r,'au'))):
+                    #af = r['AF'][a]
+                    au = r['au'][a]
+                    dai = DocAuthInst(doc=doc)
+                    dai.AU = au
+                    dai.position = a+1
+                    dais.append(dai)
+                    #dai.save()
+                DocAuthInst.objects.bulk_create(dais)
+        # except:
+        #     print("couldn't add authors")
+
+    return
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+def proc_scopus_chunk(docs,q,update):
+    django.db.connections.close_all()
+    for d in docs:
+        add_doc_text(d,q=q,update=update)
     django.db.connections.close_all()
     return
 
@@ -510,6 +504,8 @@ def read_scopus(res, q, update):
 
     q.doc_set.clear()
 
+    print(update)
+
     for line in res:
         if '\ufeff' in line: # BOM on first line
             continue
@@ -522,8 +518,9 @@ def read_scopus(res, q, update):
             chunk_size+=1
             if chunk_size==max_chunk_size:
                 # parallely add docs
-                pool = Pool(processes=32)
-                pool.map(partial(add_doc_text,q=q), records)
+                pool = Pool(processes=8)
+                r_chunks = chunks(records, 8)
+                pool.map(partial(proc_scopus_chunk,q=q,update=update), r_chunks)
                 pool.terminate()
                 records = []
                 chunk_size = 0
@@ -537,8 +534,9 @@ def read_scopus(res, q, update):
 
     if chunk_size < max_chunk_size and chunk_size > 0:
         # parallely add docs
-        pool = Pool(processes=32)
-        pool.map(partial(add_doc_text, q=q), records)
+        pool = Pool(processes=8)
+        r_chunks = chunks(records, 8)
+        pool.map(partial(proc_scopus_chunk,q=q, update=update), r_chunks)
         pool.terminate()
 
     django.db.connections.close_all()
