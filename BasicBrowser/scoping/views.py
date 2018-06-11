@@ -3405,35 +3405,60 @@ def par_manager(request, qid):
     }
     return render(request, 'scoping/par_manager.html',context)
 
+@login_required
+def add_statement(request):
+    idpar = request.GET.get('idpar', None)
+    text  = request.GET.get('text', None)
+    start = request.GET.get('start', None)
+    end   = request.GET.get('end', None)
 
+    par = DocPar.objects.get(pk=idpar)
+    
+    docStat = docStatement(
+        par   = par,
+        text  = text,
+        start = start,
+        end   = end,
+        #technology = ,
+        text_length = len(text))
+    docStat.save()
+    
+    return HttpResponse()
 
 @login_required
 def screen_par(request,tid,ctype,doid,todo,done,last_doid):
-    tag = Tag.objects.get(pk=tid)
-    query=tag.query
-    do = DocOwnership.objects.get(pk=doid)
-    doc = do.docpar.doc
+	# Get tag, query, authors ...
+    tag     = Tag.objects.get(pk=tid)
+    query   = tag.query
+    do      = DocOwnership.objects.get(pk=doid)
+    doc     = do.docpar.doc
     authors = DocAuthInst.objects.filter(doc=doc)
+	
     for a in authors:
-        a.institution=highlight_words(a.institution,tag)
-    abstract = highlight_words(doc.content,tag)
-    title = highlight_words(doc.wosarticle.ti,tag)
+        a.institution = highlight_words(a.institution, tag)
+		
+    abstract = highlight_words(doc.content, tag)
+    title    = highlight_words(doc.wosarticle.ti, tag)
+	
     if doc.wosarticle.de is not None:
-        de = highlight_words(doc.wosarticle.de,tag)
+        de = highlight_words(doc.wosarticle.de, tag)
     else:
         de = None
+		
     if doc.wosarticle.kwp is not None:
-        kwp = highlight_words(doc.wosarticle.kwp,tag)
+        kwp = highlight_words(doc.wosarticle.kwp, tag)
     else:
         kwp = None
 
     notes = Note.objects.filter(
-        par=do.docpar,
-        project=tag.query.project
+        par     = do.docpar,
+        project = tag.query.project
     )
 
-    pars = [(highlight_words(x.text,tag),x.id) for x in doc.docpar_set.all()]
+	# Highlight filter words in paragraphs
+    pars = [(highlight_words_new(x.text, tag), x.id) for x in doc.docpar_set.all()]
 
+	# Get technologies/statements
     techs = Technology.objects.filter(project=tag.query.project)
     for t in techs:
         if do.docpar.technology.all().filter(pk=t.pk).exists():
@@ -3443,8 +3468,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     levels = [techs.filter(level=l) for l in techs.values_list('level',flat=True).distinct()]
     levels = [[(do.docpar.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).distinct()]
 
-
-
+    # Create context for web page
     context = {
         'project':tag.query.project,
         'tag': tag,
@@ -3873,3 +3897,59 @@ def highlight_words(s,query):
         else:
             abstract.append(word)
     return(" ".join(abstract))
+
+
+def highlight_words_new(s,query):
+    #print("> Entering highlight_words_new")    
+    # Check validity of input parameters before proceeding
+    if query.text is None or s is None:
+        return s
+    
+    #print("  Paragraph to be processed: " + s)
+    
+    # WORK IN PROGRESS: To be saved in the database
+    pattern = re.compile("[Ee]mission[s]?\\s(\\w+\\s){1,3}negative|NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|EW|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|SCS|[Oocean].[Ff]ertili[sz]ation|OF")
+    
+    # Initialise variables
+    text_highlighted = []
+    kpos = 0
+    iter = 1
+    nchar = len(s)
+    
+    # Search for pattern
+    m = pattern.search(s)    
+    # If no match could be found, simply save text input...
+    if m is None:
+        #print("No match could be found")
+        text_highlighted = s
+    # ... Otherwise
+    else:
+        #print("  Match #"+str(iter)+": ")
+        #print(m)
+        match_found = True
+        if m.start() == 0:
+            text_highlighted.append('<span class="t1">'+s[m.start():m.end()]+'</span>')
+        else:
+            text_highlighted.append(s[0:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
+        kpos = m.end()+1
+        # Loop over potential other matches
+        while kpos <= nchar and match_found:
+            iter = iter +1
+            match_found = False 
+            m = pattern.search(s, kpos)
+            if m is not None:
+                #print("  Match #"+str(iter)+": ")
+                #print(m)
+                match_found = True
+                text_highlighted.append(s[kpos:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
+                kpos = m.end()+1
+    
+        # Append remaining text if needed
+        if kpos <= nchar:
+            text_highlighted.append(s[kpos:nchar])
+    #print(text_highlighted)
+    #print("  Highlighted paragraph:"+" ".join(text_highlighted))
+    
+    #print("< Exiting highlight_words_new")
+    
+    return(" ".join(text_highlighted))

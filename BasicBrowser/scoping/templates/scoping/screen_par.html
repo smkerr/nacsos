@@ -92,7 +92,7 @@
 <div class="container text-con bg-white my-3 p-2 border rounded col-md-6 ">
     {% for d in pars %}
         {% if d.1 == do.docpar.id %}
-            <p class="" id={{d.1}}><strong>{{ d.0 | safe}}</strong></p>
+            <p class="text-selected" id={{d.1}}>{{ d.0 | safe}}</p>
         {% else %}
             <p class="text-muted" id={{d.0}}>{{ d.0 | safe }}</p>
         {% endif %}
@@ -123,7 +123,7 @@
               </label>
             <!-- </div> -->
     </div>
-        {% for l in levels %}
+<!--         {% for l in levels %}
             <div class="border rounded bg-white my-3 p-2">
                 Which level {{l.0.1.level}} categories is this paragraph relevant to?
                 (hover for more info)
@@ -133,7 +133,7 @@
 
                     {% endfor %}
             </div>
-        {% endfor %}
+        {% endfor %} -->
 
 
     {% bootstrap_button 'Save/Next >>>' %}
@@ -143,10 +143,103 @@
 
 </div>
 
+<div class="tools">
+    {% for l in levels %}
+    <div class="border rounded bg-white my-3 p-2">
+        {% for t in l %}
+        <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button> 
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
 {% endblock %}
 
 {% block script %}
 <script>
+
+if (!window.x) {
+    x = {};
+}
+
+function escapeRegExp(str) {
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
+x.Selector = {};
+x.Selector.getSelected = function() {
+    var t = '';
+    if (window.getSelection) {
+        s = window.getSelection();
+        if (s.baseNode.parentNode.className.toLowerCase() == "text-selected") {
+            t = s;
+        }
+    } else if (document.getSelection) {
+        s = document.getSelection();
+        if (s.baseNode.parentNode.className.toLowerCase() == "text-selected") {
+            t = s;
+        }
+        //t = document.getSelection();
+    } else if (document.selection) {
+        s = document.selection.createRange().text;
+        if (s.baseNode.parentNode.className.toLowerCase() == "text-selected") {
+            t = s;
+        }
+        //t = document.selection.createRange().text;
+    }
+    return t;
+}
+
+var pageX;
+var pageY;
+
+$(document).ready(function() {
+    $(document).bind("mouseup", function() {
+        var selectedText = x.Selector.getSelected();
+        if(selectedText != ''){
+            // Add new DocStatement
+            s = window.getSelection();
+            text_paragraph = s.baseNode.parentNode.innerText;
+            text_selection = selectedText.toString();
+            console.log(text_paragraph);
+            console.log(text_selection);
+            match_text_par = text_paragraph.match(escapeRegExp(text_selection));
+            console.log(match_text_par)
+            startSelection = match_text_par.index; // Get start of selection in paragraph
+            console.log(startSelection)
+            endSelection   = startSelection + text_selection.length;
+            console.log(endSelection)
+            
+            var data = {
+                  "idpar" : "{{do.docpar.pk}}",
+                  "text"  : text_selection,
+                  "start" : startSelection,
+                  "end"   : endSelection
+                }
+                
+            console.log(data)
+
+            $.ajax({
+                url: "{% url 'scoping:add_statement' %}",
+                data: data,
+                success: function(data) {
+                    alert('New statement successfully saved in DB');
+                }
+            })
+            
+            $('div.tools').css({
+                'left': pageX + 5,
+                'top' : pageY - 55
+            }).fadeIn(200);
+        } else {
+            $('div.tools').fadeOut(200);
+        }
+    });
+    $(document).on("mousedown", function(e){
+        pageX = e.pageX;
+        pageY = e.pageY;
+    });
+});
 
 $("#main").css("width", "100%");
 $("#main").removeClass("col-md-10");
@@ -172,11 +265,17 @@ $(".cat").click(function(){
 
     $(this).toggleClass("True")
 
+    // Check if statement already exists in DB. If not add it
+    if (method == "add") {
+        
+    }
+
+    // 
     $.ajax({
         url: "{% url 'scoping:update_thing' %}",
         data: {
-          "thing1": "DocPar",
-          "id1": "{{do.docpar.pk}}",
+          "thing1": "DocStatement",
+          "id1": "{{do.docstatement.pk}}",
           'thing2': 'Technology',
           'id2': id2,
           "method": method

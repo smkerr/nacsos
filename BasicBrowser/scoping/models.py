@@ -125,6 +125,7 @@ class Technology(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     ndocs = models.IntegerField(null=True)
     nqs = models.IntegerField(null=True)
+    group = models.TextField(null = True, verbose_name="Broad Category Name")
 
     def __str__(self):
       return self.name
@@ -308,6 +309,14 @@ class DocPar(models.Model):
     startFontsize = models.FloatField(null=True)
     height = models.FloatField(null=True)
     width = models.FloatField(null=True)
+    text_length = models.IntegerField(null=True)
+
+class DocStatement(models.Model):
+    par = models.ForeignKey(DocPar, on_delete=models.CASCADE, null=True)
+    text = models.TextField()
+    start = models.IntegerField(null=False)
+    end = models.IntegerField(null=False)
+    technology = models.ManyToManyField('Technology',db_index=True)
     text_length = models.IntegerField(null=True)
 
 class DocFile(models.Model):
