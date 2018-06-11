@@ -3413,7 +3413,7 @@ def add_statement(request):
     end   = request.GET.get('end', None)
 
     par = DocPar.objects.get(pk=idpar)
-    
+
     docStat = docStatement(
         par   = par,
         text  = text,
@@ -3422,7 +3422,7 @@ def add_statement(request):
         #technology = ,
         text_length = len(text))
     docStat.save()
-    
+
     return HttpResponse()
 
 @login_required
@@ -3433,18 +3433,18 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     do      = DocOwnership.objects.get(pk=doid)
     doc     = do.docpar.doc
     authors = DocAuthInst.objects.filter(doc=doc)
-	
+
     for a in authors:
         a.institution = highlight_words(a.institution, tag)
-		
+
     abstract = highlight_words(doc.content, tag)
     title    = highlight_words(doc.wosarticle.ti, tag)
-	
+
     if doc.wosarticle.de is not None:
         de = highlight_words(doc.wosarticle.de, tag)
     else:
         de = None
-		
+
     if doc.wosarticle.kwp is not None:
         kwp = highlight_words(doc.wosarticle.kwp, tag)
     else:
@@ -3875,7 +3875,7 @@ def highlight_words(s,query):
         qwords = re.findall('\w+',query.text)
         qwords = [q.lower() for q in qwords]
 
-    nots = ["TS","AND","NOT","NEAR","OR","and","W"]
+    nots = ["TS","AND","NOT","NEAR","OR","and","W","in","of","or"]
     transtable = {ord(c): None for c in string.punctuation + string.digits}
     try:
         qwords = set([x.split('*')[0].translate(transtable) for x in qwords if x not in nots and len(x.translate(transtable)) > 0])
@@ -3900,24 +3900,24 @@ def highlight_words(s,query):
 
 
 def highlight_words_new(s,query):
-    #print("> Entering highlight_words_new")    
+    #print("> Entering highlight_words_new")
     # Check validity of input parameters before proceeding
     if query.text is None or s is None:
         return s
-    
+
     #print("  Paragraph to be processed: " + s)
-    
+
     # WORK IN PROGRESS: To be saved in the database
     pattern = re.compile("[Ee]mission[s]?\\s(\\w+\\s){1,3}negative|NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|EW|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|SCS|[Oocean].[Ff]ertili[sz]ation|OF")
-    
+
     # Initialise variables
     text_highlighted = []
     kpos = 0
     iter = 1
     nchar = len(s)
-    
+
     # Search for pattern
-    m = pattern.search(s)    
+    m = pattern.search(s)
     # If no match could be found, simply save text input...
     if m is None:
         #print("No match could be found")
@@ -3935,7 +3935,7 @@ def highlight_words_new(s,query):
         # Loop over potential other matches
         while kpos <= nchar and match_found:
             iter = iter +1
-            match_found = False 
+            match_found = False
             m = pattern.search(s, kpos)
             if m is not None:
                 #print("  Match #"+str(iter)+": ")
@@ -3943,13 +3943,13 @@ def highlight_words_new(s,query):
                 match_found = True
                 text_highlighted.append(s[kpos:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
                 kpos = m.end()+1
-    
+
         # Append remaining text if needed
         if kpos <= nchar:
             text_highlighted.append(s[kpos:nchar])
     #print(text_highlighted)
     #print("  Highlighted paragraph:"+" ".join(text_highlighted))
-    
+
     #print("< Exiting highlight_words_new")
-    
+
     return(" ".join(text_highlighted))
