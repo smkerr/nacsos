@@ -34,6 +34,7 @@ urlpatterns = [
 
     path('screen_par/<int:tid>/<int:ctype>/<int:doid>/<int:todo>/<int:done>/<int:last_doid>', views.screen_par, name="screen_par"),
     path('add_statement', views.add_statement, name="add_statement"),
+    path('del_statement', views.del_statement, name="del_statement"),
     path('rate_par/<int:tid>/<int:ctype>/<int:doid>/<int:todo>/<int:done>', views.rate_par, name="rate_par"),
 
 

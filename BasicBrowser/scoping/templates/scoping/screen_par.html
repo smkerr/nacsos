@@ -1,5 +1,6 @@
 {% extends "scoping/base_bs.html" %}
 {% load bootstrap4 %}
+{% load static %}
 
 {% block content %}
 
@@ -94,7 +95,7 @@
         {% if d.1 == do.docpar.id %}
             <p class="text-selected" id={{d.1}}>{{ d.0 | safe}}</p>
         {% else %}
-            <p class="text-muted" id={{d.0}}>{{ d.0 | safe }}</p>
+            <p class="text-muted" id={{d.1}}>{{ d.0 | safe }}</p>
         {% endif %}
     {% endfor %}
 </div>
@@ -143,15 +144,31 @@
 
 </div>
 
-<div class="tools">
-    {% for l in levels %}
-    <div class="border rounded bg-white my-3 p-2">
+<div class="tools_statement">
+  <button id="btn_add_stat" type="button" title="Add statement" value="add"><img src="{% static 'scoping/img/icon_add.png' %}" width="20px" height="20px"/></button>
+  <!-- <img src="{% static 'scoping/img/icon_add.png' %}" width="20px" height="20px"/> Add statement -->
+  <!-- <li><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></li> -->
+</div>
+
+
+
+{% for s in stats_cats %}
+  <div class="tools" id="statool{{s.0.0.0}}">
+    <div class="tools_statement2">
+      <button id="btn_del_stat" type="button" title="Delete statement" value="remove"><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></button>
+      <!-- <img src="{% static 'scoping/img/icon_add.png' %}" width="20px" height="20px"/> Add statement -->
+      <!-- <li><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></li> -->
+    </div>
+    {% for l in s %}
+    <div class="tagtools">
+        {{l.0.2.group}}
         {% for t in l %}
-        <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button> 
+            <button value="{{t.2.id}}" type="button" class="btntag cat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2}}</button>
         {% endfor %}
     </div>
     {% endfor %}
 </div>
+{% endfor %}
 
 {% endblock %}
 
@@ -192,54 +209,110 @@ x.Selector.getSelected = function() {
 
 var pageX;
 var pageY;
-
+//var tools_statement;
+//tools_statement=false;
 $(document).ready(function() {
     $(document).bind("mouseup", function() {
         var selectedText = x.Selector.getSelected();
         if(selectedText != ''){
-            // Add new DocStatement
-            s = window.getSelection();
-            text_paragraph = s.baseNode.parentNode.innerText;
-            text_selection = selectedText.toString();
-            console.log(text_paragraph);
-            console.log(text_selection);
-            match_text_par = text_paragraph.match(escapeRegExp(text_selection));
-            console.log(match_text_par)
-            startSelection = match_text_par.index; // Get start of selection in paragraph
-            console.log(startSelection)
-            endSelection   = startSelection + text_selection.length;
-            console.log(endSelection)
-            
-            var data = {
-                  "idpar" : "{{do.docpar.pk}}",
-                  "text"  : text_selection,
-                  "start" : startSelection,
-                  "end"   : endSelection
-                }
-                
-            console.log(data)
-
-            $.ajax({
-                url: "{% url 'scoping:add_statement' %}",
-                data: data,
-                success: function(data) {
-                    alert('New statement successfully saved in DB');
-                }
-            })
-            
-            $('div.tools').css({
+            // Display statement tool box
+            //tools_statement = true;
+            $('div.tools_statement').css({
                 'left': pageX + 5,
                 'top' : pageY - 55
             }).fadeIn(200);
+
         } else {
-            $('div.tools').fadeOut(200);
+            //tools_statement = false;
+            $('div.tools_statement').fadeOut(200);
         }
     });
     $(document).on("mousedown", function(e){
-        pageX = e.pageX;
-        pageY = e.pageY;
+          //if (!tools_statement){
+            pageX = e.pageX;
+            pageY = e.pageY;
+          //}
     });
 });
+
+// Process DocStatement
+var statementid;
+$(".statement").click(function(e) {
+
+  pageX = e.pageX;
+  pageY = e.pageY;
+
+  console.log($(this).position)
+
+  statementid = $(this).attr("id");
+  // Tag DocStatement
+  $('#statool'+statementid).css({
+      'left': pageX + 5,
+      'top' : pageY + 10
+  }).fadeIn(200);
+  // Delete DocStatement
+  // $('div.tools_statement2').css({
+  //     'left': pageX + 5,
+  //     'top' : pageY - 10
+  // }).fadeIn(200);
+})
+
+$("#btn_del_stat").click(function() {
+  var data = {
+        "idstat" : statementid,
+        "idpar" : "{{do.docpar.pk}}",
+        "tid"   : "{{tag.pk}}"
+      }
+
+  console.log(data)
+
+  $.ajax({
+      url: "{% url 'scoping:del_statement' %}",
+      data: data,
+      success: function(data) {
+          $("p#{{do.docpar.pk}}").replaceWith(data);
+      },
+      dataType: 'html'
+  })
+
+  $('div.tools_statement2').fadeOut(200);
+})
+
+// Add new DocStatement
+$("#btn_add_stat").click(function() {
+  var s = window.getSelection();
+  var text_paragraph = s.baseNode.parentNode.innerText;
+  var text_selection = s.toString();
+  //console.log(text_paragraph);
+  //console.log(text_selection);
+  var match_text_par = text_paragraph.match(escapeRegExp(text_selection));
+  //console.log(match_text_par)
+  var startSelection = match_text_par.index; // Get start of selection in paragraph
+  //console.log(startSelection)
+  var endSelection   = startSelection + text_selection.length;
+  //console.log(endSelection)
+
+  var data = {
+        "idpar" : "{{do.docpar.pk}}",
+        "text"  : text_selection,
+        "par"   : text_paragraph,
+        "start" : startSelection,
+        "end"   : endSelection,
+        "tid"   : "{{tag.pk}}"
+      }
+
+  console.log(data)
+
+  $.ajax({
+      url: "{% url 'scoping:add_statement' %}",
+      data: data,
+      success: function(data) {
+          $("p#{{do.docpar.pk}}").replaceWith(data);
+      },
+      dataType: 'html'
+  })
+})
+
 
 $("#main").css("width", "100%");
 $("#main").removeClass("col-md-10");
@@ -255,7 +328,14 @@ elmnt.scrollIntoView({behavior:"smooth",block:"center"});
 
 //
 $(".cat").click(function(){
-    id2 = $(this).val()
+    id2 = $(this).val();
+
+    console.log($(this));
+
+    idstat = $(this)[0].parentNode.parentNode.getAttribute("id");
+    idstat=idstat.substring("statool".length,s.length);
+    console.log(id2)
+    console.log(idstat)
 
     if ($(this).hasClass("True")) {
         method = "remove"
@@ -265,17 +345,12 @@ $(".cat").click(function(){
 
     $(this).toggleClass("True")
 
-    // Check if statement already exists in DB. If not add it
-    if (method == "add") {
-        
-    }
-
-    // 
+    //
     $.ajax({
         url: "{% url 'scoping:update_thing' %}",
         data: {
           "thing1": "DocStatement",
-          "id1": "{{do.docstatement.pk}}",
+          "id1": idstat,
           'thing2': 'Technology',
           'id2': id2,
           "method": method
