@@ -173,11 +173,15 @@ div.tools_statement2 {
     /* display: none;*/
     margin: 1px;
     padding: 1px 1px;
+    border: 0px;
+    position: absolute;
+    right: 5px;
+    top: 5px;
     /* box-shadow: 0px 0px 4px rgba(0,0,0,.5);
     border:  solid 0px #000;
     border-radius: 10px; */
     /*position: absolute; */
-    background: #fff;
+    /* background: #fff; */
 }
 
 
@@ -190,9 +194,10 @@ div.tools_statement2 {
 
 .tools{
   font-size: 10pt;
-  margin: 0px;
-  padding: 1px;
+  margin: 2px;
+  padding: 5px;
   border: 0px;
+  border-radius: 10px;
   background: #440000;
 }
 
@@ -200,6 +205,27 @@ div.tools_statement2 {
   font-size: 10pt;
   margin: 0px;
   padding: 1px;
+  border: 0px;
+}
+
+td.tagtools{
+  padding: 5px 10px 5px 0px;
+}
+
+button.btntagimg{
+  background-color: #fff;
+  border: 0px;
+  margin: 0px;
+  padding: 0px 10px 0px 10px;
+}
+
+.btntagimg:hover {
+    transform: scale(1.25, 1.25); /** default is 1, scale it to 1.5 */
+    opacity: 1;
+}
+
+button.btntool{
+  background-color: #fff;
   border: 0px;
 }
 

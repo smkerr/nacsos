@@ -57,9 +57,10 @@
 </div>
 
 <div class="row">
+
+<!--
 <div class="container col-md-3">
 
-    <!-- Form to add a note -->
     <div class="border rounded bg-white my-3 p-2">
         Add a note to this paragraph
         <hr>
@@ -76,7 +77,7 @@
     </form>
     </div>
 
-    <!-- Show all the notes -->
+
     {% for note in notes %}
     <div class="border rounded bg-white my-3 p-2 note">
     <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
@@ -88,9 +89,10 @@
 
     </div>
     {% endfor %}
-
 </div>
-<div class="container text-con bg-white my-3 p-2 border rounded col-md-6 ">
+-->
+
+<div id="listdocpars" class="container text-con bg-white my-3 p-2 border rounded col-md-8 ">
     {% for d in pars %}
         {% if d.1 == do.docpar.id %}
             <p class="text-selected" id={{d.1}}>{{ d.0 | safe}}</p>
@@ -100,30 +102,31 @@
     {% endfor %}
 </div>
 
-
-
-<!-- Column 3, relevance, categories and next-->
+<!-- Column 3, relevance and next-->
 <div class="container col-md-3">
-    <form action="{% url 'scoping:rate_par' tag.id ctype do.id todo done %}" method="POST">
-    {% csrf_token %}
+    <form id="ratepar" action="{% url 'scoping:rate_par' tag.id ctype do.id todo done %}" method="POST">
     <div class="border rounded bg-white my-3 p-2">
-        <p class="lead">Is this document relevant to the tag: {{tag.title}}?
-            <hr>
-            <!-- <div class="btn-group btn-group-toggle" data-toggle="buttons"> -->
-              <label class="btn btn-secondary">
-                <input type="radio" name="relevant" id="option1" autocomplete="off" value=1>Yes
-              </label>
-              <label class="btn btn-secondary">
-                <input type="radio" name="relevant" id="option2" autocomplete="off" value=2>No
-              </label>
-              <label class="btn btn-secondary">
-                <input type="radio" name="relevant" id="option3" autocomplete="off" value=3>Maybe
-              </label>
-              <label class="btn btn-secondary">
-                <input type="radio" name="relevant" id="option3" autocomplete="off" value=9>Parse error
-              </label>
-            <!-- </div> -->
+       {% csrf_token %}
+       <p class="lead">Is this document relevant to the tag: {{tag.title}}?</p>
+       <hr>
+        <!-- <div class="btn-group btn-group-toggle" data-toggle="buttons"> -->
+          <label class="btn btn-secondary">
+            <input id="ratepos" type="radio" name="relevant" id="option1" autocomplete="off" value=1>Yes
+          </label>
+          <label class="btn btn-secondary">
+            <input type="radio" name="relevant" id="option2" autocomplete="off" value=2>No
+          </label>
+          <label class="btn btn-secondary">
+            <input type="radio" name="relevant" id="option3" autocomplete="off" value=3>Maybe
+          </label>
+          <label class="btn btn-secondary">
+            <input type="radio" name="relevant" id="option3" autocomplete="off" value=9>Parse error
+          </label>
+        <!-- </div> -->
     </div>
+    <br>
+    {% bootstrap_button 'Save/Next >>>' %}
+    </form>
 <!--         {% for l in levels %}
             <div class="border rounded bg-white my-3 p-2">
                 Which level {{l.0.1.level}} categories is this paragraph relevant to?
@@ -136,8 +139,37 @@
             </div>
         {% endfor %} -->
 
+    <br>
+    <!-- Form to add a note -->
+    <div class="border rounded bg-white my-3 p-2">
+        Add a note to this paragraph
+        <hr>
+        <form action="{% url 'scoping:add_note' %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <input type="hidden" name="docn" value="{{do.docpar.id}}"></input>
+          <input type="hidden" name="tag" value="{{tag.id}}"></input>
+        <textarea class="form-control" name="note" rows=3>
+        </textarea>
+        <br>
+        <p>
+        <button type="submit" class="btn btn-primary">Add note</button>
+        </form>
+    </div>
 
-    {% bootstrap_button 'Save/Next >>>' %}
+    <!-- Show all the notes -->
+    {% for note in notes %}
+    <div class="border rounded bg-white my-3 p-2 note">
+      <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
+      <hr>
+      {{note.text}}
+      <hr>
+      <a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
+      </a>
+    </div>
+    {% endfor %}
+
+
 </div>
 
 </div>
@@ -150,15 +182,43 @@
   <!-- <li><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></li> -->
 </div>
 
-
-
 {% for s in stats_cats %}
   <div class="tools" id="statool{{s.0.0.0}}">
     <div class="tools_statement2">
-      <button id="btn_del_stat" type="button" title="Delete statement" value="remove"><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></button>
+      <button class="btntool btn_del_stat" id="btndel{{s.0.0.0}}"type="button" title="Delete statement" value="remove"><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></button>
       <!-- <img src="{% static 'scoping/img/icon_add.png' %}" width="20px" height="20px"/> Add statement -->
       <!-- <li><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></li> -->
     </div>
+    </br>
+    <table>
+      <tr>
+        <td><strong>Category</strong></td>
+        <td><strong>Common statement</strong></td>
+      </tr>
+      {% for l in s %}
+      <tr class="tagtools">
+        <td class="tagtools">{{l.0.2.group}}</td>
+        <td class="tagtools">
+          {% for t in l %}
+              <!-- <button value="{{t.2.id}}" type="button" class="btntag cat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2}}</button> -->
+              <button value="{{t.2.id}}" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">
+                {% if t.1 %}
+                  {% with 'scoping/img/'|add:t.2.name|add:'_true.png' as image_static %}
+                    <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
+                  {% endwith %}
+                {% else %}
+                  {% with 'scoping/img/'|add:t.2.name|add:'.png' as image_static %}
+                    <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
+                  {% endwith %}
+                  <!-- <img id="myImg{{t.2.id}}" src="{% static 'scoping/img/H1_Important.png' %}"/> -->
+                {% endif %}
+              </button>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+
+<!--
     {% for l in s %}
     <div class="tagtools">
         {{l.0.2.group}}
@@ -167,12 +227,26 @@
         {% endfor %}
     </div>
     {% endfor %}
-</div>
+-->
+      <tr class="tagtools">
+        <td valign="top">Other</td>
+        <td>
+          <form class="newcomstat" action="" method=""> <!--{% url 'scoping:add_note' %} -->
+          <input type="hidden" name="pid" value="{{project.id}}"></input>
+          <input type="text" name="tname" placeholder="Enter a keyword"></input>
+          <textarea class="form-control" name="tdesc" rows=3 placeholder="Enter the statement"></textarea>
+          <button class="btn btn-primary">Add</button>
+          </form>
+        </td>
+      </tr>
+    </table>
+  </div>
 {% endfor %}
 
 {% endblock %}
 
 {% block script %}
+
 <script>
 
 if (!window.x) {
@@ -209,9 +283,12 @@ x.Selector.getSelected = function() {
 
 var pageX;
 var pageY;
-//var tools_statement;
-//tools_statement=false;
-$(document).ready(function() {
+var statementid;
+
+// Event handlers to be attached once the DOM is ready
+$(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+
     $(document).bind("mouseup", function() {
         var selectedText = x.Selector.getSelected();
         if(selectedText != ''){
@@ -233,133 +310,186 @@ $(document).ready(function() {
             pageY = e.pageY;
           //}
     });
+    $(document).on("mouseup", function(e) {
+        var container = $(".tools");
+
+        // if the target of the click isn't the container nor a descendant of the container
+        if (!container.is(e.target) && container.has(e.target).length === 0)
+        {
+            container.hide();
+        }
+    });
+
+    // Process DocStatement
+    $(document).on("click", ".statement", function(e) {
+
+      pageX = e.pageX;
+      pageY = e.pageY;
+
+      statementid = $(this).attr("id");
+
+      // Tag DocStatement
+      $('#statool'+statementid).css({
+          'left': pageX + 5,
+          'top' : pageY + 10
+      }).fadeIn(200);
+
+    });
+
+    // Delete DocStatement
+    $(document).on("click", ".btn_del_stat", function() {
+
+      var data = {
+            "idstat" : statementid,
+            "idpar" : "{{do.docpar.pk}}",
+            "tid"   : "{{tag.pk}}"
+          };
+
+      $.ajax({
+          url: "{% url 'scoping:del_statement' %}",
+          data: data,
+          success: function(data) {
+              $("p#{{do.docpar.pk}}").replaceWith(data);
+              $('#statool'+statementid).remove();
+          },
+          dataType: 'html'
+      })
+    })
+
+    // Add new DocStatement
+    $(document).on("click", "#btn_add_stat", function() {
+      var s = window.getSelection();
+      var text_paragraph = s.baseNode.parentNode.innerText;
+      var text_selection = s.toString();
+      //console.log(text_paragraph);
+      //console.log(text_selection);
+      var match_text_par = text_paragraph.match(escapeRegExp(text_selection));
+      //console.log(match_text_par)
+      var startSelection = match_text_par.index; // Get start of selection in paragraph
+      //console.log(startSelection)
+      var endSelection   = startSelection + text_selection.length;
+      //console.log(endSelection)
+
+      var data = {
+            "idpar" : "{{do.docpar.pk}}",
+            "text"  : text_selection,
+            "par"   : text_paragraph,
+            "start" : startSelection,
+            "end"   : endSelection,
+            "tid"   : "{{tag.pk}}",
+            "doid"  : "{{do.pk}}"
+          }
+
+      $.ajax({
+          url: "{% url 'scoping:add_statement' %}",
+          data: data,
+          success: function(data) {
+            sep = data.indexOf("_!SEP!_");
+            html_par = data.substring(0, sep)
+            html_div = data.substring(sep+7, data.length)
+            $("p#{{do.docpar.pk}}").replaceWith(html_par);
+            $("#main").append(html_div);
+            // need to add a new tools div
+          },
+          dataType: 'html'
+      });
+
+      $('div.tools_statement').fadeOut(200);
+
+      // Switch radio button in form XXX to Yes
+      $("#ratepos").prop("checked", true);
+    });
+
+    // Update statement's categories
+    $(document).on("click", ".cat", function(){
+         // Get tag ID
+         id2 = $(this).val();
+         imgsrc = $(this).children("img")[0].src
+         console.log(imgsrc.substring(imgsrc.length-8, imgsrc.length-4));
+         condition = imgsrc.substring(imgsrc.length-8, imgsrc.length-4);
+
+         // Check button status
+         if (condition == "true") {
+             method = "remove";
+             $(this).children("img")[0].src = imgsrc.substring(0, imgsrc.length-9)+".png"
+         } else {
+             method = "add";
+             $(this).children("img")[0].src = imgsrc.substring(0, imgsrc.length-4)+"_true.png"
+         };
+
+         // Toggle button status
+         //$(this).toggleClass("True");
+
+         // Send info to server
+         $.ajax({
+             url: "{% url 'scoping:update_thing' %}",
+             data: {
+               "thing1": "DocStatement",
+               "id1": statementid,
+               'thing2': 'Technology',
+               'id2': id2,
+               "method": method
+             },
+             success: function(data) {
+                // Do nothing
+             }
+         });
+     });
+
+    // Add new common statement
+    $(document).on("submit", ".newcomstat", function(e){
+
+      e.preventDefault();
+      var fields = $(this).serializeArray();
+
+      jQuery.each( fields, function( i, field ) {
+        if (field.name == "pid") {
+          pid = field.value
+        };
+        if (field.name == "tname") {
+          tname = field.value
+        };
+        if (field.name == "tdesc") {
+          tdesc = field.value
+        };
+      });
+
+      console.log(pid+"\n"+tname+"\n"+tdesc);
+
+       // Send info to server
+       $.ajax({
+           url: "{% url 'scoping:async_add_tech' %}",
+           data: {
+             "pid": pid,
+             "tname": tname,
+             "tdesc": tdesc
+           },
+           success: function(data) {
+              // Do nothing
+           }
+       });
+     });
+
+    //go to paragraph
+    var elmnt = document.getElementById({{do.docpar.id}});
+    elmnt.scrollIntoView({behavior:"smooth", block:"center"});
+      // $('#listdocpars').animate({
+      //   scrollTop: $("#{{do.docpar.pk}}").offset().top
+      // }, 1000);
 });
 
-// Process DocStatement
-var statementid;
-$(".statement").click(function(e) {
-
-  pageX = e.pageX;
-  pageY = e.pageY;
-
-  console.log($(this).position)
-
-  statementid = $(this).attr("id");
-  // Tag DocStatement
-  $('#statool'+statementid).css({
-      'left': pageX + 5,
-      'top' : pageY + 10
-  }).fadeIn(200);
-  // Delete DocStatement
-  // $('div.tools_statement2').css({
-  //     'left': pageX + 5,
-  //     'top' : pageY - 10
-  // }).fadeIn(200);
-})
-
-$("#btn_del_stat").click(function() {
-  var data = {
-        "idstat" : statementid,
-        "idpar" : "{{do.docpar.pk}}",
-        "tid"   : "{{tag.pk}}"
-      }
-
-  console.log(data)
-
-  $.ajax({
-      url: "{% url 'scoping:del_statement' %}",
-      data: data,
-      success: function(data) {
-          $("p#{{do.docpar.pk}}").replaceWith(data);
-      },
-      dataType: 'html'
-  })
-
-  $('div.tools_statement2').fadeOut(200);
-})
-
-// Add new DocStatement
-$("#btn_add_stat").click(function() {
-  var s = window.getSelection();
-  var text_paragraph = s.baseNode.parentNode.innerText;
-  var text_selection = s.toString();
-  //console.log(text_paragraph);
-  //console.log(text_selection);
-  var match_text_par = text_paragraph.match(escapeRegExp(text_selection));
-  //console.log(match_text_par)
-  var startSelection = match_text_par.index; // Get start of selection in paragraph
-  //console.log(startSelection)
-  var endSelection   = startSelection + text_selection.length;
-  //console.log(endSelection)
-
-  var data = {
-        "idpar" : "{{do.docpar.pk}}",
-        "text"  : text_selection,
-        "par"   : text_paragraph,
-        "start" : startSelection,
-        "end"   : endSelection,
-        "tid"   : "{{tag.pk}}"
-      }
-
-  console.log(data)
-
-  $.ajax({
-      url: "{% url 'scoping:add_statement' %}",
-      data: data,
-      success: function(data) {
-          $("p#{{do.docpar.pk}}").replaceWith(data);
-      },
-      dataType: 'html'
-  })
-})
 
 
+// Adjust the container #main
 $("#main").css("width", "100%");
 $("#main").removeClass("col-md-10");
 $("#main").removeClass("container");
 $("#main").addClass("p-4");
 
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip()
-})
-//go to paragraph
-var elmnt = document.getElementById({{do.docpar.id}});
-elmnt.scrollIntoView({behavior:"smooth",block:"center"});
+$('div.tools_statement').hide();
 
-//
-$(".cat").click(function(){
-    id2 = $(this).val();
 
-    console.log($(this));
 
-    idstat = $(this)[0].parentNode.parentNode.getAttribute("id");
-    idstat=idstat.substring("statool".length,s.length);
-    console.log(id2)
-    console.log(idstat)
-
-    if ($(this).hasClass("True")) {
-        method = "remove"
-    } else {
-        method = "add"
-    }
-
-    $(this).toggleClass("True")
-
-    //
-    $.ajax({
-        url: "{% url 'scoping:update_thing' %}",
-        data: {
-          "thing1": "DocStatement",
-          "id1": idstat,
-          'thing2': 'Technology',
-          'id2': id2,
-          "method": method
-        },
-        success: function(data) {
-
-        }
-    })
-})
 
 </script>
 {% endblock %}
