@@ -3671,6 +3671,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     authors = DocAuthInst.objects.filter(doc=doc)
 
     do.start = datetime.datetime.now()
+    do.save()
 
     for a in authors:
         a.institution = highlight_words(a.institution, tag)
