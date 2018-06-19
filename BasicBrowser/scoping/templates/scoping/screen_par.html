@@ -197,28 +197,28 @@
         <td><strong>Common statement</strong></td>
       </tr>
       {% for l in s %}
+      {% if l.0.2.level != 6 %}
       <tr class="tagtools">
         <td class="tagtools">{{l.0.2.group}}</td>
         <td class="tagtools">
           {% for t in l %}
-            {% if t.2.level != 6 %}
-              <!-- <button value="{{t.2.id}}" type="button" class="btntag cat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2}}</button> -->
-              <button value="{{t.2.id}}" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">
-                {% if t.1 %}
-                  {% with 'scoping/img/'|add:t.2.name|add:'_true.png' as image_static %}
-                    <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
-                  {% endwith %}
-                {% else %}
-                  {% with 'scoping/img/'|add:t.2.name|add:'.png' as image_static %}
-                    <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
-                  {% endwith %}
-                  <!-- <img id="myImg{{t.2.id}}" src="{% static 'scoping/img/H1_Important.png' %}"/> -->
-                {% endif %}
-              </button>
-            {% endif %}
+            <!-- <button value="{{t.2.id}}" type="button" class="btntag cat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2}}</button> -->
+            <button value="{{t.2.id}}" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">
+              {% if t.1 %}
+                {% with 'scoping/img/'|add:t.2.name|add:'_true.png' as image_static %}
+                  <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
+                {% endwith %}
+              {% else %}
+                {% with 'scoping/img/'|add:t.2.name|add:'.png' as image_static %}
+                  <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
+                {% endwith %}
+                <!-- <img id="myImg{{t.2.id}}" src="{% static 'scoping/img/H1_Important.png' %}"/> -->
+              {% endif %}
+            </button>
           {% endfor %}
         </td>
       </tr>
+      {% endif %}
       {% endfor %}
 
 <!--

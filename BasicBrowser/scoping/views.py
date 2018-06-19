@@ -3518,7 +3518,7 @@ def generate_toolbox(doid, tag, docStat):
         else:
             t.active=""
 
-    levels = [[(docStat.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().exclude(level=6).order_by('level')]
+    levels = [[(docStat.technology.all().filter(pk=t.pk).exists(),t, docStat.technology.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')]
 
     # Old implementation
     # toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
@@ -3543,7 +3543,7 @@ def generate_toolbox(doid, tag, docStat):
     toolbox_html += '<td><strong>Common statement</strong></td>'
     toolbox_html += '</tr>'
 
-    for l in levels:
+    for l in levels[0:5]:
         toolbox_html += '<tr class="tagtools">'
         toolbox_html += '<td class="tagtools">'+l[0][1].group+'</td>'
         toolbox_html += '<td class="tagtools">'
@@ -3557,14 +3557,21 @@ def generate_toolbox(doid, tag, docStat):
         toolbox_html += '</td>'
     toolbox_html += '</tr>'
 
+    toolbox_html += '<tr><td style="padding: 10px 10px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 10px 0px 0px; border-bottom:1pt solid black;"></td></tr>'
     toolbox_html += '<tr class="tagtools">'
     toolbox_html += '<td valign="top">Other</td>'
-    toolbox_html += '<td>'
-    toolbox_html += '<form class="newcomstat" action="" method="">'
-    toolbox_html += '<input type="hidden" name="pid" value="'+str(pid)+'"></input>'
-    toolbox_html += '<input type="text" name="tname" placeholder="Enter a keyword"></input>'
-    toolbox_html += '<textarea class="form-control" name="tdesc" rows=3 placeholder="Enter the statement"></textarea>'
-    toolbox_html += '<button class="btn btn-primary">Add</button>'
+    toolbox_html += '<td style="padding: 10px 0px 0px 0px;">'
+    toolbox_html += '<form id="newcomstat'+str(docStat.id)+'" class="newcomstat" action="" method="">'
+    if levels[5][0][2]:
+        for t in levels[5]:
+            if t[0]:
+                toolbox_html += '<button id="del_othercat'+str(docStat.id)+'" name="remove" value="'+str(t[1].id)+'" type="button" class="btn del_othercat '+str(t[0])+'}" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'+str(t[1].group)+'</button>'
+    else:
+        toolbox_html += '<select id="add_othercat'+str(docStat.id)+'" name="other_categories" class="add_othercat">'
+        toolbox_html += '<option value="0" selected="selected">-- Select an option --</option>'
+        for t in levels[5]:
+            toolbox_html += '<option value="'+str(t[1].id)+'">'+str(t[1].group)+'</option>'
+        toolbox_html += '</select>'
     toolbox_html += '</form>'
     toolbox_html += '</td>'
     toolbox_html += '</tr>'
