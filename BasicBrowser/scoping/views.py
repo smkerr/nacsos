@@ -3348,7 +3348,7 @@ def par_manager(request, qid):
 
     filtered_pars = pars
     ors = []
-    if request.method=="GET":
+    try:
         ors = request.GET.getlist('ors', None)
         filter = DocParFilter(request.GET, queryset=pars)
         if len(ors) > 0:
@@ -3368,7 +3368,12 @@ def par_manager(request, qid):
                 filters.append(filtered_pars)
         else:
             filtered_pars = filter.qs
-        tab = DocParTable(filtered_pars)
+
+    except:
+        pass
+
+    tab = DocParTable(filtered_pars)
+
 
     RequestConfig(request).configure(tab)
 
@@ -3648,8 +3653,6 @@ def del_othercat(request):
     html_response += '</select>'
 
     return HttpResponse(html_response)
-
-
 
 @login_required
 def screen_par(request,tid,ctype,doid,todo,done,last_doid):
@@ -4172,7 +4175,9 @@ def highlight_words_new(s,query,debug=False):
         print("  Paragraph to process: " + s)
 
     # WORK IN PROGRESS: To be saved in the database
-    pattern = re.compile("[Ee]mission[s]?\\s(\\w+\\s){1,3}negative|NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|EW|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|SCS|[Oocean].[Ff]ertili[sz]ation|OF")
+    #pattern = re.compile("[Ee]mission[s]?\\s(\\w+\\s){1,3}negative|^NETs[^a-zA-Z0-9]|[^a-zA-Z0-9]NETs[^a-zA-Z0-9]|^CDR[^a-zA-Z0-9]|[^a-zA-Z0-9]CDR[^a-zA-Z0-9]|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|^AR[^a-zA-Z0-9]|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|^EW[^a-zA-Z0-9]|[^a-zA-Z0-9]EW[^a-zA-Z0-9]|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|^SCS[^a-zA-Z0-9]|[^a-zA-Z0-9]SCS[^a-zA-Z0-9]|[Oocean].[Ff]ertili[sz]ation|^OF[^a-zA-Z0-9]|[^a-zA-Z0-9]OF[^a-zA-Z0-9]")
+
+    pattern = re.compile("[Ee]mission[s]?\\s(\\w+\\s){1,3}negative|NETs|CDR[^M]|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|^AR[^a-zA-Z0-9]|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|^EW[^a-zA-Z0-9]|[^a-zA-Z0-9]EW[^a-zA-Z0-9]|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|^SCS[^a-zA-Z0-9]|[^a-zA-Z0-9]SCS[^a-zA-Z0-9]|[Oocean].[Ff]ertili[sz]ation|^OF[^a-zA-Z0-9]|[^a-zA-Z0-9]OF[^a-zA-Z0-9]")
 
     # Initialise variables
     text_highlighted = []
