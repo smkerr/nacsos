@@ -4203,10 +4203,10 @@ def highlight_words_new(s,query,debug=False):
             if debug:
                 print("    Appending: "+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>'+"\n\n")
         else:
-            text_highlighted.append(s[0:(m.start()+0)]+' <span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+            text_highlighted.append(s[0:(m.start()+0)]+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
             if debug:
                 print("    Appending: "+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
-                print("    to       : "+s[0:(m.start()+0)]+"\n\n")
+                print("    to       : <start>"+s[0:(m.start()+0)]+"<end>\n\n")
         kpos = m.end()
         # Loop over potential other matches
         while kpos <= nchar and match_found:
@@ -4221,7 +4221,7 @@ def highlight_words_new(s,query,debug=False):
                 text_highlighted.append(s[kpos:(m.start()+0)]+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
                 if debug:
                     print("    Appending: "+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
-                    print("    to       : "+s[kpos:(m.start()+0)]+"\n\n")
+                    print("    to       : <start>"+s[kpos:(m.start()+0)]+"<end>\n\n")
                 kpos = m.end()
 
         # Append remaining text if needed
