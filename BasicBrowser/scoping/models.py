@@ -541,6 +541,8 @@ class DocOwnership(models.Model):
         verbose_name="Relevance"
     )
     date     = models.DateTimeField(null=True,default=timezone.now,verbose_name="Rating Date")
+    start = models.DateTimeField(null=True,default=timezone.now,verbose_name="Rating Date")
+    finish = models.DateTimeField(null=True,default=timezone.now,verbose_name="Rating Date")
 
 
 

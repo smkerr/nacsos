@@ -869,7 +869,7 @@ def dodocadd(request,qid):
 
     if q.dlstat != "NOREC":
         management.call_command('upload', qid, True, 1)
-        time.sleep(2)
+        time.sleep(4)
 
     #return HttpResponse(upload)
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
