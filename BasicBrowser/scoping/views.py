@@ -4210,13 +4210,13 @@ def highlight_words_new(s,query,debug=False):
             print(m)
         match_found = True
         if m.start() == 0:
-            text_highlighted.append('<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+            text_highlighted.append('<span class="t1 text-selected">'+s[m.start():(m.end()+0)]+'</span>')
             if debug:
-                print("    Appending: "+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>'+"\n\n")
+                print("    Appending: "+'<span class="t1 text-selected">'+s[m.start():(m.end()+0)]+'</span>'+"\n\n")
         else:
-            text_highlighted.append(s[0:(m.start()+0)]+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+            text_highlighted.append(s[0:(m.start()+0)]+'<span class="t1 text-selected">'+s[m.start():(m.end()+0)]+'</span>')
             if debug:
-                print("    Appending: "+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+                print("    Appending: "+'<span class="t1 text-selected">'+s[m.start():(m.end()+0)]+'</span>')
                 print("    to       : <start>"+s[0:(m.start()+0)]+"<end>\n\n")
         kpos = m.end()
         # Loop over potential other matches
@@ -4229,9 +4229,9 @@ def highlight_words_new(s,query,debug=False):
                     print("  Match #"+str(iter)+": ")
                     print(m)
                 match_found = True
-                text_highlighted.append(s[kpos:(m.start()+0)]+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+                text_highlighted.append(s[kpos:(m.start()+0)]+'<span class="t1 text-selected">'+s[m.start():(m.end()+0)]+'</span>')
                 if debug:
-                    print("    Appending: "+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+                    print("    Appending: "+'<span class="t1 text-selected">'+s[m.start():(m.end()+0)]+'</span>')
                     print("    to       : <start>"+s[kpos:(m.start()+0)]+"<end>\n\n")
                 kpos = m.end()
 

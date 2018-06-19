@@ -289,19 +289,19 @@ x.Selector.getSelected = function() {
     // Chrome
     if (window.getSelection) {
         s = window.getSelection();
-        if (s.anchorNode.parentNode.className.toLowerCase() == "text-selected") {
+        if (s.anchorNode.parentNode.classList.contains("text-selected")) {
             t = s;
         }
     // Firefox
     } else if (document.getSelection) {
         s = document.getSelection();
-        if (s.anchorNode.parentNode.className.toLowerCase() == "text-selected") {
+        if (s.anchorNode.parentNode.classList.contains("text-selected")) {
             t = s;
         }
     // Explorer
     } else if (document.selection) {
         s = document.selection.createRange().text;
-        if (s.anchorNode.parentNode.className.toLowerCase() == "text-selected") {
+        if (s.anchorNode.parentNode.classList.contains("text-selected")) {
             t = s;
         }
         //t = document.selection.createRange().text;
@@ -387,16 +387,20 @@ $(function () {
     // Add new DocStatement
     $(document).on("click", "#btn_add_stat", function() {
       var s = x.Selector.getSelected(); //window.getSelection();
-      var text_paragraph = s.anchorNode.parentNode.innerText;
+      if (s.anchorNode.parentNode.nodeName.toLowerCase() == "span") {
+        var text_paragraph = s.anchorNode.parentNode.parentNode.innerText;
+      } else {
+        var text_paragraph = s.anchorNode.parentNode.innerText;
+      }      
       var text_selection = s.toString();
-      //console.log(text_paragraph);
-      //console.log(text_selection);
+      console.log(text_paragraph);
+      console.log(text_selection);
       var match_text_par = text_paragraph.match(escapeRegExp(text_selection));
-      //console.log(match_text_par)
+      console.log(match_text_par)
       var startSelection = match_text_par.index; // Get start of selection in paragraph
-      //console.log(startSelection)
+      console.log(startSelection)
       var endSelection   = startSelection + text_selection.length;
-      //console.log(endSelection)
+      console.log(endSelection)
 
       var data = {
             "idpar" : "{{do.docpar.pk}}",
