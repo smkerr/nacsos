@@ -78,6 +78,9 @@ urlpatterns = [
     url(r'^authorlist/(?P<tid>[0-9]+)$',views.prepare_authorlist, name='authorlist'),
     url(r'^sendauthorlist/(?P<tid>[0-9]+)$',views.send_authorlist, name='send_authorlist'),
 
+    url(r'^add_othercat',views.add_othercat, name='add_othercat'),
+    url(r'^del_othercat',views.del_othercat, name='del_othercat'),
+
     url(r'^add_tech',views.add_tech, name='add_tech'),
     url(r'^async_add_tech',views.async_add_tech, name='async_add_tech'),
     path('update_tech/<int:tid>',views.update_tech, name='update_tech'),

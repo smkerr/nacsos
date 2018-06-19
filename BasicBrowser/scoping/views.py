@@ -3473,7 +3473,7 @@ def add_statement(request):
     #print(highlight_words_new(highlight_statement(idpar), tag))
 
     # Add highlighted words
-    newpar_html = "<p class='text-selected' id='"+idpar+"'>"+highlight_words_new(highlight_statement(idpar, debug=True), tag, debug=True)+"</p>"
+    newpar_html = "<p class='text-selected' id='"+idpar+"'>"+highlight_words_new(highlight_statement(idpar, debug=False), tag, debug=False)+"</p>"
 
     # Generate tool box
     toolbox_html = generate_toolbox(doid, tag, docStat)
@@ -3602,6 +3602,55 @@ def async_add_tech(request):
 
     return HttpResponse()
 
+
+########################################################
+## Add other category
+@login_required
+def add_othercat(request):
+    sid = request.GET.get('sid', None)
+    tid = request.GET.get('tid', None)
+
+    ds  = DocStatement.objects.get(pk=sid)
+    t   = Technology.objects.get(pk=tid)
+
+    getattr(ds, "technology").add(t)
+
+    ds.save()
+
+    html_response = '<button id="del_othercat'+str(sid)+'" name="remove" value="'+str(tid)+'" type="button" class="btn del_othercat True" data-toggle="tooltip" data-placement="top" title="'+t.description+'">'+t.group+'</button>'
+    #'<i style="color:#333">< Click on the button to choose another category</i>'
+
+    return HttpResponse(html_response)
+
+########################################################
+## Add other category
+@login_required
+def del_othercat(request):
+    sid = request.GET.get('sid', None)
+    tid = request.GET.get('tid', None)
+    tagid = request.GET.get('tagid', None)
+
+    ds  = DocStatement.objects.get(pk=sid)
+    t   = Technology.objects.get(pk=tid)
+    tag = Tag.objects.get(pk=tagid)
+
+    getattr(ds, "technology").remove(t)
+
+    ds.save()
+
+    techs = Technology.objects.filter(project=tag.query.project)
+    levels = [t for t in techs.filter(level=6).order_by('name')]
+
+    html_response =  '<select id="add_othercat'+str(sid)+'" name="other_categories" class="add_othercat">'
+    html_response += '<option value="0" selected="selected">-- Select an option --</option>'
+    for l in levels:
+            html_response += '<option value="'+str(l.id)+'">'+str(l.group)+'</option>'
+    html_response += '</select>'
+
+    return HttpResponse(html_response)
+
+
+
 @login_required
 def screen_par(request,tid,ctype,doid,todo,done,last_doid):
 	# Get tag, query, authors ...
@@ -3634,7 +3683,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
 
 	# Highlight filter words in paragraphs
     #pars = [(highlight_words_new(x.text, tag), x.id) if x.id==do.docpar.id else (highlight_words_new(highlight_statement(x.id),tag),x.id) for x in doc.docpar_set.all()]
-    pars = [(highlight_words_new(highlight_statement(x.id, debug=True), tag, debug=True), x.id) if x.id==do.docpar.id else (highlight_words_new(x.text, tag, debug=True), x.id) for x in doc.docpar_set.all()]
+    pars = [(highlight_words_new(highlight_statement(x.id, debug=False), tag, debug=False), x.id) if x.id==do.docpar.id else (highlight_words_new(x.text, tag, debug=False), x.id) for x in doc.docpar_set.all()]
 
 	# Get technologies/statements
     techs = Technology.objects.filter(project=tag.query.project)
@@ -3651,7 +3700,8 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     #stats_ids = []
     #stats_cats = []
 
-    stats_cats = [[[(s.id, s.technology.all().filter(pk=t.pk).exists(), t) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().exclude(level=6).order_by('level')] for s in DocStatement.objects.all().filter(par=do.docpar.id)]
+    stats_cats = [[[(s.id, s.technology.all().filter(pk=t.pk).exists(), t, s.technology.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')] for s in DocStatement.objects.all().filter(par=do.docpar.id)]
+
     #print(stats_cats)
 
     #print(DocStatement.objects.all().filter(par=do.docpar.id))

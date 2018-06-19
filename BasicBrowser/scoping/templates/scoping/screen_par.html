@@ -185,7 +185,8 @@
 {% for s in stats_cats %}
   <div class="tools" id="statool{{s.0.0.0}}">
     <div class="tools_statement2">
-      <button class="btntool btn_del_stat" id="btndel{{s.0.0.0}}"type="button" title="Delete statement" value="remove"><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></button>
+      <i style="color:#333">Remove ></i>
+      <button class="btntool btn_del_stat" id="btndel{{s.0.0.0}}"type="button" title="Remove statement from the database" value="remove"><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></button>
       <!-- <img src="{% static 'scoping/img/icon_add.png' %}" width="20px" height="20px"/> Add statement -->
       <!-- <li><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></li> -->
     </div>
@@ -200,6 +201,7 @@
         <td class="tagtools">{{l.0.2.group}}</td>
         <td class="tagtools">
           {% for t in l %}
+            {% if t.2.level != 6 %}
               <!-- <button value="{{t.2.id}}" type="button" class="btntag cat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2}}</button> -->
               <button value="{{t.2.id}}" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">
                 {% if t.1 %}
@@ -213,6 +215,7 @@
                   <!-- <img id="myImg{{t.2.id}}" src="{% static 'scoping/img/H1_Important.png' %}"/> -->
                 {% endif %}
               </button>
+            {% endif %}
           {% endfor %}
         </td>
       </tr>
@@ -228,14 +231,37 @@
     </div>
     {% endfor %}
 -->
+      <tr><td style="padding: 10px 10px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 10px 0px 0px; border-bottom:1pt solid black;"></td></tr>
       <tr class="tagtools">
-        <td valign="top">Other</td>
-        <td>
-          <form class="newcomstat" action="" method=""> <!--{% url 'scoping:add_note' %} -->
-          <input type="hidden" name="pid" value="{{project.id}}"></input>
-          <input type="text" name="tname" placeholder="Enter a keyword"></input>
-          <textarea class="form-control" name="tdesc" rows=3 placeholder="Enter the statement"></textarea>
-          <button class="btn btn-primary">Add</button>
+        <td valign="top" style="padding: 10px 0px 0px 0px;">Other</td>
+        <td style="padding: 10px 0px 0px 0px;">
+          <form id="newcomstat{{s.0.0.0}}" class="newcomstat" action="" method=""> <!--{% url 'scoping:add_note' %} -->
+            {% if s.0.0.3 %}
+              {% for l in s %}
+              {% for t in l %}
+              {% if t.2.level == 6 %}
+              {% if t.1 %}
+              <button id="del_othercat{{s.0.0.0}}" name="remove" value="{{t.2.id}}" type="button" class="btn del_othercat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2.group}}</button>
+              <!-- <i style="color:#333">< Click on the button to choose another category</i> -->
+              {% endif %}
+              {% endif %}
+              {% endfor %}
+              {% endfor %}
+            {% else %}
+              <select id="add_othercat{{s.0.0.0}}" name="other_categories" class="add_othercat">
+                <option value="0" selected="selected">-- Select an option --</option>
+                {% for l in s %}
+                {% for t in l %}
+                {% if t.2.level == 6 %}
+                  <option value="{{t.2.id}}">{{t.2.group}}</option>
+                {% endif %}
+                {% endfor %}
+                {% endfor %}
+              </select>
+              <!-- <input type="text" name="tname" placeholder="Enter a keyword"></input> -->
+              <!-- <textarea class="form-control" name="tdesc" rows=3 placeholder="Enter the statement"></textarea> -->
+              <!-- <button name="add" value="0" class="btn btn-primary">Add</button> -->
+            {% endif %}
           </form>
         </td>
       </tr>
@@ -249,31 +275,33 @@
 
 <script>
 
-if (!window.x) {
-    x = {};
-}
-
 function escapeRegExp(str) {
   return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
+if (!window.x) {
+    x = {};
 }
 
 x.Selector = {};
 x.Selector.getSelected = function() {
     var t = '';
+    // Chrome
     if (window.getSelection) {
         s = window.getSelection();
-        if (s.baseNode.parentNode.className.toLowerCase() == "text-selected") {
+        if (s.anchorNode.parentNode.className.toLowerCase() == "text-selected") {
             t = s;
         }
+    // Firefox
     } else if (document.getSelection) {
         s = document.getSelection();
-        if (s.baseNode.parentNode.className.toLowerCase() == "text-selected") {
+        if (s.anchorNode.parentNode.className.toLowerCase() == "text-selected") {
             t = s;
         }
-        //t = document.getSelection();
+    // Explorer
     } else if (document.selection) {
         s = document.selection.createRange().text;
-        if (s.baseNode.parentNode.className.toLowerCase() == "text-selected") {
+        if (s.anchorNode.parentNode.className.toLowerCase() == "text-selected") {
             t = s;
         }
         //t = document.selection.createRange().text;
@@ -358,8 +386,8 @@ $(function () {
 
     // Add new DocStatement
     $(document).on("click", "#btn_add_stat", function() {
-      var s = window.getSelection();
-      var text_paragraph = s.baseNode.parentNode.innerText;
+      var s = x.Selector.getSelected(); //window.getSelection();
+      var text_paragraph = s.anchorNode.parentNode.innerText;
       var text_selection = s.toString();
       //console.log(text_paragraph);
       //console.log(text_selection);
@@ -436,39 +464,133 @@ $(function () {
          });
      });
 
-    // Add new common statement
-    $(document).on("submit", ".newcomstat", function(e){
+    $(document).on("click", ".del_othercat", function(e){
 
-      e.preventDefault();
-      var fields = $(this).serializeArray();
+      var sid = $(this).attr("id");
+      sid = sid.substring(13, sid.length);
+      console.log(statementid)
+      console.log(sid)
 
-      jQuery.each( fields, function( i, field ) {
-        if (field.name == "pid") {
-          pid = field.value
-        };
-        if (field.name == "tname") {
-          tname = field.value
-        };
-        if (field.name == "tdesc") {
-          tdesc = field.value
-        };
+      var tid = $(this).attr("value");
+
+      // Send info to server
+      $.ajax({
+          url: "{% url 'scoping:del_othercat' %}",
+          data: {
+            "sid": statementid,
+            'tid': tid,
+            'tagid': "{{tag.pk}}"
+          },
+          success: function(data) {
+            //$("#newcomstat"+statementid).innerHTML='';
+            $("#del_othercat"+statementid).remove();
+            $("#newcomstat"+statementid).append(data);
+          }
       });
+    });
 
-      console.log(pid+"\n"+tname+"\n"+tdesc);
+    $(document).on("change", ".add_othercat", function(e){
 
-       // Send info to server
-       $.ajax({
-           url: "{% url 'scoping:async_add_tech' %}",
-           data: {
-             "pid": pid,
-             "tname": tname,
-             "tdesc": tdesc
-           },
-           success: function(data) {
-              // Do nothing
-           }
-       });
-     });
+      var sid = $(this).attr("id");
+      sid = sid.substring(13, sid.length);
+      console.log(statementid)
+      console.log(sid)
+
+      var tid = $(this).val();
+      console.log(tid)
+
+      // Send info to server
+      $.ajax({
+          url: "{% url 'scoping:add_othercat' %}",
+          data: {
+            "sid": statementid,
+            'tid': tid
+          },
+          success: function(data) {
+            //$("#newcomstat"+statementid).innerHTML='';
+            $("#add_othercat"+statementid).remove();
+            $("#newcomstat"+statementid).append(data);
+          }
+      });
+    });
+
+    // $(document).on("submit", ".newcomstat", function(e){
+    //
+    //     e.preventDefault();
+    //
+    //     var fields = $(this).serializeArray();
+    //     console.log(fields)
+    //
+    //     jQuery.each( fields, function( i, field ) {
+    //      if (field.name == "other_categories") {
+    //        tid = field.value
+    //      };
+    //      if (field.name == "add") {
+    //        add = field.value
+    //      };
+    //      if (field.name == "remove") {
+    //        rm = field.value
+    //      };
+    //     });
+    //
+    //     if (add == "False") {
+    //         method = "remove";
+    //     } else {
+    //         method = "add";
+    //     };
+    //     console.log(tid)
+    //     console.log(add)
+    //     console.log(rm)
+    //
+    //     // // Send info to server
+    //     // $.ajax({
+    //     //     url: "{% url 'scoping:update_thing' %}",
+    //     //     data: {
+    //     //       "thing1": "DocStatement",
+    //     //       "id1": statementid,
+    //     //       'thing2': 'Technology',
+    //     //       'id2': tid,
+    //     //       "method": method
+    //     //     },
+    //     //     success: function(data) {
+    //     //        // Do nothing
+    //     //     }
+    //     // });
+    // });
+
+    // // Add new common statement
+    // $(document).on("submit", ".newcomstat", function(e){
+    //
+    //   e.preventDefault();
+    //   var fields = $(this).serializeArray();
+    //
+    //   jQuery.each( fields, function( i, field ) {
+    //     if (field.name == "pid") {
+    //       pid = field.value
+    //     };
+    //     if (field.name == "tname") {
+    //       tname = field.value
+    //     };
+    //     if (field.name == "tdesc") {
+    //       tdesc = field.value
+    //     };
+    //   });
+    //
+    //   console.log(pid+"\n"+tname+"\n"+tdesc);
+    //
+    //    // Send info to server
+    //    $.ajax({
+    //        url: "{% url 'scoping:async_add_tech' %}",
+    //        data: {
+    //          "pid": pid,
+    //          "tname": tname,
+    //          "tdesc": tdesc
+    //        },
+    //        success: function(data) {
+    //           // Do nothing
+    //        }
+    //    });
+    //  });
 
     //go to paragraph
     var elmnt = document.getElementById({{do.docpar.id}});
