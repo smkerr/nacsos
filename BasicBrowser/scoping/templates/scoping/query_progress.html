@@ -41,7 +41,7 @@
 <!-- Scoping review -->
                     <p>Looks like it's done!</p>
                     {% if doclength == 0 %}
-                        <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now?
+                        <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now? [Please wait a while and refresh before clicking multiple times]
                         <br/>
                         <a href="{% url 'scoping:dodocadd' query.id %}"><button>Add Documents</button></a>
                     {% else %}

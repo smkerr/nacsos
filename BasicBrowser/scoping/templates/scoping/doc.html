@@ -40,11 +40,11 @@
     {{ doc.docauthinst }}
     {% for au in authors %}
     <span>{% if au.AF %}
-        {{au.AF}}
+        {{au.AF | safe}}
         {% else %}
-        {{au.AU}}
+        {{au.AU | safe }}
         {% endif %}
-        [{{au.institution}}];</span>
+        [{{au.institution | safe}}];</span>
     {% endfor %}
     <p style="text-align:left">
         Author keywords: {{de | safe}}

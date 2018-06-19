@@ -869,7 +869,7 @@ def dodocadd(request,qid):
 
     if q.dlstat != "NOREC":
         management.call_command('upload', qid, True, 1)
-        time.sleep(2)
+        time.sleep(4)
 
     #return HttpResponse(upload)
     return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': qid}))
@@ -3663,6 +3663,8 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     doc     = do.docpar.doc
     authors = DocAuthInst.objects.filter(doc=doc)
 
+    do.start = datetime.datetime.now()
+
     for a in authors:
         a.institution = highlight_words(a.institution, tag)
 
@@ -3769,6 +3771,7 @@ def rate_par(request,tid,ctype,doid,todo,done):
         rel = 0
     do = DocOwnership.objects.get(pk=doid)
     do.relevant=rel
+    do.finish = datetime.datetime.now()
     do.save()
 
     user = request.user
