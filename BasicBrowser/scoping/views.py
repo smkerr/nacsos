@@ -3348,7 +3348,7 @@ def par_manager(request, qid):
 
     filtered_pars = pars
     ors = []
-    if request.method=="GET":
+    try:
         ors = request.GET.getlist('ors', None)
         filter = DocParFilter(request.GET, queryset=pars)
         if len(ors) > 0:
@@ -3368,7 +3368,12 @@ def par_manager(request, qid):
                 filters.append(filtered_pars)
         else:
             filtered_pars = filter.qs
-        tab = DocParTable(filtered_pars)
+
+    except:
+        pass
+
+    tab = DocParTable(filtered_pars)
+
 
     RequestConfig(request).configure(tab)
 
@@ -3406,15 +3411,59 @@ def par_manager(request, qid):
     return render(request, 'scoping/par_manager.html',context)
 
 @login_required
+def del_statement(request):
+    idstat = request.GET.get('idstat', None)
+    idpar = request.GET.get('idpar', None)
+    tid   = request.GET.get('tid', None)
+
+    idstat = int(idstat)
+
+    stat = DocStatement.objects.get(pk=idstat)
+    stat.delete()
+
+    # Get associated paragraph and tag
+    par = DocPar.objects.get(pk=idpar)
+    tag = Tag.objects.get(pk=tid)
+
+    # Add highlighted words
+    newpar_html = "<p class='text-selected' id='"+idpar+"'>"+highlight_words_new(highlight_statement(idpar), tag)+"</p>"
+
+    return HttpResponse(newpar_html)
+
+@login_required
 def add_statement(request):
     idpar = request.GET.get('idpar', None)
     text  = request.GET.get('text', None)
+    #partext   = request.GET.get('par', None)
     start = request.GET.get('start', None)
     end   = request.GET.get('end', None)
+    tid   = request.GET.get('tid', None)
+    doid  = request.GET.get('doid', None)
 
+    start = int(start)
+    end   = int(end)
+
+    # Get associated paragraph and tag
     par = DocPar.objects.get(pk=idpar)
+    tag = Tag.objects.get(pk=tid)
+    #print(par.text)
 
-    docStat = docStatement(
+    #print("js: "+str(start)+", "+str(end))
+    #print(text)
+    #print("py: "+str(par.text.index(text))+", "+str(par.text.index(text)+len(text)))
+    #print(par.text[start:end])
+
+    try:
+        start = par.text.index(text)
+        end   = par.text.index(text)+len(text)
+    except:
+        start = 0
+        end   = len(par.text)
+
+
+
+    # Save new statement
+    docStat = DocStatement(
         par   = par,
         text  = text,
         start = start,
@@ -3423,7 +3472,187 @@ def add_statement(request):
         text_length = len(text))
     docStat.save()
 
+    #print("-----------------------")
+    #print(highlight_statement(idpar))
+    #print("-----------------------")
+    #print(highlight_words_new(highlight_statement(idpar), tag))
+
+    # Add highlighted words
+    newpar_html = "<p class='text-selected' id='"+idpar+"'>"+highlight_words_new(highlight_statement(idpar, debug=False), tag, debug=False)+"</p>"
+
+    # Generate tool box
+    toolbox_html = generate_toolbox(doid, tag, docStat)
+
+    # do    = DocOwnership.objects.get(pk=doid)
+    # techs = Technology.objects.filter(project=tag.query.project)
+    # for t in techs:
+    #     if do.docpar.technology.all().filter(pk=t.pk).exists():
+    #         t.active="btn-success"
+    #     else:
+    #         t.active=""
+    #
+    # levels = [[(docStat.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).distinct()]
+    #
+    # toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
+    # toolbox_html += '<div class="tools_statement2"><button class="btntool btn_del_stat" id="btndel{{s.0.0.0}}"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button></div>'
+    #
+    # for l in levels:
+    #     toolbox_html += '<div class="tagtools">'+l[0][1].group
+    #     for t in l:
+    #             toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntag cat '+str(t[0])+'" data-toggle="tooltip" data-placement="top" title="'+t[1].description+'">'+t[1].name+'</button>'
+    #     toolbox_html += '</div>'
+    # toolbox_html += '</div>'
+
+    # Append html objects
+    html_response = newpar_html + "_!SEP!_"+ toolbox_html
+
+    return HttpResponse(html_response)
+
+def generate_toolbox(doid, tag, docStat):
+    do    = DocOwnership.objects.get(pk=doid)
+    techs = Technology.objects.filter(project=tag.query.project)
+    pid   = tag.query.project.id
+    for t in techs:
+        if do.docpar.technology.all().filter(pk=t.pk).exists():
+            t.active="btn-success"
+        else:
+            t.active=""
+
+    levels = [[(docStat.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().exclude(level=6).order_by('level')]
+
+    # Old implementation
+    # toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
+    # toolbox_html += '<div class="tools_statement2"><button class="btntool btn_del_stat" id="btndel'+str(docStat.id)+'"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button></div>'
+    #
+    # for l in levels:
+    #     toolbox_html += '<div class="tagtools">'+l[0][1].group
+    #     for t in l:
+    #             toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntag cat '+str(t[0])+'" data-toggle="tooltip" data-placement="top" title="'+t[1].description+'">'+t[1].name+'</button>'
+    #     toolbox_html += '</div>'
+    # toolbox_html += '</div>'
+
+    toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
+    toolbox_html += '<div class="tools_statement2">'
+    toolbox_html += '<button class="btntool btn_del_stat" id="btndel'+str(docStat.id)+'"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button>'
+
+    toolbox_html += '</div>'
+    toolbox_html += '</br>'
+    toolbox_html += '<table>'
+    toolbox_html += '<tr>'
+    toolbox_html += '<td><strong>Category</strong></td>'
+    toolbox_html += '<td><strong>Common statement</strong></td>'
+    toolbox_html += '</tr>'
+
+    for l in levels:
+        toolbox_html += '<tr class="tagtools">'
+        toolbox_html += '<td class="tagtools">'+l[0][1].group+'</td>'
+        toolbox_html += '<td class="tagtools">'
+        for t in l:
+            toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
+            if t[0]:
+                toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'_true.png" width="80%" height="80%"/>'
+            else:
+                toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'.png" width="80%" height="80%"/>'
+            toolbox_html += '</button>'
+        toolbox_html += '</td>'
+    toolbox_html += '</tr>'
+
+    toolbox_html += '<tr class="tagtools">'
+    toolbox_html += '<td valign="top">Other</td>'
+    toolbox_html += '<td>'
+    toolbox_html += '<form class="newcomstat" action="" method="">'
+    toolbox_html += '<input type="hidden" name="pid" value="'+str(pid)+'"></input>'
+    toolbox_html += '<input type="text" name="tname" placeholder="Enter a keyword"></input>'
+    toolbox_html += '<textarea class="form-control" name="tdesc" rows=3 placeholder="Enter the statement"></textarea>'
+    toolbox_html += '<button class="btn btn-primary">Add</button>'
+    toolbox_html += '</form>'
+    toolbox_html += '</td>'
+    toolbox_html += '</tr>'
+    toolbox_html += '</table>'
+    toolbox_html += '</div>'
+
+    return(toolbox_html)
+
+########################################################
+## Add the technology asynchronously
+@login_required
+def async_add_tech(request):
+    pid   = request.GET.get('pid', None)
+    tname = request.GET.get('tname', None)
+    tdesc = request.GET.get('tdesc', None)
+
+    print(pid)
+    print(tname)
+    print(tdesc)
+
+    # Get last ID
+    try:
+      last = Technology.objects.filter(group="Other", project_id=pid).order_by('-id')[0]
+      lastid=last.id
+    except IndexError:
+      lastid=1
+
+
+    #  create a new query record in the database
+    t = Technology(
+        name="Z"+str(lastid)+"_"+tname,
+        description=tdesc,
+        project_id=pid,
+        level=6,
+        group="Other"
+    )
+    t.save()
+
+    print(t)
+
     return HttpResponse()
+
+
+########################################################
+## Add other category
+@login_required
+def add_othercat(request):
+    sid = request.GET.get('sid', None)
+    tid = request.GET.get('tid', None)
+
+    ds  = DocStatement.objects.get(pk=sid)
+    t   = Technology.objects.get(pk=tid)
+
+    getattr(ds, "technology").add(t)
+
+    ds.save()
+
+    html_response = '<button id="del_othercat'+str(sid)+'" name="remove" value="'+str(tid)+'" type="button" class="btn del_othercat True" data-toggle="tooltip" data-placement="top" title="'+t.description+'">'+t.group+'</button>'
+    #'<i style="color:#333">< Click on the button to choose another category</i>'
+
+    return HttpResponse(html_response)
+
+########################################################
+## Add other category
+@login_required
+def del_othercat(request):
+    sid = request.GET.get('sid', None)
+    tid = request.GET.get('tid', None)
+    tagid = request.GET.get('tagid', None)
+
+    ds  = DocStatement.objects.get(pk=sid)
+    t   = Technology.objects.get(pk=tid)
+    tag = Tag.objects.get(pk=tagid)
+
+    getattr(ds, "technology").remove(t)
+
+    ds.save()
+
+    techs = Technology.objects.filter(project=tag.query.project)
+    levels = [t for t in techs.filter(level=6).order_by('name')]
+
+    html_response =  '<select id="add_othercat'+str(sid)+'" name="other_categories" class="add_othercat">'
+    html_response += '<option value="0" selected="selected">-- Select an option --</option>'
+    for l in levels:
+            html_response += '<option value="'+str(l.id)+'">'+str(l.group)+'</option>'
+    html_response += '</select>'
+
+    return HttpResponse(html_response)
 
 @login_required
 def screen_par(request,tid,ctype,doid,todo,done,last_doid):
@@ -3456,7 +3685,8 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     )
 
 	# Highlight filter words in paragraphs
-    pars = [(highlight_words_new(x.text, tag), x.id) for x in doc.docpar_set.all()]
+    #pars = [(highlight_words_new(x.text, tag), x.id) if x.id==do.docpar.id else (highlight_words_new(highlight_statement(x.id),tag),x.id) for x in doc.docpar_set.all()]
+    pars = [(highlight_words_new(highlight_statement(x.id, debug=False), tag, debug=False), x.id) if x.id==do.docpar.id else (highlight_words_new(x.text, tag, debug=False), x.id) for x in doc.docpar_set.all()]
 
 	# Get technologies/statements
     techs = Technology.objects.filter(project=tag.query.project)
@@ -3465,8 +3695,47 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
             t.active="btn-success"
         else:
             t.active=""
-    levels = [techs.filter(level=l) for l in techs.values_list('level',flat=True).distinct()]
-    levels = [[(do.docpar.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).distinct()]
+    #levels = [techs.filter(level=l) for l in techs.values_list('level',flat=True).distinct()]
+    levels = [[(do.docpar.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).exclude(level=6).distinct()]
+    #print(levels)
+
+    # Get all statements registered
+    #stats_ids = []
+    #stats_cats = []
+
+    stats_cats = [[[(s.id, s.technology.all().filter(pk=t.pk).exists(), t, s.technology.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')] for s in DocStatement.objects.all().filter(par=do.docpar.id)]
+
+    #print(stats_cats)
+
+    #print(DocStatement.objects.all().filter(par=do.docpar.id))
+    # if DocStatement.objects.all().filter(par=do.docpar.id).exists():
+    #     statements = DocStatement.objects.all().filter(par=do.docpar.id)
+    #     for st in statements:
+    #         #print(st.text)
+    #         stats_ids.append(st.id)
+    #         for t in techs:
+    #             if st.technology.all().filter(pk=t.pk).exists():
+    #                 #t.active="btn-success"
+    #                 stats_cats.append((st.id, [t.name, "btn-success"]))
+    #                 #print(t.name+": active")
+    #             else:
+    #                 stats_cats.append((st.id, [t.name, ""]))
+    #                 #print(t.name+": not active")
+    #                 #t.active=""
+
+    #print(stats_cats)
+    # if do.docstat.all().filter(par=do.docpar.id).exists():
+    #     statements = do.docstat.all().filter(par=do.docpar.id).exists()
+    #     for st in statements:
+    #         print(st.text)
+    #         for t in techs:
+    #             if do.docstat.technology.all().filter(pk=t.pk).exists():
+    #                 #t.active="btn-success"
+    #                 print("active")
+    #             else:
+    #                 print("not active")
+    #                 #t.active=""
+
 
     # Create context for web page
     context = {
@@ -3484,13 +3753,14 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
         'authors': authors,
         'pars': pars,
         'levels': levels,
+        'stats_cats': stats_cats,
         'notes': notes
     }
     return render(request, 'scoping/screen_par.html',context)
 
 @login_required
 def rate_par(request,tid,ctype,doid,todo,done):
-    tag=Tag.objects.get(pk=tid)
+    tag  = Tag.objects.get(pk=tid)
     data = request.POST
     if 'relevant' in data:
         rel = int(data['relevant'])
@@ -3787,8 +4057,6 @@ def add_note(request):
         }))
 
 
-
-
 #########################################################
 ## Download the queryset
 
@@ -3825,9 +4093,6 @@ def download(request, qid):
 
 
     return response
-
-
-
 
 from django.contrib.auth import logout
 def logout_view(request):
@@ -3899,16 +4164,20 @@ def highlight_words(s,query):
     return(" ".join(abstract))
 
 
-def highlight_words_new(s,query):
-    #print("> Entering highlight_words_new")
+def highlight_words_new(s,query,debug=False):
+    if debug:
+        print("> Entering highlight_words_new")
     # Check validity of input parameters before proceeding
     if query.text is None or s is None:
         return s
 
-    #print("  Paragraph to be processed: " + s)
+    if debug:
+        print("  Paragraph to process: " + s)
 
     # WORK IN PROGRESS: To be saved in the database
-    pattern = re.compile("[Ee]mission[s]?\\s(\\w+\\s){1,3}negative|NETs|CDR|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|EW|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|SCS|[Oocean].[Ff]ertili[sz]ation|OF")
+    #pattern = re.compile("[Ee]mission[s]?\\s(\\w+\\s){1,3}negative|^NETs[^a-zA-Z0-9]|[^a-zA-Z0-9]NETs[^a-zA-Z0-9]|^CDR[^a-zA-Z0-9]|[^a-zA-Z0-9]CDR[^a-zA-Z0-9]|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|^AR[^a-zA-Z0-9]|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|^EW[^a-zA-Z0-9]|[^a-zA-Z0-9]EW[^a-zA-Z0-9]|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|^SCS[^a-zA-Z0-9]|[^a-zA-Z0-9]SCS[^a-zA-Z0-9]|[Oocean].[Ff]ertili[sz]ation|^OF[^a-zA-Z0-9]|[^a-zA-Z0-9]OF[^a-zA-Z0-9]")
+
+    pattern = re.compile("[Ee]mission[s]?\\s(\\w+\\s){1,3}negative|NETs|CDR[^M]|[Nn]egative.emission[s]?|[Nn]egative.[cC][0Oo]2.emission[s]?|[Nn]egative.carbon.emission[s]?|[Nn]egative.carbon.dioxide.emission[s]?|[Cc]arbon.dioxide.removal|[Cc]arbon.removal|[Cc][0Oo]2.removal|[Cc]arbon.dioxide.sequestration|[Cc]arbon.sequestration|[Cc][0Oo]2.sequestration|[Bb]iomass.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|[Bb]ioenergy.with.[Cc]arbon.[Cc]apture.and.[Ss]torage|BECS|BECCS|Bio-CCS|[Dd]irect.[Aa]ir.[Cc]apture|DAC|DACCS|[Aa]fforestation|^AR[^a-zA-Z0-9]|[^a-zA-Z0-9]AR[^a-zA-Z0-9]|[Ee]nhanced.weathering|^EW[^a-zA-Z0-9]|[^a-zA-Z0-9]EW[^a-zA-Z0-9]|Biochar|[Ss]oil.[Cc]arbon.[Ss]equestration|^SCS[^a-zA-Z0-9]|[^a-zA-Z0-9]SCS[^a-zA-Z0-9]|[Oocean].[Ff]ertili[sz]ation|^OF[^a-zA-Z0-9]|[^a-zA-Z0-9]OF[^a-zA-Z0-9]")
 
     # Initialise variables
     text_highlighted = []
@@ -3920,36 +4189,141 @@ def highlight_words_new(s,query):
     m = pattern.search(s)
     # If no match could be found, simply save text input...
     if m is None:
-        #print("No match could be found")
+        if debug:
+            print("No match could be found")
         text_highlighted = s
     # ... Otherwise
     else:
-        #print("  Match #"+str(iter)+": ")
-        #print(m)
+        if debug:
+            print("  Match #"+str(iter)+": ")
+            print(m)
         match_found = True
         if m.start() == 0:
-            text_highlighted.append('<span class="t1">'+s[m.start():m.end()]+'</span>')
+            text_highlighted.append('<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+            if debug:
+                print("    Appending: "+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>'+"\n\n")
         else:
-            text_highlighted.append(s[0:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
-        kpos = m.end()+1
+            text_highlighted.append(s[0:(m.start()+0)]+' <span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+            if debug:
+                print("    Appending: "+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+                print("    to       : "+s[0:(m.start()+0)]+"\n\n")
+        kpos = m.end()
         # Loop over potential other matches
         while kpos <= nchar and match_found:
             iter = iter +1
             match_found = False
             m = pattern.search(s, kpos)
             if m is not None:
-                #print("  Match #"+str(iter)+": ")
-                #print(m)
+                if debug:
+                    print("  Match #"+str(iter)+": ")
+                    print(m)
                 match_found = True
-                text_highlighted.append(s[kpos:(m.start()-1)]+'<span class="t1">'+s[m.start():m.end()]+'</span>')
-                kpos = m.end()+1
+                text_highlighted.append(s[kpos:(m.start()+0)]+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+                if debug:
+                    print("    Appending: "+'<span class="t1">'+s[m.start():(m.end()+0)]+'</span>')
+                    print("    to       : "+s[kpos:(m.start()+0)]+"\n\n")
+                kpos = m.end()
 
         # Append remaining text if needed
         if kpos <= nchar:
-            text_highlighted.append(s[kpos:nchar])
-    #print(text_highlighted)
-    #print("  Highlighted paragraph:"+" ".join(text_highlighted))
+            text_highlighted.append(s[kpos:(nchar+0)])
+            if debug:
+                print("    Appending (last): "+s[kpos:(nchar+0)])
 
-    #print("< Exiting highlight_words_new")
+    if debug:
+        print(text_highlighted)
+        print("  Highlighted paragraph:")
+        print("".join(text_highlighted)+"\n\n")
 
-    return(" ".join(text_highlighted))
+        print("< Exiting highlight_words_new")
+
+    return("".join(text_highlighted))
+
+
+def highlight_statement(pid, debug=False):
+    if debug:
+        print("> Entering highlight_statement")
+
+    # Get paragraph
+    par = DocPar.objects.get(pk=pid)
+
+    # Process paragraph
+    curpar = par.text
+    nchar  = len(curpar)
+    if debug:
+        print("  Paragraph to process ("+str(nchar)+" characters):")
+        print("  "+par.text+"\n\n")
+
+    # Get associated statements
+    stat = DocStatement.objects.filter(par=par).order_by('start')
+    nstat = stat.count()
+
+    if debug:
+        print("  There are "+str(nstat)+" to process."+"\n\n")
+
+    iter = 0
+    for x in stat:
+        if debug:
+            print("    Statement #"+str(iter+1)+" ("+str(len(x.text))+" characters): " + x.text)
+            print("    "+x.text+"\n\n")
+
+        offset = len("<span class='statement' id=''></span>") + len(str(x.id))
+
+        start = x.start + offset*iter
+        end   = x.end + offset*iter
+        parend = nchar + offset*iter
+
+        newpar = []
+
+        # Add new span around selected text
+        if start == 0:
+            if end == nchar:
+                newpar.append("<span class='statement' id='"+str(x.id)+"'>")
+                newpar.append(curpar[start:(end+0)])
+                newpar.append("</span>")
+                if debug:
+                    newpar_print = "".join(newpar)
+                    print("      Case #1 (start=0, end=nchar): ")
+                    print("      "+newpar_print+"\n\n")
+            else:
+                newpar.append("<span class='statement' id='"+str(x.id)+"'>")
+                newpar.append(curpar[start:(end+0)])
+                newpar.append("</span>")
+                newpar.append(curpar[(end):(parend+0)])
+                if debug:
+                    newpar_print = "".join(newpar)
+                    print("      Case #2 (start=0, end<>nchar): ")
+                    print("      "+newpar_print+"\n\n")
+        else:
+            if end == nchar:
+                newpar.append(curpar[0:(start+0)])
+                newpar.append("<span class='statement' id='"+str(x.id)+"'>")
+                newpar.append(curpar[start:(end+0)])
+                newpar.append("</span>")
+                if debug:
+                    newpar_print = "".join(newpar)
+                    print("      Case #3 (start<>0, end=nchar): ")
+                    print("      "+newpar_print+"\n\n")
+            else:
+                newpar.append(curpar[0:(start+0)])
+                newpar.append("<span class='statement' id='"+str(x.id)+"'>")
+                newpar.append(curpar[start:(end+0)])
+                newpar.append("</span>")
+                newpar.append(curpar[end:(parend+0)])
+                if debug:
+                    newpar_print = "".join(newpar)
+                    print("      Case #4 (start<>0, end<>nchar): ")
+                    print("      "+newpar_print+"\n\n")
+
+        curpar = "".join(newpar)
+        iter = iter+1
+
+        if debug:
+            print("  Intermediate result ("+str(len(curpar))+" characters): ")
+            print("  "+curpar+"\n\n")
+
+    if debug:
+        print("  Final result ("+str(len(curpar))+" characters): ")
+        print("  "+curpar+"\n\n")
+        print("< Exiting highlight_statement")
+    return(curpar)

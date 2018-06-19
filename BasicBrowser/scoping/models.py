@@ -28,7 +28,7 @@ class SnowballingSession(models.Model):
     name           = models.TextField(null=True, unique=True, verbose_name="SB Name")
     initial_pearls = models.TextField(null=True,              verbose_name="SB Initial Pearls")
     date           = models.DateTimeField(                    verbose_name="SB Date")
-#    completed      = models.BooleanField(verbose_name="Is SB Completed")
+    #    completed      = models.BooleanField(verbose_name="Is SB Completed")
     status         = models.IntegerField(
                          choices      = Status,
                          default      = 0,
@@ -76,7 +76,6 @@ class ProjectRoles(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=2, choices=ROLE_CHOICES)
 
-
 class DocProject(models.Model):
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
@@ -113,10 +112,6 @@ class Query(models.Model):
 
     def __str__(self):
       return self.title
-
-
-
-
 
 class Technology(models.Model):
     name = models.TextField(null = True, verbose_name="Category Name")
@@ -318,6 +313,7 @@ class DocStatement(models.Model):
     end = models.IntegerField(null=False)
     technology = models.ManyToManyField('Technology',db_index=True)
     text_length = models.IntegerField(null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
 
 class DocFile(models.Model):
     doc = models.OneToOneField(Doc, on_delete=models.CASCADE)
@@ -341,7 +337,6 @@ class Bigram(models.Model):
     stem2 = models.TextField()
     pos = models.IntegerField(db_index=True)
 
-
 class DocBigram(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE )
     bigram = models.ForeignKey(Bigram, on_delete=models.CASCADE)
@@ -353,13 +348,11 @@ class Network(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
 
-
 class NetworkProperties(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
     network = models.ForeignKey(Network, on_delete=models.CASCADE)
     value = models.IntegerField(null=True)
     fvalue = models.FloatField(null=True)
-
 
 class Citation(models.Model):
     au = models.TextField(null=True)
@@ -378,19 +371,14 @@ class JournalAbbrev(models.Model):
     fulltext = models.TextField(unique=True,db_index=True)
     abbrev = models.TextField(unique=True,null=True)
 
-
 class CDO(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
     citation = models.ForeignKey(Citation, on_delete=models.CASCADE)
-
-
-
 
 class BibCouple(models.Model):
     doc1 = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="node1")
     doc2 = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="node2")
     cocites = models.IntegerField(default=0)
-
 
 class AR(models.Model):
     ar = models.IntegerField(unique=True)
@@ -431,7 +419,6 @@ class KW(models.Model):
     ndocs = models.IntegerField(default=0)
     kwtype = models.IntegerField(choices=kwtype_choices,null=True)
 
-
 class WC(models.Model):
     text = models.TextField()
     doc = models.ManyToManyField(Doc)
@@ -460,7 +447,6 @@ class EmailTokens(models.Model):
 class URLs(models.Model):
     url = models.TextField(unique=True,db_index=True)
 
-
 class DocRel(models.Model):
     seed = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="parent")
     seedquery = models.ForeignKey(Query, on_delete=models.CASCADE, null=True)
@@ -485,8 +471,6 @@ class DocRel(models.Model):
 
     class Meta:
         unique_together = ('seed', 'seedquery', 'text',)
-
-
 
 class Note(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE,null=True)
