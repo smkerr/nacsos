@@ -3533,17 +3533,37 @@ def generate_toolbox(doid, tag, docStat):
 
     toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
     toolbox_html += '<div class="tools_statement2">'
+    toolbox_html += '<i style="color:#333">Click here to remove</i>'
     toolbox_html += '<button class="btntool btn_del_stat" id="btndel'+str(docStat.id)+'"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button>'
-
     toolbox_html += '</div>'
-    toolbox_html += '</br>'
+    toolbox_html += '<br/>'
+
     toolbox_html += '<table>'
     toolbox_html += '<tr>'
-    toolbox_html += '<td><strong>Category</strong></td>'
-    toolbox_html += '<td><strong>Common statement</strong></td>'
+    toolbox_html += '<td width="160px" style="padding: 0px 5px 0px 5px; border-right:1pt solid black; text-align: center;"><strong>X-cutting topics</strong></td>'
+    toolbox_html += '<td width="150px" style="padding: 0px 5px 0px 5px;"><strong>Category</strong></td>'
+    toolbox_html += '<td width="300px"><strong>Sub-category</strong></td>'
     toolbox_html += '</tr>'
 
-    for l in levels[0:5]:
+    toolbox_html += '<tr><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black; border-right:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><</tr>'
+    toolbox_html += '<tr><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black; border-right:1pt solid black;"></td><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black;"></td><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black;"></td></tr>'
+
+    toolbox_html += '<tr class="tagtools">'
+    toolbox_html += '<td class="tagtools" width="160px" rowspan="6" style="padding: 0px 5px 0px 5px; border-right:1pt solid black;">'
+
+    for t in levels[0]:
+        toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg2 cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
+        if t[0]:
+            toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'_true.png" width="80%" height="80%"/>'
+        else:
+            toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'.png" width="80%" height="80%"/>'
+        toolbox_html += '</button>'
+    toolbox_html += '</td>'
+    toolbox_html += '<td class="tagtools"></td>'
+    toolbox_html += '<td class="tagtools"></td>'
+    toolbox_html += '</tr>'
+
+    for l in levels[1:5]:
         toolbox_html += '<tr class="tagtools">'
         toolbox_html += '<td class="tagtools">'+l[0][1].group+'</td>'
         toolbox_html += '<td class="tagtools">'
@@ -3557,24 +3577,52 @@ def generate_toolbox(doid, tag, docStat):
         toolbox_html += '</td>'
     toolbox_html += '</tr>'
 
-    toolbox_html += '<tr><td style="padding: 10px 10px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 10px 0px 0px; border-bottom:1pt solid black;"></td></tr>'
     toolbox_html += '<tr class="tagtools">'
-    toolbox_html += '<td valign="top">Other</td>'
-    toolbox_html += '<td style="padding: 10px 0px 0px 0px;">'
-    toolbox_html += '<form id="newcomstat'+str(docStat.id)+'" class="newcomstat" action="" method="">'
-    if levels[5][0][2]:
-        for t in levels[5]:
-            if t[0]:
-                toolbox_html += '<button id="del_othercat'+str(docStat.id)+'" name="remove" value="'+str(t[1].id)+'" type="button" class="btn del_othercat '+str(t[0])+'}" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'+str(t[1].group)+'</button>'
-    else:
-        toolbox_html += '<select id="add_othercat'+str(docStat.id)+'" name="other_categories" class="add_othercat">'
-        toolbox_html += '<option value="0" selected="selected">-- Select an option --</option>'
-        for t in levels[5]:
-            toolbox_html += '<option value="'+str(t[1].id)+'">'+str(t[1].group)+'</option>'
-        toolbox_html += '</select>'
-    toolbox_html += '</form>'
+    toolbox_html += '<td class="tagtools">Other</td>'
+    toolbox_html += '<td class="tagtools">'
+    for t in levels[5]:
+        toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
+        if t[0]:
+            toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'_true.png" width="80%" height="80%"/>'
+        else:
+            toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'.png" width="80%" height="80%"/>'
+        toolbox_html += '</button>'
     toolbox_html += '</td>'
     toolbox_html += '</tr>'
+
+    # for l in levels[0:5]:
+    #     toolbox_html += '<tr class="tagtools">'
+    #     toolbox_html += '<td class="tagtools">'+l[0][1].group+'</td>'
+    #     toolbox_html += '<td class="tagtools">'
+    #     for t in l:
+    #         toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
+    #         if t[0]:
+    #             toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'_true.png" width="80%" height="80%"/>'
+    #         else:
+    #             toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'.png" width="80%" height="80%"/>'
+    #         toolbox_html += '</button>'
+    #     toolbox_html += '</td>'
+    # toolbox_html += '</tr>'
+    #
+    # toolbox_html += '<tr><td style="padding: 10px 10px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 10px 0px 0px; border-bottom:1pt solid black;"></td></tr>'
+    # toolbox_html += '<tr class="tagtools">'
+    # toolbox_html += '<td valign="top">Other</td>'
+    # toolbox_html += '<td style="padding: 10px 0px 0px 0px;">'
+    # toolbox_html += '<form id="newcomstat'+str(docStat.id)+'" class="newcomstat" action="" method="">'
+    # if levels[5][0][2]:
+    #     for t in levels[5]:
+    #         if t[0]:
+    #             toolbox_html += '<button id="del_othercat'+str(docStat.id)+'" name="remove" value="'+str(t[1].id)+'" type="button" class="btn del_othercat '+str(t[0])+'}" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'+str(t[1].group)+'</button>'
+    # else:
+    #     toolbox_html += '<select id="add_othercat'+str(docStat.id)+'" name="other_categories" class="add_othercat">'
+    #     toolbox_html += '<option value="0" selected="selected">-- Select an option --</option>'
+    #     for t in levels[5]:
+    #         toolbox_html += '<option value="'+str(t[1].id)+'">'+str(t[1].group)+'</option>'
+    #     toolbox_html += '</select>'
+    # toolbox_html += '</form>'
+    # toolbox_html += '</td>'
+    # toolbox_html += '</tr>'
+
     toolbox_html += '</table>'
     toolbox_html += '</div>'
 

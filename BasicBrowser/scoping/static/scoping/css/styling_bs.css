@@ -209,7 +209,7 @@ div.tools_statement2 {
 }
 
 td.tagtools{
-  padding: 5px 10px 5px 0px;
+  padding: 5px 10px 5px 10px;
 }
 
 button.btntagimg{
@@ -219,7 +219,18 @@ button.btntagimg{
   padding: 0px 10px 0px 10px;
 }
 
+button.btntagimg2{
+  background-color: #fff;
+  border: 0px;
+  margin: 0px;
+  padding: 10px 10px 10px 10px;
+}
+
 .btntagimg:hover {
+    transform: scale(1.25, 1.25); /** default is 1, scale it to 1.5 */
+    opacity: 1;
+}
+.btntagimg2:hover {
     transform: scale(1.25, 1.25); /** default is 1, scale it to 1.5 */
     opacity: 1;
 }
