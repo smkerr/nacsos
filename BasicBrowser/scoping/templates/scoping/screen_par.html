@@ -177,7 +177,7 @@
 </div>
 
 <div class="tools_statement">
-  <button id="btn_add_stat" type="button" title="Add statement" value="add"><img src="{% static 'scoping/img/icon_add.png' %}" width="20px" height="20px"/></button>
+  <button id="btn_add_stat" type="button" title="Add statement" value="add"><img src="{% static 'scoping/img/icon_add.png' %}" width="20px" height="20px"></button>
   <!-- <img src="{% static 'scoping/img/icon_add.png' %}" width="20px" height="20px"/> Add statement -->
   <!-- <li><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></li> -->
 </div>
@@ -187,15 +187,19 @@
     <div class="tools_statement2">
       <i style="color:#333">Click here to remove</i>
       <button class="btntool btn_del_stat" id="btndel{{s.0.0.0}}"type="button" title="Remove statement from the database" value="remove"><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></button>
-      <!-- <img src="{% static 'scoping/img/icon_add.png' %}" width="20px" height="20px"/> Add statement -->
-      <!-- <li><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></li> -->
     </div>
+
     <br>
+
     <table>
       <tr>
-        <td width="160px" style="padding: 0px 5px 0px 5px; border-right:1pt solid black; text-align: center;"><strong>X-cutting topics</strong></td>
-        <td width="150px" style="padding: 0px 5px 0px 5px;"><strong>Category</strong></td>
-        <td width="300px"><strong>Sub-category</strong></td>
+        <td width="160px" style="padding: 0px 5px 0px 5px; border-right:1pt solid black; text-align: center;" rowspan="2" valign="center"><strong>Boundaries / Assumptions</strong></td>
+        <td width="450px" style="padding: 0px 5px 0px 5px; border-bottom:1pt solid black; text-align: left;" colspan="2"><strong><i>Statements</i></strong></td>
+      </tr>
+      <tr>
+
+        <td width="150px" style="padding: 0px 5px 0px 5px;"><strong>Categories</strong></td>
+        <td width="300px"><strong>Common statements</strong></td>
       </tr>
 
       <tr><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black; border-right:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><</tr>
@@ -228,12 +232,32 @@
       {% endfor %}
 
       {% for l in s %}
-      {% if l.0.2.level != 1 and l.0.2.level != 6 %}
+      {% if l.0.2.level > 1 and l.0.2.level < 7 %}
       <tr class="tagtools">
-        <td class="tagtools">{{l.0.2.group}}</td>
+        <td class="tagtools">
+          {% for l2 in s %}
+          {% if l2.0.2.level == 7 %}
+          {% for t2 in l2 %}
+          {% if t2.2.group == l.0.2.group %}
+          <button value="{{t2.2.id}}" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="{{t2.2.description}}">
+            {% if t.1 %}
+              {% with 'scoping/img/'|add:t2.2.name|add:'_true.png' as image_static %}
+                <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
+              {% endwith %}
+            {% else %}
+              {% with 'scoping/img/'|add:t2.2.name|add:'.png' as image_static %}
+                <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
+              {% endwith %}
+            {% endif %}
+          {% endif %}
+          {% endfor %}
+          {% endif %}
+          {% endfor %}
+          </button>
+          {{l.0.2.group}}
+        </td>
         <td class="tagtools">
           {% for t in l %}
-            <!-- <button value="{{t.2.id}}" type="button" class="btntag cat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2}}</button> -->
             <button value="{{t.2.id}}" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">
               {% if t.1 %}
                 {% with 'scoping/img/'|add:t.2.name|add:'_true.png' as image_static %}
@@ -243,7 +267,6 @@
                 {% with 'scoping/img/'|add:t.2.name|add:'.png' as image_static %}
                   <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
                 {% endwith %}
-                <!-- <img id="myImg{{t.2.id}}" src="{% static 'scoping/img/H1_Important.png' %}"/> -->
               {% endif %}
             </button>
           {% endfor %}
@@ -254,14 +277,14 @@
 
       <!-- <tr><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid #ccc;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid #ccc;"></td><td></td></tr> -->
       <!-- <tr><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid #888;"></td><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid #888;"></td><td></td></tr> -->
-
+<!--
       {% for l in s %}
       {% if l.0.2.level == 6 %}
       <tr class="tagtools">
         <td class="tagtools">Other</td>
         <td class="tagtools">
           {% for t in l %}
-            <!-- <button value="{{t.2.id}}" type="button" class="btntag cat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2}}</button> -->
+
             <button value="{{t.2.id}}" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">
               {% if t.1 %}
                 {% with 'scoping/img/'|add:t.2.name|add:'_true.png' as image_static %}
@@ -271,7 +294,7 @@
                 {% with 'scoping/img/'|add:t.2.name|add:'.png' as image_static %}
                   <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
                 {% endwith %}
-                <!-- <img id="myImg{{t.2.id}}" src="{% static 'scoping/img/H1_Important.png' %}"/> -->
+
               {% endif %}
             </button>
           {% endfor %}
@@ -279,6 +302,7 @@
       </tr>
       {% endif %}
       {% endfor %}
+    -->
 <!--
     {% for l in s %}
     <div class="tagtools">

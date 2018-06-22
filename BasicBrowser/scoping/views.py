@@ -3536,13 +3536,17 @@ def generate_toolbox(doid, tag, docStat):
     toolbox_html += '<i style="color:#333">Click here to remove</i>'
     toolbox_html += '<button class="btntool btn_del_stat" id="btndel'+str(docStat.id)+'"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button>'
     toolbox_html += '</div>'
-    toolbox_html += '<br/>'
+    toolbox_html += '<br>'
 
     toolbox_html += '<table>'
     toolbox_html += '<tr>'
-    toolbox_html += '<td width="160px" style="padding: 0px 5px 0px 5px; border-right:1pt solid black; text-align: center;"><strong>X-cutting topics</strong></td>'
-    toolbox_html += '<td width="150px" style="padding: 0px 5px 0px 5px;"><strong>Category</strong></td>'
-    toolbox_html += '<td width="300px"><strong>Sub-category</strong></td>'
+    toolbox_html += '<td width="160px" style="padding: 0px 5px 0px 5px; border-right:1pt solid black; text-align: center;" valign="center" rowspan="2"><strong>Boundaries / Assumptions</strong></td>'
+    toolbox_html += '<td width="450px" style="padding: 0px 5px 0px 5px; border-bottom:1pt solid black; text-align: left;" colspan="2"><strong><i>Statements</i></strong></td>'
+    toolbox_html += '</tr>'
+
+    toolbox_html += '<tr>'
+    toolbox_html += '<td width="150px" style="padding: 0px 5px 0px 5px;"><strong>Categories</strong></td>'
+    toolbox_html += '<td width="300px"><strong>Common statements</strong></td>'
     toolbox_html += '</tr>'
 
     toolbox_html += '<tr><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black; border-right:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><</tr>'
@@ -3563,9 +3567,21 @@ def generate_toolbox(doid, tag, docStat):
     toolbox_html += '<td class="tagtools"></td>'
     toolbox_html += '</tr>'
 
-    for l in levels[1:5]:
+    t2 = levels[6]
+
+    for l in levels[1:6]:
         toolbox_html += '<tr class="tagtools">'
-        toolbox_html += '<td class="tagtools">'+l[0][1].group+'</td>'
+
+        toolbox_html += '<td class="tagtools">'
+        idx=[t[1].group == l[0][1].group for t in levels[6]].index(True)
+        toolbox_html += '<button value="'+str(t2[idx][1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t2[idx][1].description)+'">'
+        if t2[idx][0]:
+            toolbox_html += '<img id="myImg'+str(t2[idx][1].id)+'" src="/static/scoping/img/'+str(t2[idx][1].name)+'_true.png" width="80%" height="80%"/>'
+        else:
+            toolbox_html += '<img id="myImg'+str(t2[idx][1].id)+'" src="/static/scoping/img/'+str(t2[idx][1].name)+'.png" width="80%" height="80%"/>'
+        toolbox_html += '</button>'
+
+        toolbox_html += l[0][1].group+'</td>'
         toolbox_html += '<td class="tagtools">'
         for t in l:
             toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
@@ -3577,18 +3593,18 @@ def generate_toolbox(doid, tag, docStat):
         toolbox_html += '</td>'
     toolbox_html += '</tr>'
 
-    toolbox_html += '<tr class="tagtools">'
-    toolbox_html += '<td class="tagtools">Other</td>'
-    toolbox_html += '<td class="tagtools">'
-    for t in levels[5]:
-        toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
-        if t[0]:
-            toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'_true.png" width="80%" height="80%"/>'
-        else:
-            toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'.png" width="80%" height="80%"/>'
-        toolbox_html += '</button>'
-    toolbox_html += '</td>'
-    toolbox_html += '</tr>'
+    # toolbox_html += '<tr class="tagtools">'
+    # toolbox_html += '<td class="tagtools">Other</td>'
+    # toolbox_html += '<td class="tagtools">'
+    # for t in levels[5]:
+    #     toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
+    #     if t[0]:
+    #         toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'_true.png" width="80%" height="80%"/>'
+    #     else:
+    #         toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'.png" width="80%" height="80%"/>'
+    #     toolbox_html += '</button>'
+    # toolbox_html += '</td>'
+    # toolbox_html += '</tr>'
 
     # for l in levels[0:5]:
     #     toolbox_html += '<tr class="tagtools">'

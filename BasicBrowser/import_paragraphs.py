@@ -32,7 +32,7 @@ def parse_document(f, doc):
     tree = ET.parse(f)
     root = tree.getroot()
 
-    # Get paragraphs into a dataframe
+    # Get paragraphs into a dataframe (using parse_par function)
     pages = root.findall('pages/page')
     pars = list(flatten([p.findall('paragraph') for p in pages]))
     par_df = pd.DataFrame.from_dict([parse_par(el) for el in pars])
@@ -130,7 +130,8 @@ def find_doc_title(f,d):
 xml_dir = '/home/hilj/NETs in IAM literature/xml_input2webplatform/'
 
 # Get relevant query
-q = Query.objects.get(pk=2777)
+#q = Query.objects.get(pk=2777)
+q = Query.objects.get(pk=2823)
 q.doc_set.filter(wosarticle__isnull=True).delete()
 
 # Get document meta information
