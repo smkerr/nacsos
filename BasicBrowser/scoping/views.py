@@ -3541,12 +3541,12 @@ def generate_toolbox(doid, tag, docStat):
     toolbox_html += '<table>'
     toolbox_html += '<tr>'
     toolbox_html += '<td width="160px" style="padding: 0px 5px 0px 5px; border-right:1pt solid black; text-align: center;" valign="center" rowspan="2"><strong>Boundaries / Assumptions</strong></td>'
-    toolbox_html += '<td width="450px" style="padding: 0px 5px 0px 5px; border-bottom:1pt solid black; text-align: left;" colspan="2"><strong><i>Statements</i></strong></td>'
+    toolbox_html += '<td width="780px" style="padding: 0px 5px 0px 5px; border-bottom:1pt solid black; text-align: left;" colspan="2"><strong><i>Statements</i></strong></td>'
     toolbox_html += '</tr>'
 
     toolbox_html += '<tr>'
-    toolbox_html += '<td width="150px" style="padding: 0px 5px 0px 5px;"><strong>Categories</strong></td>'
-    toolbox_html += '<td width="300px"><strong>Common statements</strong></td>'
+    toolbox_html += '<td width="350px" style="padding: 0px 5px 0px 5px;"><strong>Categories</strong></td>'
+    toolbox_html += '<td width="400px"><strong>Common statements</strong></td>'
     toolbox_html += '</tr>'
 
     toolbox_html += '<tr><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black; border-right:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><</tr>'
