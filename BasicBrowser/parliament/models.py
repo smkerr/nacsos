@@ -141,7 +141,8 @@ class Interjection(models.Model):
         APPLAUSE:'em-clap',
         SPEECH:'em-speech_balloon',
         OBJECTION:'em-raised_hand_with_fingers_splayed',
-        AMUSEMENT:'em-laughing',
+        AMUSEMENT:'em-grinning',
+        LAUGHTER:'em-laughing',
         OUTCRY: ''
     }
     @property

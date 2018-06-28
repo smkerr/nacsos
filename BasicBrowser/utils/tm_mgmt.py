@@ -45,8 +45,6 @@ def compare_topic_queryset(runs):
                 topics2 = Topic.objects.filter(run_id=runs[i])
 
 
-
-
         df = pd.DataFrame.from_dict(list(topics2.values('title','score')))
         df2 = pd.DataFrame.from_dict([{'title': 'None','score': 0}])
         df = df.append(df2)
