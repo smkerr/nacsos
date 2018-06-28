@@ -1,8 +1,9 @@
 import sys, csv, django, os, codecs, re, fnmatch
 
-sys.path.append('/home/galm/software/django/tmv/BasicBrowser')
-
 # sys.path.append('/home/max/Desktop/django/BasicBrowser/')
+#sys.path.append('/home/galm/software/django/tmv/BasicBrowser')
+sys.path.append('/home/hilj/github/tmv/BasicBrowser')
+
 import db as db
 from tmv_app.models import *
 from scoping.models import *
@@ -29,6 +30,7 @@ def parse_par(el):
     return dict
 
 def parse_document(f, doc):
+    print(f)
     tree = ET.parse(f)
     root = tree.getroot()
 
@@ -42,6 +44,12 @@ def parse_document(f, doc):
     par_df['width'] = par_df['maxX'] - par_df['minX']
     par_df['text_length'] = par_df['text'].str.len()
 
+    # Rename keys
+    try:
+        par_df = par_df.rename(index=str, columns={"endFontSize":"endFontsize", "mostCommonFontSize":"mostCommonFontsize", 'startFontSize':'startFontsize'})
+    except:
+        print("No need to rename columns in: "+f)
+
     # Here are some attributes
     attribs = ['mostCommonFont', 'mostCommonFontsize','mostCommonColor']
 
@@ -49,6 +57,7 @@ def parse_document(f, doc):
     ## TODO: improve section header identification
     sh_pat = "^[1-9]{1}(\\.{1}[1-9]{1}){,2}\\s{1}(\\w){1,}"
     section_headers = par_df[(par_df['text'].str.contains(sh_pat)) & (par_df['height']<=20)]
+    #print(section_headers)
     sh_attribs = {}
     bt_attribs = {}
     for a in attribs:
@@ -56,13 +65,14 @@ def parse_document(f, doc):
         bt_attribs[a] = list(par_df.groupby([a]).sum()['text_length'].sort_values(ascending=False).index[:1])
 
     # filter body and section headers by the information above
-    filtered_bt = par_df[(~par_df['text'].str.contains(sh_pat)) & (par_df['height']>20)]
-    for key,value in bt_attribs.items():
-        filtered_bt = filtered_bt[filtered_bt[key].isin(value)]
+    filtered_bt = par_df
+    #filtered_bt = par_df[(~par_df['text'].str.contains(sh_pat)) & (par_df['height']>20)]
+    #for key,value in bt_attribs.items():
+    #   filtered_bt = filtered_bt[filtered_bt[key].isin(value)]
     filtered_bt['imputed_role'] = 'body-text'
 
     for key,value in sh_attribs.items():
-        section_headers = section_headers[section_headers[key].isin(value)]
+       section_headers = section_headers[section_headers[key].isin(value)]
 
 
     # Join incomplete paragraphs to the previous paragraph
@@ -81,8 +91,10 @@ def parse_document(f, doc):
 
     whole_pars = whole_pars.rename(index=str, columns={"index": "n"})
 
+    # Delete all existing paragraphs
     doc.docpar_set.all().delete()
 
+    # Save all paragraphs in the DB
     for index, row in whole_pars.iterrows():
         dp = DocPar(**dict(row))
         dp.doc=doc
@@ -132,7 +144,7 @@ xml_dir = '/home/hilj/NETs in IAM literature/xml_input2webplatform/'
 # Get relevant query
 #q = Query.objects.get(pk=2777)
 q = Query.objects.get(pk=2823)
-q.doc_set.filter(wosarticle__isnull=True).delete()
+#q.doc_set.filter(wosarticle__isnull=True).delete()
 
 # Get document meta information
 docs = pd.read_csv('/home/galm/projects/NETs-IAMs/netsiams/all_docs_20180529_edited.csv',sep=";", encoding = "latin-1")
@@ -180,5 +192,5 @@ print(str(unfound)+" document could not be found.")
 q.r_count = q.doc_set.count()
 q.save()
 
-fields = ['doc__title','doc__wosarticle__di'] + [f.name for f in DocPar._meta.get_fields()]
-dps = DocPar.obj
+#fields = ['doc__title','doc__wosarticle__di'] + [f.name for f in DocPar._meta.get_fields()]
+#dps = DocPar.obj
