@@ -3439,6 +3439,7 @@ def add_statement(request):
     end   = request.GET.get('end', None)
     tid   = request.GET.get('tid', None)
     doid  = request.GET.get('doid', None)
+    userid  = request.GET.get('userid', None)
 
     start = int(start)
     end   = int(end)
@@ -3446,6 +3447,7 @@ def add_statement(request):
     # Get associated paragraph and tag
     par = DocPar.objects.get(pk=idpar)
     tag = Tag.objects.get(pk=tid)
+    user = User.objects.get(pk=userid)
     #print(par.text)
 
     #print("js: "+str(start)+", "+str(end))
@@ -3468,6 +3470,7 @@ def add_statement(request):
         text  = text,
         start = start,
         end   = end,
+        user  = user,
         #technology = ,
         text_length = len(text))
     docStat.save()

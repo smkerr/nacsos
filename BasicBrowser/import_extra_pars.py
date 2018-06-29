@@ -20,9 +20,10 @@ import openpyxl
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "BasicBrowser.settings")
 django.setup()
 
-book = openpyxl.load_workbook('/home/galm/projects/NETs-IAMs/parsed_pars_and_manualupdate.xslx.xlsx')
+#book = openpyxl.load_workbook('/home/galm/projects/NETs-IAMs/parsed_pars_and_manualupdate.xslx.xlsx')
+book = openpyxl.load_workbook('/home/hilj/github/tmv/BasicBrowser/parsed_pars_and_manualupdate.xslx.xlsx')
 
-sheet = book['missing_pars']
+sheet = book['missing_pars2']
 
 rows = sheet.max_row
 cols = sheet.max_column
