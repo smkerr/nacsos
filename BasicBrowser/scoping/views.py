@@ -3412,9 +3412,9 @@ def par_manager(request, qid):
 
 @login_required
 def del_statement(request):
-    idstat = request.GET.get('idstat', None)
-    idpar = request.GET.get('idpar', None)
-    tid   = request.GET.get('tid', None)
+    idstat = request.POST.get('idstat', None)
+    idpar = request.POST.get('idpar', None)
+    tid   = request.POST.get('tid', None)
 
     idstat = int(idstat)
 
@@ -3432,14 +3432,14 @@ def del_statement(request):
 
 @login_required
 def add_statement(request):
-    idpar = request.GET.get('idpar', None)
-    text  = request.GET.get('text', None)
-    #partext   = request.GET.get('par', None)
-    start = request.GET.get('start', None)
-    end   = request.GET.get('end', None)
-    tid   = request.GET.get('tid', None)
-    doid  = request.GET.get('doid', None)
-    userid  = request.GET.get('userid', None)
+    idpar = request.POST.get('idpar', None)
+    text  = request.POST.get('text', None)
+    #partext   = request.POST.get('par', None)
+    start = request.POST.get('start', None)
+    end   = request.POST.get('end', None)
+    tid   = request.POST.get('tid', None)
+    doid  = request.POST.get('doid', None)
+    userid  = request.POST.get('userid', None)
 
     start = int(start)
     end   = int(end)

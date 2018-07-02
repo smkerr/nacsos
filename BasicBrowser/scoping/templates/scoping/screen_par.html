@@ -4,6 +4,7 @@
 
 {% block content %}
 
+{% csrf_token %}
 
 <br>
 <h1> Scoping Review Helper</h1>
@@ -394,6 +395,36 @@ var pageX;
 var pageY;
 var statementid;
 
+// using jQuery
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+var csrftoken = getCookie('csrftoken');
+
+function csrfSafeMethod(method) {
+    // these HTTP methods do not require CSRF protection
+    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+}
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+});
+
 // Event handlers to be attached once the DOM is ready
 $(function () {
     $('[data-toggle="tooltip"]').tooltip()
@@ -456,6 +487,7 @@ $(function () {
 
       $.ajax({
           url: "{% url 'scoping:del_statement' %}",
+          method: "POST",
           data: data,
           success: function(data) {
               $("p#{{do.docpar.pk}}").replaceWith(data);
@@ -497,6 +529,7 @@ $(function () {
       $.ajax({
           url: "{% url 'scoping:add_statement' %}",
           data: data,
+          method: "POST",
           success: function(data) {
             sep = data.indexOf("_!SEP!_");
             html_par = data.substring(0, sep)
