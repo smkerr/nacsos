@@ -3856,7 +3856,7 @@ def rate_par(request,tid,ctype,doid,todo,done):
     user = request.user
 
     dois = DocOwnership.objects.filter(
-        docpar__doc__wosarticle__isnull=False,
+        #docpar__doc__wosarticle__isnull=False,
         tag=tag,
         query=tag.query,
         user_id=user
