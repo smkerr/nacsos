@@ -3445,22 +3445,30 @@ def add_statement(request):
     end   = int(end)
 
     # Get associated paragraph and tag
-    par = DocPar.objects.get(pk=idpar)
-    tag = Tag.objects.get(pk=tid)
+    par  = DocPar.objects.get(pk=idpar)
+    tag  = Tag.objects.get(pk=tid)
     user = User.objects.get(pk=userid)
-    #print(par.text)
 
-    #print("js: "+str(start)+", "+str(end))
-    #print(text)
-    #print("py: "+str(par.text.index(text))+", "+str(par.text.index(text)+len(text)))
-    #print(par.text[start:end])
+    DEBUG=False
+    if DEBUG:
+        print(par.text)
 
     try:
         start = par.text.index(text)
         end   = par.text.index(text)+len(text)
+        if DEBUG:
+            print("py: "+str(par.text.index(text))+", "+str(par.text.index(text)+len(text)))
+            print(par.text[start:end])
+            print("js: "+str(start)+", "+str(end))
+            print(text)
     except:
-        start = 0
-        end   = len(par.text)
+        if DEBUG:
+            print("Warning: Python failed to find statement in paragraph. Using javascript indices instead")
+            print("js: "+str(start)+", "+str(end))
+            print(text)
+            end=end+1
+        #start = 0
+        #end   = len(par.text)
 
 
 
