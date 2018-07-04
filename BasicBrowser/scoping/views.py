@@ -3752,16 +3752,20 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
         a.institution = highlight_words(a.institution, tag)
 
     abstract = highlight_words(doc.content, tag)
-    title    = highlight_words(doc.wosarticle.ti, tag)
+    title    = highlight_words(doc.title, tag)
 
-    if doc.wosarticle.de is not None:
-        de = highlight_words(doc.wosarticle.de, tag)
+    if hasattr(doc,'wosarticle'):
+        if doc.wosarticle.de is not None:
+            de = highlight_words(doc.wosarticle.de, tag)
+        else:
+            de = None
+
+        if doc.wosarticle.kwp is not None:
+            kwp = highlight_words(doc.wosarticle.kwp, tag)
+        else:
+            kwp = None
     else:
         de = None
-
-    if doc.wosarticle.kwp is not None:
-        kwp = highlight_words(doc.wosarticle.kwp, tag)
-    else:
         kwp = None
 
     notes = Note.objects.filter(
@@ -3860,7 +3864,7 @@ def rate_par(request,tid,ctype,doid,todo,done):
     user = request.user
 
     dois = DocOwnership.objects.filter(
-        docpar__doc__wosarticle__isnull=False,
+        #docpar__doc__wosarticle__isnull=False,
         tag=tag,
         query=tag.query,
         user_id=user
@@ -3896,7 +3900,7 @@ def screen(request,qid,tid,ctype,d=0):
 
     if not tag.document_linked:
         dois = DocOwnership.objects.filter(
-            docpar__doc__wosarticle__isnull=False,
+            #docpar__doc__wosarticle__isnull=False,
             tag=tag,
             query=query,
             user=user
