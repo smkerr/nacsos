@@ -38,7 +38,7 @@ class HTopicTerm(models.Model):
 class Topic(models.Model):
     title = models.CharField(max_length=80)
     score = models.FloatField(null=True)
-    size = models.IntegerField(null=True)
+    share = models.FloatField(null=True)
     growth = models.FloatField(null=True)
     run_id = models.ForeignKey('RunStats',db_index=True, on_delete=models.CASCADE)
     year = models.IntegerField(null=True)

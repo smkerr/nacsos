@@ -116,7 +116,11 @@ def add_doc(r, q, update):
                 print(field)
                 print(r[field])
 
-        article.save()
+        try:
+            article.save()
+        except:
+            print(r)
+            sys.exit()
 
 
         ## Add authors

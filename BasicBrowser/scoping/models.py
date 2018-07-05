@@ -536,7 +536,7 @@ class DocAuthInst(models.Model):
     initials = models.CharField(max_length=10, null=True)
     AU = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author")
     AF = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author Full Name")
-    institution = models.CharField(max_length=250, db_index=True, verbose_name="Institution Name")
+    institution = models.TextField(db_index=True, verbose_name="Institution Name")
     position = models.IntegerField(verbose_name="Author Position")
 
     class Meta:
@@ -617,9 +617,9 @@ class WoSArticle(models.Model):
     se = models.TextField(null=True, verbose_name="Book Series Title") # book series title
     si = models.TextField(null=True, verbose_name="Special Issue") # special issue
     sn = models.CharField(null=True, max_length=80, verbose_name="ISSN") # ISSN
-    so = models.CharField(
+    so = models.TextField(
         null=True,
-        max_length=250,
+        #max_length=250,
         verbose_name="Publication Name",
         help_text="Enter the name of the journal or the title of the book"
     ) # publication name

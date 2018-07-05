@@ -1444,7 +1444,8 @@ def query(request,qid,q2id='0',sbsid='0'):
                 user_docs['irreldocs']       = tdocs.filter(relevant=2).count()
                 user_docs['maybedocs']       = tdocs.filter(relevant=3).count()
                 user_docs['yesbuts']         = tdocs.filter(relevant=4).count()
-                user_docs['checked_percent'] = round((user_docs['reldocs'] + user_docs['irreldocs'] + user_docs['maybedocs']) / user_docs['tdocs'] * 100)
+                user_docs['checked'] = tdocs.filter(relevant__gt=0).count()
+                user_docs['checked_percent'] = round( user_docs['checked'] / user_docs['tdocs'] * 100)
             if query in u.query_set.all():
                 user_list.append({
                     'username': u.username,

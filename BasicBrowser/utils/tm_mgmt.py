@@ -2,7 +2,7 @@ from tmv_app.models import *
 from scoping.models import *
 from tmv_app.tasks import *
 from celery import *
-from django.db.models import Q, Count, Func, F, Sum, Avg, Value as V
+from django.db.models import Q, Count, Func, F, Sum, Avg, Subquery, OuterRef, Value as V
 from celery import group
 import pandas as pd
 
@@ -327,31 +327,30 @@ def update_topic_titles_hlda(session):
         stats.topic_titles_current = True
         stats.save()
 
-
-def update_topic_scores(session):
-    if isinstance(session, int):
-        run_id=session
-    else:
-        run_id = find_run_id(session)
-    stats = RunStats.objects.get(run_id=run_id)
-    #if "a" in "ab":
-    if not stats.topic_scores_current:
-
-        topics = Topic.objects.filter(run_id=stats)
-        for t in topics:
+def calculate_topic_scores(topics):
+    top_total = topics.aggregate(t=Sum('doctopic__score'))['t']
+    topics = topics.annotate(
+        sum_score=Sum('doctopic__score')
+    )
+    for t in topics:
+        t.score = t.sum_score
+        if t.score is None:
             t.score=0
-            t.save()
+        t.share = t.score/top_total
+        t.save()
 
-        topics = DocTopic.objects.filter(run_id=run_id).values('topic').annotate(
-            total=Sum('score')
-        )
-        for tscore in topics:
-            topic = Topic.objects.get(pk=tscore['topic'])
-            topic.score = tscore['total']
-            topic.save()
-
-
-
+def update_topic_scores(run_id):
+    stats = RunStats.objects.get(run_id=run_id)
+    if not stats.topic_scores_current:
+        if stats.method=="DT":
+            for p in stats.periods.all():
+                topics = Topic.objects.filter(
+                    run_id=stats,period=p
+                )
+                calculate_topic_scores(topics)
+        else:
+            topics = Topic.objects.filter(run_id=stats)
+            calculate_topic_scores(topics)
         stats.topic_scores_current = True
         stats.save()
 
@@ -486,7 +485,7 @@ def update_ipcc_coverage(run_id):
                 ip_score=Sum('ipcc_score'),
                 score=Sum('score')
             )
-            
+
             topics.update(
                 ipcc_share=F('ipcc_score')/tsums['ip_score'],
                 share=F('score')/tsums['score']
