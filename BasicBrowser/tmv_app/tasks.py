@@ -406,7 +406,7 @@ and {} topics\n'.format(qid, docs.count(),K))
         vocab = vectorizer.get_feature_names()
         vocab_ids = []
         pool = Pool(processes=8)
-        vocab_ids.append(pool.map(partial(add_features,run_id=run_id),vocab))
+        vocab_ids.append(pool.map(partial(add_features, run_id=run_id),vocab))
         pool.terminate()
         del vocab
         vocab_ids = vocab_ids[0]
@@ -502,14 +502,16 @@ and {} topics\n'.format(qid, docs.count(),K))
             #                docsizes=docsizes,docUTset=ids,topic_ids=topic_ids),doc_batches))
             pool.terminate()
             make_t += time() - make_t0
+            print(make_t)
             django.db.connections.close_all()
 
             add_t0 = time()
             values_list = [item for sublist in values_list for item in sublist]
             pool = Pool(processes=ps)
-            pool.map(insert_many,values_list)
+            pool.map(insert_many, values_list)
             pool.terminate()
             add_t += time() - add_t0
+            print(add_t)
             gc.collect()
             sys.stdout.flush()
 

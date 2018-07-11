@@ -260,7 +260,7 @@ class Search(models.Model):
         #related_name="user_creations",
         #reverse_n
     )
-    par_count=models.IntegerField(default=0,verbose_name="Paragraphs")
+    par_count=models.IntegerField(default=0,verbose_name="Number of text objects")
 
     PARAGRAPH = 1
     UTTERANCE = 2
@@ -268,4 +268,4 @@ class Search(models.Model):
     OBJECT_TYPES = ((PARAGRAPH,'Paragraph'),
                     (UTTERANCE, 'Utterance'))
 
-    search_object = models.IntegerField(choices=OBJECT_TYPES, default=PARAGRAPH)
+    search_object_type = models.IntegerField(choices=OBJECT_TYPES, default=PARAGRAPH)

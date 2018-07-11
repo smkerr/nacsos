@@ -22,9 +22,9 @@ import time
 @shared_task
 def do_search(s):
     s = Search.objects.get(pk=s)
-    if s.search_objects == 1: # paragraphs
+    if s.search_object_type == 1: # paragraphs
         ps = Paragraph.objects.filter(text__iregex=s.text)
-    elif s.search_objects == 2: # utterances
+    elif s.search_object_type == 2: # utterances
         ps = Paragraph
         # todo: modify such that utterances are connected and topic model documents are utterances
 
@@ -119,25 +119,37 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
     vectorizer = tfidf_vectorizer
 
     vocab = vectorizer.get_feature_names()
-    vocab_ids = []
 
     if verbosity > 0:
         print("save terms to db ({})".format(time.time() - start_time))
 
-    # multiprocessing: add vocabulary as Term
-    pool = Pool(processes=8)
-    vocab_ids.append(pool.map(partial(db.add_features,run_id=run_id),vocab))
-    pool.terminate()
-    del vocab
-    vocab_ids = vocab_ids[0]
+    paralellized = True
+    if paralellized:
+        vocab_ids = []
+        # multiprocessing: add vocabulary as Term
+        pool = Pool(processes=8)
+        vocab_ids.append(pool.map(partial(db.add_features,run_id=run_id),vocab))
+        pool.terminate()
+        del vocab
+        vocab_ids = vocab_ids[0]
 
-    # without multiprocessing
-    # vocab_ids = [db.add_features(term_title, run_id) for term_title in vocab]
+    else:
+        print("without multiprocessing for storing terms")
+        # without multiprocessing
+        objects = [Term(title=term_title) for term_title in vocab]
+
+        # TODO: if some of the objects already exist, duplicates are created: use uniqueness of field 'title'
+        Term.objects.bulk_create(objects)
+        runstats = RunStats.objects.get(run_id=run_id)
+        runstats.term_set.add(*objects)
+        runstats.save()
+
 
     ## Make some topics
     django.db.connections.close_all()
     topic_ids = db.add_topics(K, run_id)
     gc.collect()
+
 
     if verbosity > 1:
         v = True
@@ -183,7 +195,7 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
     TopicTerm.objects.bulk_create(tts)
 
     if verbosity > 0:
-        print("saving docuemt topic matrix to db ({})".format(time.time() - start_time))
+        print("saving document topic matrix to db ({})".format(time.time() - start_time))
 
     #document topic matrix
     gamma = find(dtm)
