@@ -22,7 +22,12 @@ import time
 @shared_task
 def do_search(s):
     s = Search.objects.get(pk=s)
-    ps = Paragraph.objects.filter(text__iregex=s.text)
+    if s.search_objects == 1: # paragraphs
+        ps = Paragraph.objects.filter(text__iregex=s.text)
+    elif s.search_objects == 2: # utterances
+        ps = Paragraph
+        # todo: modify such that utterances are connected and topic model documents are utterances
+
     print("{} paragraphs with search {}".format(ps.count(), s.text))
 
     # filter for parties

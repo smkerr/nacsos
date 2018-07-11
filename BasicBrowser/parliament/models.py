@@ -262,3 +262,10 @@ class Search(models.Model):
     )
     par_count=models.IntegerField(default=0,verbose_name="Paragraphs")
 
+    PARAGRAPH = 1
+    UTTERANCE = 2
+
+    OBJECT_TYPES = ((PARAGRAPH,'Paragraph'),
+                    (UTTERANCE, 'Utterance'))
+
+    search_object = models.IntegerField(choices=OBJECT_TYPES, default=PARAGRAPH)
