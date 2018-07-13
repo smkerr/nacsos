@@ -63,7 +63,7 @@ class Command(BaseCommand):
                 ).values(
                     'doc_id','topic__topicdtopic__dynamictopic_id'
                 ).annotate(
-                    tc=Max(F('score') * F('topic__topicdtopic__score'),
+                    tc=Sum(F('score') * F('topic__topicdtopic__score'),
                 )).values(
                     'doc_id',
                     'topic__topicdtopic__dynamictopic_id',

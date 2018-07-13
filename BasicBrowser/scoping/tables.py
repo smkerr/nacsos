@@ -9,6 +9,10 @@ import django_filters
 
 #from .urls import urlpatterns
 
+class DocTable(tables.Table):
+    class Meta:
+        model = Doc
+
 
 class ProjectTable(tables.Table):
     id = tables.LinkColumn('scoping:project', args=[A('pk')])

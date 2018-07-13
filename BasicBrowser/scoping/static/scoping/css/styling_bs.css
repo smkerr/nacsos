@@ -79,6 +79,51 @@ div.text-con {
     display: none;
 }
 
+.field_name, .inn_name {
+    cursor: pointer;
+    padding: 6px;
+    margin: 6px 2px;
+    white-space:nowrap;
+    background-color: #DCDCDC;
+    border: 1px solid black;
+    border-radius: 2px;
+}
+
+.field_name.active {
+    background-color: #fbb4ae !important;
+}
+
+p.field_container, p#field_container {
+ line-height: 250%;
+}
+
+[data-active="true"] {
+    background-color: #fbb4ae !important;
+}
+
+[data-active="false"] {
+    background-color: white;
+}
+
+[data-active="true"], [data-active="false"] {
+    cursor:pointer;
+    padding: 4px;
+}
+
+button.filter {
+    line-height: 100%;
+    padding: 3px;
+}
+
+a:not([href]):not([tabindex]) {
+    color: #007bff;
+    cursor: pointer;
+}
+
+a:not([href]):not([tabindex]):hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
 
 /* SWITCHES */
 /* The switch - the box around the slider */

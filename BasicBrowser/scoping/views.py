@@ -173,7 +173,7 @@ def project(request, pid):
     newRole = ProjectRoleForm()
     newRole.fields["user"].queryset = User.objects.exclude(
         id__in=projUsers.values_list('id',flat=True)
-    )
+    ).order_by('username')
 
     queries = Query.objects.filter(
         project=p
@@ -1744,10 +1744,10 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
 
     relevance_fields.append({"path": "fulltext", "name": "Full Text"})
     relevance_fields.append({"path": "docfile__id", "name": "PDF"})
-    relevance_fields.append({"path": "tech_technology", "name": "Technology"})
+    relevance_fields.append({"path": "tech_technology", "name": "Category"})
     relevance_fields.append({"path": "tech_innovation", "name": "Innovation"})
-    relevance_fields.append({"path": "relevance_netrelevant", "name": "NETs relevant"})
-    relevance_fields.append({"path": "relevance_techrelevant", "name": "Technology relevant"})
+    relevance_fields.append({"path": "relevance_netrelevant", "name": "Project relevant"})
+    relevance_fields.append({"path": "relevance_techrelevant", "name": "Category relevant"})
     relevance_fields.append({"path": "note__text", "name": "Notes"})
     relevance_fields.append({"path": "relevance_time", "name": "Time of Rating"})
     relevance_fields.append({"path": "relevance_agreement", "name": "Agreement"})
@@ -1781,10 +1781,13 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
     relevance_fields.append({"path": "tag__title", "name": "Tag name"})
 
 
-
-
+    #doclist = get_doclist(qid)
+    doctable = get_doclist(
+        request,qid,basic_fields
+    ).content.decode('utf-8')
 
     context = {
+        'doctable': doctable,
         'query': query,
         'project': query.project,
         'query2' : query_f,
@@ -2288,6 +2291,19 @@ def doclistsbs(request,sbsid):
     }
     return HttpResponse(template.render(context, request))
 
+##################################################
+##
+def get_doclist(request,qid,fields=None):
+    template = loader.get_template('scoping/snippets/doc_table.html')
+    q = Query.objects.get(pk=qid)
+    fpaths = [f['path'] for f in fields]
+
+    docs = Doc.objects.filter(query=q).values(*fpaths)[:100]
+    context = {
+        'docs': docs,
+        'fields': fields
+    }
+    return HttpResponse(template.render(context,request))
 
 
 ##################################################
@@ -2313,6 +2329,11 @@ def sortdocs(request):
 
     tag_title = request.GET.get('tag_title',None)
     download = request.GET.get('download',None)
+
+    print(fields)
+    print(f_fields)
+
+    print(f_text)
 
     # get the query
     query = Query.objects.get(pk=qid)
@@ -2345,6 +2366,7 @@ def sortdocs(request):
             #single_fields.append(f)
         elif "docownership" in f:
             users.append(f)
+            single_fields.append(f)
         elif "relevance_" in f:
             rfields.append(f)
             single_fields.append(f)
@@ -2456,23 +2478,27 @@ def sortdocs(request):
                 print(reldocs)
             reldocs = reldocs.values("pk")
             filt_docs = filt_docs.filter(pk__in=reldocs)
-        else:
-            reldocs = filt_docs.filter(docownership__user=user,docownership__query=query)
-            if "tag__title" in f_fields:
-                reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter)
-                print(reldocs)
-            reldocs = reldocs.values("pk")
-            filt_docs = filt_docs.filter(pk__in=reldocs)
+        #else:
+
+            #if download==False:
+            #    reldocs = filt_docs.filter(docownership__user=user,docownership__query=query)
+            #if "tag__title" in f_fields:
+            #    reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter)
+            #    print(reldocs)
+            #reldocs = reldocs.values("pk")
+            #filt_docs = filt_docs.filter(pk__in=reldocs)
         for u in users:
             uname = u.split("__")[1]
             user = User.objects.get(username=uname)
             #uval = reldocs.filter(docownership__user=user).docownership
             if "tag__title" in f_fields:
-                filt_docs = filt_docs.filter(
-                        docownership__user=user,
-                        docownership__query=query,
-                        docownership__tag__title__icontains=tag_filter
-                    ).annotate(**{
+                if download == "false":
+                    filt_docs = filt_docs.filter(
+                            docownership__user=user,
+                            docownership__query=query,
+                            docownership__tag__title__icontains=tag_filter
+                        )
+                filt_docs = filt_docs.annotate(**{
                     u: models.Case(
                             models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
                             default=0,
@@ -2480,14 +2506,15 @@ def sortdocs(request):
                     )
                 })
             else:
-                filt_docs = filt_docs.filter(docownership__user=user,docownership__query=query).annotate(**{
+                if download == "false":
+                    filt_docs = filt_docs.filter(docownership__user=user,docownership__query=query)
+                filt_docs = filt_docs.annotate(**{
                     u: models.Case(
                             models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
                             default=0,
                             output_field=models.IntegerField()
                     )
                 })
-
 
     all_docs = filt_docs
 
@@ -2647,7 +2674,8 @@ def sortdocs(request):
         if "relevance__netrelevantasdfasdf" in rfields:
             d["relevance__netrelevant"] = DocOwnership.objects.filter(doc_id=d['pk'],relevant__gt=0).count()
         # Get the user relevance rating for each doc (if asked)
-        if len(users) > 0:
+
+        if len(users) > 0 and download=="false":
             for u in users:
                 uname = u.split("__")[1]
                 doc = Doc.objects.get(pk=d['pk'])
@@ -2658,7 +2686,7 @@ def sortdocs(request):
                 if "tag__title" in f_fields:
                     do = do.filter(tag__title__icontains=tag_filter)
                 if do.count() > 0:
-                    d[u] = do.first().relevant
+                    d[u] = do.first().get_relevant_display()
                     num = do.first().relevant
                     text = do.first().get_relevant_display()
                     tag = str(do.first().tag.id)
@@ -2676,6 +2704,8 @@ def sortdocs(request):
                             if r == num:
                                 sel = "selected"
                             d[u]+='<option {} value={}>{}</option>'.format(sel, r, dis)
+                else:
+                    d[u] = "not assigned"
 
 
 
@@ -2693,12 +2723,21 @@ def sortdocs(request):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="documents.csv"'
 
-        writer = csv.writer(response)
+        writer = csv.writer(response,delimiter=',')
+        writer.writerow(['sep=,'])
 
         writer.writerow(fields)
 
         for d in docs:
-            row = [d[x] for x in fields]
+            if len(users) > 0:
+                row=[]
+                for x in fields:
+                    if "docownership__" in x:
+                        row.append(dict(DocOwnership.Status).get(d[x]))
+                    else:
+                        row.append(d[x])
+            else:
+                row = [d[x] for x in fields]
             writer.writerow(row)
 
         return response
