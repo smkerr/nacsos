@@ -1,0 +1,36 @@
+{% extends "scoping/base_bs.html" %}
+
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% block content %}
+
+<h1> Scoping Review Helper</h1>
+<hr>
+
+<div class="container bg-white border rounded ">
+    <h2> Meta-analysis setup - {{project.title}}</h2>
+    Use this page to
+    <ul>
+        <li>Assign documents to be coded</li>
+        <li>define the options in dropdown fields for the <a href="#effect">effect</a> form, and for the <a href="#intervention">intervention</a> form</li>
+
+</div>
+
+<h4> Assignments</h4>
+
+{{ doc_counts.assignments }}
+
+<h4> Coded documents</h4>
+
+{{ doc_counts.codings}}
+
+
+
+<br>
+<h4 id="effect">Effect fields</h4>
+{% include 'scoping/snippets/meta_fields.html' with fields=sfields %}
+
+<h4 id="intervention">Intervention fields</h4>
+{% include 'scoping/snippets/meta_fields.html' with fields=ifields %}
+
+{% endblock %}

@@ -23,6 +23,8 @@ import gensim
 import random
 from sklearn.decomposition.nmf import _beta_divergence  # needs sklearn 0.19!!!
 from sklearn.preprocessing import RobustScaler
+from django.db import connection, transaction
+from psycopg2.extras import *
 
 @shared_task
 def update_dtopic(topic_id, parent_run_id):
@@ -46,6 +48,28 @@ def update_dtopic(topic_id, parent_run_id):
     ).annotate(
         dtopic_score = F('score') * F('topic__topicdtopic__score')
     )
+
+    ddts = DocDynamicTopic.objects.filter(
+        run_id=parent_run_id,
+        topic__id=topic_id
+    )
+    if ddts.count() == 0:
+
+        cursor = connection.cursor()
+        dts = DocTopic.objects.filter(
+            run_id=parent_run_id,
+            topic__topicdtopic__dynamictopic=topic
+        ).values('doc__id').annotate(
+            dtopic_score = Sum(F('score') * F('topic__topicdtopic__score'))
+        ).filter(dtopic_score__gt=0.01)
+
+        values_list = [(x['doc__id'],topic_id,x['dtopic_score'],parent_run_id) for x in dts]
+
+        execute_values(
+            cursor,
+            "INSERT INTO tmv_app_docdynamictopic (doc_id, topic_id, score, run_id) VALUES %s",
+            values_list
+        )
 
     score = all_scores.aggregate(
         t=Sum('dtopic_score')

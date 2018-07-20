@@ -234,6 +234,9 @@ def update_dtopics(run_id):
         parent_run_id = run_id
     #if "a" == "b":
     if not stats.topic_titles_current:
+
+        ##### DocTopics
+
         doc_ids = set(list(DocTopic.objects.filter(
             run_id=parent_run_id
         ).values_list('doc_id',flat=True)))

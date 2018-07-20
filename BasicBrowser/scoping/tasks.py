@@ -3,6 +3,8 @@ from celery import shared_task
 from .models import *
 from utils.utils import *
 import os
+from django.db import connection, transaction
+from psycopg2.extras import *
 
 @shared_task
 def add(x, y):
@@ -12,9 +14,20 @@ def add(x, y):
 def update_projs(pids):
 
     projs = Project.objects.filter(id__in=pids)
+    add_docprojects = False
     for p in projs:
         p.queries = p.query_set.distinct().count()
-        p.docs = len(set(list(Doc.objects.filter(query__project=p).values_list('pk',flat=True))))
+        p.docs = p.docproject_set.count()
+        p.reldocs = p.docproject_set.filter(relevant=1).count()
+        if add_docprojects:
+            docs = set(list(Doc.objects.filter(query__project=p).values_list('pk',flat=True)))
+            dps = [(d,p.id,0) for d in docs]
+            cursor = connection.cursor()
+            execute_values(
+                cursor,
+                "INSERT INTO scoping_docproject (doc_id, project_id, relevant) VALUES %s",
+                dps
+            )
         p.tms = len(set(list(RunStats.objects.filter(query__project=p).values_list('pk',flat=True))))
         p.save()
     return

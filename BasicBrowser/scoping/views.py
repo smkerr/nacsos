@@ -1666,7 +1666,7 @@ def userpage(request, pid):
                 'docstats': docstats
             })
 
-    query = queries.last()
+    query = Query.objects.filter(project=project).last()#.query
 
     context = {
         'user': request.user,
@@ -3450,6 +3450,9 @@ def par_manager(request, qid):
     }
     return render(request, 'scoping/par_manager.html',context)
 
+
+
+
 @login_required
 def del_statement(request):
     idstat = request.POST.get('idstat', None)
@@ -4457,3 +4460,86 @@ def highlight_statement(pid, debug=False):
         print("  "+curpar+"\n\n")
         print("< Exiting highlight_statement")
     return(curpar)
+
+
+
+@login_required
+def meta_setup(request,pid):
+    ### Return a list of dicts to set up the field tables
+    def get_flist(fields,project):
+        fs = []
+        for f in list(fields):
+            ft = f.get_internal_type()
+            if ft not in ['AutoField','ForeignKey']:
+                if ft=='IntegerField':
+                    choices = None
+                    form = None
+                else:
+                    choices = ProjectChoice.objects.filter(
+                        project=p,
+                        field=f.name
+                    )
+                    form = FieldChoiceForm(
+                        initial = {
+                            'project':p.id,
+                            'field':f.name
+                        }
+                    )
+                fs.append({
+                    'name': f.name,
+                    'type': ft,
+                    'choices': choices,
+                    'form': form
+                })
+        return fs
+
+    p = Project.objects.get(pk=pid)
+
+    # handle new choice form
+    if request.method=="POST":
+        f = FieldChoiceForm(request.POST)
+        if f.is_valid():
+            c, created = ProjectChoice.objects.get_or_create(
+                project=p,
+                field=f.data['field'],
+                name=f.data['name']
+            )
+            print(f.data)
+
+    sfields = []
+    sfields = get_flist(StudyEffect._meta.fields, p)
+    ifields = get_flist(Intervention._meta.fields, p)
+
+    doc_counts = {
+        'assignments': {},
+        'codings': {}
+    }
+
+    all_docs = Doc.objects.filter(
+        docproject__project=p,docproject__relevant=1
+    )
+    all_codings = DocMetaCoding.objects.filter(
+        project=p
+    )
+    for key,value in [('assignments',False),('codings',True)]:
+        acs = all_codings
+        if value:
+            acs = all_codings.filter(coded=value)
+        done = len(set(acs.values_list('doc_id',flat=True)))
+        doc_counts[key]['none'] = all_docs.count()-done
+        acds = acs.values('doc__id').annotate(
+            doc_count=Count('doc__id')
+        )
+        doc_counts[key]['single'] = acds.filter(doc_count=1).count()
+        doc_counts[key]['multiple'] = acds.filter(doc_count__gt=1).count()
+        doc_counts[key]['all'] = all_docs.count()
+
+    #doc_counts['assignments']
+
+    context = {
+        'project': p,
+        'sfields': sfields,
+        'ifields': ifields,
+        'doc_counts': doc_counts
+    }
+    return render(request, 'scoping/meta_setup.html',context)

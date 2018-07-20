@@ -83,6 +83,15 @@ class UploadDocFile(forms.ModelForm):
         super(UploadDocFile, self).__init__(*args, **kwargs)
         self.fields['doc'].widget = forms.HiddenInput()
 
+class FieldChoiceForm(forms.Form):
+    project = forms.IntegerField()
+    field = forms.CharField()
+    name = forms.CharField()
+    def __init__(self,*args,**kwargs):
+        super(FieldChoiceForm, self).__init__(*args, **kwargs)
+        self.fields['project'].widget = forms.HiddenInput()
+        self.fields['field'].widget = forms.HiddenInput()
+
 class DeleteDocField(forms.Form):
     delete = forms.IntegerField()
     def __init__(self,*args,**kwargs):

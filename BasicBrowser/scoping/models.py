@@ -6,7 +6,7 @@ from django.contrib.postgres.fields import ArrayField
 import uuid
 from random import randint
 import cities
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 import tmv_app
 import uuid
@@ -57,11 +57,107 @@ class Project(models.Model):
     users = models.ManyToManyField(User, through='ProjectRoles')
     queries = models.IntegerField(default=0)
     docs = models.IntegerField(default=0)
+    reldocs = models.IntegerField(default=0)
     tms = models.IntegerField(default=0)
     role = models.CharField(max_length=2, choices=ROLE_CHOICES, null=True)
 
     def __str__(self):
       return self.title
+
+class StudyEffect(models.Model):
+    doc = models.ForeignKey('Doc',on_delete=models.CASCADE)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    page = models.IntegerField()
+
+    statistical_technique = models.TextField()
+
+    dependent_variable = models.TextField()
+
+    control_definition = models.TextField(null=True)
+    aggregation_level = models.TextField(null=True)
+    controls = models.ManyToManyField('Controls')
+
+    total_sample_size = models.IntegerField()
+    treatment_sample_size = models.IntegerField()
+
+    treated_mean = models.FloatField(null=True)
+    control_mean = models.FloatField(null=True)
+    diff_mean = models.IntegerField(null=True)
+
+    treated_sd = models.FloatField(null=True)
+    control_sd = models.FloatField(null=True)
+    pooled_sd = models.FloatField(null=True)
+
+    coefficient = models.FloatField(null=True)
+    coefficient_sd = models.FloatField(null=True)
+
+    significance_test = models.TextField()
+    #Choices? Predefined?
+
+    test_statistic = models.FloatField()
+    test_statistic_df = models.IntegerField()
+    p_value = models.FloatField()
+    tail_choices = (
+        (1,"one-tailed"),
+        (2,"two-tailed")
+    )
+    test_tails = models.IntegerField(choices=tail_choices)
+    geographic_scope = models.TextField()
+    # Regions etc from django cities?
+
+    direction = (
+        (1,'positive'),
+        # definitely not neutral?
+        (-1,'negative')
+    )
+    effect_direction=models.IntegerField()
+
+    ## Intervention
+class DocMetaCoding(models.Model):
+    doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    assignment_time = models.DateTimeField(auto_now_add=True)
+    start_time = models.DateTimeField(null=True)
+    finish_time = models.DateTimeField(null=True)
+
+    coded = models.BooleanField(default=False)
+
+
+class Controls(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    name = models.TextField()
+
+
+class Intervention(models.Model):
+    effect = models.ForeignKey(StudyEffect, on_delete=models.CASCADE)
+    intervention_subtypes = models.ForeignKey('InterventionSubType', on_delete=models.CASCADE)
+    framing_unit = models.TextField(null=True)
+    timing = models.TextField(null=True)
+    payment = models.TextField(null=True)
+    granularity = models.TextField(null=True)
+    medium = models.TextField(null=True)
+    duration = models.IntegerField(null=True)
+    followup = models.IntegerField(null=True)
+
+
+class InterventionType(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    name = models.TextField()
+
+class InterventionSubType(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    interventiontype = models.ForeignKey(InterventionType,on_delete=models.CASCADE)
+    name = models.TextField()
+
+class ProjectChoice(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    field = models.TextField()
+    name = models.TextField()
+
 
 class ProjectRoles(models.Model):
 
@@ -77,9 +173,25 @@ class ProjectRoles(models.Model):
     role = models.CharField(max_length=2, choices=ROLE_CHOICES)
 
 class DocProject(models.Model):
+
+    UNRATED = 0
+    YES = 1
+    NO = 2
+    MIXED = 3
+
+    Relevance = (
+        (UNRATED, 'Unrated'),
+        (YES, 'Yes'),
+        (NO, 'No'),
+        (MIXED, 'Mixed'),
+    )
+
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    relevant = models.BooleanField(default=False)
+    relevant = models.IntegerField(default=0, choices=Relevance)
+
+    class Meta:
+        unique_together = ("doc","project")
 
 class Query(models.Model):
 
@@ -528,6 +640,40 @@ class DocOwnership(models.Model):
     start = models.DateTimeField(null=True,verbose_name="Rating Date")
     finish = models.DateTimeField(null=True,verbose_name="Rating Date")
 
+
+def create_docproj(sender,instance,**kwargs):
+    #print("fired!")
+    pk_set = kwargs['pk_set']
+    if kwargs['action'] != "post_add":
+        return
+    if len(pk_set) == 0:
+        return
+    q = Query.objects.get(pk=list(pk_set)[0])
+    d = instance
+    dp, created = DocProject.objects.get_or_create(
+        doc=d,project=q.project
+    )
+
+m2m_changed.connect(create_docproj,sender=Doc.query.through)
+
+@receiver(post_save, sender=DocOwnership)
+def update_docproj(sender, instance, **kwargs):
+    p = instance.query.project
+    if instance.doc is not None:
+        d = instance.doc
+    else:
+        d = instance.docpar.doc
+    if d is None:
+        print(instance.id)
+    if p is None:
+        return
+    dp, created = DocProject.objects.get_or_create(project=p,doc=d)
+    if dp.relevant == 0:
+        dp.relevant=instance.relevant
+        dp.save()
+    elif dp.relevant != instance.relevant:
+        dp.relevant = 3
+        dp.save()
 
 
 class DocAuthInst(models.Model):

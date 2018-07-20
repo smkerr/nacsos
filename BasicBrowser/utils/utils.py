@@ -90,6 +90,7 @@ def add_doc(r, q, update):
     if created==False and update==False:
         doc = ut.doc
         doc.query.add(q)
+        #doc.projects.add(q.project)
     else:
         doc, created = Doc.objects.get_or_create(UT=ut)
         doc.title=get(r,'TI')
@@ -98,6 +99,7 @@ def add_doc(r, q, update):
         doc.wos=True
         doc.save()
         doc.query.add(q)
+        #doc.projects.add(q.project)
         article, created = WoSArticle.objects.get_or_create(doc=doc)
         try:
             r['wc'] = [x.strip() for x in get(r,'WC').split(";")]
@@ -194,6 +196,8 @@ def read_wos(res, q, update):
 
     max_chunk_size = 2000
     chunk_size = 0
+
+    q.doc_set.clear()
 
     p=12
 
@@ -440,6 +444,7 @@ def add_scopus_doc(r,q,update):
         doc.save()
         article.save()
         doc.query.add(q)
+        #doc.projects.add(q.project)
     if doc is not None and "WOS:" not in doc.UT.UT:
         if update:
             doc.title=get(r,'ti')

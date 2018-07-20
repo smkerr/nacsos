@@ -38,6 +38,9 @@ urlpatterns = [
     path('rate_par/<int:tid>/<int:ctype>/<int:doid>/<int:todo>/<int:done>', views.rate_par, name="rate_par"),
 
 
+    ### Meta-analysis stuff
+    path('meta-setup/<int:pid>', views.meta_setup, name="meta_setup"),
+
     url(r'^snowball$', views.snowball, name='snowball'),
     #### Query processing
     url(r'^start_snowballing$', views.start_snowballing, name='start_snowballing'),

@@ -202,7 +202,11 @@ class DocTopic(models.Model):
     scaled_score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
 
-
+class DocDynamicTopic(models.Model):
+    doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.CASCADE)
+    topic = models.ForeignKey('DynamicTopic',null=True, on_delete=models.CASCADE)
+    score = models.FloatField()
+    run_id = models.IntegerField(db_index=True)
 
 class TopicTerm(models.Model):
     topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
