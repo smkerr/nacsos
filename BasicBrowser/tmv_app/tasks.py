@@ -465,6 +465,7 @@ and {} topics\n'.format(qid, docs.count(),K))
 
 
         ## Add topic-docs
+        print("Adding DocTopics")
         gamma =  find(dtm)
         glength = len(gamma[0])
 
@@ -514,6 +515,8 @@ and {} topics\n'.format(qid, docs.count(),K))
             sys.stdout.flush()
 
         stat.db_time = stat.db_time + time() - t0
+        print("done in %0.3fs." % (time() - t0))
+
 
     em = 0
     for i in range(K):
