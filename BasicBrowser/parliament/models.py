@@ -82,8 +82,13 @@ class Person(models.Model):
 
     party = models.ForeignKey(Party, on_delete=models.CASCADE ,null=True)
 
+    information_source = models.TextField()
+
     def __str__(self):
-        return self.clean_name
+        if self.clean_name:
+            return self.clean_name
+        else:
+            return "{} {}".format(self.first_name, self.surname)
 
 ##################################
 ## Texts
@@ -95,9 +100,10 @@ class Document(models.Model):
     #parl_period = models.IntegerField(null=True)
     search_matches = models.ManyToManyField('Search')
     doc_type = models.TextField()
+    text_source = models.TextField()
 
     def __str__(self):
-        return "{} - {} , {}".format(self.date, self.doc_type,self.parlperiod.n)
+        return "{}, {}/{}, {}".format(self.doc_type, self.parlperiod.n, self.sitting, self.date)
 
 class Utterance(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)

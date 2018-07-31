@@ -22,8 +22,10 @@
             {% endfor %}
             {% for person in ij.persons.all %}
                 <span class="speaker">
-                {{ person.clean_name }}
-            </span>
+                    <a href="{% url 'parliament:person' person.id %}">
+                        {{ person.clean_name }}
+                    </a>
+                </span>
             {% endfor %}            -
             <i class="em {{ ij.emoji}}"></i>
             {% ifequal ij.type 2 %}
