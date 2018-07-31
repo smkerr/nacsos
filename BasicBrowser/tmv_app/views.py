@@ -223,8 +223,10 @@ def return_corrs(request):
 
 def growth_heatmap(request, run_id):
     template = loader.get_template('tmv_app/growth_heatmap.html')
+    stat = RunStats.objects.get(pk=run_id)
     context = {
-        'run_id': run_id
+        'run_id': run_id,
+        'stat': stat
     }
     return HttpResponse(template.render(context, request))
 
@@ -583,6 +585,7 @@ def topic_detail(request, topic_id, run_id=0):
         'corrtops': corrtops,
         'dtops': dtops,
         'run_id': run_id,
+        'stat': stat,
         'journals': journals,
         'ndocs': ndocs
         }
@@ -1002,7 +1005,7 @@ def doc_detail(request, doc_id, run_id):
         'doc_authors': doc_authors,
         'words': words,
         'run_id': run_id,
-
+        'stat': stat,
         'dt_threshold': dt_threshold,
         'ipccrefs': ipccrefs,
         'de': de,
@@ -1038,7 +1041,8 @@ def print_table(request,run_id):
         t.terms = "; ".join(termlist)
         t.mtd = t.score/tsum['tsum']*100
 
-    writer = csv.writer(response)
+    writer = csv.writer(response,delimiter=',')
+    writer.writerow(['sep=,'])
 
     writer.writerow(["Topic ID","Topic Name","Stemmed Keywords","Marginal Topic Distribution"])
 
