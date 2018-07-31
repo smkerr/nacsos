@@ -80,9 +80,9 @@ class Person(models.Model):
     occupation = models.TextField(null=True)
     short_bio = models.TextField(null=True)
 
-    party = models.ForeignKey(Party, on_delete=models.CASCADE ,null=True)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
 
-    information_source = models.TextField()
+    information_source = models.TextField(default="")
 
     def __str__(self):
         if self.clean_name:
@@ -100,7 +100,7 @@ class Document(models.Model):
     #parl_period = models.IntegerField(null=True)
     search_matches = models.ManyToManyField('Search')
     doc_type = models.TextField()
-    text_source = models.TextField()
+    text_source = models.TextField(default="")
 
     def __str__(self):
         return "{}, {}/{}, {}".format(self.doc_type, self.parlperiod.n, self.sitting, self.date)
@@ -127,6 +127,7 @@ class Interjection(models.Model):
     AMUSEMENT = 4
     LAUGHTER = 5
     OUTCRY = 6
+    OTHER = 7
 
 
     REACTION_CHOICES = (
@@ -135,7 +136,8 @@ class Interjection(models.Model):
         (OBJECTION, 'Objection'),
         (AMUSEMENT, 'Amusement'),
         (LAUGHTER, 'Laughter'),
-        (OUTCRY, 'Outcry')
+        (OUTCRY, 'Outcry'),
+        (OTHER, 'Other')
     )
     paragraph = models.ForeignKey(Paragraph, on_delete=models.CASCADE)
     parties = models.ManyToManyField(Party)
@@ -149,7 +151,8 @@ class Interjection(models.Model):
         OBJECTION:'em-raised_hand_with_fingers_splayed',
         AMUSEMENT:'em-grinning',
         LAUGHTER:'em-laughing',
-        OUTCRY: ''
+        OUTCRY: '',
+        OTHER: ''
     }
     @property
     def emoji(self):
