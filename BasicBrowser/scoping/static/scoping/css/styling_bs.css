@@ -2,6 +2,14 @@ body {
     background: #D5DFF5;
 }
 
+.buttonp {
+    background-color: yellow;
+    border: 2px solid grey;
+    border-radius: 3px;
+    padding: 2px 7px;
+    cursor: pointer;
+}
+
 html, body {
     height: 100%;
 }

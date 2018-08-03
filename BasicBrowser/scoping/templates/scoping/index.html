@@ -1,4 +1,4 @@
-{% extends "scoping/base.html" %}
+{% extends "scoping/base_bs.html" %}
 
 {% load render_table from django_tables2 %}
 
@@ -12,9 +12,7 @@
 <div class="explanation">
     <h3> Manage Projects
 
-    <h4 class="left">My projects:</h4>
-
-    {% render_table myproj %}
+    {% render_table acproj %}
 
     <p class="left"><span class="buttonp" id="reveal_new">+</span></p>
 
@@ -28,9 +26,7 @@
     </div>
 
 
-    <h4 class="left">Projects I have access to:</h4>
 
-    {% render_table acproj %}
 
 
 </div>

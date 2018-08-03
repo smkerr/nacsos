@@ -79,10 +79,14 @@ def index(request):
 
     template = loader.get_template('scoping/index.html')
 
-    myproj = Project.objects.filter(users=request.user,projectroles__role="OW")
+    myproj = Project.objects.filter(users=request.user,projectroles__role="OW").annotate(
+        role=Case(
+            When(projectroles__role="OW",then=V('Owner')),
+            default=V('-'),
+            output_field=models.CharField(),
+        )
+    )
 
-    for p in myproj:
-        p.role = ProjectRoles.objects.get(project=p,user=request.user).get_role_display()
 
 
     myproj = ProjectTable(myproj, order_by="id")
@@ -91,9 +95,16 @@ def index(request):
 
     newproj= ProjectForm()
 
-    acproj = Project.objects.filter(users=request.user)
-    for p in acproj:
-        p.role = ProjectRoles.objects.get(project=p,user=request.user).get_role_display()
+    acproj = Project.objects.filter(projectroles__user=request.user).annotate(
+        role=Case(
+            When(projectroles__role="OW",then=V('Owner')),
+            When(projectroles__role="AD",then=V('Admin')),
+            When(projectroles__role="RE",then=V('Reviewer')),
+            When(projectroles__role="VE",then=V('Viewer')),
+            default=V('-'),
+            output_field=models.CharField(),
+        )
+    )
 
     pids = acproj.values_list('id',flat=True)
 
