@@ -27,7 +27,7 @@ urlpatterns = [
 
     url(r'^docs/(?P<pid>[0-9]+)/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
 
-    url(r'^doquery/(?P<pid>[0-9]+)$', views.doquery, name='doquery'),
+    url(r'^create_query/(?P<pid>[0-9]+)$', views.create_query, name='create_query'),
 
     ### Paragraph stuff
     path('paragraphs/<int:qid>', views.par_manager, name="par_manager"),
@@ -44,7 +44,6 @@ urlpatterns = [
     url(r'^snowball$', views.snowball, name='snowball'),
     #### Query processing
     url(r'^start_snowballing$', views.start_snowballing, name='start_snowballing'),
-    url(r'^doquery$', views.doquery, name='doquery'),
     url(r'^do_snowballing/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)$', views.do_snowballing, name='do_snowballing'),
     url(r'^dodocadd/(?P<qid>[0-9]+)$', views.dodocadd, name='dodocadd'),
     url(r'^querying/(?P<qid>[0-9]+)/(?P<substep>[0-9]+)/(?P<docadded>[0-9]+)/(?P<q2id>[0-9]+)$', views.querying, name='querying'),

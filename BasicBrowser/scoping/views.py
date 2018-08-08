@@ -479,7 +479,7 @@ def update_tech(request,tid):
 import subprocess
 import sys
 @login_required
-def doquery(request, pid):
+def create_query(request, pid):
 
     #ssh_test()
 
@@ -510,94 +510,16 @@ def doquery(request, pid):
     )
     q.save()
 
-    # Do internal queries
-    if qdb=="intern":
-        args = qtext.split(" ")
-        # Original one for combining qs
-        if "manually uploaded" in qtext:
-            print("manually uploaded")
-        elif args[1].strip() in ["AND", "OR", "NOT"]:
-            q1 = set(Doc.objects.filter(query=args[0]).values_list('id',flat=True))
-            op = args[1]
-            q2 = set(Doc.objects.filter(query=args[2]).values_list('id',flat=True))
-            if op =="AND":
-                ids = q1 & q2
-            elif op =="OR":
-                ids = q1 | q2
-            elif op == "NOT":
-                ids = q1 - q2
-            combine = Doc.objects.filter(id__in=ids)
-        else:
-            # more complicated filters
-            if args[0].strip()=="*":
-                q1 = Doc.objects.all()
-                q1ids = None
-                cids = q1ids
-            else:
-                q1 = Doc.objects.filter(query=args[0])
-                q1ids = q1.values_list('id',flat=True)
-                cids = q1ids
-            for a in range(1,len(args)):
-                parts = args[a].split(":")
-                print(parts)
-                # Deal WITH tech filters
-                if parts[0] == "TECH":
-                    tech, tdocs, tobj = get_tech_docs(parts[1])
-                    tids = tdocs.values_list('id',flat=True)
-                    if q1ids is not None:
-                        cids = list(set(q1ids).intersection(set(tids)))
-                    else:
-                        cids = tids
-                    q1ids = cids
-                    combine = Doc.objects.filter(pk__in=cids)
-                # Deal with relevance filters
-                if parts[0] == "IS":
-                    if parts[1] == "RELEVANT":
-                        combine = Doc.objects.filter(
-                            pk__in=cids,
-                            docownership__relevant=1
-                        ) | Doc.objects.filter(
-                            pk__in=cids,
-                            technology__isnull=False
-                        )
-                    if parts[1] == "TRELEVANT":
-                        combine = Doc.objects.filter(
-                            pk__in=cids,
-                            docownership__relevant=1,
-                            docownership__query__technology=tobj
-                        ) | Doc.objects.filter(
-                            pk__in=cids,
-                            technology=tobj
-                        )
-
-
-        for d in combine.distinct('id'):
-            d.query.add(q)
-        q.r_count = len(combine.distinct('id'))
-        q.save()
-
+    do_query.delay(q.id)
+    
+    if q.database=="intern":
+        time.sleep(2)
         return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'pid': pid, 'qid': q.id }))
-
-
     else:
-        # write the query into a text file
-        fname = "/queries/"+str(q.id)+".txt"
-        with open(fname,encoding='utf-8',mode="w") as qfile:
-            qfile.write(qtext.encode("utf-8").decode("utf-8"))
-
-
-        time.sleep(1)
-
-    # run "scrapeQuery.py" on the text file in the background
-    if request.user.username=="galm":
-        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", qdb, fname])
-    else:
-        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
-
-    return HttpResponseRedirect(reverse(
-        'scoping:querying',
-        kwargs={'qid': q.id, 'substep': 0, 'docadded': 0, 'q2id': 0}
-    ))
+        return HttpResponseRedirect(reverse(
+            'scoping:querying',
+            kwargs={'qid': q.id, 'substep': 0, 'docadded': 0, 'q2id': 0}
+        ))
 
 #########################################################
 ## Start snowballing

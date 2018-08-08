@@ -47,7 +47,7 @@ Use this form to submit a new query, which will be run in the background. Be awa
 <p>Note that larger queries (more than 2000 results in any single year) cannot currently be carried out in Scopus.
 <p>Choose the source "internal" to compare and combine two existing queries, identified by their IDs, using the operators "NOT" and "AND"; e.g. "36 AND 42", or "42 NOT 36".
 </p>
-<form action="{% url 'scoping:doquery' project.id %}" method="post">
+<form action="{% url 'scoping:create_query' project.id %}" method="post">
   {% csrf_token %}
 
   <h4> Query Title </h4>
