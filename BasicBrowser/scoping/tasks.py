@@ -5,6 +5,8 @@ from utils.utils import *
 import os
 from django.db import connection, transaction
 from psycopg2.extras import *
+import time
+import subprocess
 
 @shared_task
 def add(x, y):
@@ -153,13 +155,13 @@ def do_query(qid):
         # write the query into a text file
         fname = "/queries/"+str(q.id)+".txt"
         with open(fname,encoding='utf-8',mode="w") as qfile:
-            qfile.write(qtext.encode("utf-8").decode("utf-8"))
+            qfile.write(q.text.encode("utf-8").decode("utf-8"))
 
         time.sleep(1)
         # run "scrapeQuery.py" on the text file in the background
-        if request.user.username=="galm":
-            subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", qdb, fname])
+        if q.creator.username=="galm":
+            subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", q.database, fname])
         else:
-            subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
+            subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", q.database, fname])
 
     return qid
