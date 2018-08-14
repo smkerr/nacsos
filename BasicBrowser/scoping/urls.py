@@ -29,6 +29,8 @@ urlpatterns = [
 
     url(r'^create_query/(?P<pid>[0-9]+)$', views.create_query, name='create_query'),
 
+    path('project/<int:pid>/query/add/', login_required(views.QueryCreate.as_view()),name="query_create"),
+
     ### Paragraph stuff
     path('paragraphs/<int:qid>', views.par_manager, name="par_manager"),
 

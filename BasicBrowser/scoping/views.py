@@ -8,6 +8,7 @@ from django.core import serializers
 from django.core.serializers import serialize
 import short_url
 import datetime
+from django.views.generic.edit import CreateView, DeleteView, UpdateView
 
 from django.forms.models import model_to_dict
 
@@ -22,7 +23,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.template import loader, RequestContext
 from django.utils import timezone
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import user_passes_test
 import json
 from django.apps import apps
@@ -63,6 +64,24 @@ def switch_mode(request):
 ########################################################
 ## Homepage - list the queries, form for adding new ones
 
+class QueryCreate(CreateView):
+    model=Query
+    fields=["title","text","database","query_file"]
+
+    def get_context_data(self, **kwargs):
+        context = super(QueryCreate, self).get_context_data(**kwargs)
+        context['project'] = Project.objects.get(pk=self.kwargs['pid'])
+        return context
+
+    def form_valid(self, form, **kwargs):
+        form.instance.creator = self.request.user
+        form.instance.project =  Project.objects.get(
+            pk=self.kwargs['pid']
+        )
+        self.object = form.save()
+        upload_docs.delay(self.object.id,True)
+        time.sleep(1)
+        return super().form_valid(form)
 
 @login_required
 def index(request):
@@ -511,7 +530,7 @@ def create_query(request, pid):
     q.save()
 
     do_query.delay(q.id)
-    
+
     if q.database=="intern":
         time.sleep(2)
         return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'pid': pid, 'qid': q.id }))

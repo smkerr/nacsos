@@ -8,6 +8,7 @@ from random import randint
 import cities
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
+from django.urls import reverse
 import tmv_app
 import uuid
 import os
@@ -197,12 +198,19 @@ class Query(models.Model):
         ('MN','Manual Add')
     )
 
+    DB_CHOICES = (
+        ('WoS','Web of Science'),
+        ('Scopus','Scopus'),
+        ('intern','Internal'),
+    )
+
+
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     qtype       = models.CharField(max_length=2, choices=TYPE_CHOICES, default='DE')
     type        = models.TextField(null=True, verbose_name="Query Type", default="default")
     title       = models.TextField(null=True, verbose_name="Query Title")
     text        = models.TextField(null=True, verbose_name="Query Text")
-    database    = models.CharField(max_length=6,null=True, verbose_name="Query database")
+    database    = models.CharField(max_length=6,null=True, verbose_name="Query database", choices=DB_CHOICES)
     date        = models.DateTimeField(auto_now_add=True,verbose_name="Query Date")
     r_count     = models.IntegerField(null=True, verbose_name="Query Results Count")
     creator     = models.ForeignKey(User, on_delete=models.CASCADE, null=True, verbose_name="Query Creator", related_name="user_creations")
@@ -216,9 +224,13 @@ class Query(models.Model):
     dlstat      = models.CharField(max_length=6,null=True, verbose_name="Query download status")
     technology  = models.ForeignKey('Technology', on_delete=models.CASCADE, null=True)
     innovation  = models.ForeignKey('Innovation', on_delete=models.CASCADE, null=True)
+    query_file = models.FileField(upload_to='queries/',null=True)
 
     def __str__(self):
       return self.title
+
+    def get_absolute_url(self):
+        return reverse('scoping:doclist', kwargs={'pid':self.project.pk, 'qid': self.pk})
 
 class Technology(models.Model):
     name = models.TextField(null = True, verbose_name="Category Name")

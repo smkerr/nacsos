@@ -1,0 +1,15 @@
+{% extends "scoping/base_bs.html" %}
+{% load bootstrap4 %}
+{% block content %}
+
+<h1>{{project.title}}</h1>
+
+<h3> Upload query</h3>
+
+<form class="form" action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% bootstrap_form form layout='horizontal' %}
+    {% bootstrap_button 'Save' %}
+</form>
+
+{% endblock %}

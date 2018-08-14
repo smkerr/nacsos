@@ -13,10 +13,10 @@ def add(x, y):
     return x + y
 
 @shared_task
-def update_projs(pids):
+def update_projs(pids,add_docprojects=False):
 
     projs = Project.objects.filter(id__in=pids)
-    add_docprojects = False
+
     for p in projs:
         p.queries = p.query_set.distinct().count()
         p.docs = p.docproject_set.count()
@@ -25,6 +25,7 @@ def update_projs(pids):
             docs = set(list(Doc.objects.filter(query__project=p).values_list('pk',flat=True)))
             dps = [(d,p.id,0) for d in docs]
             cursor = connection.cursor()
+            p.doc_set.clear()
             execute_values(
                 cursor,
                 "INSERT INTO scoping_docproject (doc_id, project_id, relevant) VALUES %s",
@@ -51,18 +52,23 @@ def update_techs(pid):
 def upload_docs(qid, update):
     q = Query.objects.get(pk=qid)
 
-    print(q.title)
-
     title = str(q.id)
+
+    if q.query_file.name is '':
+        fname = "/queries/"+title+"/results.txt"
+    else:
+        fname = q.query_file.path
+
+    print(q.title)
 
     if q.database =="WoS":
         print("WoS")
-        with open("/queries/"+title+"/results.txt", encoding="utf-8") as res:
+        with open(fname, encoding="utf-8") as res:
             r_count = read_wos(res, q, update)
 
     else:
         print("Scopus")
-        with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
+        with open(fname, encoding="utf-8") as res:
             r_count = read_scopus(res, q, update)
 
     print(r_count)
