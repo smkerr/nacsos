@@ -1777,6 +1777,10 @@ def add_effect(request,docmetaid,eff_copy=False):
     template = loader.get_template('scoping/add_effect.html')
 
     errors = {}
+    if eff_copy:
+        instance=StudyEffect.objects.get(pk=eff_copy)
+    else:
+        instance=False
     if request.method=="POST":
         data = dict(request.POST.copy())
         data['doc_id'] = dmc.doc.id
@@ -1798,11 +1802,8 @@ def add_effect(request,docmetaid,eff_copy=False):
             return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': docmetaid}))
         except ValidationError as e:
             errors = e.message_dict
+            instance = effect
 
-    if eff_copy:
-        instance=StudyEffect.objects.get(pk=eff_copy)
-    else:
-        instance=False
     form_fields = get_form_fields(StudyEffect,dmc.project,instance,errors)
     print(errors)
     context = {
