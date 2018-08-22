@@ -33,4 +33,50 @@
 <h4 id="intervention">Intervention fields</h4>
 {% include 'scoping/snippets/meta_fields.html' with fields=ifields %}
 
+<h4 id="Interventiontype">Intervention Types</h4>
+<div class="container">
+    <div class="row">
+        <div class="col-sm">
+            Intervention Types
+        </div>
+        <div class="col-sm">
+            {% for intervention in intervention_types %}
+                <span class="border rounded bg-white p-2">{{intervention.name}} <a class="confirmation" href="{% url 'scoping:delete' 'InterventionType' intervention.id %}">x</a></span>
+
+            {% endfor %}
+        </div>
+        <div class="col-6">
+            <form method="POST" class="form-inline">{% csrf_token %}
+                {% bootstrap_form  interventiontype_form layout='inline' %}
+                {% bootstrap_button 'Save' %}
+            </form>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm">
+            Intervention Sub-types
+        </div>
+        <div class="col-sm">
+            {% for intervention in intervention_subtypes %}
+                <span class="border rounded bg-white p-2">{{intervention.name}} <a class="confirmation" href="{% url 'scoping:delete' 'InterventionType' intervention.id %}">x</a></span>
+
+            {% endfor %}
+        </div>
+        <div class="col-6">
+            <form method="POST" class="form-inline">{% csrf_token %}
+                {% bootstrap_form  interventionsubtype_form layout='inline' %}
+                {% bootstrap_button 'Save' %}
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+$('.confirmation').on('click', function () {
+     return confirm('Are you sure you want to delete? This will have repurcussions on other things attached to it!');
+ });
+</script>
 {% endblock %}

@@ -2,6 +2,10 @@ body {
     background: #D5DFF5;
 }
 
+.pagination > li {
+    margin: 0px 5px;
+}
+
 .buttonp {
     background-color: yellow;
     border: 2px solid grey;
@@ -40,6 +44,14 @@ html, body {
 div.text-con {
     height: 50rem;
     overflow-y: scroll;
+}
+
+connection {
+    z-index: 0;
+    border: 3px solid;
+    border-radius: 7em;
+    color: rgb(128, 128, 128);
+    color: rgba(0, 0, 0, 0.5);
 }
 
 .hidden {

@@ -21,6 +21,18 @@ class CategoryForm(forms.ModelForm):
           'description': forms.Textarea(attrs={'rows':1, 'cols':15}),
         }
 
+class InterventionForm(forms.ModelForm):
+    name = forms.CharField()
+    class Meta:
+        model = InterventionType
+        exclude = ('project',)
+
+class InterventionSubtypeForm(forms.ModelForm):
+    name = forms.CharField()
+    class Meta:
+        model = InterventionSubType
+        exclude = ('project',)
+
 class NewDoc(forms.ModelForm):
 
     url = forms.URLField(

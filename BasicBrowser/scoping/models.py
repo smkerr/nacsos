@@ -62,7 +62,7 @@ class StudyEffect(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    page = models.IntegerField()
+    page = models.PositiveSmallIntegerField()
 
     statistical_technique = models.TextField()
 
@@ -72,12 +72,12 @@ class StudyEffect(models.Model):
     aggregation_level = models.TextField(null=True)
     controls = models.ManyToManyField('Controls')
 
-    total_sample_size = models.IntegerField()
-    treatment_sample_size = models.IntegerField()
+    total_sample_size = models.PositiveIntegerField()
+    treatment_sample_size = models.PositiveIntegerField()
 
     treated_mean = models.FloatField(null=True)
     control_mean = models.FloatField(null=True)
-    diff_mean = models.IntegerField(null=True)
+    diff_mean = models.FloatField(null=True)
 
     treated_sd = models.FloatField(null=True)
     control_sd = models.FloatField(null=True)
@@ -105,7 +105,7 @@ class StudyEffect(models.Model):
         # definitely not neutral?
         (-1,'negative')
     )
-    effect_direction=models.IntegerField()
+    effect_direction=models.IntegerField(choices=direction)
 
     ## Intervention
 class DocMetaCoding(models.Model):
@@ -141,10 +141,15 @@ class InterventionType(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
     name = models.TextField()
 
+    def __str__(self):
+      return self.name
+
 class InterventionSubType(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
     interventiontype = models.ForeignKey(InterventionType,on_delete=models.CASCADE)
     name = models.TextField()
+    def __str__(self):
+      return self.name
 
 class ProjectChoice(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE)

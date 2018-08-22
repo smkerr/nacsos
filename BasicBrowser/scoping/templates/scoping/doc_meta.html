@@ -1,0 +1,56 @@
+{% extends "scoping/base_bs.html" %}
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% load static %}
+{% block content %}
+
+<p>
+<h2> Document coding: {{ dmc.doc.title }}</h2>
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm">
+        <h4>Effects</h4>
+        {% if effects %}
+            {% for f in effects %}
+                <div class="col-sm bg-white border rounded m-2 p-2" id="eff_{{f.id}}">Effect - {{f.coefficient}} -
+                    copy this <a href="{% url 'scoping:add_effect' dmc.id f.id %}"><span class="buttonp" id="reveal_new">v</span></a>
+                    <span style="float:right;">Add an intervention <a href="{% url 'scoping:add_intervention' f.id %}"<span class="buttonp" id="reveal_new">-></span></a></span>
+                </div>
+            {% endfor %}
+        {% else %}
+        <p>No effects are recorded for this study
+        {% endif %}
+        <p>Add one <a href="{% url 'scoping:add_effect' dmc.id %}"><span class="buttonp" id="reveal_new">+</span></a>
+    </div>
+    <div class="col-sm">
+        <h4>Interventions</h4>
+        {% if interventions %}
+            {% for f in interventions %}
+                <div class="col-sm bg-white border rounded m-2 p-2" id="int_{{f.id}}">Effect - {{f.intervention_subtypes}}
+
+                </div>
+            {% endfor %}
+        {% else %}
+        <p>No effects are recorded for this study
+        {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'scoping/js/jquery_connections.js' %}"></script>
+<script>
+  jQuery(document).ready(function() {
+    data = {{connections | safe}}
+    console.log(data)
+    $.each(data, function(index, value) {
+        console.log(value)
+        jQuery('#eff_'+value.effect_id).connections({ to: '#int_'+value.id });
+    });
+
+  });
+</script>
+{% endblock %}

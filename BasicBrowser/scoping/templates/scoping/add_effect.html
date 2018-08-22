@@ -1,0 +1,92 @@
+{% extends "scoping/base_bs.html" %}
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% block content %}
+<p>
+<h2> Add {{ei}} for - {{ dmc.doc.title }}</h2>
+
+<form action="" method="POST">
+    {% csrf_token %}
+    <div class="row">
+    {% for f in form_fields %}
+        {% if forloop.counter0|divisibleby:2 %}
+    </div>
+    <div class="row">
+        {% else %}
+        {% endif %}
+        <div class="form-group col" data-name="{{f.name}}">
+        <label for="{{f.ff.widget.id_for_label}}">{{f.ff.label}}</label>
+        {% ifequal f.ff.widget.input_type "number" %}
+        <input name="{{f.name}}" type="{{f.ff.widget.input_type}}" class="form-control" id="{{f.ff.id_for_label}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" min={{f.ff.min_value}} step={{f.step}} value={{f.value}}>
+        {% else %}
+
+            <select
+            {% if f.choices or f.options %}
+            name="{{f.name}}" class="form-control"
+            {% else %}
+            class="form-control hidden"
+            {% endif %}
+                id="{{f.ff.id_for_label}}">
+                {% for o in f.options %}
+                <option value="{{o.name}}"
+                {% ifequal f.value o.name %}
+                selected
+                {% endifequal %}
+                >{{o.name}}</option>
+                {% endfor %}
+                {% for o in f.choices %}
+
+                <option value="{{o.0}}">{{o.1}}</option>
+                {% endfor %}
+            </select>
+
+            <input
+            {% if f.choices or f.options %}
+            class="form-control hidden"
+            {% else %}
+            name="{{f.name}}" class="form-control"
+            {% endif %}
+            type="text" class="form-control" id="{{f.ff.id_for_label}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" value="{{f.value}}"></input>
+            {% if f.choices or f.options %}
+                <button type="button" class="btn other">Other</button>
+            {% endif %}
+
+
+        {% endifequal %}
+
+        </div>
+
+    {% endfor %}
+    </div>
+<button type="submit" class="btn btn-primary">Submit</button>
+
+</form>
+
+{% endblock %}
+
+
+{% block script %}
+<script type="text/javascript">
+$('.other').on('click', function () {
+    console.log($(this))
+    r = $(this).parent()
+    name = r.data()['name']
+    inputs = r.children('input,select')
+    //inputs.each(function(i,v){
+    $.each(inputs, function(i,v) {
+        v.classList.toggle('hidden');
+        if (v.name==name) {
+            v.removeAttribute('name')
+        } else {
+            v.name=name
+        }
+    })
+    t = ($(this))
+    if ($(this).text()=="Other") {
+        $(this).text("Choices")
+    } else {
+        $(this).text("Other")
+    }
+ });
+</script>
+{% endblock %}

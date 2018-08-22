@@ -13,6 +13,16 @@ class DocTable(tables.Table):
     class Meta:
         model = Doc
 
+class CodingTable(tables.Table):
+    doc = tables.LinkColumn(
+        'scoping:code_document', args=[A('pk')],
+        accessor='doc.title'
+    ) # link column
+    finish_time = tables.Column()
+    coded = tables.Column()
+    class Meta:
+        template_name = 'django_tables2/bootstrap.html'
+        attrs = {'class': 'table'}
 
 class ProjectTable(tables.Table):
     id = tables.LinkColumn('scoping:project', args=[A('pk')])

@@ -212,8 +212,8 @@ def project(request, pid):
         queries = Query.objects.all()
 
     query = queries.last()
-
-
+    p.mixed_docs = p.docproject_set.filter(relevant=3).count()
+    p.unrated_docs = p.docproject_set.filter(relevant=0).count()
 
     context = {
         'newRole': newRole,
@@ -1564,7 +1564,7 @@ def run_model(request,run_id):
 
 
 ##################################################
-## User home page
+## User() home page
 
 @login_required
 def userpage(request, pid):
@@ -1620,13 +1620,152 @@ def userpage(request, pid):
 
     query = Query.objects.filter(project=project).last()#.query
 
+    codings = DocMetaCoding.objects.filter(project=project,user=request.user)
+
+    filter = DocMetaFilter(request.GET, queryset=codings)
+
+    coding_table = CodingTable(filter.qs)
+    RequestConfig(request).configure(coding_table)
+
     context = {
         'user': request.user,
         'queries': query_list,
         'query': query,
-        'project': project
+        'project': project,
+        'codings': coding_table,
+        'filter': filter
     }
     return HttpResponse(template.render(context, request))
+
+
+@login_required
+def code_document(request,docmetaid):
+    '''From this page, add effects and interventions'''
+    dmc = DocMetaCoding.objects.get(pk=docmetaid)
+    template = loader.get_template('scoping/doc_meta.html')
+
+    effects = StudyEffect.objects.filter(
+        doc=dmc.doc,
+        project=dmc.project,
+        user=dmc.user
+    ).order_by('id')
+
+    interventions = Intervention.objects.filter(
+        effect__in=effects
+    )
+
+    connections = list(interventions.values('id','effect_id'))
+    context = {
+        'project': dmc.project,
+        'dmc': dmc,
+        'effects': effects,
+        'interventions': interventions,
+        'connections': connections
+    }
+    return HttpResponse(template.render(context,request))
+
+def get_form_fields(model,project,instance=False):
+    form_fields = []
+    for f in model._meta.get_fields():
+        if f.name == "id":
+            continue
+        elif f.is_relation and f.name!="intervention_subtypes":
+            continue
+        else:
+            if f.get_internal_type()=="FloatField":
+                step="any"
+            else:
+                step=1
+            ff = f.formfield()
+            options=ProjectChoice.objects.filter(
+                field=f.name,
+                project=project
+            )
+            choices = f.choices
+            if instance:
+                value=getattr(instance,f.name)
+            else:
+                value=None
+            if f.name=="intervention_subtypes":
+                choices=InterventionSubType.objects.filter(
+                    project=project
+                ).values_list('id','name')
+                f.name="intervention_subtypes_id"
+            form_fields.append({
+                'step': step,
+                'name': f.name,
+                'ff': ff,
+                'options': options,
+                'choices': choices,
+                'value': value
+            })
+    return form_fields
+
+@login_required
+def add_effect(request,docmetaid,eff_copy=False):
+    '''From this page, add effects and interventions'''
+    dmc = DocMetaCoding.objects.get(pk=docmetaid)
+    template = loader.get_template('scoping/add_effect.html')
+
+    if request.method=="POST":
+        data = dict(request.POST.copy())
+        data['doc_id'] = dmc.doc.id
+        data['project_id'] = dmc.project.id
+        data['user_id'] = dmc.user_id
+        for key in data:
+            if isinstance(data[key],list) and len(data[key])==1:
+                data[key]=data[key][0]
+        del data['csrfmiddlewaretoken']
+        effect = StudyEffect(**data)
+        effect.save()
+        return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': docmetaid}))
+
+    if eff_copy:
+        instance=StudyEffect.objects.get(pk=eff_copy)
+    else:
+        instance=False
+    form_fields = get_form_fields(StudyEffect,dmc.project,instance)
+    context = {
+        'project': dmc.project,
+        'dmc': dmc,
+        'form_fields': form_fields,
+        'ei': "Effect"
+    }
+    return HttpResponse(template.render(context,request))
+
+@login_required
+def add_intervention(request,effectid):
+    '''From this page, add effects and interventions'''
+    effect = StudyEffect.objects.get(pk=effectid)
+    dmc = DocMetaCoding.objects.get(
+        doc=effect.doc,
+        project=effect.project,
+        user=effect.user
+    )
+
+    if request.method=="POST":
+        data = dict(request.POST.copy())
+        data['effect_id'] = effect.id
+        for key in data:
+            if isinstance(data[key],list) and len(data[key])==1:
+                data[key]=data[key][0]
+        del data['csrfmiddlewaretoken']
+        effect = Intervention(**data)
+        effect.save()
+        return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
+
+    template = loader.get_template('scoping/add_effect.html')
+
+    form_fields = get_form_fields(Intervention,dmc.project)
+
+    context = {
+        'project': dmc.project,
+        'dmc': dmc,
+        'ei': "Intervention",
+        'form_fields': form_fields
+    }
+    return HttpResponse(template.render(context,request))
+
 
 ##################################################
 ## Exclude docs from snowballing session
@@ -4449,14 +4588,31 @@ def meta_setup(request,pid):
 
     # handle new choice form
     if request.method=="POST":
-        f = FieldChoiceForm(request.POST)
-        if f.is_valid():
-            c, created = ProjectChoice.objects.get_or_create(
-                project=p,
-                field=f.data['field'],
-                name=f.data['name']
-            )
-            print(f.data)
+        if "field" in request.POST:
+            f = FieldChoiceForm(request.POST)
+            if f.is_valid():
+                c, created = ProjectChoice.objects.get_or_create(
+                    project=p,
+                    field=f.data['field'],
+                    name=f.data['name']
+                )
+                print(f.data)
+        elif "interventiontype" in request.POST:
+            f = InterventionSubtypeForm(request.POST)
+            if f.is_valid():
+                c, created = InterventionSubType.objects.get_or_create(
+                    project=p,
+                    interventiontype_id=f.data['interventiontype'],
+                    name=f.data['name']
+                )
+        else:
+            f = InterventionForm(request.POST)
+            if f.is_valid():
+                c, created = InterventionType.objects.get_or_create(
+                    project=p,
+                    name=f.data['name']
+                )
+
 
     sfields = []
     sfields = get_flist(StudyEffect._meta.fields, p)
@@ -4488,10 +4644,20 @@ def meta_setup(request,pid):
 
     #doc_counts['assignments']
 
+    intervention_types = InterventionType.objects.filter(project=p)
+    interventiontype_form = InterventionForm()
+
+    intervention_subtypes = InterventionSubType.objects.filter(project=p)
+    interventionsubtype_form = InterventionSubtypeForm()
+
     context = {
         'project': p,
         'sfields': sfields,
         'ifields': ifields,
-        'doc_counts': doc_counts
+        'doc_counts': doc_counts,
+        'interventiontype_form': interventiontype_form,
+        'intervention_types': intervention_types,
+        'interventionsubtype_form': interventionsubtype_form,
+        'intervention_subtypes': intervention_subtypes,
     }
     return render(request, 'scoping/meta_setup.html',context)

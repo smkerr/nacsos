@@ -1,6 +1,11 @@
 import django_filters
 from .models import *
 
+class DocMetaFilter(django_filters.FilterSet):
+    class Meta:
+        model = DocMetaCoding
+        fields = {'coded':['exact'], 'doc__title': ['icontains']}
+
 class DocParFilter(django_filters.FilterSet):
     regex = django_filters.CharFilter(
         lookup_expr='regex',
