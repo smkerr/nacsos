@@ -9,6 +9,7 @@ from django.core.serializers import serialize
 import short_url
 import datetime
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
+from django.core.exceptions import ValidationError
 
 from django.forms.models import model_to_dict
 
@@ -1727,7 +1728,7 @@ def save_document_code(request,docmetaid,dest):
 
     return HttpResponse(template.render(context,request))
 
-def get_form_fields(model,project,instance=False):
+def get_form_fields(model,project,instance=False,errors={}):
     form_fields = []
     for f in model._meta.get_fields():
         if f.name == "id":
@@ -1754,13 +1755,18 @@ def get_form_fields(model,project,instance=False):
                     project=project
                 ).values_list('id','name')
                 f.name="intervention_subtypes_id"
+            if f.name in errors:
+                f_errors = errors[f.name]
+            else:
+                f_errors = []
             form_fields.append({
                 'step': step,
                 'name': f.name,
                 'ff': ff,
                 'options': options,
                 'choices': choices,
-                'value': value
+                'value': value,
+                'errors': f_errors
             })
     return form_fields
 
@@ -1770,26 +1776,35 @@ def add_effect(request,docmetaid,eff_copy=False):
     dmc = DocMetaCoding.objects.get(pk=docmetaid)
     template = loader.get_template('scoping/add_effect.html')
 
+    errors = {}
     if request.method=="POST":
         data = dict(request.POST.copy())
         data['doc_id'] = dmc.doc.id
         data['project_id'] = dmc.project.id
         data['user_id'] = dmc.user_id
+        clean_data = {}
+        del data['csrfmiddlewaretoken']
         for key in data:
             if isinstance(data[key],list) and len(data[key])==1:
                 data[key]=data[key][0]
-            if data[key]=='':
-                del data[key]
-        del data['csrfmiddlewaretoken']
-        effect = StudyEffect(**data)
-        effect.save()
-        return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': docmetaid}))
+            if data[key]!='':
+                clean_data[key]=data[key]
+
+
+        effect = StudyEffect(**clean_data)
+        try:
+            effect.clean_fields()
+            effect.save()
+            return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': docmetaid}))
+        except ValidationError as e:
+            errors = e.message_dict
 
     if eff_copy:
         instance=StudyEffect.objects.get(pk=eff_copy)
     else:
         instance=False
-    form_fields = get_form_fields(StudyEffect,dmc.project,instance)
+    form_fields = get_form_fields(StudyEffect,dmc.project,instance,errors)
+    print(errors)
     context = {
         'project': dmc.project,
         'dmc': dmc,

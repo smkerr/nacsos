@@ -15,6 +15,13 @@ import os
 from .validators import *
 # Create your models here.
 
+def get_notnull_fields(model):
+    not_null_fields = []
+    for f in model._meta.get_fields():
+        if not f.null:
+            not_null_fields.append(f)
+    return not_null
+
 class SnowballingSession(models.Model):
 
     INPROGRESS = 0
@@ -68,29 +75,29 @@ class StudyEffect(models.Model):
 
     dependent_variable = models.TextField()
 
-    control_definition = models.TextField(null=True)
-    aggregation_level = models.TextField(null=True)
+    control_definition = models.TextField(null=True, blank=True)
+    aggregation_level = models.TextField(null=True, blank=True)
     controls = models.ManyToManyField('Controls')
 
-    total_sample_size = models.PositiveIntegerField()
-    treatment_sample_size = models.PositiveIntegerField()
+    total_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    treatment_sample_size = models.PositiveIntegerField(null=True, blank=True)
 
-    treated_mean = models.FloatField(null=True)
-    control_mean = models.FloatField(null=True)
-    diff_mean = models.FloatField(null=True)
+    treated_mean = models.FloatField(null=True, blank=True)
+    control_mean = models.FloatField(null=True, blank=True)
+    diff_mean = models.FloatField(null=True, blank=True)
 
-    treated_sd = models.FloatField(null=True)
-    control_sd = models.FloatField(null=True)
-    pooled_sd = models.FloatField(null=True)
+    treated_sd = models.FloatField(null=True, blank=True)
+    control_sd = models.FloatField(null=True, blank=True)
+    pooled_sd = models.FloatField(null=True, blank=True)
 
-    coefficient = models.FloatField(null=True)
-    coefficient_sd = models.FloatField(null=True)
+    coefficient = models.FloatField(null=True, blank=True)
+    coefficient_sd = models.FloatField(null=True, blank=True)
 
     significance_test = models.TextField()
     #Choices? Predefined?
 
-    test_statistic = models.FloatField()
-    test_statistic_df = models.IntegerField()
+    test_statistic = models.FloatField(null=True)
+    test_statistic_df = models.IntegerField(null=True, blank=True)
     p_value = models.FloatField()
     tail_choices = (
         (1,"one-tailed"),
@@ -101,9 +108,9 @@ class StudyEffect(models.Model):
     # Regions etc from django cities?
 
     direction = (
-        (1,'positive'),
+        (1,'Positive'),
         # definitely not neutral?
-        (-1,'negative')
+        (-1,'Negative')
     )
     effect_direction=models.IntegerField(choices=direction)
 

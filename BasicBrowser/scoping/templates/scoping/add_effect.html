@@ -15,9 +15,16 @@
         {% else %}
         {% endif %}
         <div class="form-group col" data-name="{{f.name}}">
-        <label for="{{f.ff.widget.id_for_label}}">{{f.ff.label}}</label>
+        <label for="{{f.ff.widget.id_for_label}}"
+        >{{f.ff.label}}</label>
         {% ifequal f.ff.widget.input_type "number" %}
-        <input name="{{f.name}}" type="{{f.ff.widget.input_type}}" class="form-control" id="{{f.ff.id_for_label}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" min={{f.ff.min_value}} step={{f.step}} value={{f.value}}>
+        <input name="{{f.name}}" type="{{f.ff.widget.input_type}}"
+        {% if f.errors %}
+        class="form-control is-invalid"
+        {% else %}
+        class="form-control"
+        {% endif %}
+        id="{{f.ff.id_for_label}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" min={{f.ff.min_value}} step={{f.step}} value={{f.value}}>
         {% else %}
 
             <select
@@ -53,6 +60,12 @@
 
 
         {% endifequal %}
+
+        {% for e in f.errors %}
+            <div class="is-invalid was-validated invalid-feedback">
+                {{e}}
+            </div>
+        {% endfor %}
 
         </div>
 
