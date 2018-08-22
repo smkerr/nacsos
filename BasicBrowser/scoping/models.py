@@ -81,6 +81,7 @@ class StudyEffect(models.Model):
 
     total_sample_size = models.PositiveIntegerField(null=True, blank=True)
     treatment_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    control_sample_size = models.PositiveIntegerField(null=True, blank=True)
 
     treated_mean = models.FloatField(null=True, blank=True)
     control_mean = models.FloatField(null=True, blank=True)
@@ -96,7 +97,7 @@ class StudyEffect(models.Model):
     significance_test = models.TextField()
     #Choices? Predefined?
 
-    test_statistic = models.FloatField(null=True)
+    test_statistic = models.FloatField(null=True, blank=True)
     test_statistic_df = models.IntegerField(null=True, blank=True)
     p_value = models.FloatField()
     tail_choices = (
@@ -105,6 +106,7 @@ class StudyEffect(models.Model):
     )
     test_tails = models.IntegerField(choices=tail_choices)
     geographic_scope = models.TextField()
+    geographic_location = models.TextField()
     # Regions etc from django cities?
 
     direction = (
