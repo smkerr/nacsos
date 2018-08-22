@@ -1778,6 +1778,8 @@ def add_effect(request,docmetaid,eff_copy=False):
         for key in data:
             if isinstance(data[key],list) and len(data[key])==1:
                 data[key]=data[key][0]
+            if data[key]=='':
+                del data[key]
         del data['csrfmiddlewaretoken']
         effect = StudyEffect(**data)
         effect.save()
