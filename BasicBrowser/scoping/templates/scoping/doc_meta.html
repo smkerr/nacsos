@@ -15,7 +15,7 @@
             {% for f in effects %}
                 <div class="col-sm bg-white border rounded m-2 p-2" id="eff_{{f.id}}">
                     <a href="{% url 'scoping:add_effect' dmc.id f.id 1 %}">Effect</a> - {{f.coefficient}} -
-                    copy this <a href="{% url 'scoping:add_effect' dmc.id f.id %}"><span class="buttonp" id="reveal_new">v</span></a>
+                    copy this <a href="{% url 'scoping:add_effect' dmc.id f.id %}"><span class="buttonp" id="reveal_new">v</span></a> <a class="confirmation" href="{% url 'scoping:delete' 'StudyEffect' f.id %}">x</a>
                     <span style="float:right;">Add an intervention <a href="{% url 'scoping:add_intervention' f.id %}"<span class="buttonp" id="reveal_new">-></span></a></span>
                 </div>
             {% endfor %}
@@ -30,6 +30,7 @@
             {% for f in interventions %}
                 <div class="col-sm bg-white border rounded m-2 p-2" id="int_{{f.id}}">
                     <a href="{% url 'scoping:add_intervention' f.effect.id f.id 1 %}">Intervention</a> - {{f.intervention_subtypes}}
+                    <a class="confirmation" href="{% url 'scoping:delete' 'Intervention' f.id %}">x</a>
 
                 </div>
             {% endfor %}
@@ -69,6 +70,10 @@ Done coding?
         console.log(value)
         jQuery('#eff_'+value.effect_id).connections({ to: '#int_'+value.id });
     });
+
+    $('.confirmation').on('click', function () {
+         return confirm('Are you sure you want to delete this?');
+     });
 
   });
 </script>
