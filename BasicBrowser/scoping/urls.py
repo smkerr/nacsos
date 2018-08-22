@@ -46,7 +46,10 @@ urlpatterns = [
     path('save-document-code/<int:docmetaid>/<int:dest>',views.save_document_code,name='save_document_code'),
     path('add-effect/<int:docmetaid>',views.add_effect,name='add_effect'),
     path('add-effect/<int:docmetaid>/<int:eff_copy>',views.add_effect,name='add_effect'),
+    path('add-effect/<int:docmetaid>/<int:eff_copy>/<int:eff_edit>',views.add_effect,name='add_effect'),
     path('add-intervention/<int:effectid>',views.add_intervention,name='add_intervention'),
+    path('add-intervention/<int:effectid>/<int:iid>',views.add_intervention,name='add_intervention'),
+    path('add-intervention/<int:effectid>/<int:iid>/<int:i_edit>',views.add_intervention,name='add_intervention'),
 
     url(r'^snowball$', views.snowball, name='snowball'),
     #### Query processing

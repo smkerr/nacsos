@@ -1770,8 +1770,20 @@ def get_form_fields(model,project,instance=False,errors={}):
             })
     return form_fields
 
+def clean_form_data(data):
+    clean_data = {}
+    del data['csrfmiddlewaretoken']
+    for key in data:
+        if isinstance(data[key],list) and len(data[key])==1:
+            data[key]=data[key][0]
+        if data[key]!='':
+            clean_data[key]=data[key]
+        else:
+            clean_data[key]=None
+    return clean_data
+
 @login_required
-def add_effect(request,docmetaid,eff_copy=False):
+def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
     '''From this page, add effects and interventions'''
     dmc = DocMetaCoding.objects.get(pk=docmetaid)
     template = loader.get_template('scoping/add_effect.html')
@@ -1786,16 +1798,14 @@ def add_effect(request,docmetaid,eff_copy=False):
         data['doc_id'] = dmc.doc.id
         data['project_id'] = dmc.project.id
         data['user_id'] = dmc.user_id
-        clean_data = {}
-        del data['csrfmiddlewaretoken']
-        for key in data:
-            if isinstance(data[key],list) and len(data[key])==1:
-                data[key]=data[key][0]
-            if data[key]!='':
-                clean_data[key]=data[key]
+        clean_data = clean_form_data(data)
 
-
-        effect = StudyEffect(**clean_data)
+        if eff_edit:
+            effect = instance
+            for key in clean_data:
+                setattr(effect,key,clean_data[key])
+        else:
+            effect = StudyEffect(**clean_data)
         try:
             effect.clean_fields()
             effect.save()
@@ -1815,7 +1825,7 @@ def add_effect(request,docmetaid,eff_copy=False):
     return HttpResponse(template.render(context,request))
 
 @login_required
-def add_intervention(request,effectid):
+def add_intervention(request,effectid,iid,i_edit):
     '''From this page, add effects and interventions'''
     effect = StudyEffect.objects.get(pk=effectid)
     dmc = DocMetaCoding.objects.get(
@@ -1823,21 +1833,34 @@ def add_intervention(request,effectid):
         project=effect.project,
         user=effect.user
     )
+    if iid:
+        instance=Intervention.objects.get(pk=iid)
+    else:
+        instance=False
+    errors = {}
 
     if request.method=="POST":
         data = dict(request.POST.copy())
         data['effect_id'] = effect.id
-        for key in data:
-            if isinstance(data[key],list) and len(data[key])==1:
-                data[key]=data[key][0]
-        del data['csrfmiddlewaretoken']
-        effect = Intervention(**data)
-        effect.save()
-        return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
+        clean_data = clean_form_data(data)
+
+        if i_edit:
+            intervention = instance
+            for key in clean_data:
+                setattr(intervention,key,clean_data[key])
+        else:
+            intervention = Intervention(**clean_data)
+        try:
+            intervention.clean_fields()
+            intervention.save()
+            return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
+        except ValidationError as e:
+            errors = e.message_dict
+            instance = intervention
 
     template = loader.get_template('scoping/add_effect.html')
 
-    form_fields = get_form_fields(Intervention,dmc.project)
+    form_fields = get_form_fields(Intervention,dmc.project,instance, errors)
 
     context = {
         'project': dmc.project,

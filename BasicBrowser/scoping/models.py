@@ -106,7 +106,7 @@ class StudyEffect(models.Model):
     )
     test_tails = models.IntegerField(choices=tail_choices)
     geographic_scope = models.TextField()
-    geographic_location = models.TextField(null=True)
+    geographic_location = models.TextField(null=True,blank=True)
     # Regions etc from django cities?
 
     direction = (
@@ -115,6 +115,14 @@ class StudyEffect(models.Model):
         (-1,'Decrease')
     )
     effect_direction=models.IntegerField(choices=direction)
+    def __str__(self):
+        if self.coefficient is not None:
+            return str(self.coefficient)
+        elif self.diff_mean is not None:
+            return str(self.diff_mean)
+        else:
+            return "page {}".format(self.page)
+
 
     ## Intervention
 class DocMetaCoding(models.Model):
