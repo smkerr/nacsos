@@ -106,13 +106,13 @@ class StudyEffect(models.Model):
     )
     test_tails = models.IntegerField(choices=tail_choices)
     geographic_scope = models.TextField()
-    geographic_location = models.TextField()
+    geographic_location = models.TextField(null=True)
     # Regions etc from django cities?
 
     direction = (
-        (1,'Positive'),
+        (1,'Increase'),
         # definitely not neutral?
-        (-1,'Negative')
+        (-1,'Decrease')
     )
     effect_direction=models.IntegerField(choices=direction)
 
