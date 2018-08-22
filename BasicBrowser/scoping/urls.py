@@ -43,6 +43,7 @@ urlpatterns = [
     ### Meta-analysis stuff
     path('meta-setup/<int:pid>', views.meta_setup, name="meta_setup"),
     path('code-document/<int:docmetaid>',views.code_document,name='code_document'),
+    path('save-document-code/<int:docmetaid>/<int:dest>',views.save_document_code,name='save_document_code'),
     path('add-effect/<int:docmetaid>',views.add_effect,name='add_effect'),
     path('add-effect/<int:docmetaid>/<int:eff_copy>',views.add_effect,name='add_effect'),
     path('add-intervention/<int:effectid>',views.add_intervention,name='add_intervention'),

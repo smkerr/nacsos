@@ -1654,14 +1654,77 @@ def code_document(request,docmetaid):
         effect__in=effects
     )
 
+    dests = [
+        (1,'Next uncoded document'),
+        (2,'Next document I\'ve coded'),
+        (3,'Next document to double code'),
+        (4,'Save and exit')
+    ]
+
     connections = list(interventions.values('id','effect_id'))
     context = {
+        'dests': dests,
         'project': dmc.project,
         'dmc': dmc,
         'effects': effects,
         'interventions': interventions,
         'connections': connections
     }
+    return HttpResponse(template.render(context,request))
+
+@login_required
+def save_document_code(request,docmetaid,dest):
+    '''From this page, add effects and interventions'''
+    dmc = DocMetaCoding.objects.get(pk=docmetaid)
+    ## save finished
+    dmc.coded=True
+    dmc.finished=datetime.datetime.now()
+    dmc.save()
+
+    if dest==4:
+        return HttpResponseRedirect(reverse('scoping:userpage'))
+
+    mycodes = DocMetaCoding.objects.filter(
+        user=request.user,project=dmc.project
+    )
+    docids = set(mycodes.values_list('doc_id',flat=True))
+    docs = Doc.objects.filter(pk__in=docids)
+    uncoded_docs = docs.exclude(docmetacoding__coded=True)
+
+    if dest==1:
+        uncoded = mycodes.filter(doc__in=uncoded_docs)
+        if uncoded.count()==0:
+            return HttpResponseRedirect(reverse('scoping:userpage'))
+        dmc_dest = uncoded.first()
+        return HttpResponseRedirect(reverse(
+            'scoping:code_document',
+            kwargs={'docmetaid':dmc_dest.id}
+        ))
+    elif dest==2:
+        mycoded = mycodes.filter(coded=True)
+        if mycoded.count()==0:
+            return HttpResponseRedirect(reverse('scoping:userpage'))
+        dmc_dest = mycoded.order_by('finished',first())
+        if dmc_dest.id==dmc.id:
+            return HttpResponseRedirect(reverse('scoping:userpage'))
+        return HttpResponseRedirect(reverse(
+            'scoping:code_document',
+            kwargs={'docmetaid':dmc_dest.id}
+        ))
+    elif dest==3:
+        myuncoded_docs = set(mycodes.filter(
+            coded=False
+        ).values_list('id',flat=True))
+        docs = docs.filter(id__in=myuncoded_docs)
+        coded = docs.filter(docmetacoding__coded=True)
+        if coded.count()==0:
+            return HttpResponseRedirect(reverse('scoping:userpage'))
+        dmc_dest = coded.order_by('finished',first())
+        return HttpResponseRedirect(reverse(
+            'scoping:code_document',
+            kwargs={'docmetaid':dmc_dest.id}
+        ))
+
     return HttpResponse(template.render(context,request))
 
 def get_form_fields(model,project,instance=False):
