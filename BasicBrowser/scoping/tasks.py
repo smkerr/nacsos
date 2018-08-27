@@ -68,6 +68,7 @@ def upload_docs(qid, update):
 
     else:
         print("Scopus")
+        fname = fname.replace('results','s_results')
         with open(fname, encoding="utf-8") as res:
             r_count = read_scopus(res, q, update)
 

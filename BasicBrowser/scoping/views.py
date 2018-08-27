@@ -1825,7 +1825,7 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
     return HttpResponse(template.render(context,request))
 
 @login_required
-def add_intervention(request,effectid,iid,i_edit):
+def add_intervention(request,effectid,iid=False,i_edit=False):
     '''From this page, add effects and interventions'''
     effect = StudyEffect.objects.get(pk=effectid)
     dmc = DocMetaCoding.objects.get(

@@ -543,8 +543,8 @@ def read_scopus(res, q, update):
 
     if chunk_size < max_chunk_size and chunk_size > 0:
         # parallely add docs
-        pool = Pool(processes=8)
-        r_chunks = chunks(records, 8)
+        pool = Pool(processes=1)
+        r_chunks = chunks(records, 1)
         pool.map(partial(proc_scopus_chunk,q=q, update=update), r_chunks)
         pool.terminate()
 

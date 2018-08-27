@@ -52,6 +52,7 @@ class Command(BaseCommand):
                     for d in docs:
                         for q in s.query.all():
                             d.query.add(q)
+                    print("deleting {}".format(s.title))
                     s.delete()
                 else:
                     print("{}: {} , {}, from queries {} \n \
