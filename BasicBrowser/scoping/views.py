@@ -1733,7 +1733,7 @@ def get_form_fields(model,project,instance=False,errors={}):
     for f in model._meta.get_fields():
         if f.name == "id":
             continue
-        elif f.is_relation and f.name!="intervention_subtypes":
+        elif f.is_relation and "intervention_subtypes" not in f.name:
             continue
         else:
             if f.get_internal_type()=="FloatField":
@@ -1750,7 +1750,7 @@ def get_form_fields(model,project,instance=False,errors={}):
                 value=getattr(instance,f.name)
             else:
                 value=None
-            if f.name=="intervention_subtypes":
+            if "intervention_subtypes" in f.name:
                 choices=InterventionSubType.objects.filter(
                     project=project
                 ).values_list('id','name')
@@ -1856,6 +1856,7 @@ def add_intervention(request,effectid,iid=False,i_edit=False):
             return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
         except ValidationError as e:
             errors = e.message_dict
+            a = b
             instance = intervention
 
     template = loader.get_template('scoping/add_effect.html')
