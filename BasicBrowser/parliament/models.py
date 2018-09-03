@@ -90,6 +90,30 @@ class Person(models.Model):
         else:
             return "{} {}".format(self.first_name, self.surname)
 
+    def save(self, *args, **kwargs):
+        if not self.id and not self.alt_surnames:
+            surnames_list = self.surname.split(" ")
+            if len(surnames_list) > 1:
+                self.alt_surnames = [self.surname, surnames_list[-1]]
+            else:
+                self.alt_surnames = [self.surname]
+
+        if not self.id and not self.alt_first_names:
+            firstnames_list = self.first_name.split(" ")
+            if len(firstnames_list) > 1:
+                self.alt_first_names = [self.first_name] + firstnames_list
+            else:
+                self.alt_first_names = [self.first_name]
+
+        if not self.id and not self.clean_name:
+            self.clean_name = "{} {}".format(self.first_name, self.surname).strip()
+            if self.title:
+                self.clean_name = self.title + " " + self.clean_name
+            if self.ortszusatz:
+                self.clean_name = self.clean_name + " ({})".format(self.ortszusatz)
+
+        super(Person, self).save(*args, **kwargs)
+
 ##################################
 ## Texts
 
