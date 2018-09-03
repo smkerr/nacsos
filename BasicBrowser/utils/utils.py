@@ -566,6 +566,19 @@ RIS_KEY_MAPPING = {
     'Y2': 'access_date'
  }
 
+RIS_TY_MAPPING = {
+    'B': 'BOOK',
+    'Book Chapter': 'CHAP',
+    'Book Section': 'CHAP',
+    'Book section': 'CHAP',
+    'J': 'JOUR',
+    'Journal Article': 'JOUR',
+    'Report': 'REPORT',
+    'S': 'SER',
+    'SER': 'SER',
+    None: 'GEN'
+}
+
 def read_ris(q, update):
     from django.conf import settings
     from RISparser import readris

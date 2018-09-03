@@ -2960,6 +2960,7 @@ def export_ris_docs(request,qid,docs=False):
     import io
     from RISparser.config import TAG_KEY_MAPPING
     from utils.utils import RIS_KEY_MAPPING
+    from utils.utils import RIS_TY_MAPPING
     inv_mapping = {v: k for k, v in RIS_KEY_MAPPING.items()}
     buffer = io.StringIO()
     q = Query.objects.get(pk=qid)
@@ -2968,8 +2969,9 @@ def export_ris_docs(request,qid,docs=False):
     else:
         docs = Doc.objects.filter(pk__in=docs.values_list('pk',flat=True))
 
-    for d in docs[:10]:
+    for d in docs.filter(wosarticle__isnull=False):
         ## Do the single meta fields
+        buffer.write('TY  - {}\n'.format(RIS_TY_MAPPING[d.wosarticle.pt]))
         for f in WoSArticle._meta.get_fields():
             v = getattr(d.wosarticle,f.name)
             if v is not None:
@@ -2981,8 +2983,7 @@ def export_ris_docs(request,qid,docs=False):
                             inv_mapping[f.name],
                             val
                         ))
-                else:
-                    print(f.name)
+
         ## Do authors
         for au in d.authorlist():
             buffer.write('AU  - {}\n'.format(au.AU))
@@ -2991,17 +2992,17 @@ def export_ris_docs(request,qid,docs=False):
             buffer.write('KW  - {}\n'.format(kw.text))
         ## Relevance Ratings
         for r in d.docownership_set.filter(query__project=q.project,relevant__gt=0):
-            buffer.write('N1  - Relvance_{}_{}: {}\n'.format(r.user.username,r.tag.id,r.relevant))
+            buffer.write('N1  - Relevance_{}_{}: {}\n'.format(r.user.username,r.tag.id,r.relevant))
         ## Category Tags
         if q.technology is not None:
             buffer.write('N1  - Category: {}\n'.format(q.technology))
         for c in d.technology.exclude(name=q.technology):
             buffer.write('N1  - Category: {}\n'.format(c))
 
-        buffer.write('ER\n\n')
+        buffer.write('ER  - \n\n')
 
     response = HttpResponse(buffer.getvalue(),content_type='text')
-    response['Content-Disposition'] = 'attachment; filename="documents_{}.RIS"'.format(qid)
+    response['Content-Disposition'] = 'attachment; filename="documents_{}.ris"'.format(qid)
     return response
 
 
