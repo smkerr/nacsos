@@ -62,12 +62,11 @@ def switch_mode(request):
 
 
 
-########################################################
-## Homepage - list the queries, form for adding new ones
 
 class QueryCreate(CreateView):
+    ''' Create a new query by uploading a file '''
     model=Query
-    fields=["title","text","database","query_file"]
+    form_class = QueryForm
 
     def get_context_data(self, **kwargs):
         context = super(QueryCreate, self).get_context_data(**kwargs)
@@ -419,7 +418,9 @@ def update_thing(request):
         getattr(t1,thing2.lower()).remove(t2)
     if method=="update":
         setattr(t1,thing2.lower(),t2)
-
+        if thing1 == "Query" and thing2 == "Technology":
+            pass
+            #query_doc_category.delay(id1,id2)
     t1.save()
     return HttpResponse()
 
@@ -2525,6 +2526,7 @@ def sortdocs(request):
 
     tag_title = request.GET.get('tag_title',None)
     download = request.GET.get('download',None)
+    ris = request.GET.get('ris',None)
 
     print(fields)
     print(f_fields)
@@ -2916,6 +2918,9 @@ def sortdocs(request):
             pass
 
     if download == "true":
+        if ris=="true":
+            return export_ris_docs(request,qid,docs)
+
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="documents.csv"'
 
@@ -2950,6 +2955,54 @@ def sortdocs(request):
 
     #x = y
     return JsonResponse(response,safe=False)
+
+def export_ris_docs(request,qid,docs=False):
+    import io
+    from RISparser.config import TAG_KEY_MAPPING
+    from utils.utils import RIS_KEY_MAPPING
+    inv_mapping = {v: k for k, v in RIS_KEY_MAPPING.items()}
+    buffer = io.StringIO()
+    q = Query.objects.get(pk=qid)
+    if not docs:
+        docs = Doc.objects.filter(query=q)
+    else:
+        docs = Doc.objects.filter(pk__in=docs.values_list('pk',flat=True))
+
+    for d in docs[:10]:
+        ## Do the single meta fields
+        for f in WoSArticle._meta.get_fields():
+            v = getattr(d.wosarticle,f.name)
+            if v is not None:
+                if f.name in inv_mapping and f.name!="kwp":
+                    if not isinstance(v,list):
+                        v = [v]
+                    for val in v:
+                        buffer.write('{}  - {}\n'.format(
+                            inv_mapping[f.name],
+                            val
+                        ))
+                else:
+                    print(f.name)
+        ## Do authors
+        for au in d.authorlist():
+            buffer.write('AU  - {}\n'.format(au.AU))
+        ## Do keywords
+        for kw in KW.objects.filter(doc=d):
+            buffer.write('KW  - {}\n'.format(kw.text))
+        ## Relevance Ratings
+        for r in d.docownership_set.filter(query__project=q.project,relevant__gt=0):
+            buffer.write('N1  - Relvance_{}_{}: {}\n'.format(r.user.username,r.tag.id,r.relevant))
+        ## Category Tags
+        if q.technology is not None:
+            buffer.write('N1  - Category: {}\n'.format(q.technology))
+        for c in d.technology.exclude(name=q.technology):
+            buffer.write('N1  - Category: {}\n'.format(c))
+
+        buffer.write('ER\n\n')
+
+    response = HttpResponse(buffer.getvalue(),content_type='text')
+    response['Content-Disposition'] = 'attachment; filename="documents_{}.RIS"'.format(qid)
+    return response
 
 
 def get_tech_docs(tid,other=False):

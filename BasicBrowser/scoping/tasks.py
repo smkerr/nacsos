@@ -12,6 +12,10 @@ import subprocess
 def add(x, y):
     return x + y
 
+# @shared_task
+# def query_doc_category(qid,cid):
+#     docs = Doc.objects.filter(query=)
+
 @shared_task
 def update_projs(pids,add_docprojects=False):
 
@@ -61,6 +65,9 @@ def upload_docs(qid, update):
 
     print(q.title)
 
+    if ".RIS" in q.query_file.name:
+        r_count = read_ris(fname,q,update)
+
     if q.database =="WoS":
         print("WoS")
         with open(fname, encoding="utf-8") as res:
@@ -86,7 +93,7 @@ def upload_docs(qid, update):
     for d in q.doc_set.all().iterator():
         d.tag.add(t)
 
-    return(q)
+    return(q.id)
 
 @shared_task
 def do_query(qid):

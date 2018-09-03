@@ -9,6 +9,15 @@ class ProjectForm(forms.ModelForm):
         model = (Project)
         fields = ('title', 'description',)
 
+class QueryForm(forms.ModelForm):
+    title = forms.CharField()
+    class Meta:
+        model = (Query)
+        fields=["title","text","database","query_file"]
+        help_texts = {
+            'query_file': 'Accepted formats are WoS/Scopus text files or RIS files',
+        }
+
 class CategoryForm(forms.ModelForm):
     level = forms.IntegerField(
         min_value=1, max_value=9

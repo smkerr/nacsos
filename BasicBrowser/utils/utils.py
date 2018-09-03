@@ -501,6 +501,81 @@ def proc_scopus_chunk(docs,q,update):
     django.db.connections.close_all()
     return
 
+RIS_KEY_MAPPING = {
+    'A1': 'au',
+    'AB': 'ab',
+    'AD': 'c1',
+    'AN': 'accession_number',
+    'AU': 'au',
+    'C1': 'custom1',
+    'C2': 'custom2',
+    'C3': 'custom3',
+    'C4': 'custom4',
+    'C5': 'custom5',
+    'C6': 'custom6',
+    'C7': 'custom7',
+    'C8': 'custom8',
+    'CA': 'caption',
+    'CN': 'call_number',
+    'CY': 'pi',
+    'DA': 'pd',
+    'DB': 'datanase',
+    'DO': 'di',
+    'DP': 'database_provider',
+    'EP': 'ep',
+    'ER': 'er',
+    'ET': 'edition',
+    'ID': 'ut',
+    'IS': 'ar',
+    'J2': 'so',
+    'JA': 'alternate_title2',
+    'JF': 'alternate_title3',
+    'JO': 'so',
+    'KW': 'kwp',
+    'L1': 'file_attachments1',
+    'L2': 'file_attachments2',
+    'L4': 'figure',
+    'LA': 'la',
+    'LB': 'label',
+    'M1': 'note',
+    'M3': 'type_of_work',
+    'N1': 'notes',
+    'N2': 'ab',
+    'NV': 'number_of_Volumes',
+    'OP': 'original_publication',
+    'PB': 'pu',
+    'PY': 'py',
+    'RI': 'reviewed_item',
+    'RN': 'research_notes',
+    'RP': 'reprint_edition',
+    'SE': 'version',
+    'SN': 'sn',
+    'SP': 'bp',
+    'ST': 'short_title',
+    'T1': 'ti',
+    'T2': 'secondary_title',
+    'T3': 'tertiary_title',
+    'TA': 'translated_author',
+    'TI': 'ti',
+    'TT': 'translated_title',
+    'TY': 'pt',
+    'UK': 'unknown_tag',
+    'UR': 'UT',
+    'VL': 'vl',
+    'Y1': 'py',
+    'Y2': 'access_date'
+ }
+
+def read_ris(q, update):
+    from django.conf import settings
+    from RISparser import readris
+    with open(
+        "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name
+    ),'r') as f:
+        entries = readris(f)
+        for e in entries:
+            add_scopus_doc(e,q,update)
+
 def read_scopus(res, q, update):
 
     n_records = 0

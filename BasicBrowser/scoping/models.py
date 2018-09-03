@@ -248,11 +248,14 @@ class Query(models.Model):
     innovation  = models.ForeignKey('Innovation', on_delete=models.CASCADE, null=True)
     query_file = models.FileField(upload_to='queries/',null=True)
 
+
     def __str__(self):
       return self.title
 
     def get_absolute_url(self):
         return reverse('scoping:doclist', kwargs={'pid':self.project.pk, 'qid': self.pk})
+
+
 
 class Technology(models.Model):
     name = models.TextField(null = True, verbose_name="Category Name")
@@ -397,6 +400,10 @@ class Doc(models.Model):
 
       return self.UT.UT
 
+    def authorlist(self):
+        das = self.docauthinst_set.order_by('AU','position').distinct('AU').values_list('id',flat=True)
+        unique = self.docauthinst_set.filter(id__in=das).order_by('position')
+        return unique
 
     def citation(self):
         used = set()

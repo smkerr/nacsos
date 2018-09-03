@@ -106,6 +106,8 @@ urlpatterns = [
     url(r'^docssbs/(?P<sbsid>[0-9]+)$', views.doclistsbs, name='doclistsbs'),
     url(r'^docrellist/(?P<sbsid>[0-9]+)/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<q3id>[0-9]+)$', views.docrellist, name='docrellist'),
     url(r'^sort_docs$', views.sortdocs, name='sortdocs'),
+    path('export-docs/<int:qid>/',views.export_ris_docs,name='export-docs'),
+
     url(r'^cycle_score$', views.cycle_score, name='cycle_score'),
     url(r'^activate_user$', views.activate_user, name='activate_user'),
     url(r'^assign_docs$', views.assign_docs, name='assign_docs'),

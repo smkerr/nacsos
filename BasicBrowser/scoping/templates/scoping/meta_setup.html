@@ -39,7 +39,7 @@
         <div class="col-sm">
             Intervention Types
         </div>
-        <div class="col-sm">
+        <div class="col-sm extra-high">
             {% for intervention in intervention_types %}
                 <span class="border rounded bg-white p-2">{{intervention.name}} <a class="confirmation" href="{% url 'scoping:delete' 'InterventionType' intervention.id %}">x</a></span>
 
@@ -56,7 +56,7 @@
         <div class="col-sm">
             Intervention Sub-types
         </div>
-        <div class="col-sm">
+        <div class="col-sm extra-high">
             {% for intervention in intervention_subtypes %}
                 <span class="border rounded bg-white p-2">{{intervention.name}} <a class="confirmation" href="{% url 'scoping:delete' 'InterventionType' intervention.id %}">x</a></span>
 

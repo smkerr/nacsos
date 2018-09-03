@@ -12,13 +12,16 @@
           <h2> Document list associated with {{query.type}} query no. {{query.id}} and {{query2.type}} query no. {{query2.id}}</a>.</h2>
         {% endif %}
         <!-- <a href="/scoping/download/{{query.id}}">Download</a> these documents as a csv</h2> -->
-        <h2><a onclick="update_fields(download='true')" id="download">Download</a> these documents as a csv</h2>
+        <h2></h2><p><a onclick="update_fields(download='true')" id="download">Download</a> these documents as a csv</h2>
+        <br/>
+        <p><a onclick="update_fields(download='true',ris='true')">Export</a> these documents as a RIS file</h2>
+        <!-- <p><a href="{% url 'scoping:export-docs' query.id %}">Export</a> these documents as a RIS file</h2> -->
         <br/>
 
         <p class="field_container">
         <p class="field_container"><h2>Basic Fields</h2><p class="field_container">
             {% for f in basic_fields %}
-                <span class="field_name" data-active="true" name="{{f.path}}">{{ f.name }} <button class="filter" onclick="button_filter(event,this)">filter</button></span>,
+                <span class="field_name" data-active="true" name="{{f.path}}">{{ f.name }} <button class="filter btn" onclick="button_filter(event,this)">filter</button></span>,
             {% endfor %}
         <p class="field_container"><h2>Author Fields</h2><p class="field_container">
           {% for f in author_fields %}
@@ -134,7 +137,7 @@ $(".field_name").click(function() {
         $(this).children().remove()
     } else {
         $(this).attr("data-active","true")
-        $(this).append(' <button class="filter" onclick="button_filter(event,this)">filter</button>')
+        $(this).append(' <button class="filter btn" onclick="button_filter(event,this)">filter</button>')
     }
     update_fields()
 })
@@ -200,7 +203,7 @@ function join_filter(element) {
     }
 }
 
-function update_fields(download="false") {
+function update_fields(download="false",ris="false") {
     console.log(download)
 
     $('body').toggleClass('waiting');
@@ -256,6 +259,7 @@ function update_fields(download="false") {
             url = url_args(url,names[i],arrs[i])
         }
         url += '&download='+download
+        if (ris=="true") { url += '&ris='+ris }
         window.location=url
     } else {
 

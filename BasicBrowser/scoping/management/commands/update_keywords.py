@@ -18,10 +18,14 @@ class Command(BaseCommand):
         else:
             q = Query.objects.get(pk=qid)
             docs = Doc.objects.filter(
-                query=q,
-                wosarticle__isnull=False
+                query=q
             )
             print(docs.count())
+
+        docs = Doc.objects.filter(
+            kw__isnull=True,
+            wosarticle__isnull=False
+        )
 
         for d in docs.iterator():
             if d.wosarticle.de is not None:

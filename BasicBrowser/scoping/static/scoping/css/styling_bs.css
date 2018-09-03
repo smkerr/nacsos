@@ -2,6 +2,15 @@ body {
     background: #D5DFF5;
 }
 
+.flex {
+    display: flex;
+    justify-content: space-between;
+}
+
+.flex > div {
+    margin: 0px 15px;
+}
+
 .pagination > li {
     margin: 0px 5px;
 }
@@ -12,6 +21,14 @@ body {
     border-radius: 3px;
     padding: 2px 7px;
     cursor: pointer;
+}
+
+.extra-high {
+    line-height: 2.5em;
+}
+
+span.field_name {
+    padding: 0.5em;
 }
 
 html, body {
@@ -133,6 +150,10 @@ p.field_container, p#field_container {
 button.filter {
     line-height: 100%;
     padding: 3px;
+}
+
+button.filter:hover {
+    background-color: #ccc;
 }
 
 a:not([href]):not([tabindex]) {
