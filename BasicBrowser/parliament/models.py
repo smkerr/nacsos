@@ -125,6 +125,7 @@ class Document(models.Model):
     search_matches = models.ManyToManyField('Search')
     doc_type = models.TextField()
     text_source = models.TextField(default="")
+    creation_date = models.DateTimeField(auto_now_add=True,verbose_name="Date of entry creation")
 
     def __str__(self):
         return "{}, {}/{}, {}".format(self.doc_type, self.parlperiod.n, self.sitting, self.date)
@@ -132,6 +133,7 @@ class Document(models.Model):
 class Utterance(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)
     speaker = models.ForeignKey(Person, on_delete=models.CASCADE)
+    search_matches = models.ManyToManyField('Search')
 
 class Paragraph(models.Model):
     utterance = models.ForeignKey(Utterance, on_delete=models.CASCADE)
@@ -285,6 +287,11 @@ class Search(models.Model):
     text = models.TextField()
     party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
     speaker_regions = models.ManyToManyField(cities.models.Region)
+    start_date = models.DateField(null=True,verbose_name="Earliest date for search")
+    stop_date = models.DateField(null=True,verbose_name="Latest date for search")
+    document_source = models.TextField(null=True, verbose_name="Regex for text_source field of document")
+
+    creation_date = models.DateTimeField(auto_now_add=True,verbose_name="Date of Search creation")
     creator = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -293,7 +300,8 @@ class Search(models.Model):
         #related_name="user_creations",
         #reverse_n
     )
-    par_count=models.IntegerField(default=0,verbose_name="Number of text objects")
+    par_count=models.IntegerField(null=True,verbose_name="Number of paragraph objects")
+    utterance_count=models.IntegerField(null=True,verbose_name="Number of utterance objects")
 
     PARAGRAPH = 1
     UTTERANCE = 2

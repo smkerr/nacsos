@@ -20,43 +20,108 @@ import time
 
 
 @shared_task
-def do_search(s):
-    s = Search.objects.get(pk=s)
+def do_search(s_id):
+    s = Search.objects.get(pk=s_id)
     if s.search_object_type == 1: # paragraphs
+        s.paragraph_set.clear()  # delete old search matches
         ps = Paragraph.objects.filter(text__iregex=s.text)
+
+        if s.document_source:
+            ps = ps.filter(utterance__document__text_source__iregex=s.document_source)
+        if s.start_date:
+            ps = ps.filter(utterance__document__date__gte=s.start_date)
+        if s.stop_date:
+            ps = ps.filter(utterance__document__date__lte=s.stop_date)
+
+        print("{} paragraphs with search {}".format(ps.count(), s.text))
+
+        # filter for parties
+        if s.party is not None:
+            ps = ps.filter(utterance__speaker__party=s.party)
+            print("{} paragraphs left after filtering for party: {}".format(ps.count(), s.party))
+
+        # filter for regions
+        if s.speaker_regions.exists():
+            # differentiate between different seat types (list or direct mandate):
+            # list: speaker -> seat -> partylist -> region
+            ps_list = ps.filter(utterance__speaker__seat__seat_type=2).distinct()
+            ps_list = ps_list.filter(utterance__speaker__seat__list__region__in=s.speaker_regions.all())
+            print("paragraphs attributed to list mandates in regions: {}".format(ps_list.count()))
+
+            # direct: speaker -> seat -> consituency -> region
+            ps_direct = ps.filter(utterance__speaker__seat__seat_type=1).distinct()
+            ps_direct = ps_direct.filter(utterance__speaker__seat__constituency__region__in=s.speaker_regions.all())
+            ps = ps_list.union(ps_direct)
+            print("paragraphs attributed to direct mandates in regions: {}".format(ps_direct.count()))
+
+            print("{} paragraphs left after filtering for regions: {}".format(ps.count(), [r.name for r in s.speaker_regions.all()]))
+
+        # this only saves the right numbers if run for the second time
+        par_count = ps.count()
+        s.par_count = par_count
+        utterance_count = Utterance.objects.filter(paragraph__in=ps).distinct().count()
+        s.utterance_count = utterance_count
+        print(par_count)
+        print(utterance_count)
+        s.save(force_update=True)
+        Through = Paragraph.search_matches.through
+        tms = [Through(paragraph=p,search=s) for p in ps]
+        Through.objects.bulk_create(tms)
+        s.save()
+        return tms
+
     elif s.search_object_type == 2: # utterances
-        ps = Paragraph
-        # todo: modify such that utterances are connected and topic model documents are utterances
+        s.utterance_set.clear()  # delete old search matches
 
-    print("{} paragraphs with search {}".format(ps.count(), s.text))
+        ut = Utterance.objects.filter(paragraph__text__iregex=s.text).distinct()
 
-    # filter for parties
-    if s.party is not None:
-        ps = ps.filter(utterance__speaker__party=s.party)
-        print("{} paragraphs left after filtering for party: {}".format(ps.count(), s.party))
+        if s.document_source:
+            ut = ut.filter(document__text_source__iregex=s.document_source)
+        if s.start_date:
+            ut = ut.filter(document__date__gte=s.start_date)
+        if s.stop_date:
+            ut = ut.filter(document__date__lte=s.stop_date)
 
-    # filter for regions
-    if s.speaker_regions.exists():
-        # differentiate between different seat types (list or direct mandate):
-        # list: speaker -> seat -> partylist -> region
-        ps_list = ps.filter(utterance__speaker__seat__seat_type=2).distinct()
-        ps_list = ps_list.filter(utterance__speaker__seat__list__region__in=s.speaker_regions.all())
-        print("paragraphs attributed to list mandates in regions: {}".format(ps_list.count()))
+        print("{} utterances with search {}".format(ut.count(), s.text))
 
-        # direct: speaker -> seat -> consituency -> region
-        ps_direct = ps.filter(utterance__speaker__seat__seat_type=1).distinct()
-        ps_direct = ps_direct.filter(utterance__speaker__seat__constituency__region__in=s.speaker_regions.all())
-        ps = ps_list.union(ps_direct)
-        print("paragraphs attributed to direct mandates in regions: {}".format(ps_direct.count()))
+        # filter for parties
+        if s.party is not None:
+            ut = ut.filter(speaker__party=s.party)
+            print("{} paragraphs left after filtering for party: {}".format(ut.count(), s.party))
 
-        print("{} paragraphs left after filtering for regions: {}".format(ps.count(), [r.name for r in s.speaker_regions.all()]))
+        # filter for regions
+        if s.speaker_regions.exists():
+            # differentiate between different seat types (list or direct mandate):
+            # list: speaker -> seat -> partylist -> region
+            ut_list = ut.filter(speaker__seat__seat_type=2).distinct()
+            ut_list = ut_list.filter(speaker__seat__list__region__in=s.speaker_regions.all())
+            print("utterances attributed to list mandates in regions: {}".format(ut_list.count()))
 
-    Through = Paragraph.search_matches.through
-    tms = [Through(paragraph=p,search=s) for p in ps]
-    Through.objects.bulk_create(tms)
-    s.par_count=ps.count()
-    s.save()
-    return tms
+            # direct: speaker -> seat -> consituency -> region
+            ut_direct = ut.filter(speaker__seat__seat_type=1).distinct()
+            ut_direct = ut_direct.filter(speaker__seat__constituency__region__in=s.speaker_regions.all())
+            ut = ut_list.union(ut_direct)
+            print("utterances attributed to direct mandates in regions: {}".format(ut_direct.count()))
+
+            print("{} utterances left after filtering for regions: {}".format(ut.count(),
+                                                                              [r.name for r in s.speaker_regions.all()]))
+
+        utterance_count = ut.count()
+        s.utterance_count = utterance_count
+        par_count = Paragraph.objects.filter(utterance__in=ut).count()
+        print(par_count)
+        print(utterance_count)
+        s.par_count = par_count
+        s.save(force_update=True)
+        Through = Utterance.search_matches.through
+        tms = [Through(utterance=u, search=s) for u in ut]
+        Through.objects.bulk_create(tms)
+        s.save()
+        return tms
+
+    else:
+        print("search_object_type not valid ({})".format(s.search_object_type))
+        return
 
 
 @shared_task
@@ -64,23 +129,26 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
     start_time = time.time()
 
     s = Search.objects.get(pk=s)
-    #RunStats.objects.filter(psearch=s).delete()
-    ps = Paragraph.objects.filter(search_matches=s).filter()
-
     stat = RunStats(
         psearch=s,
         K=K,
         min_freq=5,
-
     )
     stat.save()
     run_id=stat.run_id
 
     if verbosity > 0:
         print("creating term frequency-inverse document frequency matrix ({})".format(time.time() - start_time))
-    docs = ps.filter(text__iregex='\w')
-    abstracts, docsizes, ids = proc_texts(docs, stoplist, stat.fulltext)
-    doc_ids = ids
+
+    if s.search_object_type == 1:
+        ps = Paragraph.objects.filter(search_matches=s)
+        docs = ps.filter(text__iregex='\w')
+        abstracts, docsizes, ids = proc_texts(docs, stoplist, stat.fulltext)
+
+    elif s.search_object_type == 2:
+        uts = Utterance.objects.filter(search_matches=s)
+        abstracts, docsizes, ids = merge_utterance_paragraphs(uts)
+
     if stat.max_features == 0:
         n_features=1000000
     else:
@@ -112,7 +180,7 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
             stop_words=stopword_list
         )
     else:
-        raise KeyError("Language not set correctly.")
+        raise KeyError("Language not recognized.")
 
 
     tfidf = tfidf_vectorizer.fit_transform(abstracts)
@@ -177,6 +245,7 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
         tts = []
 
     elif method in ["LD", "lda"]:
+        # todo
         pass
     else:
         print("Method {} not available.".format(method))
@@ -203,7 +272,7 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
 
     chunk_size = 100000
 
-    ps = 16
+    no_cores = 16
     parallel_add = True
 
     all_dts = []
@@ -221,9 +290,9 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
             l = glength
         docs = range(f,l)
         doc_batches = []
-        for p in range(ps):
-            doc_batches.append([x for x in docs if x % ps == p])
-        pool = Pool(processes=ps)
+        for p in range(no_cores):
+            doc_batches.append([x for x in docs if x % no_cores == p])
+        pool = Pool(processes=no_cores)
         values_list.append(pool.map(partial(
             db.f_gamma_batch, gamma=gamma,
             docsizes=docsizes,docUTset=ids,topic_ids=topic_ids,
@@ -232,8 +301,11 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
         pool.terminate()
         django.db.connections.close_all()
         values_list = [item for sublist in values_list for item in sublist]
-        pool = Pool(processes=ps)
-        pool.map(db.insert_many_pars,values_list)
+        pool = Pool(processes=no_cores)
+        if s.search_object_type == 1:
+            pool.map(db.insert_many_pars,values_list)
+        elif s.search_object_type == 2:
+            pool.map(db.insert_many_utterances,values_list)
         pool.terminate()
         gc.collect()
         sys.stdout.flush()
@@ -249,3 +321,19 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
 
     return 0
 
+
+def merge_utterance_paragraphs(uts, include_interjections=False):
+
+    doc_texts = []
+    for ut in uts.iterator():
+        pars = Paragraph.objects.filter(utterance=ut)
+        if include_interjections:
+            interjections = Interjection.objects.filter(utterance=ut)
+        doc_text = "\n".join([par.text for par in pars])
+
+        doc_texts.append(doc_text)
+
+    ids = [x.pk for x in uts.iterator()]
+    docsizes = [len(x) for x in doc_texts]
+
+    return [doc_texts, docsizes, ids]

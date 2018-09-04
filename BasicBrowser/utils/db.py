@@ -62,6 +62,14 @@ def insert_many_pars(values_list):
         values_list
     )
 
+def insert_many_utterances(values_list):
+    cursor = connection.cursor()
+    execute_values(
+        cursor,
+        "INSERT INTO tmv_app_doctopic (ut_id, topic_id, score, scaled_score, run_id) VALUES %s",
+        values_list
+    )
+
 def f_dlambda(t,m,v_ids,t_ids,run_id):
     tt = DynamicTopicTerm(
         term_id = v_ids[m[1][t]],

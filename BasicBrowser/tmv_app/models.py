@@ -197,11 +197,11 @@ class DocTopic(models.Model):
     #doc = models.ForeignKey(Doc, null=True)
     doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.CASCADE)
     par = models.ForeignKey('parliament.Paragraph',null=True, on_delete=models.CASCADE)
+    ut = models.ForeignKey('parliament.Utterance',null=True, on_delete=models.CASCADE)
     topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
     score = models.FloatField()
     scaled_score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
-
 
 
 class TopicTerm(models.Model):
