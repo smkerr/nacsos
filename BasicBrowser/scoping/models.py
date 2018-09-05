@@ -13,6 +13,8 @@ import tmv_app
 import uuid
 import os
 from .validators import *
+from .tasks import *
+from django.db import transaction
 # Create your models here.
 
 def get_notnull_fields(model):
@@ -75,7 +77,7 @@ class StudyEffect(models.Model):
 
     dependent_variable = models.TextField()
 
-    control_definition = models.TextField(null=True, blank=True)
+    #control_definition = models.TextField(null=True, blank=True)
     aggregation_level = models.TextField(null=True, blank=True)
     controls = models.ManyToManyField('Controls')
 
@@ -144,7 +146,7 @@ class Controls(models.Model):
 
 class Intervention(models.Model):
     effect = models.ForeignKey(StudyEffect, on_delete=models.CASCADE)
-    intervention_subtypes = models.ForeignKey('InterventionSubType', on_delete=models.CASCADE)
+    intervention_subtypes = models.ManyToManyField('InterventionSubType')
     framing_unit = models.TextField(null=True)
     timing = models.TextField(null=True)
     payment = models.TextField(null=True)
@@ -152,6 +154,10 @@ class Intervention(models.Model):
     medium = models.TextField(null=True)
     duration = models.IntegerField(null=True)
     followup = models.IntegerField(null=True)
+
+    def __str__(self):
+        itypes = self.intervention_subtypes.all().values_list('name',flat=True)
+        return "Intervention - {}".format("; ".join(itypes))
 
 
 class InterventionType(models.Model):
@@ -291,6 +297,17 @@ class Tag(models.Model):
     text = models.TextField(null=True, verbose_name="Tag Text")
     query = models.ForeignKey('Query',null=True, on_delete=models.CASCADE, verbose_name="TagQuery")
     document_linked = models.BooleanField(default=True)
+    all_docs = models.IntegerField(default=0)
+    seen_docs = models.IntegerField(default=0)
+    rel_docs = models.IntegerField(default=0)
+    irrel_docs = models.IntegerField(default=0)
+    relevance = models.FloatField(default=0)
+    users = models.IntegerField(default=0)
+    cohens_kappa = models.FloatField(null=True)
+    ratio = models.FloatField(null=True)
+
+    def update_tag(self):
+        self.all_docs = set.doc
 
     def __str__(self):
       return self.title
@@ -676,6 +693,10 @@ class DocOwnership(models.Model):
     start = models.DateTimeField(null=True,verbose_name="Rating Date")
     finish = models.DateTimeField(null=True,verbose_name="Rating Date")
 
+@receiver(post_save, sender=DocOwnership)
+def docownership_update(sender, instance, **kwargs):
+    if instance.relevant > 0:
+        transaction.on_commit(lambda: handle_update_tag.apply_async(args=(instance.tag.pk,)))
 
 def create_docproj(sender,instance,**kwargs):
     #print("fired!")

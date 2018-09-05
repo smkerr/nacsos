@@ -29,7 +29,7 @@
         {% if interventions %}
             {% for f in interventions %}
                 <div class="col-sm bg-white border rounded m-2 p-2" id="int_{{f.id}}">
-                    <a href="{% url 'scoping:add_intervention' f.effect.id f.id 1 %}">Intervention</a> - {{f.intervention_subtypes}}
+                    <a href="{% url 'scoping:add_intervention' f.effect.id f.id 1 %}">{{f}}</a>
                     <a class="confirmation" href="{% url 'scoping:delete' 'Intervention' f.id %}">x</a>
 
                 </div>

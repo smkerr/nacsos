@@ -1662,7 +1662,7 @@ def code_document(request,docmetaid):
 
     interventions = Intervention.objects.filter(
         effect__in=effects
-    )
+    ).order_by('id')
 
     dests = [
         (1,'Next uncoded document'),
@@ -1737,12 +1737,12 @@ def save_document_code(request,docmetaid,dest):
 
     return HttpResponse(template.render(context,request))
 
-def get_form_fields(model,project,instance=False,errors={}):
+def get_form_fields(model,project,instance=False,errors={},data={}):
     form_fields = []
     for f in model._meta.get_fields():
         if f.name == "id":
             continue
-        elif f.is_relation and "intervention_subtypes" not in f.name:
+        elif f.is_relation and "intervention_subtypes" not in f.name and "controls" not in f.name:
             continue
         else:
             if f.get_internal_type()=="FloatField":
@@ -1755,19 +1755,32 @@ def get_form_fields(model,project,instance=False,errors={}):
                 project=project
             )
             choices = f.choices
-            if instance:
-                value=getattr(instance,f.name)
+            if data:
+                if f.name in data:
+                    value = data[f.name]
+                else:
+                    value = None
+            elif instance:
+                if f.many_to_many:
+                    value=list(getattr(
+                        instance,f.name.replace('_id','')
+                        ).all().values_list('name',flat=True))
+                else:
+                    value=getattr(instance,f.name)
             else:
                 value=None
-            if "intervention_subtypes" in f.name:
-                choices=InterventionSubType.objects.filter(
+            if f.many_to_many:
+                choices = f.related_model.objects.filter(
                     project=project
                 ).values_list('id','name')
-                f.name="intervention_subtypes_id"
             if f.name in errors:
                 f_errors = errors[f.name]
             else:
                 f_errors = []
+            if f.many_to_many:
+                multiple = True
+            else:
+                multiple = False
             form_fields.append({
                 'step': step,
                 'name': f.name,
@@ -1775,21 +1788,52 @@ def get_form_fields(model,project,instance=False,errors={}):
                 'options': options,
                 'choices': choices,
                 'value': value,
-                'errors': f_errors
+                'errors': f_errors,
+                'multiple': multiple
             })
     return form_fields
 
-def clean_form_data(data):
+def clean_form_data(data,model):
     clean_data = {}
+    m2m = {}
+
     del data['csrfmiddlewaretoken']
     for key in data:
-        if isinstance(data[key],list) and len(data[key])==1:
-            data[key]=data[key][0]
-        if data[key]!='':
-            clean_data[key]=data[key]
+        f = model._meta.get_field(key)
+        if f.many_to_many:
+            m2m[key]=data[key]
         else:
-            clean_data[key]=None
-    return clean_data
+            if isinstance(data[key],list) and len(data[key])==1:
+                data[key]=data[key][0]
+            if data[key]!='':
+                clean_data[key]=data[key]
+            else:
+                clean_data[key]=None
+    return (clean_data, m2m)
+
+def attempt_effect_intervention_save(model,edit,instance,
+    clean_data,m2m,multi):
+    if edit:
+        for key in m2m:
+            getattr(instance,key).set(m2m[key])
+        for key in clean_data:
+            setattr(instance,key,clean_data[key])
+    else:
+        instance = model(**clean_data)
+    try:
+        instance.clean_fields()
+        if len(m2m) == 0:
+            raise ValidationError(
+                {multi: 'You must select at least one option'}
+            )
+        instance.save()
+        for key in m2m:
+            getattr(instance,key).set(m2m[key])
+        return (False,False,False)
+    except ValidationError as e:
+        errors = e.message_dict
+        form_fields = get_form_fields(Intervention,dmc.project,instance, errors, data)
+        return (errors,instance,form_fields)
 
 @login_required
 def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
@@ -1807,24 +1851,16 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
         data['doc_id'] = dmc.doc.id
         data['project_id'] = dmc.project.id
         data['user_id'] = dmc.user_id
-        clean_data = clean_form_data(data)
+        clean_data, m2m = clean_form_data(data,StudyEffect)
 
-        if eff_edit:
-            effect = instance
-            for key in clean_data:
-                setattr(effect,key,clean_data[key])
-        else:
-            effect = StudyEffect(**clean_data)
-        try:
-            effect.clean_fields()
-            effect.save()
-            return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': docmetaid}))
-        except ValidationError as e:
-            errors = e.message_dict
-            instance = effect
+        errors, instance, form_fields = attempt_effect_intervention_save(
+            StudyEffect,eff_edit,instance,clean_data,m2m,"controls"
+        )
+        if not errors:
+            return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
+    else:
+        form_fields = get_form_fields(StudyEffect,dmc.project,instance,errors)
 
-    form_fields = get_form_fields(StudyEffect,dmc.project,instance,errors)
-    print(errors)
     context = {
         'project': dmc.project,
         'dmc': dmc,
@@ -1851,26 +1887,18 @@ def add_intervention(request,effectid,iid=False,i_edit=False):
     if request.method=="POST":
         data = dict(request.POST.copy())
         data['effect_id'] = effect.id
-        clean_data = clean_form_data(data)
+        clean_data, m2m = clean_form_data(data,Intervention)
 
-        if i_edit:
-            intervention = instance
-            for key in clean_data:
-                setattr(intervention,key,clean_data[key])
-        else:
-            intervention = Intervention(**clean_data)
-        try:
-            intervention.clean_fields()
-            intervention.save()
+        errors, instance, form_fields = attempt_effect_intervention_save(
+            Intervention,i_edit,instance,
+            clean_data,m2m,"intervention_subtypes"
+        )
+        if not errors:
             return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
-        except ValidationError as e:
-            errors = e.message_dict
-            a = b
-            instance = intervention
+    else:
+        form_fields = get_form_fields(Intervention,dmc.project,instance, errors)
 
     template = loader.get_template('scoping/add_effect.html')
-
-    form_fields = get_form_fields(Intervention,dmc.project,instance, errors)
 
     context = {
         'project': dmc.project,

@@ -17,41 +17,75 @@
         <div class="form-group col" data-name="{{f.name}}">
         <label for="{{f.ff.widget.id_for_label}}"
         >{{f.ff.label}}</label>
+
         {% ifequal f.ff.widget.input_type "number" %}
-        <input name="{{f.name}}" type="{{f.ff.widget.input_type}}"
-        {% if f.errors %}
-        class="form-control is-invalid"
-        {% else %}
-        class="form-control"
-        {% endif %}
-        id="{{f.ff.id_for_label}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" min={{f.ff.min_value}} step={{f.step}} value={{f.value}}>
+
+            <input name="{{f.name}}" type="{{f.ff.widget.input_type}}"
+            {% if f.errors %}
+            class="form-control is-invalid"
+            {% else %}
+            class="form-control"
+            {% endif %}
+            id="{{f.ff.id_for_label}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" min={{f.ff.min_value}} step={{f.step}} value={{f.value}}>
+
         {% else %}
 
-            <select
+            <select {% if f.multiple %} multiple{% endif %}
             {% if f.choices or f.options %}
-            name="{{f.name}}" class="form-control"
+                name="{{f.name}}"
+                {% if f.errors %}
+                    class="form-control is-invalid"
+                    {% else %}
+                    class="form-control"
+                {% endif %}
             {% else %}
-            class="form-control hidden"
+                {% if f.errors %}
+                    class="form-control is-invalid hidden"
+                    {% else %}
+                    class="form-control hidden"
+                {% endif %}
             {% endif %}
                 id="{{f.ff.id_for_label}}">
+
                 {% for o in f.options %}
                 <option value="{{o.name}}"
                 {% ifequal f.value o.name %}
                 selected
                 {% endifequal %}
+                {% if o.name in f.value %}
+                selected
+                {% endif %}
                 >{{o.name}}</option>
                 {% endfor %}
-                {% for o in f.choices %}
 
-                <option value="{{o.0}}">{{o.1}}</option>
+                {% for o in f.choices %}
+                <option
+                {% ifequal o.1 f.value %}
+                selected
+                {% endifequal %}
+                {% if o.1 in f.value %}
+                selected
+                {% endif %}
+                value="{{o.0}}"
+                >{{o.1}}</option>
                 {% endfor %}
+
             </select>
 
             <input
             {% if f.choices or f.options %}
-            class="form-control hidden"
+                {% if f.errors %}
+                    class="form-control is-invalid hidden"
+                {% else %}
+                    class="form-control hidden"
+                {% endif %}
             {% else %}
-            name="{{f.name}}" class="form-control"
+                name="{{f.name}}"
+                {% if f.errors %}
+                    class="form-control is-invalid"
+                {% else %}
+                    class="form-control"
+                {% endif %}
             {% endif %}
             type="text" class="form-control" id="{{f.ff.id_for_label}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" value="{{f.value}}"></input>
             {% if f.choices or f.options %}
