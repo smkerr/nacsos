@@ -44,12 +44,10 @@ class Person(models.Model):
     FEMALE = 1
     MALE = 2
 
-
     GENDERS = (
         (FEMALE,'Female'),
         (MALE, 'Male'),
     )
-
 
     #### Names
     surname = models.TextField()
@@ -66,12 +64,16 @@ class Person(models.Model):
 
     ## Parliamentary periods
     in_parlperiod = ArrayField(models.IntegerField(), null=True)
+    active_country = models.ForeignKey(cities.models.Country,on_delete=models.CASCADE, related_name='person_active',
+                                           null=True,verbose_name="Country in which the person is active in politics")
+    positions = ArrayField(models.TextField(), null=True)
 
     ## Bio
     dob = models.DateField(null=True)
     year_of_birth = models.IntegerField(null=True)
     place_of_birth = models.TextField(null=True)
-    country_of_birth = models.ForeignKey(cities.models.Country, on_delete=models.CASCADE,null=True)
+    country_of_birth = models.ForeignKey(cities.models.Country, on_delete=models.CASCADE,
+                                         related_name='person_birth', null=True)
     date_of_death = models.DateField(null=True)
 
     gender = models.IntegerField(null=True,choices=GENDERS)
