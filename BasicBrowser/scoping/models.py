@@ -338,7 +338,7 @@ class Tag(models.Model):
                 scores.append([])
                 tdocs = utdocs
                 u.rated=True
-        i = 0:
+        i = 0
         for u in users:
             if u.rated:
                 l = tdocs.filter(docownership__user)
