@@ -123,6 +123,8 @@
         {% endfor %}
       </table>
 
+      {% if coding_table %}
+
       <h4> Meta-Analysis codings</h4>
 
       <form action="" method="get" class="form form-horizontal">
@@ -131,6 +133,8 @@
     </form>
 
       {% render_table codings %}
+
+      {% endif %}
 
     {% endif %}
       <p><button onclick="location.href='/accounts/logout'">Log Out</button>

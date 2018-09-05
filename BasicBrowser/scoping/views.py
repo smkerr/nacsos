@@ -1579,6 +1579,9 @@ def userpage(request, pid):
         query__project=project
     ).values('query__id','query__type','id')
 
+    if project.id==1:
+        queries = queries.filter(id__gt=731)
+
     query_list = []
 
     for qt in queries:
@@ -1624,10 +1627,15 @@ def userpage(request, pid):
 
     codings = DocMetaCoding.objects.filter(project=project,user=request.user)
 
-    filter = DocMetaFilter(request.GET, queryset=codings)
+    if codings.count()==0:
+        coding_table=False
+        filter=None
+    else:
+        filter = DocMetaFilter(request.GET, queryset=codings)
 
-    coding_table = CodingTable(filter.qs)
-    RequestConfig(request).configure(coding_table)
+        coding_table = CodingTable(filter.qs)
+        RequestConfig(request).configure(coding_table)
+
 
     context = {
         'user': request.user,
