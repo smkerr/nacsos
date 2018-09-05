@@ -17,6 +17,12 @@ def add(x, y):
 #     docs = Doc.objects.filter(query=)
 
 @shared_task
+def handle_update_tag(tid):
+    t = Tag.objects.get(pk=tid)
+    t.update_tag()
+    return t.id
+
+@shared_task
 def update_projs(pids,add_docprojects=False):
 
     projs = Project.objects.filter(id__in=pids)

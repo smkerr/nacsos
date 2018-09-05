@@ -297,7 +297,9 @@ class Tag(models.Model):
     text = models.TextField(null=True, verbose_name="Tag Text")
     query = models.ForeignKey('Query',null=True, on_delete=models.CASCADE, verbose_name="TagQuery")
     document_linked = models.BooleanField(default=True)
-    all_docs = models.IntegerField(default=0)
+
+    all_docs = models.IntegerField(default=0, verbose_name="all docs")
+    a_docs = models.IntegerField(default=0, verbose_name="assigned docs")
     seen_docs = models.IntegerField(default=0)
     rel_docs = models.IntegerField(default=0)
     irrel_docs = models.IntegerField(default=0)
@@ -306,8 +308,40 @@ class Tag(models.Model):
     cohens_kappa = models.FloatField(null=True)
     ratio = models.FloatField(null=True)
 
+
     def update_tag(self):
-        self.all_docs = set.doc
+        users = User.objects.filter(docownership__tag=self).distinct()
+        self.a_docs = self.docownership_set.distinct('doc_id').count()
+        self.seen_docs = self.docownership_set.filter(
+            relevant__gt=0
+        ).distinct('doc_id').count()
+        self.rel_docs = self.docownership_set.filter(
+            relevant=1
+        ).distinct('doc_id').count()
+        self.irrel_docs = self.docownership_set.filter(
+            relevant=2
+        ).distinct('doc_id').count()
+        self.relevance = self.rel_docs/self.seen_docs
+        self.users = users.count()
+        ## Measure scores
+        ## start off with all docs
+        tdocs = Doc.objects.filter(docownership__tag=self).distinct()
+        scores = []
+        ## Filter out those ones which have been rated by more than one person
+        for u in users:
+            utdocs = tdocs.filter(
+                docownership__user=u,
+                docownership__relevant__gt=0,
+                docownership__tag=self
+            ).distinct()
+            if utdocs.count()>0:
+                scores.append([])
+                tdocs = utdocs
+                u.rated=True
+        i = 0:
+        for u in users:
+            if u.rated:
+                l = tdocs.filter(docownership__user)
 
     def __str__(self):
       return self.title
@@ -693,10 +727,10 @@ class DocOwnership(models.Model):
     start = models.DateTimeField(null=True,verbose_name="Rating Date")
     finish = models.DateTimeField(null=True,verbose_name="Rating Date")
 
-@receiver(post_save, sender=DocOwnership)
-def docownership_update(sender, instance, **kwargs):
-    if instance.relevant > 0:
-        transaction.on_commit(lambda: handle_update_tag.apply_async(args=(instance.tag.pk,)))
+# @receiver(post_save, sender=DocOwnership)
+# def docownership_update(sender, instance, **kwargs):
+#     if instance.relevant > 0:
+#         transaction.on_commit(lambda: handle_update_tag.apply_async(args=(instance.tag.pk,)))
 
 def create_docproj(sender,instance,**kwargs):
     #print("fired!")
