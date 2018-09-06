@@ -4313,7 +4313,7 @@ def screen(request,qid,tid,ctype,d=0):
         tags = {'Technology': {}}#,'Innovation': {}}
     for t in tags:
         m = apps.get_model(app_label='scoping',model_name=t)
-        ctags = m.objects.filter(query__doc=doc) | m.objects.filter(doc=doc)
+        ctags = m.objects.filter(query=query) | m.objects.filter(doc=doc)
 
         tags[t]['thing'] = t
         tags[t]['ctags'] = ctags.distinct()

@@ -13,7 +13,7 @@ import tmv_app
 import uuid
 import os
 from .validators import *
-from .tasks import *
+
 from django.db import transaction
 # Create your models here.
 
