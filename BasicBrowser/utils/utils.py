@@ -404,19 +404,18 @@ def add_scopus_doc(r,q,update):
                 title__iregex='\w',
                 title__icontains=twords
             )
-            print(py_docs.count())
-            docs = []
-            for d in py_docs:
+            doc = None
+            for d in py_docs.iterator():
                 j = jaccard(s1,d.shingle())
                 if j > 0.51:
                     d.query.add(q)
                     doc = d
-                    docs = Doc.objects.filter(UT=doc.UT)
                     break
 
-            if len(docs)==0: # if there's still nothing, create one
+            if doc is None:
                 ut, created = UT.objects.get_or_create(
-                    UT=r['UT']
+                    UT=r['UT'],
+                    sid=r['UT']
                 )
                 doc = Doc(UT=ut)
                 doc.save()

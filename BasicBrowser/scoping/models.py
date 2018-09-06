@@ -13,8 +13,9 @@ import tmv_app
 import uuid
 import os
 from .validators import *
-
+import scoping
 from django.db import transaction
+from celery import current_app
 # Create your models here.
 
 def get_notnull_fields(model):
@@ -338,10 +339,26 @@ class Tag(models.Model):
                 scores.append([])
                 tdocs = utdocs
                 u.rated=True
+            else:
+                u.rated=False
         i = 0
         for u in users:
             if u.rated:
-                l = tdocs.filter(docownership__user)
+                l = tdocs.filter(
+                    docownership__user=u
+                ).order_by('pk').values_list(
+                    'docownership__relevant',flat=True
+                )
+                scores[i] = list(l)
+                i+=1
+        dscores = [None] + scores
+        if len(scores) == 2:
+            self.ratio = round(difflib.SequenceMatcher(*dscores).ratio(),2)
+            self.cohen_kappa = cohen_kappa_score(*scores)
+        else:
+            self.cohen_kappa = None
+            self.ratio = None
+        self.save()
 
     def __str__(self):
       return self.title
@@ -727,10 +744,11 @@ class DocOwnership(models.Model):
     start = models.DateTimeField(null=True,verbose_name="Rating Date")
     finish = models.DateTimeField(null=True,verbose_name="Rating Date")
 
-# @receiver(post_save, sender=DocOwnership)
-# def docownership_update(sender, instance, **kwargs):
-#     if instance.relevant > 0:
-#         transaction.on_commit(lambda: handle_update_tag.apply_async(args=(instance.tag.pk,)))
+@receiver(post_save, sender=DocOwnership)
+def docownership_update(sender, instance, **kwargs):
+    if instance.relevant > 0:
+        from scoping.tasks import handle_update_tag
+        transaction.on_commit(lambda: current_app.send_task('scoping.tasks.handle_update_tag', args=(instance.tag.pk,)))
 
 def create_docproj(sender,instance,**kwargs):
     #print("fired!")

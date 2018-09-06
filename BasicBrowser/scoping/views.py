@@ -1303,47 +1303,6 @@ def query(request,qid,q2id='0',sbsid='0'):
                 tdocs = tpars
                 tag['doctype'] = "paragraphs"
                 dt = "docpar"
-            tag['docs'] = tdocs.distinct().count()
-
-            tag['a_docs'] = len(set(tdos.values_list(dt,flat=True)))
-
-            if tag['a_docs'] != 0:
-                tag['seen_docs']  = DocOwnership.objects.filter(tag=tag['id'],relevant__gt=0).count()
-                tag['rel_docs']   = DocOwnership.objects.filter(tag=tag['id'],relevant=1).count()
-                tag['irrel_docs'] = DocOwnership.objects.filter(tag=tag['id'],relevant=2).count()
-                try:
-                    tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
-                except:
-                    tag['relevance'] = 0
-                tusers = User.objects.filter(docownership__tag=tag['id']).distinct()
-                tag['users'] = tusers.count()
-                scores = []
-                for u in tusers:
-                    scores.append([])
-                tdocs = Doc.objects.filter(tag=tag['id']).distinct()
-                for u in tusers:
-                    tdocs = tdocs.filter(
-                        docownership__user=u,
-                        docownership__relevant__gt=0,
-                        docownership__tag=tag['id']
-                    )
-                i = 0
-                for u in tusers:
-                    l = tdocs.filter(
-                        docownership__user=u,
-                        docownership__relevant__gt=0,
-                        docownership__tag=tag['id']
-                    ).distinct('pk').order_by('pk').values_list('docownership__relevant', flat=True)
-                    scores[i] = list(l)
-                    i+=1
-                dscores = [None] + scores
-
-                if len(scores) == 2:
-                    tag['ratio'] = round(difflib.SequenceMatcher(*dscores).ratio(),2)
-                    tag['cohen_kappa'] = cohen_kappa_score(*scores)
-                else:
-                    tag['cohen_kappa'] = "NA"
-                    tag['ratio'] = "NA"
 
             #print(tag['ratio'])
 
@@ -1378,8 +1337,6 @@ def query(request,qid,q2id='0',sbsid='0'):
 
 
         untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
-
-
 
         users = User.objects.filter(project=query.project)
 

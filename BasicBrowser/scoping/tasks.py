@@ -7,6 +7,7 @@ from django.db import connection, transaction
 from psycopg2.extras import *
 import time
 import subprocess
+import scoping
 
 @shared_task
 def add(x, y):
