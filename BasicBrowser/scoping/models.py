@@ -11,6 +11,8 @@ from django.dispatch import receiver
 from django.urls import reverse
 import tmv_app
 import uuid
+import difflib
+from sklearn.metrics import cohen_kappa_score
 import os
 from .validators import *
 import scoping
@@ -312,6 +314,7 @@ class Tag(models.Model):
 
     def update_tag(self):
         users = User.objects.filter(docownership__tag=self).distinct()
+        self.all_docs = self.doc_set.count()
         self.a_docs = self.docownership_set.distinct('doc_id').count()
         self.seen_docs = self.docownership_set.filter(
             relevant__gt=0
@@ -322,7 +325,10 @@ class Tag(models.Model):
         self.irrel_docs = self.docownership_set.filter(
             relevant=2
         ).distinct('doc_id').count()
-        self.relevance = self.rel_docs/self.seen_docs
+        try:
+            self.relevance = self.rel_docs/self.seen_docs
+        except:
+            self.relevance = 0
         self.users = users.count()
         ## Measure scores
         ## start off with all docs
@@ -787,10 +793,10 @@ def update_docproj(sender, instance, **kwargs):
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE,null=True, verbose_name="Author - Document")
-    surname = models.CharField(max_length=60, null=True)
+    surname = models.CharField(max_length=90, null=True)
     initials = models.CharField(max_length=10, null=True)
-    AU = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author")
-    AF = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author Full Name")
+    AU = models.CharField(max_length=90, db_index=True, null=True, verbose_name="Author")
+    AF = models.CharField(max_length=90, db_index=True, null=True, verbose_name="Author Full Name")
     institution = models.TextField(db_index=True, verbose_name="Institution Name")
     position = models.IntegerField(verbose_name="Author Position")
 

@@ -354,72 +354,76 @@ def add_scopus_doc(r,q,update):
         print(r)
         return
 
-    docs = Doc.objects.filter(UT__sid=r['UT']) | Doc.objects.filter(UT__UT=r['UT'])
-    if docs.count()==1: # If it's just there - great!
-        doc = docs.first()
-    elif docs.count() > 1:
-        print("OH no! multiple matches!")
-    else: # Otherwise try and match by doi
-        try:
-            did = r['di']
-        except:
-            did = 'NA'
-            pass
-
-        if did=='NA':
-            docs = Doc.objects.filter(
-                    wosarticle__ti__iexact=get(r,'ti'),
-                    PY=get(r,'py')
-            )
-        else:
-            docs = Doc.objects.filter(
-                wosarticle__di=did
-            )
-
-
-        if len(docs)==1:
-            print("found it through stage 2")
-            docs.first().query.add(q)
+    try:
+        doc = Doc.objects.get(UT__sid=r['UT'])
+    except:
+        docs = Doc.objects.filter(UT__sid=r['UT']) | Doc.objects.filter(UT__UT=r['UT'])
+        if docs.count()==1: # If it's just there - great!
             doc = docs.first()
-        if len(docs)>1: # if there are two, that's bad!
-            print("more than one doc matching!!!!!")
-            wdocs = docs.filter(UT__UT__contains='WOS:')
-            if wdocs.count()==1:
-                docs.exclude(UT__UT__contains='WOS:').delete()
-                doc = wdocs.first()
-            else:
-                doc = docs.first()
-        if len(docs)==0: # if there are none, try with the title and jaccard similarity
-            print("no matching docs")
-            s1 = shingle(get(r,'ti'))
+            print("found!")
+        elif docs.count() > 1:
+            print("OH no! multiple matches!")
+        else: # Otherwise try and match by doi
+            try:
+                did = r['di']
+            except:
+                did = 'NA'
+                pass
 
-            twords = get(r,'ti').split()
-            if len(twords) > 1:
-                twords = ' '.join([x for x in twords[0:1]])
-            else:
-                twords = twords[0]
-
-            py_docs = Doc.objects.filter(
-                PY=get(r,'py'),
-                title__iregex='\w',
-                title__icontains=twords
-            )
-            doc = None
-            for d in py_docs.iterator():
-                j = jaccard(s1,d.shingle())
-                if j > 0.51:
-                    d.query.add(q)
-                    doc = d
-                    break
-
-            if doc is None:
-                ut, created = UT.objects.get_or_create(
-                    UT=r['UT'],
-                    sid=r['UT']
+            if did=='NA':
+                docs = Doc.objects.filter(
+                        wosarticle__ti__iexact=get(r,'ti'),
+                        PY=get(r,'py')
                 )
-                doc = Doc(UT=ut)
-                doc.save()
-            #print(doc)
+            else:
+                docs = Doc.objects.filter(
+                    wosarticle__di=did
+                )
+
+
+            if len(docs)==1:
+                print("found it through stage 2")
+                docs.first().query.add(q)
+                doc = docs.first()
+            if len(docs)>1: # if there are two, that's bad!
+                print("more than one doc matching!!!!!")
+                wdocs = docs.filter(UT__UT__contains='WOS:')
+                if wdocs.count()==1:
+                    docs.exclude(UT__UT__contains='WOS:').delete()
+                    doc = wdocs.first()
+                else:
+                    doc = docs.first()
+            if len(docs)==0: # if there are none, try with the title and jaccard similarity
+                print("no matching docs")
+                s1 = shingle(get(r,'ti'))
+
+                twords = get(r,'ti').split()
+                if len(twords) > 1:
+                    twords = ' '.join([x for x in twords[0:1]])
+                else:
+                    twords = twords[0]
+
+                py_docs = Doc.objects.filter(
+                    PY=get(r,'py'),
+                    title__iregex='\w',
+                    title__icontains=twords
+                )
+                doc = None
+                for d in py_docs.iterator():
+                    j = jaccard(s1,d.shingle())
+                    if j > 0.51:
+                        d.query.add(q)
+                        doc = d
+                        break
+
+                if doc is None:
+                    ut, created = UT.objects.get_or_create(
+                        UT=r['UT'],
+                        sid=r['UT']
+                    )
+                    doc = Doc(UT=ut)
+                    doc.save()
+                #print(doc)
     if doc is not None:
         doc.UT.sid = r['UT']
         doc.UT.save()
@@ -482,7 +486,14 @@ def add_scopus_doc(r,q,update):
                     dai.position = a+1
                     dais.append(dai)
                     #dai.save()
-                DocAuthInst.objects.bulk_create(dais)
+                try:
+                    DocAuthInst.objects.bulk_create(dais)
+                except:
+                    for dai in dais:
+                        try:
+                            dai.save()
+                        except:
+                            print("could not save dai {}".format(dai.AU))
         # except:
         #     print("couldn't add authors")
 
@@ -632,10 +643,12 @@ def read_scopus(res, q, update):
 
     if chunk_size < max_chunk_size and chunk_size > 0:
         # parallely add docs
-        pool = Pool(processes=1)
+        #pool = Pool(processes=1)
         r_chunks = chunks(records, 1)
-        pool.map(partial(proc_scopus_chunk,q=q, update=update), r_chunks)
-        pool.terminate()
+        for r in r_chunks:
+            proc_scopus_chunk(r,q=q,update=update)
+        #pool.map(partial(proc_scopus_chunk,q=q, update=update), r_chunks)
+        #pool.terminate()
 
     django.db.connections.close_all()
 

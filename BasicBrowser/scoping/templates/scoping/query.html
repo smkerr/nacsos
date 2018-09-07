@@ -38,7 +38,7 @@
         {% if tag.a_docs %}
           <td>{{tag.docs}} ({{tag.a_docs}} assigned for review)</td>
 
-          <td>{{tag.relevance}}%</td>
+          <td>{{ tag.relevance | percentage }}</td>
         {% else %}
           <td><input type="range" min="0" max="{{tag.docs}}" oninput="inputUpdate(value, {{tag.id}})" value="{{tag.docs}}" autocomplete="off"></td>
           <td class="data-ndocs">{{tag.docs}} [Assign <output id="out_{{tag.id}}" class="tag_assignment bg-primary text-light" data-tagid="{{ tag.id }} ">{{tag.docs}}</output> <b>{{tag.doctype}}</b> for review?]</td>

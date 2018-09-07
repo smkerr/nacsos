@@ -1289,18 +1289,17 @@ def query(request,qid,q2id='0',sbsid='0'):
 
         query = Query.objects.get(pk=qid)
 
-        tags = Tag.objects.filter(query=query)
+        tags = Tag.objects.filter(query=query).order_by('-pk')
 
-        tags = tags.values()
+        tags = tags.select_related('docpar_set').values()
 
         for tag in tags:
             dt = "doc"
             tag['doctype'] = "documents"
             tdocs = Doc.objects.filter(tag=tag['id'])
             tdos = DocOwnership.objects.filter(tag=tag['id'])
-            tpars = DocPar.objects.filter(tag=tag['id'])
-            if tpars.count() > 0:
-                tdocs = tpars
+            if not tag['document_linked']:
+                tdocs = DocPar.objects.filter(tag=tag['id'])
                 tag['doctype'] = "paragraphs"
                 dt = "docpar"
 
@@ -1335,14 +1334,21 @@ def query(request,qid,q2id='0',sbsid='0'):
             query.cohen_kappa = "NA"
             query.ratio = "NA"
 
+        tagged = len(set(Doc.objects.filter(
+            tag__query=query
+        ).values_list('pk',flat=True)))
 
-        untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
+        untagged = Doc.objects.filter(query=query).count() - tagged #Doc.objects.filter(query=query,tag__query=query).distinct().count()
+        # untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
 
         users = User.objects.filter(project=query.project)
 
         proj_users = users.query
 
         user_list = []
+
+        # dos = DocOwnership.objects.values('user','relevant')
+        # udos =
 
         for u in users:
             user_docs = {}
@@ -1372,7 +1378,7 @@ def query(request,qid,q2id='0',sbsid='0'):
                     'user_docs': user_docs
                 })
 
-        if DocPar.objects.filter(doc__query=query).count() > 0:
+        if DocPar.objects.filter(doc__query=query).exists():
             pars = True
         else:
             pars = False
