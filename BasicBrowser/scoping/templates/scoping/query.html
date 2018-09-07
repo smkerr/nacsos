@@ -36,12 +36,12 @@
         <td class="data">{{tag.id}}</td>
         <td class="data">{{tag.title}}</td>
         {% if tag.a_docs %}
-          <td>{{tag.docs}} ({{tag.a_docs}} assigned for review)</td>
+          <td>{{tag.all_docs}} ({{tag.a_docs}} assigned for review)</td>
 
           <td>{{ tag.relevance | percentage }}</td>
         {% else %}
           <td><input type="range" min="0" max="{{tag.docs}}" oninput="inputUpdate(value, {{tag.id}})" value="{{tag.docs}}" autocomplete="off"></td>
-          <td class="data-ndocs">{{tag.docs}} [Assign <output id="out_{{tag.id}}" class="tag_assignment bg-primary text-light" data-tagid="{{ tag.id }} ">{{tag.docs}}</output> <b>{{tag.doctype}}</b> for review?]</td>
+          <td class="data-ndocs">{{tag.all_docs}} [Assign <output id="out_{{tag.id}}" class="tag_assignment bg-primary text-light" data-tagid="{{ tag.id }} ">{{tag.all_docs}}</output> <b>{{tag.doctype}}</b> for review?]</td>
 
         {% endif %}
         <td>{{tag.users}}</td>
@@ -104,7 +104,7 @@
         {% endif %}
 
         {% if u.user_docs.tdocs %}
-          <td>{{ u.user_docs.tdocs }} ({{ u.user_docs.checked_percent }}% checked)</td>
+          <td>{{ u.user_docs.tdocs }} ({{ u.user_docs.checked_percent | percentage}} checked)</td>
           <td>{{ u.user_docs.reldocs }}</td>
           <td>{{ u.user_docs.irreldocs }}</td>
           <td>{{ u.user_docs.maybedocs }}</td>

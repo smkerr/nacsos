@@ -10,7 +10,7 @@ import short_url
 import datetime
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.core.exceptions import ValidationError
-
+import operator
 from django.forms.models import model_to_dict
 
 from cities.models import *
@@ -1338,45 +1338,62 @@ def query(request,qid,q2id='0',sbsid='0'):
             tag__query=query
         ).values_list('pk',flat=True)))
 
-        untagged = Doc.objects.filter(query=query).count() - tagged #Doc.objects.filter(query=query,tag__query=query).distinct().count()
+        untagged = query.r_count - tagged #Doc.objects.filter(query=query,tag__query=query).distinct().count()
         # untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
 
-        users = User.objects.filter(project=query.project)
-
-        proj_users = users.query
 
         user_list = []
 
-        # dos = DocOwnership.objects.values('user','relevant')
-        # udos =
+        dos = DocOwnership.objects.filter(
+            query=query
+        ).values('user','relevant')
+        udors = dos.annotate(n=Count('pk'))
 
-        for u in users:
+        udos = list(DocOwnership.objects.filter(
+            query=query
+        ).values('user').annotate(
+            tdocs=Count('pk')
+        ).values('user__username','user__id','user__email','tdocs'))
+        doccats = (
+            ('reldocs',operator.eq,1),
+            ('irreldocs',operator.eq,2),
+            ('maybedocs',operator.eq,3),
+            ('yesbuts',operator.eq,4),
+            ('checked',operator.gt,0)
+        )
+        qusers = query.users.all().values_list('id',flat=True)
+        pusers = ProjectRoles.objects.filter(
+            project=query.project
+        ).exclude(
+            user__in=qusers
+        ).values('user__username','user__id','user__email')
+        for u in pusers:
+            u['tdocs'] = 0
+            udos.append(u)
+        for u in udos:
             user_docs = {}
-            tdocs = DocOwnership.objects.filter(query=query,user=u)
-            user_docs['tdocs'] = tdocs.count()
+            user_docs['tdocs'] = u['tdocs']
             if user_docs['tdocs']==0:
                 user_docs['tdocs'] = False
             else:
-                user_docs['reldocs']         = tdocs.filter(relevant=1).count()
-                user_docs['irreldocs']       = tdocs.filter(relevant=2).count()
-                user_docs['maybedocs']       = tdocs.filter(relevant=3).count()
-                user_docs['yesbuts']         = tdocs.filter(relevant=4).count()
-                user_docs['checked'] = tdocs.filter(relevant__gt=0).count()
-                user_docs['checked_percent'] = round( user_docs['checked'] / user_docs['tdocs'] * 100)
-            if query in u.query_set.all():
+                for c,op,v in doccats:
+                    user_docs[c] = sum([x['n'] for x in udors if x['user']==u['user__id'] and op(x['relevant'],v) ])
+                user_docs['checked_percent'] = user_docs['checked'] / user_docs['tdocs']
+            if u['user__id'] in list(qusers):
                 user_list.append({
-                    'username': u.username,
-                    'email': u.email,
+                    'username': u['user__username'],
+                    'email': u['user__email'],
                     'onproject': True,
                     'user_docs': user_docs
                 })
             else:
                 user_list.append({
-                    'username': u.username,
-                    'email': u.email,
+                    'username': u['user__username'],
+                    'email': u['user__email'],
                     'onproject': False,
                     'user_docs': user_docs
                 })
+
 
         if DocPar.objects.filter(doc__query=query).exists():
             pars = True
