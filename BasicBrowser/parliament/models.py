@@ -116,6 +116,11 @@ class Person(models.Model):
 
         super(Person, self).save(*args, **kwargs)
 
+class SpeakerRole(models.Model):
+    name = models.TextField()
+    alt_names = ArrayField(models.TextField(), null=True)
+
+
 ##################################
 ## Texts
 
@@ -135,6 +140,7 @@ class Document(models.Model):
 class Utterance(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)
     speaker = models.ForeignKey(Person, on_delete=models.CASCADE)
+    speaker_role = models.ForeignKey(SpeakerRole, null=True, on_delete=models.SET_NULL)
     search_matches = models.ManyToManyField('Search')
 
 class Paragraph(models.Model):

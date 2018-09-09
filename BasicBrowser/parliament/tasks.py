@@ -143,11 +143,14 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
     if s.search_object_type == 1:
         ps = Paragraph.objects.filter(search_matches=s)
         docs = ps.filter(text__iregex='\w')
-        abstracts, docsizes, ids = proc_texts(docs, stoplist, stat.fulltext)
+        texts, docsizes, ids = proc_texts(docs, stoplist, stat.fulltext)
 
     elif s.search_object_type == 2:
         uts = Utterance.objects.filter(search_matches=s)
-        abstracts, docsizes, ids = merge_utterance_paragraphs(uts)
+        texts, docsizes, ids = merge_utterance_paragraphs(uts)
+    else:
+        print("search object type invalid")
+        return 1
 
     if stat.max_features == 0:
         n_features=1000000
@@ -156,37 +159,48 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
 
     if language is "german":
         stemmer = SnowballStemmer("german")
-        german_stopwords = [stemmer.stem(t) for t in stopwords.words("german")]
-        # get term frequency-inverse document frequency matrix (using log weighting)
-        # and min/max document frequency (min_df, max_df)
+        tokenizer = german_stemmer()
+        stopword_list = [stemmer.stem(t) for t in stopwords.words("german")]
 
-        tfidf_vectorizer = TfidfVectorizer(
-            max_df=stat.max_df,
-            min_df=stat.min_freq,
-            max_features=n_features,
-            ngram_range=(stat.ngram,stat.ngram),
-            tokenizer=german_stemmer(),
-            stop_words=german_stopwords
-        )
     elif language is "english":
         stemmer = SnowballStemmer("english")
         stopword_list = [stemmer.stem(t) for t in stopwords.words("english")]
+        tokenizer = snowball_stemmer()
+    else:
+        print("Language not recognized.")
+        return 1
+
+    if method in ["NM", "nmf"]:
+        # get term frequency-inverse document frequency matrix (using log weighting)
+        # and min/max document frequency (min_df, max_df)
         tfidf_vectorizer = TfidfVectorizer(
             max_df=stat.max_df,
             min_df=stat.min_freq,
             max_features=n_features,
             ngram_range=(stat.ngram,stat.ngram),
-            tokenizer=snowball_stemmer(),
+            tokenizer=tokenizer,
             stop_words=stopword_list
-        )
+            )
+
+        tfidf = tfidf_vectorizer.fit_transform(texts)
+        vectorizer = tfidf_vectorizer
+        vocab = vectorizer.get_feature_names()
+
+    elif method in ["LD", "lda"]:
+        # todo: Use tf (raw term count) features for LDA.
+        tf_vectorizer = CountVectorizer(max_df=stat.max_df,
+                                        min_df=stat.min_freq,
+                                        max_features=n_features,
+                                        ngram_range=(stat.ngram, stat.ngram),
+                                        tokenizer=tokenizer,
+                                        stop_words=stopword_list)
+        tf = tf_vectorizer.fit_transform(texts)
+        vectorizer = tf_vectorizer
+        vocab = vectorizer.get_feature_names()
     else:
-        raise KeyError("Language not recognized.")
+        print("method not implemented")
+        return 1
 
-
-    tfidf = tfidf_vectorizer.fit_transform(abstracts)
-    vectorizer = tfidf_vectorizer
-
-    vocab = vectorizer.get_feature_names()
 
     if verbosity > 0:
         print("save terms to db ({})".format(time.time() - start_time))
@@ -226,7 +240,7 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
 
     if method in ["NM", "nmf"]:
         if verbosity > 0:
-            print("running matrix factorization ({})".format(time.time() - start_time))
+            print("running matrix factorization with NMF ({})".format(time.time() - start_time))
         # NMF = non-negative matrix factorization
         model = NMF(
             n_components=K, random_state=1,
@@ -238,19 +252,30 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
 
         # document topic matrix
         dtm = csr_matrix(model.transform(tfidf))
-        # term topic matrix
-        ldalambda = find(csr_matrix(model.components_))
-        # find returns the indices and values of the nonzero elements of a matrix
-        topics = range(len(ldalambda[0]))
-        tts = []
 
     elif method in ["LD", "lda"]:
-        # todo
-        pass
+        if verbosity > 0:
+            print("running Latent Dirichlet Allocation ({})".format(time.time() - start_time))
+        model = LDA(
+            n_components=K,
+            doc_topic_prior=stat.alpha,
+            max_iter=stat.max_iterations,
+            learning_meth='online',
+            learning_offset=50.,
+            n_jobs=6
+        ).fit(tf)
+
+        dtm = csr_matrix(model.transform(tf))
+
     else:
         print("Method {} not available.".format(method))
         return 1
 
+    # term topic matrix
+    ldalambda = find(csr_matrix(model.components_))
+    # find returns the indices and values of the nonzero elements of a matrix
+    topics = range(len(ldalambda[0]))
+    tts = []
     # multiprocessing: add TopicTerms and scores
     pool = Pool(processes=8)
     tts.append(pool.map(partial(db.f_lambda, m=ldalambda,
