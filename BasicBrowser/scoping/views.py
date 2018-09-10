@@ -1672,7 +1672,7 @@ def save_document_code(request,docmetaid,dest):
     dmc.save()
 
     if dest==4:
-        return HttpResponseRedirect(reverse('scoping:userpage'))
+        return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
 
     mycodes = DocMetaCoding.objects.filter(
         user=request.user,project=dmc.project
@@ -1684,7 +1684,7 @@ def save_document_code(request,docmetaid,dest):
     if dest==1:
         uncoded = mycodes.filter(doc__in=uncoded_docs)
         if uncoded.count()==0:
-            return HttpResponseRedirect(reverse('scoping:userpage'))
+            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
         dmc_dest = uncoded.first()
         return HttpResponseRedirect(reverse(
             'scoping:code_document',
@@ -1693,10 +1693,10 @@ def save_document_code(request,docmetaid,dest):
     elif dest==2:
         mycoded = mycodes.filter(coded=True)
         if mycoded.count()==0:
-            return HttpResponseRedirect(reverse('scoping:userpage'))
+            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
         dmc_dest = mycoded.order_by('finished',first())
         if dmc_dest.id==dmc.id:
-            return HttpResponseRedirect(reverse('scoping:userpage'))
+            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
         return HttpResponseRedirect(reverse(
             'scoping:code_document',
             kwargs={'docmetaid':dmc_dest.id}
@@ -1708,7 +1708,7 @@ def save_document_code(request,docmetaid,dest):
         docs = docs.filter(id__in=myuncoded_docs)
         coded = docs.filter(docmetacoding__coded=True)
         if coded.count()==0:
-            return HttpResponseRedirect(reverse('scoping:userpage'))
+            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
         dmc_dest = coded.order_by('finished',first())
         return HttpResponseRedirect(reverse(
             'scoping:code_document',
