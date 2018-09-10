@@ -369,6 +369,37 @@ class Tag(models.Model):
     def __str__(self):
       return self.title
 
+class UserTag(models.Model):
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    a_docs = models.IntegerField(default=0, verbose_name="assigned docs")
+    seen_docs = models.IntegerField(default=0)
+    rel_docs = models.IntegerField(default=0)
+    irrel_docs = models.IntegerField(default=0)
+    relevance = models.FloatField(default=0)
+
+    def update_usertag(self):
+        dos = DocOwnership.objects.filter(
+            user=self.user,
+            tag=self.tag
+        )
+        self.a_docs = dos.count()
+        self.seen_docs = dos.filter(
+            relevant__gt=0
+        ).count()
+        self.rel_docs = dos.filter(
+            relevant=1
+        ).count()
+        self.irrel_docs = dos.filter(
+            relevant=2
+        ).count()
+        try:
+            self.relevance = self.rel_docs/self.seen_docs
+        except:
+            self.relevance = 0
+        self.save()
+        #pass user to handle_update_tag, and update the user whose do it was. These objects will need to be created
+
 def random_doc(q=None):
     if q is not None:
         docs = Doc.objects.filter(query=q)

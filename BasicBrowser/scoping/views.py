@@ -1361,7 +1361,7 @@ def query(request,qid,q2id='0',sbsid='0'):
             ('yesbuts',operator.eq,4),
             ('checked',operator.gt,0)
         )
-        qusers = query.users.all().values_list('id',flat=True)
+        qusers = User.objects.filter(docownership__query=query).distinct().values_list('id',flat=True)
         pusers = ProjectRoles.objects.filter(
             project=query.project
         ).exclude(
@@ -2814,6 +2814,7 @@ def sortdocs(request):
         Through.objects.bulk_create(tms)
         for doc in filt_docs:
             doc.tag.add(t)
+        handle_update_tag.delay(t.id)
         return(JsonResponse("",safe=False))
 
     if sortdir=="+":

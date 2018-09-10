@@ -100,6 +100,9 @@ def upload_docs(qid, update):
     for d in q.doc_set.all().iterator():
         d.tag.add(t)
 
+    t.update_tag()
+
+
     return(q.id)
 
 @shared_task
