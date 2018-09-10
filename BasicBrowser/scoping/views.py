@@ -1792,7 +1792,7 @@ def clean_form_data(data,model):
     return (clean_data, m2m)
 
 def attempt_effect_intervention_save(model,edit,instance,
-    clean_data,m2m,multi):
+    clean_data,m2m,multi,dmc):
     if edit:
         for key in m2m:
             getattr(instance,key).set(m2m[key])
@@ -1834,7 +1834,8 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
         clean_data, m2m = clean_form_data(data,StudyEffect)
 
         errors, instance, form_fields = attempt_effect_intervention_save(
-            StudyEffect,eff_edit,instance,clean_data,m2m,"controls"
+            StudyEffect,eff_edit,instance,
+            clean_data,m2m,"controls",dmc
         )
         if not errors:
             return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
@@ -1871,7 +1872,8 @@ def add_intervention(request,effectid,iid=False,i_edit=False):
 
         errors, instance, form_fields = attempt_effect_intervention_save(
             Intervention,i_edit,instance,
-            clean_data,m2m,"intervention_subtypes"
+            clean_data,m2m,"intervention_subtypes",
+            dmc
         )
         if not errors:
             return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
