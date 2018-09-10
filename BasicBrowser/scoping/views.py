@@ -1812,7 +1812,7 @@ def attempt_effect_intervention_save(model,edit,instance,
         return (False,False,False)
     except ValidationError as e:
         errors = e.message_dict
-        form_fields = get_form_fields(Intervention,dmc.project,instance, errors, data)
+        form_fields = get_form_fields(Intervention,dmc.project,instance, errors, clean_data)
         return (errors,instance,form_fields)
 
 @login_required
