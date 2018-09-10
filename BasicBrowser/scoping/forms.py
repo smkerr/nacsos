@@ -36,6 +36,10 @@ class InterventionForm(forms.ModelForm):
         model = InterventionType
         exclude = ('project',)
 
+class ControlsForm(forms.Form):
+    name = forms.CharField()
+    controls = forms.CharField(widget=forms.HiddenInput(),required=False)
+
 class InterventionSubtypeForm(forms.ModelForm):
     name = forms.CharField()
     class Meta:

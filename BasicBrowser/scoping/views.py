@@ -4781,6 +4781,13 @@ def meta_setup(request,pid):
                     interventiontype_id=f.data['interventiontype'],
                     name=f.data['name']
                 )
+        elif "controls" in request.POST:
+            f = ControlsForm(request.POST)
+            if f.is_valid():
+                c, created = Controls.objects.get_or_create(
+                    project=p,
+                    name=f.data['name']
+                )
         else:
             f = InterventionForm(request.POST)
             if f.is_valid():
@@ -4826,6 +4833,9 @@ def meta_setup(request,pid):
     intervention_subtypes = InterventionSubType.objects.filter(project=p)
     interventionsubtype_form = InterventionSubtypeForm()
 
+    controls = Controls.objects.filter(project=p)
+    controls_form = ControlsForm()
+
     context = {
         'project': p,
         'sfields': sfields,
@@ -4835,5 +4845,7 @@ def meta_setup(request,pid):
         'intervention_types': intervention_types,
         'interventionsubtype_form': interventionsubtype_form,
         'intervention_subtypes': intervention_subtypes,
+        'controls': controls,
+        'controls_form': controls_form
     }
     return render(request, 'scoping/meta_setup.html',context)
