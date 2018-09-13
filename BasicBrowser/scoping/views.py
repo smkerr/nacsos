@@ -1694,7 +1694,7 @@ def save_document_code(request,docmetaid,dest):
         mycoded = mycodes.filter(coded=True)
         if mycoded.count()==0:
             return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
-        dmc_dest = mycoded.order_by('finished',first())
+        dmc_dest = mycoded.order_by('finish_time').first()
         if dmc_dest.id==dmc.id:
             return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
         return HttpResponseRedirect(reverse(
@@ -1704,12 +1704,13 @@ def save_document_code(request,docmetaid,dest):
     elif dest==3:
         myuncoded_docs = set(mycodes.filter(
             coded=False
-        ).values_list('id',flat=True))
+        ).values_list('doc__id',flat=True))
         docs = docs.filter(id__in=myuncoded_docs)
         coded = docs.filter(docmetacoding__coded=True)
+        coded = mycodes.filter(doc__in=coded)
         if coded.count()==0:
             return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
-        dmc_dest = coded.order_by('finished',first())
+        dmc_dest = coded.order_by('finish_time').first()
         return HttpResponseRedirect(reverse(
             'scoping:code_document',
             kwargs={'docmetaid':dmc_dest.id}
