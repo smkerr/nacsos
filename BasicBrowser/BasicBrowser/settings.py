@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'cities',
     'parliament',
-    'twitter',
     'django_tables2',
     'lotto',
     'django_filters',
