@@ -10,9 +10,9 @@ class TwitterBaseModel(models.Model):
     scrape_got = models.BooleanField(default=False)
 
     id = models.BigIntegerField(primary_key=True)
-    created_at = models.DateTimeField()
-    lang = models.CharField(max_length=10)
-    entities = JSONField()
+    created_at = models.DateTimeField(null=True)
+    lang = models.CharField(max_length=10, null=True)
+    entities = JSONField(null=True)
 
     fetched = models.DateTimeField(u'Fetched', null=True, blank=True)
 
@@ -21,13 +21,10 @@ class User(TwitterBaseModel):
 
     ## Extra fields
     mdb_name = models.CharField(max_length=50)
-    person = models.ForeignKey(pmodels.Person, on_delete=models.SET_NULL)
+    person = models.ForeignKey(pmodels.Person, null=True, on_delete=models.SET_NULL)
     monitoring = models.BooleanField(default=False)
     earliest = models.DateTimeField(null=True)
     latest = models.DateTimeField(null=True)
-
-    ## ID
-    id = models.BigIntegerField(primary_key=True,db_index=True)
 
     screen_name = models.CharField(u'Screen name', max_length=50, unique=True)
 
@@ -51,84 +48,53 @@ class User(TwitterBaseModel):
     profile_background_image_url = models.URLField(max_length=300, null=True)
     profile_background_image_url_https = models.URLField(max_length=300, null=True)
     profile_background_tile = models.BooleanField(default=False)
-    profile_background_color = models.CharField(max_length=6)
+    profile_background_color = models.CharField(max_length=6, null=True)
     profile_banner_url = models.URLField(max_length=300, null=True)
     profile_image_url = models.URLField(max_length=300, null=True)
-    profile_image_url_https = models.URLField(max_length=300)
+    profile_image_url_https = models.URLField(max_length=300, null=True)
     url = models.URLField(max_length=300, null=True)
 
-    profile_link_color = models.CharField(max_length=6)
-    profile_sidebar_border_color = models.CharField(max_length=6)
-    profile_sidebar_fill_color = models.CharField(max_length=6)
-    profile_text_color = models.CharField(max_length=6)
+    profile_link_color = models.CharField(max_length=6, null=True)
+    profile_sidebar_border_color = models.CharField(max_length=6, null=True)
+    profile_sidebar_fill_color = models.CharField(max_length=6, null=True)
+    profile_text_color = models.CharField(max_length=6, null=True)
 
-    favorites_count = models.PositiveIntegerField()
-    followers_count = models.PositiveIntegerField()
-    friends_count = models.PositiveIntegerField()
-    listed_count = models.PositiveIntegerField()
-    statuses_count = models.PositiveIntegerField()
+    favorites_count = models.PositiveIntegerField(default=0)
+    followers_count = models.PositiveIntegerField(default=0)
+    friends_count = models.PositiveIntegerField(default=0)
+    listed_count = models.PositiveIntegerField(default=0)
+    statuses_count = models.PositiveIntegerField(default=0)
     utc_offset = models.IntegerField(null=True)
 
-    followers = ManyToMany('User', versions=True)
-
-    objects = models.Manager()
-    remote = UserManager(methods={
-        'get': 'get_user',
-    })
+    followers = models.ManyToManyField('User')
 
     def __unicode__(self):
         return self.name
 
-    def save(self, *args, **kwargs):
-        if self.friends_count < 0:
-            log.warning('Negative value friends_count=%s set to 0 for user ID %s' % (self.friends_count, self.id))
-            self.friends_count = 0
-        super(User, self).save(*args, **kwargs)
-
-    @property
-    def slug(self):
-        return self.screen_name
-
-    def parse(self):
-        self._response['favorites_count'] = self._response.pop('favourites_count', None)
-        self._response.pop('status', None)
-        super(User, self).parse()
-
-    def fetch_followers(self, **kwargs):
-        return User.remote.fetch_followers_for_user(user=self, **kwargs)
-
-    def get_followers_ids(self, **kwargs):
-        return User.remote.get_followers_ids_for_user(user=self, **kwargs)
-
-    def fetch_statuses(self, **kwargs):
-        return Status.remote.fetch_for_user(user=self, **kwargs)
-
-
 class Status(TwitterBaseModel):
 
-    # Twitter ID
-    id = models.BigIntegerField(primary_key=True,db_index=True)
+    author = models.ForeignKey('User', related_name='statuses', on_delete=models.SET_NULL, null=True)
 
-    author = models.ForeignKey('User', related_name='statuses')
-
-    text = models.TextField()
+    text = models.TextField(null=True)
 
     favorited = models.BooleanField(default=False)
     retweeted = models.BooleanField(default=False)
     truncated = models.BooleanField(default=False)
 
-    source = models.CharField(max_length=100)
+    source = models.CharField(max_length=100, null=True)
     source_url = models.URLField(null=True)
 
-    favorites_count = models.PositiveIntegerField()
-    retweets_count = models.PositiveIntegerField()
-    replies_count = models.PositiveIntegerField(null=True)
+    favorites_count = models.PositiveIntegerField(default=0,null=True)
+    retweets_count = models.PositiveIntegerField(default=0, null=True)
+    replies_count = models.PositiveIntegerField(default=0,null=True)
 
-    in_reply_to_status = models.ForeignKey('Status', null=True, related_name='replies')
-    in_reply_to_user = models.ForeignKey('User', null=True, related_name='replies')
+    in_reply_to_status = models.ForeignKey('Status', null=True, related_name='replies', on_delete=models.SET_NULL)
+    in_reply_to_user = models.ForeignKey('User', null=True, related_name='replies', on_delete=models.SET_NULL)
 
-    favorites_users = ManyToMany('User', related_name='favorites')
-    retweeted_status = models.ForeignKey('Status', null=True, related_name='retweets')
+    favorites_users = models.ManyToManyField('User', related_name='favorites')
+    retweeted_status = models.ForeignKey('Status', null=True, related_name='retweets', on_delete=models.SET_NULL)
+
+    retweeted_by = models.ManyToManyField('User')
 
     place = JSONField(null=True)
     # format the next fields doesn't clear
@@ -136,37 +102,12 @@ class Status(TwitterBaseModel):
     coordinates = JSONField(null=True)
     geo = JSONField(null=True)
 
-    objects = models.Manager()
-    remote = StatusManager(methods={
-        'get': 'get_status',
-    })
+    searches = models.ManyToManyField('TwitterSearch')
 
     def __unicode__(self):
         return u'%s: %s' % (self.author, self.text)
 
-    @property
-    def slug(self):
-        return '/%s/status/%d' % (self.author.screen_name, self.pk)
+class TwitterSearch(models.Model):
 
-    def _substitute(self, old_instance):
-        super(Status, self)._substitute(old_instance)
-        self.replies_count = old_instance.replies_count
-
-    def parse(self):
-        self._response['favorites_count'] = self._response.pop('favorite_count', 0)
-        self._response['retweets_count'] = self._response.pop('retweet_count', 0)
-
-        self._response.pop('user', None)
-        self._response.pop('in_reply_to_screen_name', None)
-        self._response.pop('in_reply_to_user_id_str', None)
-        self._response.pop('in_reply_to_status_id_str', None)
-
-        self._get_foreignkeys_for_fields('in_reply_to_status', 'in_reply_to_user')
-
-        super(Status, self).parse()
-
-    def fetch_retweets(self, **kwargs):
-        return Status.remote.fetch_retweets(status=self, **kwargs)
-
-    def fetch_replies(self, **kwargs):
-        return Status.remote.fetch_replies(status=self, **kwargs)
+    string = models.TextField()
+    scrape_fetched = models.DateTimeField(u'Fetched', null=True, blank=True)
