@@ -3,7 +3,7 @@
 {% load render_table from django_tables2 %}
 {% load bootstrap4 %}
 {% block content %}
-
+<p>
 <h1> Scoping Review Helper</h1>
 <hr>
 
@@ -11,18 +11,44 @@
     <h2> Meta-analysis setup - {{project.title}}</h2>
     Use this page to
     <ul>
-        <li>Assign documents to be coded</li>
-        <li>define the options in dropdown fields for the <a href="#effect">effect</a> form, and for the <a href="#intervention">intervention</a> form</li>
+        <li>Assign documents to be coded [TODO]</li>
+        <li>define the input options for
+            <ul>
+                <li>the <a href="#effect">effect</a> form</li>
+                <li>the <a href="#intervention">intervention</a> form</li>
+                <li>the <a href="#controls">controls</a></li>
+                <li>the <a href="#Interventiontype">intervention types</a> </li>
 
 </div>
+<p>
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h4> Assignments</h4>
+            <table class="table table-bordered">
+                {% for key,value in doc_counts.assignments.items %}
+                <tr>
+                    <td>{{key}}</td>
+                    <td>{{value}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div class="col">
+            <h4> Coded documents</h4>
+            <table class="table table-bordered">
+                {% for key,value in doc_counts.codings.items %}
+                <tr>
+                    <td>{{key}}</td>
+                    <td>{{value}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
 
-<h4> Assignments</h4>
 
-{{ doc_counts.assignments }}
-
-<h4> Coded documents</h4>
-
-{{ doc_counts.codings}}
 
 
 

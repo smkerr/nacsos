@@ -12,6 +12,7 @@ from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.core.exceptions import ValidationError
 import operator
 from django.forms.models import model_to_dict
+from collections import OrderedDict
 
 from cities.models import *
 from tmv_app.models import *
@@ -1651,8 +1652,13 @@ def code_document(request,docmetaid):
         (4,'Save and exit')
     ]
 
+    doc = dmc.doc.highlight_fields(dmc.project,["title","content","id","wosarticle__so","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
+
+    #print(doc)
+
     connections = list(interventions.values('id','effect_id'))
     context = {
+        'doc': doc,
         'dests': dests,
         'project': dmc.project,
         'dmc': dmc,
@@ -4805,8 +4811,8 @@ def meta_setup(request,pid):
     ifields = get_flist(Intervention._meta.fields, p)
 
     doc_counts = {
-        'assignments': {},
-        'codings': {}
+        'assignments': OrderedDict({}),
+        'codings': OrderedDict({})
     }
 
     all_docs = Doc.objects.filter(
@@ -4817,16 +4823,27 @@ def meta_setup(request,pid):
     )
     for key,value in [('assignments',False),('codings',True)]:
         acs = all_codings
+        if key=="assignments":
+            nobody="To nobody"
+            one="To one person"
+            many = "To many"
+        else:
+            nobody = "By nobody"
+            one = "By one person"
+            many = "By many"
+
         if value:
             acs = all_codings.filter(coded=value)
         done = len(set(acs.values_list('doc_id',flat=True)))
-        doc_counts[key]['none'] = all_docs.count()-done
+        doc_counts[key][nobody] = all_docs.count()-done
+        if doc_counts[key][nobody] < 0:
+            doc_counts[key][nobody] = 0
         acds = acs.values('doc__id').annotate(
             doc_count=Count('doc__id')
         )
-        doc_counts[key]['single'] = acds.filter(doc_count=1).count()
-        doc_counts[key]['multiple'] = acds.filter(doc_count__gt=1).count()
-        doc_counts[key]['all'] = all_docs.count()
+        doc_counts[key][one] = acds.filter(doc_count=1).count()
+        doc_counts[key][many] = acds.filter(doc_count__gt=1).count()
+        #doc_counts[key]['n docs'] = all_docs.count()
 
     #doc_counts['assignments']
 

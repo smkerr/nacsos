@@ -18,6 +18,8 @@ from .validators import *
 import scoping
 from django.db import transaction
 from celery import current_app
+from scoping.utils import utils
+import re
 # Create your models here.
 
 def get_notnull_fields(model):
@@ -524,6 +526,39 @@ class Doc(models.Model):
 
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
+
+    def highlight_fields(self,q,fields):
+        if q.__class__ == scoping.models.Project:
+            words = utils.get_query_words(
+                q.query_set.exclude(database="intern")
+            )
+        else:
+            print("q")
+        d = {}
+        for f in fields:
+            doc = self
+            for fpart in f.split("__"):
+                doc = getattr(doc,fpart)
+            s = doc
+            if isinstance(s,str):
+                d[f] = ""
+                if f=="wosarticle__di":
+                    if s in words:
+                        s = '<span class="t1">{}</span>'.format(s)
+                else:
+                    for w in sorted(list(words),key=len, reverse=True):
+                        #s = re.sub(w,'<span class="t1">{}</span>'.format(w),s)
+                        s = utils.ihighlight(w,s)
+            d[f] = s
+        d["authors"] = list(self.docauthinst_set.order_by('position').values())
+        for a in d["authors"]:
+            for w in sorted(list(words),key=len, reverse=True):
+                a["institution"] = utils.ihighlight(w,a["institution"])
+
+
+
+        return d
+
 
 class DocSection(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)

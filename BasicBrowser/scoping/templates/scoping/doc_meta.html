@@ -5,9 +5,11 @@
 {% block content %}
 
 <p>
-<h2> Document coding: {{ dmc.doc.title }}</h2>
+<h2> Code document</h2>
 
-<div class="container">
+{% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+
+<div class="container m-3">
   <div class="row">
     <div class="col-sm">
         <h4>Effects</h4>
@@ -42,8 +44,9 @@
 </div>
 
 <hr>
-Done coding?
-
+<p>
+<h3>Done coding?</h3>
+</p>
 <div class="container">
     <div class="row">
         {% for d in dests %}

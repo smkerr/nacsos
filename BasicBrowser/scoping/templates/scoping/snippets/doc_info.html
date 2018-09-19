@@ -1,0 +1,31 @@
+<div id="docbox">
+<h4> {{ doc.title | safe }}</h4>
+<p>{{ doc.wosarticle__so | safe}}
+    {% if doc.wosarticle__py %}
+        ({{ doc.wosarticle__py }})
+    {% endif %}
+    {% if doc.wosarticle__di %}
+    <a target="_blank" href="http://dx.doi.org/{{ doc.wosarticle.di }}">{{ doc.wosarticle__di | safe}}</a>
+    {% endif %}
+<p style="text-align:left">
+{% for au in doc.authors %}
+<span>{% if au.AF %}
+    {{au.AF | safe}}
+    {% else %}
+    {{au.AU | safe }}
+    {% endif %}
+    [{{au.institution | safe}}];</span>
+{% endfor %}
+<p style="text-align:left">
+    Author keywords: {{doc.wosarticle__de | safe}}
+<p style="text-align:left">
+    WoS Keywords Plus: {{doc.wosarticle__kwp | safe}}
+
+{% if doc.docfile %}
+    <p style="text-align;left">
+        PDF: <a href="{% url 'scoping:download_pdf' doc.docfile.id %}">View</a>
+    </p>
+{% endif %}
+<p style="text-align:left">
+{{ doc.content | safe }}
+</div>
