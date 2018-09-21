@@ -1558,7 +1558,7 @@ def userpage(request, pid):
     queries = Tag.objects.filter(
         query__users=request.user,
         query__project=project
-    ).values('query__id','query__type','id')
+    ).values('query__id','query__type','id').order_by('-id')
 
     if project.id==1:
         queries = queries.filter(id__gt=731)
@@ -1654,11 +1654,19 @@ def code_document(request,docmetaid):
 
     doc = dmc.doc.highlight_fields(dmc.project,["title","content","id","wosarticle__so","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
 
+    notes = Note.objects.prelevant(dmc.project.id).filter(doc_id=dmc.doc.id).order_by('date')
+
+    ecs = ExclusionCriteria.objects.filter(project=dmc.project)
+
+    exclusions = Exclusion.objects.filter(project=dmc.project,doc=dmc.doc)
     #print(doc)
 
     connections = list(interventions.values('id','effect_id'))
     context = {
+        'ecs': ecs,
+        'exclusions': exclusions,
         'doc': doc,
+        'notes': notes,
         'dests': dests,
         'project': dmc.project,
         'dmc': dmc,
@@ -1667,6 +1675,21 @@ def code_document(request,docmetaid):
         'connections': connections
     }
     return HttpResponse(template.render(context,request))
+
+
+class ExcludeView(CreateView):
+    model = Exclusion
+    fields = ("reason",)
+    def form_valid(self, form):
+        dmc = DocMetaCoding.objects.get(pk=self.kwargs['dmc'])
+        model = form.save(commit=False)
+        model.doc = dmc.doc
+        model.project = dmc.project
+        model.user = dmc.user
+        model.save()
+        return HttpResponseRedirect(reverse('scoping:code_document', kwargs={"docmetaid": dmc.id}))
+    def form_invalid(self, form):
+        return HttpResponseRedirect(reverse('scoping:code_document', kwargs={"docmetaid": self.kwargs['dmc']}))
 
 @login_required
 def save_document_code(request,docmetaid,dest):
@@ -4431,39 +4454,54 @@ def add_note(request):
     ctype = request.POST.get('ctype',None)
     d = request.POST.get('d',None)
     text = request.POST.get('note',None)
+    pid = request.POST.get('project',None)
 
-    tag = Tag.objects.get(pk=tid)
+    if tid is not None:
+        tag = Tag.objects.get(pk=tid)
 
-    if not tag.document_linked:
-        par = DocPar.objects.get(pk=doc_id)
+        if not tag.document_linked:
+            par = DocPar.objects.get(pk=doc_id)
+            note = Note(
+                par=par,
+                tag=tag,
+                user=request.user,
+                date=timezone.now(),
+                project=tag.query.project,
+                text=text
+            )
+            note.save()
+            next = request.POST.get('next', '/')
+            return HttpResponseRedirect(next)
+        else:
+            doc = Doc.objects.get(pk=doc_id)
+            note = Note(
+                doc=doc,
+                tag=tag,
+                user=request.user,
+                date=timezone.now(),
+                project=tag.query.project,
+                text=text
+            )
+            note.save()
+            return HttpResponseRedirect(reverse('scoping:screen', kwargs={
+                'qid': qid,
+                'tid': tid,
+                'ctype': ctype,
+                'd': d
+            }))
+    else:
+        doc = Doc.objects.get(pk=doc_id)
         note = Note(
-            par=par,
-            tag=tag,
+            doc=doc,
             user=request.user,
             date=timezone.now(),
-            project=tag.query.project,
+            project_id=pid,
             text=text
         )
         note.save()
         next = request.POST.get('next', '/')
         return HttpResponseRedirect(next)
-    else:
-        doc = Doc.objects.get(pk=doc_id)
-        note = Note(
-            doc=doc,
-            tag=tag,
-            user=request.user,
-            date=timezone.now(),
-            project=tag.query.project,
-            text=text
-        )
-        note.save()
-        return HttpResponseRedirect(reverse('scoping:screen', kwargs={
-            'qid': qid,
-            'tid': tid,
-            'ctype': ctype,
-            'd': d
-        }))
+
 
 
 #########################################################

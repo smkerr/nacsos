@@ -6,7 +6,7 @@ from django.contrib.postgres.fields import ArrayField
 import uuid
 from random import randint
 import cities
-from django.db.models.signals import post_save, m2m_changed
+from django.db.models.signals import post_save, m2m_changed, pre_delete
 from django.dispatch import receiver
 from django.urls import reverse
 import tmv_app
@@ -221,6 +221,45 @@ class DocProject(models.Model):
 
     class Meta:
         unique_together = ("doc","project")
+
+class ExclusionCriteria(models.Model):
+    project= models.ForeignKey('Project', on_delete=models.CASCADE)
+    name = models.TextField()
+
+class Exclusion(models.Model):
+    doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    reason = models.TextField()
+    user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    date = models.DateTimeField(auto_now_add=True)
+
+@receiver(post_save, sender=Exclusion)
+def exclude_doc(sender, instance, **kwargs):
+    dp = DocProject.objects.get(
+        doc=instance.doc,
+        project=instance.project
+    )
+    dp.relevant=2
+    dp.save()
+
+@receiver(pre_delete, sender=Exclusion)
+def unexclude_doc(sender,instance,**kwargs):
+    dp = DocProject.objects.get(
+        doc=instance.doc,
+        project=instance.project
+    )
+    dp.relevant=0
+    dos = DocOwnership.objects.filter(
+        query__project=instance.project,
+        doc=instance.doc
+    )
+    for do in dos:
+        if dp.relevant == 0:
+            dp.relevant=do.relevant
+        elif dp.relevant != do.relevant:
+            dp.relevant = 3
+    dp.save()
+
 
 class Query(models.Model):
 
@@ -760,12 +799,23 @@ class DocRel(models.Model):
     class Meta:
         unique_together = ('seed', 'seedquery', 'text',)
 
+class NoteManager(models.Manager):
+    def prelevant(self,pid):
+        pn = list(self.model.objects.filter(
+            project__id=pid
+        ).values_list('pk',flat=True))
+        tn = list(self.model.objects.filter(
+            tag__query__project__id=pid
+        ).values_list('pk',flat=True))
+        return self.model.objects.filter(pk__in=set(pn+tn))
+
 class Note(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE,null=True)
     par = models.ForeignKey(DocPar, on_delete=models.CASCADE, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Notemaker")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
-    date = models.DateTimeField()
+    objects = NoteManager()
+    date = models.DateTimeField(auto_now_add=True)
     text = models.TextField(null=True)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
     class Meta:
@@ -773,6 +823,8 @@ class Note(models.Model):
 
     def __str__(self):
       return self.text
+
+
 
 class DocOwnership(models.Model):
 
