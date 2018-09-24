@@ -7,7 +7,8 @@ from django.db import connection, transaction
 from psycopg2.extras import *
 import time
 import subprocess
-import scoping
+#import scoping
+
 
 @shared_task
 def add(x, y):
@@ -72,10 +73,10 @@ def upload_docs(qid, update):
 
     print(q.title)
 
-    if ".RIS" in q.query_file.name:
-        r_count = read_ris(fname,q,update)
+    if ".RIS" in q.query_file.name or ".ris" in q.query_file.name:
+        r_count = read_ris(q,update)
 
-    if q.database =="WoS":
+    elif q.database =="WoS":
         print("WoS")
         with open(fname, encoding="utf-8") as res:
             r_count = read_wos(res, q, update)

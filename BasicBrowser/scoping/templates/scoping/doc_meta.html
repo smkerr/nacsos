@@ -90,7 +90,7 @@
         </form>
     </div>
     {% for e in exclusions %}
-    <div class="col-md-3 border rounded bg-white my-3 mx-2 p-2">
+    <div class="col-md-3 border rounded bg-danger my-3 mx-2 p-2">
         <p class="notedesc"><b>{{e.date}}, {{e.user.username}} excluded</b>
         <hr>
         {{e.reason}}

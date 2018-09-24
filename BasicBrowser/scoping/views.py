@@ -233,6 +233,7 @@ def project(request, pid):
 
 @login_required
 def queries(request, pid):
+    ## Try a table with gets, use django filter?
     request.session['DEBUG'] = False
     request.session['appmode']='scoping'
 

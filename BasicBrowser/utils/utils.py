@@ -1,14 +1,19 @@
 import django, re, gc
+from django.conf import settings
 
+from RISparser import readris
 from multiprocess import Pool
 from functools import partial
 from urllib.parse import urlparse, parse_qsl
 import sys
-
+import uuid
+import short_url
 
 
 from scoping.models import *
 from tmv_app.models import *
+
+import scoping.models
 
 ##################################
 ## Flatten nested lists
@@ -346,88 +351,130 @@ def add_doc_text(r,q,update):
     add_scopus_doc(record,q,update)
     return
 
-def add_scopus_doc(r,q,update):
+def find_with_id(r):
+    import scoping.models
+    print(scoping.models)
     doc = None
     try:
-        r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid'].strip()
+        doc = scoping.models.Doc.objects.get(UT__sid=r['UT'])
     except:
-        print(r)
-        return
-
-    try:
-        doc = Doc.objects.get(UT__sid=r['UT'])
-    except:
-        docs = Doc.objects.filter(UT__sid=r['UT']) | Doc.objects.filter(UT__UT=r['UT'])
+        docs = scoping.models.Doc.objects.filter(UT__sid=r['UT']) | scoping.models.Doc.objects.filter(UT__UT=r['UT'])
         if docs.count()==1: # If it's just there - great!
             doc = docs.first()
             print("found!")
         elif docs.count() > 1:
             print("OH no! multiple matches!")
-        else: # Otherwise try and match by doi
+    return doc
+
+def find_with_url(r):
+    url, created = scoping.models.URLs.objects.get_or_create(
+        url=r['url']
+    )
+    surl = short_url.encode_url(url.id)
+    try:
+        ut = scoping.models.UT.objects.get(UT=surl)
+        doc = ut.doc
+    except:
+        doc = None
+    return doc
+
+def add_scopus_doc(r,q,update):
+    doc = None
+    try:
+        r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid'].strip()
+    except:
+        if 'UT' not in r:
+            r['UT'] = str(uuid.uuid1())
+        r['url'] = r['UT']
+        r['UT'] = None
+
+    if r['UT'] is not None:
+        doc = find_with_id(r)
+    else:
+        doc = find_with_url(r)
+        for f in r:
             try:
-                did = r['di']
+                r[f] = r[f].replace('///','')
             except:
-                did = 'NA'
                 pass
 
-            if did=='NA':
-                docs = Doc.objects.filter(
-                        wosarticle__ti__iexact=get(r,'ti'),
-                        PY=get(r,'py')
-                )
+    if doc is None:
+        # Try and find an exact match with doi and title
+        try:
+            did = r['di']
+        except:
+            did = 'NA'
+            pass
+
+        if did=='NA':
+            docs = scoping.models.Doc.objects.filter(
+                    wosarticle__ti__iexact=get(r,'ti'),
+                    PY=get(r,'py')
+            )
+        else:
+            docs = scoping.models.Doc.objects.filter(
+                wosarticle__di=did
+            )
+
+        if len(docs)==1:
+            print("found it through stage 2")
+            docs.first().query.add(q)
+            doc = docs.first()
+        elif len(docs)>1: # if there are two, that's bad!
+            print("more than one doc matching!!!!!")
+            wdocs = docs.filter(UT__UT__contains='WOS:')
+            if wdocs.count()==1:
+                docs.exclude(UT__UT__contains='WOS:').delete()
+                doc = wdocs.first()
             else:
-                docs = Doc.objects.filter(
-                    wosarticle__di=did
-                )
-
-
-            if len(docs)==1:
-                print("found it through stage 2")
-                docs.first().query.add(q)
                 doc = docs.first()
-            if len(docs)>1: # if there are two, that's bad!
-                print("more than one doc matching!!!!!")
-                wdocs = docs.filter(UT__UT__contains='WOS:')
-                if wdocs.count()==1:
-                    docs.exclude(UT__UT__contains='WOS:').delete()
-                    doc = wdocs.first()
-                else:
-                    doc = docs.first()
-            if len(docs)==0: # if there are none, try with the title and jaccard similarity
-                print("no matching docs")
-                s1 = shingle(get(r,'ti'))
 
-                twords = get(r,'ti').split()
-                if len(twords) > 1:
-                    twords = ' '.join([x for x in twords[0:1]])
-                else:
-                    twords = twords[0]
+        elif len(docs)==0: # if there are none, try with the title and jaccard similarity
+            s1 = shingle(get(r,'ti'))
 
-                py_docs = Doc.objects.filter(
-                    PY=get(r,'py'),
-                    title__iregex='\w',
-                    title__icontains=twords
+            twords = get(r,'ti').split()
+            if len(twords) > 1:
+                twords = ' '.join([x for x in twords[0:1]])
+            else:
+                twords = twords[0]
+
+            py_docs = scoping.models.Doc.objects.filter(
+                PY=get(r,'py'),
+                title__iregex='\w',
+                title__icontains=twords
+            )
+            doc = None
+            for d in py_docs.iterator():
+                j = jaccard(s1,d.shingle())
+                if j > 0.51:
+                    d.query.add(q)
+                    doc = d
+                    break
+
+        if doc is None:
+            if r['UT'] is not None:
+                ut, created = scoping.models.UT.objects.get_or_create(
+                    UT=r['UT'],
+                    sid=r['UT']
                 )
-                doc = None
-                for d in py_docs.iterator():
-                    j = jaccard(s1,d.shingle())
-                    if j > 0.51:
-                        d.query.add(q)
-                        doc = d
-                        break
-
-                if doc is None:
-                    ut, created = UT.objects.get_or_create(
-                        UT=r['UT'],
-                        sid=r['UT']
-                    )
-                    doc = Doc(UT=ut)
-                    doc.save()
+                doc = scoping.models.Doc(UT=ut)
+                doc.save()
+            else:
+                url, created = scoping.models.URLs.objects.get_or_create(
+                    url=r['url']
+                )
+                surl = short_url.encode_url(url.id)
+                ut, created = scoping.models.UT.objects.get_or_create(
+                    UT=surl
+                )
+                doc = scoping.models.Doc(UT=ut)
+                doc.save()
                 #print(doc)
     if doc is not None:
-        doc.UT.sid = r['UT']
-        doc.UT.save()
-        article, created = WoSArticle.objects.get_or_create(doc=doc)
+        if r['UT'] is not None:
+            doc.UT.sid = r['UT']
+            doc.UT.save()
+        article, created = scoping.models.WoSArticle.objects.get_or_create(doc=doc)
         article.save()
         article.tc=get(r,'tc')
         if article.fu is None:
@@ -448,7 +495,7 @@ def add_scopus_doc(r,q,update):
         article.save()
         doc.query.add(q)
         #doc.projects.add(q.project)
-    if doc is not None and "WOS:" not in doc.UT.UT:
+    if doc is not None and "WOS:" not in str(doc.UT.UT):
         if update:
             doc.title=get(r,'ti')
             doc.content=get(r,'ab')
@@ -481,7 +528,7 @@ def add_scopus_doc(r,q,update):
                 for a in range(len(get(r,'au'))):
                     #af = r['AF'][a]
                     au = r['au'][a]
-                    dai = DocAuthInst(doc=doc)
+                    dai = scoping.models.DocAuthInst(doc=doc)
                     dai.AU = au
                     dai.position = a+1
                     dais.append(dai)
@@ -590,14 +637,20 @@ RIS_TY_MAPPING = {
 }
 
 def read_ris(q, update):
-    from django.conf import settings
-    from RISparser import readris
     with open(
         "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name
     ),'r') as f:
-        entries = readris(f)
-        for e in entries:
-            add_scopus_doc(e,q,update)
+        entries = readris(f,mapping=RIS_KEY_MAPPING)
+        try:
+            for e in entries:
+                add_scopus_doc(e,q,update)
+        except:
+            with open(
+                "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name
+            ),'r',encoding='utf-8-sig') as f:
+                entries = readris(f,mapping=RIS_KEY_MAPPING)
+                for e in entries:
+                    add_scopus_doc(e,q,update)
 
 def read_scopus(res, q, update):
 

@@ -165,6 +165,20 @@ class Intervention(models.Model):
         return "Intervention - {}".format("; ".join(itypes))
 
 
+class PopCharField(models.Model):
+    project = models.ForeignKey('Project',on_delete=models.CASCADE)
+    name = models.TextField()
+
+
+class PopChar(models.Model):
+    effect = models.ForeignKey(StudyEffect, on_delete=models.CASCADE)
+    field = models.ForeignKey(PopCharField, on_delete=models.CASCADE)
+    value = models.FloatField(null=True)
+    str_value = models.TextField(null=True)
+
+
+
+
 class InterventionType(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
     name = models.TextField()
@@ -274,6 +288,7 @@ class Query(models.Model):
         ('WoS','Web of Science'),
         ('Scopus','Scopus'),
         ('intern','Internal'),
+        ('pop','Publish or Perish')
     )
 
 
