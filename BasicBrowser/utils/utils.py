@@ -88,7 +88,7 @@ def add_doc(r, q, update):
 
     django.db.connections.close_all()
 
-    ut, created = UT.objects.get_or_create(UT=r['UT'])
+    ut, created = scoping.models.UT.objects.get_or_create(UT=r['UT'])
 
     #doc, created = Doc.objects.get_or_create(UT=r['UT'])
 
@@ -97,7 +97,7 @@ def add_doc(r, q, update):
         doc.query.add(q)
         #doc.projects.add(q.project)
     else:
-        doc, created = Doc.objects.get_or_create(UT=ut)
+        doc, created = scoping.models.Doc.objects.get_or_create(UT=ut)
         doc.title=get(r,'TI')
         doc.content=get(r,'AB')
         doc.PY=get(r,'PY')
@@ -105,7 +105,7 @@ def add_doc(r, q, update):
         doc.save()
         doc.query.add(q)
         #doc.projects.add(q.project)
-        article, created = WoSArticle.objects.get_or_create(doc=doc)
+        article, created = scoping.models.WoSArticle.objects.get_or_create(doc=doc)
         try:
             r['wc'] = [x.strip() for x in get(r,'WC').split(";")]
         except:
@@ -156,7 +156,7 @@ def add_doc(r, q, update):
                     institute = inst[1]
                 if af in iauth:
                     try:
-                        dai,created = DocAuthInst.objects.get_or_create(
+                        dai,created = scoping.models.DocAuthInst.objects.get_or_create(
                             doc=doc,
                             AU = au,
                             AF = af,
@@ -167,7 +167,7 @@ def add_doc(r, q, update):
                         a_added=True
                     except:
                         doc.docauthinst_set.all().delete()
-                        dai,created = DocAuthInst.objects.get_or_create(
+                        dai,created = scoping.models.DocAuthInst.objects.get_or_create(
                             doc=doc,
                             AU = au,
                             AF = af,
@@ -178,7 +178,7 @@ def add_doc(r, q, update):
                         a_added=True
                         print("{} {} {} {} {}".format(doc,au,af,institute,a+1))
             if a_added == False: # i.e. if there is nothing in institution...
-                dai, created = DocAuthInst.objects.get_or_create(
+                dai, created = scoping.models.DocAuthInst.objects.get_or_create(
                     doc=doc,
                     AU = au,
                     AF = af,
