@@ -4584,6 +4584,9 @@ def highlight_words(s,query):
         qwords = [item for sublist in qwords for item in sublist]
         if "sustainability" in query.title:
             qwords = ["sustainab"]
+        if "MANUAL" in query.text:
+            qwords = re.findall('\w+',query.text)
+            qwords = [q.lower() for q in qwords if q !="Manual"]
     else:
         qwords = re.findall('\w+',query.text)
         qwords = [q.lower() for q in qwords]
