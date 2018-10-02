@@ -1,12 +1,36 @@
 {% extends "scoping/base_bs.html" %}
 {% load render_table from django_tables2 %}
 {% load bootstrap4 %}
+{% load static %}
 {% block content %}
 <p>
 <h2> Add {{ei}} for - {{ dmc.doc.title }}</h2>
 
-<form action="" method="POST">
+<form class="form" action="" method="POST">
     {% csrf_token %}
+
+    <div class="container border rounded bg-white p-2">
+    {% for g in groups %}
+        {% if g.counter0 > 0 %}
+        <hr>
+        {% endif %}
+        <div data-group="{{g.title}}" class="container">
+            <div class="row">
+            <h4 class="m-2 mb-1">{{g.title}}</h4>
+            </div>
+            <div class="row">
+            {% for f in g.form_fields %}
+                {% include "scoping/snippets/dynamic_form_input.html" with f=f %}
+            {% endfor %}
+            </div>
+        </div>
+
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+    </div>
+
+
     <div class="row">
     {% for f in form_fields %}
         {% if forloop.counter0|divisibleby:2 %}
@@ -14,104 +38,32 @@
     <div class="row">
         {% else %}
         {% endif %}
-        <div class="form-group col" data-name="{{f.name}}">
-        <label for="{{f.ff.widget.id_for_label}}"
-        >{{f.ff.label}}</label>
 
-        {% ifequal f.ff.widget.input_type "number" %}
-
-            <input name="{{f.name}}" type="{{f.ff.widget.input_type}}"
-            {% if f.errors %}
-            class="form-control is-invalid"
-            {% else %}
-            class="form-control"
-            {% endif %}
-            id="{{f.ff.id_for_label}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" min={{f.ff.min_value}} step={{f.step}} value={{f.value}}>
-
-        {% else %}
-
-            <select {% if f.multiple %} multiple{% endif %}
-            {% if f.choices or f.options %}
-                name="{{f.name}}"
-                {% if f.errors %}
-                    class="form-control is-invalid"
-                    {% else %}
-                    class="form-control"
-                {% endif %}
-            {% else %}
-                {% if f.errors %}
-                    class="form-control is-invalid hidden"
-                    {% else %}
-                    class="form-control hidden"
-                {% endif %}
-            {% endif %}
-                id="{{f.ff.id_for_label}}">
-
-                {% for o in f.options %}
-                <option value="{{o.name}}"
-                {% ifequal f.value o.name %}
-                selected
-                {% endifequal %}
-                {% if o.name in f.value %}
-                selected
-                {% endif %}
-                >{{o.name}}</option>
-                {% endfor %}
-
-                {% for o in f.choices %}
-                <option
-                {% ifequal o.1 f.value %}
-                selected
-                {% endifequal %}
-                {% if o.1 in f.value %}
-                selected
-                {% endif %}
-                value="{{o.0}}"
-                >{{o.1}}</option>
-                {% endfor %}
-
-            </select>
-
-            <input
-            {% if f.choices or f.options %}
-                {% if f.errors %}
-                    class="form-control is-invalid hidden"
-                {% else %}
-                    class="form-control hidden"
-                {% endif %}
-            {% else %}
-                name="{{f.name}}"
-                {% if f.errors %}
-                    class="form-control is-invalid"
-                {% else %}
-                    class="form-control"
-                {% endif %}
-            {% endif %}
-            type="text" class="form-control" id="{{f.ff.id_for_label}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" value="{{f.value}}"></input>
-            {% if f.choices or f.options %}
-                <button type="button" class="btn other">Other</button>
-            {% endif %}
-
-
-        {% endifequal %}
-
-        {% for e in f.errors %}
-            <div class="is-invalid was-validated invalid-feedback">
-                {{e}}
-            </div>
-        {% endfor %}
-
-        </div>
+        {% include "scoping/snippets/dynamic_form_input.html" with f=f %}
 
     {% endfor %}
     </div>
-<button type="submit" class="btn btn-primary">Submit</button>
 
-</form>
 
 {% endblock %}
 
 
 {% block script %}
 <script src="{% static 'scoping/js/forms.js' %}"></script>
+<script type="text/javascript">
+function meanDiff(s) {
+    if (['Difference of means','ANOVA'].includes(s)) {
+        $('*[data-group="Difference of means"]').removeClass("hidden")
+    } else {
+        $('*[data-group="Difference of means"]').addClass("hidden")
+    }
+}
+
+$("#select_statistical_technique").change(function() {
+    console.log($(this).val())
+    meanDiff($(this).val())
+})
+
+meanDiff($("#select_statistical_technique").val())
+</script>
 {% endblock %}

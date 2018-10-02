@@ -1,3 +1,4 @@
+
 from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 from itertools import chain
@@ -1749,60 +1750,67 @@ def save_document_code(request,docmetaid,dest):
     return HttpResponse(template.render(context,request))
 
 def get_form_fields(model,project,instance=False,errors={},data={}):
-    form_fields = []
-    for f in model._meta.get_fields():
-        if f.name == "id":
-            continue
-        elif f.is_relation and "intervention_subtypes" not in f.name and "controls" not in f.name:
-            continue
-        else:
-            if f.get_internal_type()=="FloatField":
-                step="any"
+    groups = []
+    for g in model.GROUPS:
+        fields = [x for x in model._meta.get_fields() if hasattr(x,"group") and x.group==g[0]]
+        form_fields = []
+        for f in fields:
+            if f.name == "id":
+                continue
+            elif f.is_relation and "intervention_subtypes" not in f.name and "controls" not in f.name:
+                continue
             else:
-                step=1
-            ff = f.formfield()
-            options=ProjectChoice.objects.filter(
-                field=f.name,
-                project=project
-            )
-            choices = f.choices
-            if data:
-                if f.name in data:
-                    value = data[f.name]
+                if f.get_internal_type()=="FloatField":
+                    step="any"
                 else:
-                    value = None
-            elif instance:
-                if f.many_to_many:
-                    value=list(getattr(
-                        instance,f.name.replace('_id','')
-                        ).all().values_list('name',flat=True))
-                else:
-                    value=getattr(instance,f.name)
-            else:
-                value=None
-            if f.many_to_many:
-                choices = f.related_model.objects.filter(
+                    step=1
+                ff = f.formfield()
+                options=ProjectChoice.objects.filter(
+                    field=f.name,
                     project=project
-                ).values_list('id','name')
-            if f.name in errors:
-                f_errors = errors[f.name]
-            else:
-                f_errors = []
-            if f.many_to_many:
-                multiple = True
-            else:
-                multiple = False
-            form_fields.append({
-                'step': step,
-                'name': f.name,
-                'ff': ff,
-                'options': options,
-                'choices': choices,
-                'value': value,
-                'errors': f_errors,
-                'multiple': multiple
-            })
-    return form_fields
+                )
+                choices = f.choices
+                if data:
+                    if f.name in data:
+                        value = data[f.name]
+                    else:
+                        value = None
+                elif instance:
+                    if f.many_to_many:
+                        value=list(getattr(
+                            instance,f.name.replace('_id','')
+                            ).all().values_list('name',flat=True))
+                    else:
+                        value=getattr(instance,f.name)
+                else:
+                    value=None
+                if f.many_to_many:
+                    choices = f.related_model.objects.filter(
+                        project=project
+                    ).values_list('id','name')
+                if f.name in errors:
+                    f_errors = errors[f.name]
+                else:
+                    f_errors = []
+                if f.many_to_many:
+                    multiple = True
+                else:
+                    multiple = False
+                form_fields.append({
+                    'step': step,
+                    'name': f.name,
+                    'ff': ff,
+                    'options': options,
+                    'choices': choices,
+                    'value': value,
+                    'errors': f_errors,
+                    'multiple': multiple
+                })
+        groups.append({
+            "title": g[1],
+            "form_fields": form_fields
+        })
+    return groups
 
 def clean_form_data(data,model):
     clean_data = {}
@@ -1876,7 +1884,7 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
     context = {
         'project': dmc.project,
         'dmc': dmc,
-        'form_fields': form_fields,
+        'groups': form_fields,
         'ei': "Effect"
     }
     return HttpResponse(template.render(context,request))
@@ -4847,8 +4855,18 @@ def meta_setup(request,pid):
                     name=f.data['name']
                 )
                 pc.unit = f.data['unit']
-                pc.numeric = f.data['numeric']
+                if "numeric" in f.data:
+                    pc.numeric = True
+                else:
+                    pc.numeric = False
                 pc.save()
+        elif "exclusion" in request.POST:
+            f = ExclusionForm(request.POST)
+            if f.is_valid():
+                ec, created = ExclusionCriteria.objects.get_or_create(
+                    project=p,
+                    name=f.data['name']
+                )
         else:
             f = InterventionForm(request.POST)
             if f.is_valid():
@@ -4909,6 +4927,8 @@ def meta_setup(request,pid):
     controls_form = ControlsForm()
     popchars = PopCharField.objects.filter(project=p)
     popchars_form = PopCharForm()
+    ecs = ExclusionCriteria.objects.filter(project=p)
+    ec_form = ExclusionForm()
 
     context = {
         'project': p,
@@ -4922,6 +4942,8 @@ def meta_setup(request,pid):
         'controls': controls,
         'controls_form': controls_form,
         'popchars': popchars,
-        'popchars_form': popchars_form
+        'popchars_form': popchars_form,
+        'ecs': ecs,
+        'ec_form': ec_form
     }
     return render(request, 'scoping/meta_setup.html',context)

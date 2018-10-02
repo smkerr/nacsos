@@ -71,57 +71,110 @@ class Project(models.Model):
     def __str__(self):
       return self.title
 
+
+
 class StudyEffect(models.Model):
+
+    GROUPS = [
+        (5, "General variables"),
+        (6, "Difference of means"),
+        (1,"Coefficient"),
+        (2,"Significance"),
+        (3,"Sample size"),
+        (4,"Study scope"),
+
+    ]
+
+
     doc = models.ForeignKey('Doc',on_delete=models.CASCADE)
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    page = models.PositiveSmallIntegerField()
 
-    statistical_technique = models.TextField()
 
-    dependent_variable = models.TextField()
+    ## User entered fields
 
-    #control_definition = models.TextField(null=True, blank=True)
-    aggregation_level = models.TextField(null=True, blank=True)
-    controls = models.ManyToManyField('Controls')
-
-    total_sample_size = models.PositiveIntegerField(null=True, blank=True)
-    treatment_sample_size = models.PositiveIntegerField(null=True, blank=True)
-    control_sample_size = models.PositiveIntegerField(null=True, blank=True)
-
-    treated_mean = models.FloatField(null=True, blank=True)
-    control_mean = models.FloatField(null=True, blank=True)
-    diff_mean = models.FloatField(null=True, blank=True)
-
-    treated_sd = models.FloatField(null=True, blank=True)
-    control_sd = models.FloatField(null=True, blank=True)
-    pooled_sd = models.FloatField(null=True, blank=True)
-
+    #g1
     coefficient = models.FloatField(null=True, blank=True)
+    coefficient.group = 1
     coefficient_sd = models.FloatField(null=True, blank=True)
-
-    significance_test = models.TextField()
-    #Choices? Predefined?
-
-    test_statistic = models.FloatField(null=True, blank=True)
-    test_statistic_df = models.IntegerField(null=True, blank=True)
-    p_value = models.FloatField()
-    tail_choices = (
-        (1,"one-tailed"),
-        (2,"two-tailed")
-    )
-    test_tails = models.IntegerField(choices=tail_choices)
-    geographic_scope = models.TextField()
-    geographic_location = models.TextField(null=True,blank=True)
-    # Regions etc from django cities?
-
+    coefficient_sd.group = 1
     direction = (
         (1,'Increase'),
         # definitely not neutral?
         (-1,'Decrease')
     )
     effect_direction=models.IntegerField(choices=direction)
+    effect_direction.group = 1
+
+    #g2
+    significance_test = models.TextField()
+    significance_test.group = 2
+    test_statistic = models.FloatField(null=True, blank=True)
+    test_statistic.group=2
+    test_statistic_df = models.IntegerField(null=True, blank=True)
+    test_statistic_df.group=2
+    p_value = models.FloatField()
+    p_value.group=2
+
+    tail_choices = (
+        (1,"one-tailed"),
+        (2,"two-tailed")
+    )
+    test_tails = models.IntegerField(choices=tail_choices)
+    test_tails.group=2
+
+    #g3 - sample size
+    total_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    total_sample_size.group=3
+    treatment_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    treatment_sample_size.group=3
+    control_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    control_sample_size.group=3
+
+    #g4 Study variables
+    geographic_scope = models.TextField()
+    geographic_scope.group=4
+    geographic_location = models.TextField(null=True,blank=True)
+    geographic_location.group=4
+    aggregation_level = models.TextField(null=True, blank=True)
+    aggregation_level.group=4
+    controls = models.ManyToManyField('Controls')
+    controls.group=4
+
+    #g5 General
+
+    page = models.PositiveSmallIntegerField()
+    page.group=5
+    statistical_technique = models.TextField()
+    statistical_technique.group=5
+
+    dependent_variable = models.TextField()
+    dependent_variable.group=5
+
+
+
+    treated_mean = models.FloatField(null=True, blank=True)
+    treated_mean.group=6
+    control_mean = models.FloatField(null=True, blank=True)
+    control_mean.group=6
+    diff_mean = models.FloatField(null=True, blank=True)
+    diff_mean.group=6
+
+    treated_sd = models.FloatField(null=True, blank=True)
+    treated_sd.group=6
+    control_sd = models.FloatField(null=True, blank=True)
+    control_sd.group=6
+    pooled_sd = models.FloatField(null=True, blank=True)
+    pooled_sd.group=6
+
+
+    #Choices? Predefined?
+
+
+    # Regions etc from django cities?
+
+
     def __str__(self):
         if self.coefficient is not None:
             return str(self.coefficient)
@@ -171,6 +224,11 @@ class PopCharField(models.Model):
     unit = models.TextField()
     numeric = models.BooleanField(default=False)
 
+    def __str__(self):
+        x = "{} - {}".format(self.name, self.unit)
+        if self.numeric:
+            x+=" (numeric)"
+        return x
 
 class PopChar(models.Model):
     effect = models.ForeignKey(StudyEffect, on_delete=models.CASCADE)

@@ -5,6 +5,7 @@ $('.other').on('click', function () {
     inputs = r.children('input,select')
     //inputs.each(function(i,v){
     $.each(inputs, function(i,v) {
+        console.log(v)
         v.classList.toggle('hidden');
         if (v.name==name) {
             v.removeAttribute('name')

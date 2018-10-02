@@ -650,6 +650,9 @@ def read_ris(q, update):
             ),'r',encoding='utf-8-sig') as f:
                 entries = readris(f,mapping=RIS_KEY_MAPPING)
                 for e in entries:
+                    if "py" in e:
+                        if type(e["py"] is str):
+                            e["py"] = int(e["py"][:4])
                     add_scopus_doc(e,q,update)
 
 def read_scopus(res, q, update):

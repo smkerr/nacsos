@@ -72,7 +72,7 @@ connection {
 }
 
 .hidden {
-    display:none
+    display:none !important;
 }
 
 .t1 {

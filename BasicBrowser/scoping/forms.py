@@ -40,6 +40,10 @@ class ControlsForm(forms.Form):
     name = forms.CharField()
     controls = forms.CharField(widget=forms.HiddenInput(),required=False)
 
+class ExclusionForm(forms.Form):
+    name = forms.CharField()
+    exclusion = forms.CharField(widget=forms.HiddenInput(),required=False)
+
 class PopCharForm(forms.ModelForm):
     name = forms.CharField()
     unit = forms.CharField()
