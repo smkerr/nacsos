@@ -40,6 +40,13 @@ class ControlsForm(forms.Form):
     name = forms.CharField()
     controls = forms.CharField(widget=forms.HiddenInput(),required=False)
 
+class PopCharForm(forms.ModelForm):
+    name = forms.CharField()
+    unit = forms.CharField()
+    class Meta:
+        model = PopCharField
+        exclude = ('project',)
+
 class InterventionSubtypeForm(forms.ModelForm):
     name = forms.CharField()
     class Meta:

@@ -4839,6 +4839,16 @@ def meta_setup(request,pid):
                     project=p,
                     name=f.data['name']
                 )
+        elif "unit" in request.POST:
+            f = PopCharForm(request.POST)
+            if f.is_valid():
+                pc, created = PopCharField.objects.get_or_create(
+                    project=p,
+                    name=f.data['name']
+                )
+                pc.unit = f.data['unit']
+                pc.numeric = f.data['numeric']
+                pc.save()
         else:
             f = InterventionForm(request.POST)
             if f.is_valid():
@@ -4897,6 +4907,8 @@ def meta_setup(request,pid):
 
     controls = Controls.objects.filter(project=p)
     controls_form = ControlsForm()
+    popchars = PopCharField.objects.filter(project=p)
+    popchars_form = PopCharForm()
 
     context = {
         'project': p,
@@ -4908,6 +4920,8 @@ def meta_setup(request,pid):
         'interventionsubtype_form': interventionsubtype_form,
         'intervention_subtypes': intervention_subtypes,
         'controls': controls,
-        'controls_form': controls_form
+        'controls_form': controls_form,
+        'popchars': popchars,
+        'popchars_form': popchars_form
     }
     return render(request, 'scoping/meta_setup.html',context)

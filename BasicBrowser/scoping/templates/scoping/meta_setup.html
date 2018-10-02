@@ -61,6 +61,7 @@
 
 
 <div class="container">
+
     <div class="row">
         <h4 id="controls">Controls</h4>
     </div>
@@ -78,6 +79,26 @@
             </form>
         </div>
     </div>
+
+
+    <div class="row">
+        <h4 id="controls">Population Characteristics</h4>
+    </div>
+    <div class="row">
+        <div class="col-sm extra-high">
+            {% for intervention in popchars %}
+                <span class="border rounded bg-white p-2">{{intervention.name}} <a class="confirmation" href="{% url 'scoping:delete' 'Controls' intervention.id %}">x</a></span>
+
+            {% endfor %}
+        </div>
+        <div class="col-6">
+            <form method="POST" class="form-inline">{% csrf_token %}
+                {% bootstrap_form  popchars_form layout='inline' %}
+                {% bootstrap_button 'Save' %}
+            </form>
+        </div>
+    </div>
+
     <div class="row">
         <h4 id="Interventiontype">Intervention Types</h4>
     </div>

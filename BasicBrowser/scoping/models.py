@@ -168,6 +168,8 @@ class Intervention(models.Model):
 class PopCharField(models.Model):
     project = models.ForeignKey('Project',on_delete=models.CASCADE)
     name = models.TextField()
+    unit = models.TextField()
+    numeric = models.BooleanField(default=False)
 
 
 class PopChar(models.Model):
@@ -288,7 +290,8 @@ class Query(models.Model):
         ('WoS','Web of Science'),
         ('Scopus','Scopus'),
         ('intern','Internal'),
-        ('pop','Publish or Perish')
+        ('pop','Publish or Perish'),
+        ('ebsco', 'EBSCO')
     )
 
 
