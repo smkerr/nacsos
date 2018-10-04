@@ -1292,6 +1292,15 @@ def query(request,qid,q2id='0',sbsid='0'):
 
         query = Query.objects.get(pk=qid)
 
+        if query.r_count is None:
+            return HttpResponseRedirect(reverse(
+                'scoping:querying',
+                kwargs={
+                    'qid':query.id
+                }
+
+            ))
+
         tags = Tag.objects.filter(query=query).order_by('-pk')
 
         tags = tags.select_related('docpar_set').values()

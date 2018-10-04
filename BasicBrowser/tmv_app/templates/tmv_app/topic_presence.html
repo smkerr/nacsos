@@ -11,17 +11,24 @@
 <hr noshade>
 </div>
 <div id="graph">
-<table width="100%">
-{% for topic, topic_score, width in topic_tuples %}
-<tr><td><table width="{{ width|floatformat:1 }}%" >
-  <tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" >
-    {% if stat.method == "DT" %}
-    <a href="{% url 'tmv_app:dynamic_topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
-    {% else %}
-    <a href="{% url 'tmv_app:topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
-    {% endif %}
-{% endfor %}
-</table>
+{% if topic_tuples %}
+    <table width="100%">
+    {% for topic, topic_score, width in topic_tuples %}
+    <tr><td><table width="{{ width|floatformat:1 }}%" >
+      <tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" >
+        {% if stat.method == "DT" %}
+        <a href="{% url 'tmv_app:dynamic_topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
+        {% else %}
+        <a href="{% url 'tmv_app:topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
+        {% endif %}
+    {% endfor %}
+    </table>
+{% else %}
+
+The status of this topic model is currently  [{{stat.get_status_display}}]
+
+{% endif %}
+
 </div>
 
 <div id="footer">

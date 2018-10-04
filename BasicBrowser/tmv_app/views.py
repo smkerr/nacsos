@@ -1099,6 +1099,7 @@ def topic_list_detail(request):
 ### Main page!
 def topic_presence_detail(request,run_id):
     stat = RunStats.objects.get(run_id=run_id)
+    template = loader.get_template('tmv_app/topic_presence.html')
     if stat.get_method_display() == 'hlda':
         return(topic_presence_hlda(request))
 
@@ -1108,36 +1109,43 @@ def topic_presence_detail(request,run_id):
     if stat.method == "BD":
         update_bdtopics(run_id)
 
+    if stat.status==3:
+        run_id = int(run_id)
 
-    run_id = int(run_id)
-
-    update_topic_titles(run_id)
-    update_topic_scores(run_id)
+        update_topic_titles(run_id)
+        update_topic_scores(run_id)
 
 
-    response = ''
+        response = ''
 
-    get_year_filter(request)
+        get_year_filter(request)
 
-    presence_template = loader.get_template('tmv_app/topic_presence.html')
-    if stat.method=="DT":
-        topics = DynamicTopic.objects.filter(run_id=run_id).order_by('-score')
+
+        if stat.method=="DT":
+            topics = DynamicTopic.objects.filter(run_id=run_id).order_by('-score')
+        else:
+            topics = Topic.objects.filter(run_id=run_id).order_by('-score')
+        max_score = topics[0].score
+
+        topic_tuples = []
+        for topic in topics:
+            s = topic.score
+            topic_tuples.append((topic, topic.score, topic.score/max_score*100))
+
+        context = {
+            'run_id': run_id,
+            'topic_tuples': topic_tuples,
+            'stat': stat
+        }
     else:
-        topics = Topic.objects.filter(run_id=run_id).order_by('-score')
-    max_score = topics[0].score
+        context = {
+            'run_id': run_id,
+            'stat': stat,
+            'unfinished': True
+        }
 
-    topic_tuples = []
-    for topic in topics:
-        s = topic.score
-        topic_tuples.append((topic, topic.score, topic.score/max_score*100))
 
-    presence_page_context = {
-        'run_id': run_id,
-        'topic_tuples': topic_tuples,
-        'stat': stat
-    }
-
-    return HttpResponse(presence_template.render(presence_page_context))
+    return HttpResponse(template.render(context))
 
 def dtm_home(request, run_id):
     template = loader.get_template('tmv_app/dtm_home.html')

@@ -20,7 +20,7 @@
           <td>{{ query.title }}</td>
           <td class="ltext">{{ query.text }}</td>
           <td>{{ query.date }}</td>
-          {% if query.r_count > 0 %}
+          {% if query.r_count is not None %}
             <td><a href="{% url 'scoping:doclist' project.id query.id %}">{{ query.r_count }}</a></td>
           {% else %}
             <td><a href="{% url 'scoping:querying' query.id %}">View progress</a></td>
