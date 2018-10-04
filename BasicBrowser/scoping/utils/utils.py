@@ -66,7 +66,10 @@ def extract_words_phrases(s):
 
 
 def get_query_words(qs):
-    qtexts = qs.values_list('text',flat=True)
+    try:
+        qtexts = qs.values_list('text',flat=True)
+    except:
+        qtexts = [q.text for q in qs]
     qwords = flatten([extract_words_phrases(s) for s in qtexts])
     qwords = set(qwords)
     return qwords

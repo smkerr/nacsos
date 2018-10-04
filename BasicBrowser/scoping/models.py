@@ -379,6 +379,7 @@ class Query(models.Model):
     technology  = models.ForeignKey('Technology', on_delete=models.CASCADE, null=True)
     innovation  = models.ForeignKey('Innovation', on_delete=models.CASCADE, null=True)
     query_file = models.FileField(upload_to='queries/',null=True)
+    queries = models.ManyToManyField("self",symmetrical=False)
 
 
     def __str__(self):
@@ -650,11 +651,22 @@ class Doc(models.Model):
 
     def highlight_fields(self,q,fields):
         if q.__class__ == scoping.models.Project:
-            words = utils.get_query_words(
-                q.query_set.exclude(database="intern")
-            )
+            qs = q.query_set.exclude(database="intern")
+        elif q.queries.exists():
+            qs = []
+            for q1 in q.queries.all():
+                if q1.queries.exists():
+                    for q2 in q1.queries.all():
+                        if q2.queries.exists():
+                            for q3 in q2.queries.all():
+                                qs.append(q3)
+                        else:
+                            qs.append(q2)
+                else:
+                    qs.append(q1)
         else:
-            print("q")
+            qs = [q]
+        words = utils.get_query_words(qs)
         d = {}
         for f in fields:
             doc = self
@@ -940,6 +952,7 @@ class DocOwnership(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Reviewer")
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
+    order = models.IntegerField(null=True)
     relevant = models.IntegerField(
         choices=Status,
         default=0,

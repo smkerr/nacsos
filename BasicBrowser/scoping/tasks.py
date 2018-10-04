@@ -25,6 +25,13 @@ def handle_update_tag(tid):
     return t.id
 
 @shared_task
+def order_dos(dos):
+    for i,d in enumerate(dos):
+        do = DocOwnership.objects.get(pk=d)
+        do.order=i
+        do.save()
+
+@shared_task
 def update_projs(pids,add_docprojects=False):
 
     projs = Project.objects.filter(id__in=pids)
@@ -117,6 +124,8 @@ def do_query(qid):
         if "manually uploaded" in q.text:
             print("manually uploaded")
         elif args[1].strip() in ["AND", "OR", "NOT"]:
+            q.queries.add(Query.objects.get(pk=args[0]))
+            q.queries.add(Query.objects.get(pk=args[2]))
             q1 = set(Doc.objects.filter(query=args[0]).values_list('id',flat=True))
             op = args[1]
             q2 = set(Doc.objects.filter(query=args[2]).values_list('id',flat=True))
@@ -135,6 +144,7 @@ def do_query(qid):
                 cids = q1ids
             else:
                 q1 = Doc.objects.filter(query=args[0])
+                q.queries.add(pk=args[0])
                 q1ids = q1.values_list('id',flat=True)
                 cids = q1ids
             for a in range(1,len(args)):
@@ -170,11 +180,19 @@ def do_query(qid):
                             technology=tobj
                         )
 
-
+        t = Tag(
+            title="all",
+            text="all",
+            query=q
+        )
+        t.save()
         for d in combine.distinct('id'):
             d.query.add(q)
+            d.tag.add(t)
         q.r_count = len(combine.distinct('id'))
         q.save()
+
+        t.update_tag()
 
     else:
         # write the query into a text file

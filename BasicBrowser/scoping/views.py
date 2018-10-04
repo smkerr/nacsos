@@ -3663,9 +3663,8 @@ def assign_docs(request):
 
     print(tags)
 
-    dos = []
-
     for tag in range(len(tags)):
+        dos = []
         t = Tag.objects.get(pk=tags[tag])
         ssize = int(tagdocs[tag])
         if ssize==0:
@@ -3752,8 +3751,10 @@ def assign_docs(request):
                             relevant=r
                         )
                     dos.append(docown)
-    DocOwnership.objects.bulk_create(dos)
+        DocOwnership.objects.bulk_create(dos)
+        t.update_tag()
     print("Done")
+
 
     return HttpResponse("<body>xyzxyz</body>")
 
@@ -4311,6 +4312,60 @@ def rate_par(request,tid,ctype,doid,todo,done):
         }
     ))
 
+@login_required
+def screen_doc(request,tid,ctype,pos,todo):
+    tag = Tag.objects.get(pk=tid)
+    dois = DocOwnership.objects.filter(
+        order__isnull=False,
+        tag=tag,
+        user=request.user
+    ).order_by('order')
+    try:
+        do = dois[pos]
+    except:
+        return HttpResponseRedirect(reverse(
+            'scoping:userpage',
+            kwargs={"pid":tag.query.project.id}
+        ))
+    doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
+
+    notes = Note.objects.filter(
+        project=tag.query.project,
+        doc = do.doc
+    )
+
+    context = {
+        'project':tag.query.project,
+        'tag': tag,
+        'do': do,
+        'pc': round(pos/todo*100),
+        'doc': doc,
+        'pos': pos,
+        'todo': todo,
+        'ctype': ctype,
+        'notes': notes
+    }
+
+    return render(request, 'scoping/screen_doc.html', context)
+
+@login_required
+def rate_doc(request,tid,ctype,doid,pos,todo,rel):
+    tag = Tag.objects.get(pk=tid)
+    do = DocOwnership.objects.get(pk=doid)
+    do.relevant=rel
+    do.finish = timezone.now()
+    do.save()
+    pos+=1
+
+    return HttpResponseRedirect(reverse(
+        'scoping:screen_doc',
+        kwargs={
+            'tid': tid,
+            'ctype': ctype,
+            'pos': pos,
+            'todo': todo
+        }
+    ))
 
 ## Universal screening function, ctype = type of documents to show
 @login_required
@@ -4322,17 +4377,20 @@ def screen(request,qid,tid,ctype,d=0):
 
     user = request.user
 
+
+    dois = DocOwnership.objects.filter(
+        tag=tag,
+        query=query,
+        user=user
+    )
+    dois.update(order=None)
+    if ctype==99:
+        dois = dois.filter(relevant__gt=0)
+    else:
+        dois = dois.filter(relevant=ctype)
+    dois = dois.order_by('date')
+
     if not tag.document_linked:
-        dois = DocOwnership.objects.filter(
-            #docpar__doc__wosarticle__isnull=False,
-            tag=tag,
-            query=query,
-            user=user
-        )
-        if ctype==99:
-            dois = dois.filter(relevant__gt=0)
-        else:
-            dois = dois.filter(relevant=ctype)
         d = dois.order_by('date').first()
         return HttpResponseRedirect(reverse(
             'scoping:screen_par',
@@ -4345,112 +4403,19 @@ def screen(request,qid,tid,ctype,d=0):
                 'last_doid': 0
             }
         ))
-
-    user = request.user
-
-    back = 0
-
-    docs = DocOwnership.objects.filter(
-            doc__wosarticle__isnull=False,
-            query=query,
-            user=user.id,
-            tag=tag
-    )
-    sdocs = docs.filter(relevant__gte=1).count()
-    if ctype==99:
-        docs = docs.filter(relevant__gte=1)
     else:
-        docs = docs.filter(relevant=ctype)
-
-    docs = docs.order_by('date')
-
-    if d < 0:
-        d = docs.count() - 1
-        back = -1
-        ldocs = DocOwnership.objects.filter(
-            doc__wosarticle__isnull=False,
-            query=query,
-            user=user.id,
-            tag=tag
-        ).order_by('-date')[:1]
-        docs = docs | ldocs
-        doc = ldocs.first().doc
-    else:
-        try:
-            doc = docs[d].doc
-        except:
-            doc = None
-            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={'pid': query.project.id }))
-
-    tdocs = docs.count() + sdocs
-
-
-    ndocs = docs.count()
-
-    authors = DocAuthInst.objects.filter(doc=doc)
-    for a in authors:
-        a.institution=highlight_words(a.institution,query)
-    abstract = highlight_words(doc.content,query)
-    title = highlight_words(doc.wosarticle.ti,query)
-    if doc.wosarticle.de is not None:
-        de = highlight_words(doc.wosarticle.de,query)
-    else:
-        de = None
-    if doc.wosarticle.kwp is not None:
-        kwp = highlight_words(doc.wosarticle.kwp,query)
-    else:
-        kwp = None
-
-    # Create the tags for clicking on
-    if request.user.username in ["rogers","nemet","galm"]:
-        tags = {'Technology': {},'Innovation': {}}
-    else:
-        tags = {'Technology': {}}#,'Innovation': {}}
-    for t in tags:
-        m = apps.get_model(app_label='scoping',model_name=t)
-        ctags = m.objects.filter(query=query) | m.objects.filter(doc=doc)
-
-        tags[t]['thing'] = t
-        tags[t]['ctags'] = ctags.distinct()
-        tags[t]['ntags'] = m.objects.filter(
-            project=query.project
-        ).exclude(
-            query__doc=doc
-        ).exclude(doc=doc)
-        print(tags)
-
-    if not request.user.username in ["rogers","nemet"]:
-    #if request.user.profile.type == "default":
-        innovation=False
-    else:
-        innovation=True
-
-    notes = doc.note_set.filter(project=query.project)
-
-    template = loader.get_template('scoping/doc.html')
-    context = {
-        'query': query,
-        'project': query.project,
-        'doc': doc,
-        'notes': notes,
-        'ndocs': ndocs,
-        'user': user,
-        'authors': authors,
-        'tdocs': tdocs,
-        'sdocs': sdocs,
-        'abstract': abstract,
-        'title': title,
-        'de': de,
-        'kwp': kwp,
-        'ctype': ctype,
-        'tags': tags,
-        'innovation': innovation,
-        'tag': tag,
-        'd': d,
-        'back': back
-    }
-
-    return HttpResponse(template.render(context, request))
+        # do in background
+        doids = dois.values_list('id',flat=True)
+        order_dos.delay(list(doids))
+        return HttpResponseRedirect(reverse(
+            'scoping:screen_doc',
+            kwargs={
+                'tid': tid,
+                'ctype': ctype,
+                'pos': 0,
+                'todo': dois.count()
+            }
+        ))
 
 @login_required
 def download_pdf(request,id):
@@ -4499,6 +4464,8 @@ def remove_assignments(request):
     query = Query.objects.get(pk=qid)
     todelete = DocOwnership.objects.filter(query=query)
     DocOwnership.objects.filter(query=int(qid)).delete()
+    for tag in Tag.objects.filter(query=query):
+        tag.update_tag()
     return HttpResponse("")
 
 @login_required
@@ -4565,12 +4532,8 @@ def add_note(request):
                 text=text
             )
             note.save()
-            return HttpResponseRedirect(reverse('scoping:screen', kwargs={
-                'qid': qid,
-                'tid': tid,
-                'ctype': ctype,
-                'd': d
-            }))
+            next = request.POST.get('next', '/')
+            return HttpResponseRedirect(next)
     else:
         doc = Doc.objects.get(pk=doc_id)
         note = Note(

@@ -113,10 +113,15 @@ urlpatterns = [
     url(r'^activate_user$', views.activate_user, name='activate_user'),
     url(r'^assign_docs$', views.assign_docs, name='assign_docs'),
     url(r'^remove_assignments$', views.remove_assignments, name='remove_assignments'),
+
+
     #### Individual docs
     url(r'^screen/(?P<qid>[0-9]+)/(?P<tid>[0-9]+)/(?P<ctype>[0-9]+)/(?P<d>[-0-9]+)$', views.screen, name='screen'),
     url(r'^do_review$', views.do_review, name='do_review'),
     url(r'^add_note', views.add_note, name='add_note'),
+
+    path('screen_doc/<int:tid>/<int:ctype>/<int:pos>/<int:todo>', views.screen_doc, name='screen_doc'),
+    path('screen_doc/<int:tid>/<int:ctype>/<int:doid>/<int:pos>/<int:todo>/<int:rel>', views.rate_doc, name='rate_doc'),
 
     # Nice function for updateing many things
     url(r'^update_thing',views.update_thing, name='update_thing'),
