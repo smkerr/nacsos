@@ -637,6 +637,7 @@ RIS_TY_MAPPING = {
 }
 
 def read_ris(q, update):
+    r_count = 0
     with open(
         "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name
     ),'r') as f:
@@ -654,6 +655,8 @@ def read_ris(q, update):
                         if type(e["py"] is str):
                             e["py"] = int(e["py"][:4])
                     add_scopus_doc(e,q,update)
+                    r_count+=1
+    return r_count
 
 def read_scopus(res, q, update):
 

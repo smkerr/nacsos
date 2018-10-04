@@ -54,8 +54,10 @@
 function meanDiff(s) {
     if (['Difference of means','ANOVA'].includes(s)) {
         $('*[data-group="Difference of means"]').removeClass("hidden")
+        $('*[data-group="Coefficient"]').addClass("hidden")
     } else {
         $('*[data-group="Difference of means"]').addClass("hidden")
+        $('*[data-group="Coefficient"]').removeClass("hidden")
     }
 }
 

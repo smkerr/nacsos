@@ -1,7 +1,11 @@
 
 <div class="m-2 col" data-name="{{f.name}}">
 <label class="m-2" for="{{f.ff.widget.id_for_label}}"
->{{f.ff.label}}</label>
+>{{f.ff.label}}
+{% if f.ff.help_text %}
+    ({{f.ff.help_text}})
+{% endif %}
+</label>
 
 {% ifequal f.ff.widget.input_type "number" %}
 
@@ -11,7 +15,7 @@
     {% else %}
     class="form-control"
     {% endif %}
-    id="input_{{f.name}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" min={{f.ff.min_value}} step={{f.step}} value={{f.value}}>
+    id="input_{{f.name}}" aria-describedby="{{f.ff.help_text}}" placeholder="Enter {{f.name}}" min={{f.ff.min_value}} step={{f.step}} value={{f.value}}>
 
 {% else %}
 

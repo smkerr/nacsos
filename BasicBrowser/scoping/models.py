@@ -79,6 +79,7 @@ class StudyEffect(models.Model):
         (5, "General variables"),
         (6, "Difference of means"),
         (1,"Coefficient"),
+        (7,"Uncertainty"),
         (2,"Significance"),
         (3,"Sample size"),
         (4,"Study scope"),
@@ -97,8 +98,7 @@ class StudyEffect(models.Model):
     #g1
     coefficient = models.FloatField(null=True, blank=True)
     coefficient.group = 1
-    coefficient_sd = models.FloatField(null=True, blank=True)
-    coefficient_sd.group = 1
+
     direction = (
         (1,'Increase'),
         # definitely not neutral?
@@ -106,6 +106,12 @@ class StudyEffect(models.Model):
     )
     effect_direction=models.IntegerField(choices=direction)
     effect_direction.group = 1
+
+    #g7
+    coefficient_sd = models.FloatField(null=True, blank=True)
+    coefficient_sd.group = 7
+    coefficient_sd_type = models.TextField(null=True, blank=True)
+    coefficient_sd_type.group=7
 
     #g2
     significance_test = models.TextField()
@@ -210,7 +216,7 @@ class Intervention(models.Model):
     payment = models.TextField(null=True)
     granularity = models.TextField(null=True)
     medium = models.TextField(null=True)
-    duration = models.IntegerField(null=True)
+    duration = models.IntegerField(null=True, help_text="weeks")
     followup = models.IntegerField(null=True)
 
     def __str__(self):
@@ -221,7 +227,7 @@ class Intervention(models.Model):
 class PopCharField(models.Model):
     project = models.ForeignKey('Project',on_delete=models.CASCADE)
     name = models.TextField()
-    unit = models.TextField()
+    unit = models.TextField(null=True, blank=True)
     numeric = models.BooleanField(default=False)
 
     def __str__(self):

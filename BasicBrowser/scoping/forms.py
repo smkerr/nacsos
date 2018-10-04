@@ -46,7 +46,7 @@ class ExclusionForm(forms.Form):
 
 class PopCharForm(forms.ModelForm):
     name = forms.CharField()
-    unit = forms.CharField()
+    unit = forms.CharField(required=False)
     class Meta:
         model = PopCharField
         exclude = ('project',)

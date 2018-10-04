@@ -1751,8 +1751,16 @@ def save_document_code(request,docmetaid,dest):
 
 def get_form_fields(model,project,instance=False,errors={},data={}):
     groups = []
-    for g in model.GROUPS:
-        fields = [x for x in model._meta.get_fields() if hasattr(x,"group") and x.group==g[0]]
+    if hasattr(model, "GROUPS"):
+        mgroups = model.GROUPS
+    else:
+        mgroups = [(None,"")]
+    for g in mgroups:
+        if g[0] is not None:
+            fields = [x for x in model._meta.get_fields() if hasattr(x,"group") and x.group==g[0]]
+        else:
+            fields = model._meta.get_fields()
+
         form_fields = []
         for f in fields:
             if f.name == "id":
@@ -1810,28 +1818,63 @@ def get_form_fields(model,project,instance=False,errors={},data={}):
             "title": g[1],
             "form_fields": form_fields
         })
+
+    if model==scoping.models.StudyEffect:
+        form_fields = []
+        pcs = PopCharField.objects.filter(
+            project=project
+        )
+        for pc in pcs:
+            if pc.numeric:
+                input_type="number"
+            else:
+                input_type="text"
+            form_fields.append({
+                "name": "popchars_{}".format(pc.name),
+                "step": 0.1,
+                "ff": {
+                    "widget": {
+                        "input_type": input_type
+                     },
+                     "label": pc.name,
+                     "min_value": 0,
+                     "help_text": pc.unit
+                 }
+            })
+        groups.append({
+            "title": "Population Characteristics",
+            "form_fields": form_fields
+        })
     return groups
 
 def clean_form_data(data,model):
     clean_data = {}
     m2m = {}
+    pcs = {}
 
     del data['csrfmiddlewaretoken']
     for key in data:
-        f = model._meta.get_field(key)
-        if f.many_to_many:
-            m2m[key]=data[key]
-        else:
+        if "popchars_" in key:
             if isinstance(data[key],list) and len(data[key])==1:
                 data[key]=data[key][0]
-            if data[key]!='':
-                clean_data[key]=data[key]
+            if data[key]=='':
+                data[key]=None
+            pcs[key.replace("popchars_","")] = data[key]
+        else:
+            f = model._meta.get_field(key)
+            if f.many_to_many:
+                m2m[key]=data[key]
             else:
-                clean_data[key]=None
-    return (clean_data, m2m)
+                if isinstance(data[key],list) and len(data[key])==1:
+                    data[key]=data[key][0]
+                if data[key]!='':
+                    clean_data[key]=data[key]
+                else:
+                    clean_data[key]=None
+    return (clean_data, m2m, pcs)
 
 def attempt_effect_intervention_save(model,edit,instance,
-    clean_data,m2m,multi,dmc):
+    clean_data,m2m,multi,dmc,pcs=None):
     if edit:
         for key in m2m:
             getattr(instance,key).set(m2m[key])
@@ -1848,6 +1891,27 @@ def attempt_effect_intervention_save(model,edit,instance,
         instance.save()
         for key in m2m:
             getattr(instance,key).set(m2m[key])
+        if pcs is not None:
+            try:
+                for pc in pcs:
+                    pcf = PopCharField.objects.get(
+                        project=dmc.project,
+                        name=pc
+                    )
+                    m, created = PopChar.objects.get_or_create(
+                        effect=instance,
+                        field=pcf
+                    )
+                    v = pcs[pc]
+                    if pcf.numeric:
+                        m.value=v
+                    else:
+                        m.str_value=v
+                    m.save()
+            except ValidationError as e:
+                errors = e.message_dict
+                form_fields = get_form_fields(model,dmc.project,instance, errors, clean_data)
+                return (errors,instance,form_fields)
         return (False,False,False)
     except ValidationError as e:
         errors = e.message_dict
@@ -1870,11 +1934,11 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
         data['doc_id'] = dmc.doc.id
         data['project_id'] = dmc.project.id
         data['user_id'] = dmc.user_id
-        clean_data, m2m = clean_form_data(data,StudyEffect)
+        clean_data, m2m, popchars = clean_form_data(data,StudyEffect)
 
         errors, instance, form_fields = attempt_effect_intervention_save(
             StudyEffect,eff_edit,instance,
-            clean_data,m2m,"controls",dmc
+            clean_data,m2m,"controls",dmc,popchars
         )
         if not errors:
             return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
@@ -1907,7 +1971,7 @@ def add_intervention(request,effectid,iid=False,i_edit=False):
     if request.method=="POST":
         data = dict(request.POST.copy())
         data['effect_id'] = effect.id
-        clean_data, m2m = clean_form_data(data,Intervention)
+        clean_data, m2m, popchars = clean_form_data(data,Intervention)
 
         errors, instance, form_fields = attempt_effect_intervention_save(
             Intervention,i_edit,instance,
@@ -1925,7 +1989,7 @@ def add_intervention(request,effectid,iid=False,i_edit=False):
         'project': dmc.project,
         'dmc': dmc,
         'ei': "Intervention",
-        'form_fields': form_fields
+        'groups': form_fields
     }
     return HttpResponse(template.render(context,request))
 
