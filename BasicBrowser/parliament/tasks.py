@@ -125,7 +125,7 @@ def do_search(s_id):
 
 
 @shared_task
-def run_tm(s, K, language="german", verbosity=1, method='NM'):
+def run_tm(s, K, language="german", verbosity=1, method='NM', max_features=0):
     start_time = time.time()
 
     s = Search.objects.get(pk=s)
@@ -133,12 +133,12 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
         psearch=s,
         K=K,
         min_freq=5,
+        method=method.upper()[0:2],
+        max_features=max_features
     )
+
     stat.save()
     run_id=stat.run_id
-
-    if verbosity > 0:
-        print("creating term frequency-inverse document frequency matrix ({})".format(time.time() - start_time))
 
     if s.search_object_type == 1:
         ps = Paragraph.objects.filter(search_matches=s)
@@ -171,6 +171,8 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
         return 1
 
     if method in ["NM", "nmf"]:
+        if verbosity > 0:
+            print("creating term frequency-inverse document frequency matrix ({})".format(time.time() - start_time))
         # get term frequency-inverse document frequency matrix (using log weighting)
         # and min/max document frequency (min_df, max_df)
         tfidf_vectorizer = TfidfVectorizer(
@@ -187,7 +189,9 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
         vocab = vectorizer.get_feature_names()
 
     elif method in ["LD", "lda"]:
-        # todo: Use tf (raw term count) features for LDA.
+        if verbosity > 0:
+            print("creating term frequency matrix ({})".format(time.time() - start_time))
+        #  Use tf (raw term count) features for LDA.
         tf_vectorizer = CountVectorizer(max_df=stat.max_df,
                                         min_df=stat.min_freq,
                                         max_features=n_features,
@@ -260,10 +264,10 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
             n_components=K,
             doc_topic_prior=stat.alpha,
             max_iter=stat.max_iterations,
-            learning_meth='online',
-            learning_offset=50.,
-            n_jobs=6
-        ).fit(tf)
+            learning_method='online',
+            learning_offset=50.
+            #n_jobs=6
+        ).partial_fit(tf)
 
         dtm = csr_matrix(model.transform(tf))
 
@@ -336,7 +340,6 @@ def run_tm(s, K, language="german", verbosity=1, method='NM'):
         sys.stdout.flush()
 
     stat.status = 3  # 3 = finished
-    stat.method = method
     stat.save()
     update_topic_titles(run_id)
     update_topic_scores(run_id)

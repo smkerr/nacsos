@@ -334,6 +334,7 @@ class RunStats(models.Model):
             self.parent_run_id=self.run_id
         super(RunStats, self).save(*args, **kwargs)
 
+
 class Settings(models.Model):
     run_id = models.IntegerField()
     doc_topic_score_threshold = models.FloatField()
