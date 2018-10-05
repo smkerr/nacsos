@@ -299,6 +299,53 @@ def queries(request, pid):
     return HttpResponse(template.render(context, request))
 
 @login_required
+def generate_query(request,pid,t):
+    project=Project.objects.get(pk=pid)
+    q = Query(
+        project=project,
+        creator=request.user,
+        database="intern",
+        title=project.title,
+        text="[GENERATED TYPE {}]".format(t)
+    )
+    q.save()
+    if t==1:
+        q.title=project.title+" - all docs"
+        docs = Doc.objects.filter(docproject__project=project)
+    elif t==2:
+        q.title=project.title+" - all relevant docs"
+        docs = Doc.objects.filter(
+            docproject__project=project,docproject__relevant=1
+        )
+    elif t==3:
+        q.title=project.title+" - all rated docs"
+        docs = Doc.objects.filter(
+            docproject__project=project,docproject__relevant__gt=0
+        )
+    elif t==4:
+        q.title=project.title+" - all possibly relevant docs (maybe or mixed reviews)"
+        docs = Doc.objects.filter(
+            docproject__project=project,docproject__relevant=3
+        )
+    elif t==5:
+        q.title=project.title+" - all unrated docs"
+        docs = Doc.objects.filter(
+            docproject__project=project,docproject__relevant=0
+        )
+
+    dids = set(docs.values_list('pk',flat=True))
+    Through = Doc.query.through
+    dqs = [Through(doc_id=d,query=q) for d in dids]
+    Through.objects.bulk_create(dqs)
+    q.r_count = q.doc_set.count()
+    q.save()
+
+    return HttpResponseRedirect(reverse(
+        'scoping:queries',
+        kwargs={'pid':pid}
+    ))
+
+@login_required
 def query_table(request, pid):
     template = loader.get_template('scoping/snippets/query_table.html')
     p = Project.objects.get(pk=pid)
@@ -2089,17 +2136,11 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
 
     relevance_fields.append({"path": "fulltext", "name": "Full Text"})
     relevance_fields.append({"path": "docfile__id", "name": "PDF"})
-    relevance_fields.append({"path": "tech_category", "name": "Category"})
-    relevance_fields.append({"path": "tech_innovation", "name": "Innovation"})
-    relevance_fields.append({"path": "relevance_netrelevant", "name": "Project relevant"})
-    relevance_fields.append({"path": "relevance_techrelevant", "name": "Category relevant"})
+    relevance_fields.append({"path": "category__name", "name": "Category"})
+    relevance_fields.append({"path": "docproject__relevant", "name": "Project relevant"})
     relevance_fields.append({"path": "note__text", "name": "Notes"})
     relevance_fields.append({"path": "relevance_time", "name": "Time of Rating"})
-    relevance_fields.append({"path": "relevance_agreement", "name": "Agreement"})
-    relevance_fields.append({"path": "k", "name": "K Core"})
-    relevance_fields.append({"path": "degree", "name": "Degree"})
-    relevance_fields.append({"path": "eigen_cent", "name": "Eigenvector centrality"})
-    relevance_fields.append({"path": "distance", "name": "Distance to Kates"})
+
 
 
     for f in WoSArticle._meta.get_fields():
@@ -2713,7 +2754,7 @@ def sortdocs(request):
         elif "docownership" in f:
             users.append(f)
             single_fields.append(f)
-        elif "relevance_" in f:
+        elif "relevance" in f:
             rfields.append(f)
             single_fields.append(f)
         else:
@@ -2722,70 +2763,21 @@ def sortdocs(request):
     mult_fields_tuple = tuple(mult_fields)
 
     tech = query.category
-    print(len(filt_docs))
-    # annotate with relevance
-    if "relevance_netrelevant" in rfields:
-        filt_docs = filt_docs.annotate(relevance_netrelevant=models.Sum(
-            models.Case(
-                models.When(docownership__relevant=1,then=1),
-                default=0,
-                output_field=models.IntegerField()
-            )
-        ))
-    if "relevance_techrelevant" in rfields:
-        filt_docs = filt_docs.annotate(relevance_techrelevant=models.Sum(
-            models.Case(
-                models.When(docownership__relevant=1,docownership__query__category=tech,then=1),
-                default=0,
-                output_field=models.IntegerField()
-            )
-        ))
-    if "relevance_agreement" in rfields:
-        filt_docs = filt_docs.annotate(
-            relevance_max=models.Max(
-                models.Case(
-                    models.When(docownership__relevant__gt=0,docownership__query__category=tech,
-                        then=F('docownership__relevant')
-                    ),
-                    default=0,
-                    output_field=models.IntegerField()
-                )
-            ),
-            relevance_min = models.Min(
-                models.Case(
-                    models.When(docownership__relevant__gt=0,docownership__query__category=tech,
-                        then=F('docownership__relevant')
-                    ),
-                    default=99,
-                    output_field=models.IntegerField()
-                )
-            )
-        )
-        filt_docs = filt_docs.annotate(
-            relevance_agreement = F('relevance_max') - F('relevance_min')
-        )
 
+    if "docproject__relevant" in fields:
+        filt_docs = filt_docs.filter(
+            docproject__project=query.project
+        )
 
     # Annotate with category names
-    if "tech_category" in fields:
-        filt_docs = filt_docs.annotate(
-            qcategory=StringAgg('query__category__name','; ',distinct=True),
-            dcategory=StringAgg('category__name','; ',distinct=True),
-            #tech_category=Concat(F('qcategory'), F('dcategory'))
+    if "category__name" in fields:
+        filt_docs = filt_docs.filter(
+            category__project=query.project
+        ) | filt_docs.filter(
+            category__isnull=True
         )
         filt_docs = filt_docs.annotate(
-            tech_category=Concat('qcategory', 'dcategory')
-        )
-
-    # Annotate with innovation names
-    if "tech_innovation" in fields:
-        filt_docs = filt_docs.annotate(
-            qcategory=StringAgg('query__innovation__name','; ',distinct=True),
-            dcategory=StringAgg('innovation__name','; ',distinct=True),
-            #tech_category=Concat(F('qcategory'), F('dcategory'))
-        )
-        filt_docs = filt_docs.annotate(
-            tech_innovation=Concat('qcategory', 'dcategory')
+            category__name=StringAgg('category__name','; ',distinct=True),
         )
 
     if "wosarticle__doc" in fields:
@@ -2866,6 +2858,7 @@ def sortdocs(request):
 
     fids = []
     tag_text = ""
+
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
         if i==0:
@@ -2910,7 +2903,8 @@ def sortdocs(request):
                 kwargs = {
                     '{0}__{1}'.format(f_fields[i],op): f_text[i]
                 }
-                print(kwargs)
+                if "docproject__relevant" in f_fields[i]:
+                    kwargs['docproject__project'] = query.project
                 if joiner=="AND":
                     if exclude:
                         filt_docs = filt_docs.exclude(**kwargs)
@@ -2931,10 +2925,6 @@ def sortdocs(request):
         except:
             break
 
-    if "k" in fields:
-        filt_docs = filt_docs.filter(citation_objects=True)
-
-
 
     if tag_title is not None:
         t = Tag(title=tag_title)
@@ -2944,8 +2934,6 @@ def sortdocs(request):
         Through = Doc.tag.through
         tms = [Through(doc=d,tag=t) for d in filt_docs]
         Through.objects.bulk_create(tms)
-        for doc in filt_docs:
-            doc.tag.add(t)
         handle_update_tag.delay(t.id)
         return(JsonResponse("",safe=False))
 
@@ -2970,8 +2958,8 @@ def sortdocs(request):
 
         docs = filt_docs.order_by(*order_by).values(*single_fields)
         n_docs = len(docs)
+
     if download != "true":
-        x = filt_docs.values()
         docs = docs[:100]
 
 
@@ -3007,6 +2995,11 @@ def sortdocs(request):
 
     for d in docs:
         # work out total relevance
+        if "docproject__relevant" in fields:
+            dp = DocProject.objects.get(
+                project=query.project,doc=d['pk']
+            )
+            d['docproject__relevant'] = dp.get_relevant_display() + " ({}) ".format(dp.relevant)
         if "docfile__id" in fields:
             if d['docfile__id']:
                 d['docfile__id'] = '<a href="/scoping/download_pdf/'+str(d['docfile__id'])+'"">PDF'

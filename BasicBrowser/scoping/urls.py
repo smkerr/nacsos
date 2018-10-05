@@ -24,6 +24,8 @@ urlpatterns = [
     url(r'^queries/(?P<pid>[0-9]+)/$', views.queries, name='queries'),
     url(r'^query_table/(?P<pid>[0-9]+)/$', views.query_table, name='query_table'),
 
+    path('generate_query/<int:pid>/<int:t>', views.generate_query,name="generate_query"),
+
 
     url(r'^docs/(?P<pid>[0-9]+)/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
 

@@ -1,11 +1,14 @@
-{% extends "scoping/base.html" %}
+{% extends "scoping/base_bs.html" %}
 {% block content %}
 
-        <h1> Scoping Review Helper</h1>
-        <br/>
+<br>
+    <h1> Scoping Review Helper</h1>
+    <br/>
 
-        <!-- Query manager -->
-        <div class="explanation">
+    <!-- Query manager -->
+    <div class="row">
+        <div class="col-2"></div>
+        <div class="col-md-8 bg-white border rounded p-3 m-2 text-center">
 
           <h2> Query manager </h2>
           <p>Use the buttons below to filter queries by user and category.
@@ -29,14 +32,39 @@
           </p>
         </div>
 
+    </div>
+
+    <br>
         <p>
-            <table class="light" id="query_table" style="width:100%">
+            <table class="table" id="query_table" style="width:100%">
         {% include 'scoping/snippets/query_table.html' %}
     </table>
 
 <br/><hr/><br/>
 
 <!-- This gets new queries -->
+
+{% if queries|length > 0 %}
+
+<div>
+
+    <h2>Query Generator</h2>
+    <p>Use the buttons below to generate new queries summarising other queries and information entered in the platform
+    </p>
+    <div class="flex-row">
+            <a href="{% url 'scoping:generate_query' project.id 1 %}"<label class="btn btn-secondary m-2">All project documents</label></a>
+            <a href="{% url 'scoping:generate_query' project.id 2 %}"<label class="btn btn-secondary m-2">All relevant documents</label></a>
+            <a href="{% url 'scoping:generate_query' project.id 3 %}"<label class="btn btn-secondary m-2">All rated documents</label></a>
+    </div>
+    <div class="flex-row">
+            <a href="{% url 'scoping:generate_query' project.id 5 %}"<label class="btn btn-secondary m-2">All unrated documents</label></a>
+            <a href="{% url 'scoping:generate_query' project.id 4 %}"<label class="btn btn-secondary m-2">All conflicted / maybe documents</label></a>
+    </div>
+    <br>
+</div>
+<hr>
+
+{% endif %}
 
 <div class="explanation">
 <h2> Query Getter </h2>
@@ -72,6 +100,9 @@ Use this form to submit a new query, which will be run in the background. Be awa
 </form>
 </div>
 <p>
+
+
+<hr>
 
 <div class="explanation">
 <h2> Query Uploader </h2>
