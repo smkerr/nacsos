@@ -56,11 +56,11 @@ def update_projs(pids,add_docprojects=False):
 
 @shared_task
 def update_techs(pid):
-    technologies = Technology.objects.filter(project_id=pid)
+    technologies = Category.objects.filter(project_id=pid)
     for t in technologies:
         t.queries = t.query_set.count()
-        tdocs = Doc.objects.filter(technology=t).values_list('id',flat=True)
-        itdocs = Doc.objects.filter(query__technology=t,query__type="default").values_list('id',flat=True)
+        tdocs = Doc.objects.filter(category=t).values_list('id',flat=True)
+        itdocs = Doc.objects.filter(query__category=t,query__type="default").values_list('id',flat=True)
         t.docs = len(set(tdocs).intersection(itdocs))
         t.nqs = t.queries
         t.ndocs = t.docs
@@ -168,16 +168,16 @@ def do_query(qid):
                             docownership__relevant=1
                         ) | Doc.objects.filter(
                             pk__in=cids,
-                            technology__isnull=False
+                            category__isnull=False
                         )
                     if parts[1] == "TRELEVANT":
                         combine = Doc.objects.filter(
                             pk__in=cids,
                             docownership__relevant=1,
-                            docownership__query__technology=tobj
+                            docownership__query__category=tobj
                         ) | Doc.objects.filter(
                             pk__in=cids,
-                            technology=tobj
+                            category=tobj
                         )
 
         t = Tag(

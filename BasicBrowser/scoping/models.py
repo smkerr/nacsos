@@ -398,6 +398,7 @@ class Category(models.Model):
     ndocs = models.IntegerField(null=True)
     nqs = models.IntegerField(null=True)
     group = models.TextField(null = True, verbose_name="Broad Category Name")
+    parent_category = models.ForeignKey('self', related_name='child_category',on_delete=models.CASCADE, null=True,blank=True)
 
     def __str__(self):
       return self.name

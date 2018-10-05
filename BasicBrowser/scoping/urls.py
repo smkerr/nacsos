@@ -86,6 +86,7 @@ urlpatterns = [
     url(r'^switchmode$', views.switch_mode, name='switch_mode'),
 
     url(r'^categories/(?P<pid>[0-9]+)',views.categories, name='categories'),
+    path('filter_categories/<int:pid>/<int:level>', views.filter_categories, name="filter_categories"),
     url(r'^category/(?P<tid>[0-9]+)$',views.category, name='category'),
     url(r'^download_tdocs/(?P<tid>[0-9]+)$',views.download_tdocs, name='download_tdocs'),
     url(r'^authorlist/(?P<tid>[0-9]+)$',views.prepare_authorlist, name='authorlist'),

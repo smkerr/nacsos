@@ -22,12 +22,16 @@ class CategoryForm(forms.ModelForm):
     level = forms.IntegerField(
         min_value=1, max_value=9
     )
+    parent_category = forms.ModelChoiceField(
+        required=False,
+        queryset=Category.objects.all()
+    )
     class Meta:
         model = (Category)
-        fields = ('name','level','description',)
+        fields = ('name','level','description','parent_category')
         widgets = {
-          'name': forms.Textarea(attrs={'rows':1, 'cols':15}),
-          'description': forms.Textarea(attrs={'rows':1, 'cols':15}),
+          'name': forms.TextInput(attrs={'class': "form-control"}),
+          'description': forms.TextInput(attrs={'class': "form-control"}),
         }
 
 class InterventionForm(forms.ModelForm):

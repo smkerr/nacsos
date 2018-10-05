@@ -13,7 +13,7 @@
           {% else %}
           <td class="linked"><a href="{% url 'scoping:index' %}">Home</a></td>
           {% if project %}
-              <td class="linked"><a href="{% url 'scoping:technologies' project.id %}">Categories</a></td>
+              <td class="linked"><a href="{% url 'scoping:categories' project.id %}">Categories</a></td>
               <td class="linked"><a href="{% url 'scoping:queries' project.id %}">Queries</a></td>
               <td class="linked"><a href="{% url 'scoping:userpage' project.id %}">{{user}}</a></td>
               {% if qid %}

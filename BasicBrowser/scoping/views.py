@@ -346,14 +346,28 @@ def categories(request, pid):
 
     project = Project.objects.get(pk=pid)
 
-
+    ## Save or update category
     if request.method=="POST":
-        catform = CategoryForm(request.POST)
-        if catform.is_valid():
-            x = catform
-            cat = catform.save()
-            cat.project = project
-            cat.save()
+        for f in request.POST.keys():
+            if f !="csrfmiddlewaretoken":
+                pref = f.split('-')[0]
+                break
+        if pref=="add":
+            c = Category(project=project)
+        else:
+            c = Category.objects.get(pk=int(pref))
+        c.name = request.POST['{}-name'.format(pref)]
+        c.description = request.POST['{}-description'.format(pref)]
+        c.level = int(request.POST['{}-level'.format(pref)])
+        try:
+            if c.level > 1:
+                c.parent_category_id=int(request.POST['{}-parent_category'.format(pref)])
+            c.save()
+        except:
+            pass
+
+
+
 
 
     technologies = Category.objects.filter(project=pid).order_by('id')
@@ -375,9 +389,9 @@ def categories(request, pid):
             t.save()
         else:
             t.docs = t.ndocs
-        t.form = CategoryForm(instance=t)
+        t.form = CategoryForm(instance=t,prefix=t.id)
 
-    catform = CategoryForm()
+    catform = CategoryForm(prefix="add")
 
     context = {
       'techs'    : technologies,
@@ -387,6 +401,13 @@ def categories(request, pid):
     }
 
     return HttpResponse(template.render(context, request))
+
+def filter_categories(request,pid,level):
+    cats = Category.objects.filter(
+        project_id=pid,level=level
+    ).values('id','name')
+    #return JsonResponse(cats,safe=False)
+    return HttpResponse(json.dumps(list(cats)), content_type="application/json")
 
 ########################################################
 ## edit query category or innovation
@@ -475,8 +496,9 @@ def snowball(request):
 @login_required
 def add_tech(request):
     tname = request.POST['tname']
-    tdesc  = request.POST['tdesc']
+    tdesc = request.POST['tdesc']
     pid = int(request.POST['pid'])
+    x = y
     #  create a new query record in the database
     t = Category(
         name=tname,
@@ -494,7 +516,7 @@ def update_tech(request,tid):
     form = CategoryForm(request.POST,instance=t)
     if form.is_valid():
         t = form.save()
-    return HttpResponseRedirect(reverse('scoping:technologies', kwargs={'pid': t.project.id}))
+    return HttpResponseRedirect(reverse('scoping:categories', kwargs={'pid': t.project.id}))
 
 
 
