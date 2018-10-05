@@ -53,7 +53,7 @@ class SnowballingSession(models.Model):
     working_pb2    = models.BooleanField(default=False) # This a marker for when the last step is going on
     users          = models.ManyToManyField(User)
     database       = models.CharField(max_length=6,null=True, verbose_name="Query database")
-    technology     = models.ForeignKey('Technology', on_delete=models.CASCADE, null=True)
+    category     = models.ForeignKey('Category', on_delete=models.CASCADE, null=True)
 
     def __str__(self):
       return self.name
@@ -376,7 +376,7 @@ class Query(models.Model):
     step        = models.IntegerField(null=True, verbose_name="Snowball steps")
     substep     = models.IntegerField(null=True, verbose_name="Snowball query substeps")
     dlstat      = models.CharField(max_length=6,null=True, verbose_name="Query download status")
-    technology  = models.ForeignKey('Technology', on_delete=models.CASCADE, null=True)
+    category  = models.ForeignKey('Category', on_delete=models.CASCADE, null=True)
     innovation  = models.ForeignKey('Innovation', on_delete=models.CASCADE, null=True)
     query_file = models.FileField(upload_to='queries/',null=True)
     queries = models.ManyToManyField("self",symmetrical=False)
@@ -390,7 +390,7 @@ class Query(models.Model):
 
 
 
-class Technology(models.Model):
+class Category(models.Model):
     name = models.TextField(null = True, verbose_name="Category Name")
     level = models.IntegerField(default=1)
     description = models.TextField(null=True, verbose_name="Category Description")
@@ -604,9 +604,9 @@ class Doc(models.Model):
     users = models.ManyToManyField(User, through='DocOwnership')
     journal = models.ForeignKey('JournalAbbrev', on_delete=models.CASCADE, null=True)
 
-    technology = models.ManyToManyField('Technology',db_index=True)
+    category = models.ManyToManyField('Category',db_index=True)
     innovation = models.ManyToManyField('Innovation',db_index=True)
-    category = models.ManyToManyField('SBSDocCategory')
+    sbscategory = models.ManyToManyField('SBSDocCategory')
     source = models.TextField(null=True)
     wos = models.BooleanField(default=False)
     scopus = models.BooleanField(default=False)
@@ -704,7 +704,7 @@ class DocPar(models.Model):
     n = models.IntegerField()
     section = models.ForeignKey(DocSection, on_delete=models.CASCADE, null=True)
     tag = models.ManyToManyField(Tag)
-    technology = models.ManyToManyField('Technology',db_index=True)
+    category = models.ManyToManyField('Category',db_index=True)
 
     # xml paragraph properties
     endColor = models.CharField(null=True, max_length=50)
@@ -732,7 +732,7 @@ class DocStatement(models.Model):
     text = models.TextField()
     start = models.IntegerField(null=False)
     end = models.IntegerField(null=False)
-    technology = models.ManyToManyField('Technology',db_index=True)
+    category = models.ManyToManyField('Category',db_index=True)
     text_length = models.IntegerField(null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
 
@@ -848,7 +848,7 @@ class WC(models.Model):
     oecd_fos_text = models.TextField(null=True)
 
 class EmailTokens(models.Model):
-    category = models.ForeignKey(Technology, on_delete=models.CASCADE ,null=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE ,null=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     email = models.TextField()
     AU = models.TextField()
@@ -938,7 +938,7 @@ class DocOwnership(models.Model):
         (YES, 'Yes'),
         (NO, 'No'),
         (MAYBE, 'Maybe'),
-        (OTHERTECH, 'Other Technology'),
+        (OTHERTECH, 'Other Category'),
         (YESYES, 'Tech Relevant & Innovation Relevant'),
         (YESNO, 'Tech Relevant & Innovation Irrelevant'),
         (NOYES, 'Tech Irrelevant & Innovation Relevant'),

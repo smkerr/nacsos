@@ -247,7 +247,7 @@ def queries(request, pid):
 
         users = User.objects.all().order_by('username')
 
-        technologies  = Technology.objects.all()
+        technologies  = Category.objects.all()
         p = None
 
     else:
@@ -261,7 +261,7 @@ def queries(request, pid):
             projectroles__project=p
         ).order_by('username')
 
-        technologies  = Technology.objects.filter(
+        technologies  = Category.objects.filter(
             project=p
         )
 
@@ -271,11 +271,11 @@ def queries(request, pid):
         query = Query.objects.last()
 
     for q in queries:
-        q.tech = q.technology
-        if q.technology==None:
+        q.tech = q.category
+        if q.category==None:
             q.tech="None"
         else:
-            q.tech=q.technology.name
+            q.tech=q.category.name
         #print(q.tech)
 
     if request.user.username in ["galm","rogers","nemet"]:
@@ -311,16 +311,16 @@ def query_table(request, pid):
             project=p,
             creator__id__in=users
         ).filter(
-            Q(technology__isnull=True) | Q(technology__in=techs)
+            Q(category__isnull=True) | Q(category__in=techs)
         ).order_by('-id')
     else:
         queries = Query.objects.filter(
             project=p,
             creator__id__in=users,
-            technology__in=techs
+            category__in=techs
         ).order_by('-id')
 
-    technologies  = Technology.objects.filter(
+    technologies  = Category.objects.filter(
         project=p
     )
 
@@ -340,7 +340,7 @@ def query_table(request, pid):
 ## Tech Homepage - list the technologies, form for adding new ones
 
 @login_required
-def technologies(request, pid):
+def categories(request, pid):
 
     template = loader.get_template('scoping/tech.html')
 
@@ -356,7 +356,7 @@ def technologies(request, pid):
             cat.save()
 
 
-    technologies = Technology.objects.filter(project=pid).order_by('id')
+    technologies = Category.objects.filter(project=pid).order_by('id')
 
     users = User.objects.all()
     refresh = False
@@ -364,10 +364,10 @@ def technologies(request, pid):
     #subprocess.Popen(["python3", "/home/galm/software/tmv/BasicBrowser/update_techs.py"], stdout=subprocess.PIPE)
     for t in technologies:
         t.queries = t.query_set.count()
-        tdocs = Doc.objects.filter(technology=t)
+        tdocs = Doc.objects.filter(category=t)
         if refresh==True:
-            tdocs = Doc.objects.filter(technology=t)
-            itdocs = Doc.objects.filter(query__technology=t,query__type="default")
+            tdocs = Doc.objects.filter(category=t)
+            itdocs = Doc.objects.filter(query__category=t,query__type="default")
             tdocs = tdocs | itdocs
             t.docs = tdocs.distinct().count()
             t.nqs = t.queries
@@ -389,7 +389,7 @@ def technologies(request, pid):
     return HttpResponse(template.render(context, request))
 
 ########################################################
-## edit query technology or innovation
+## edit query category or innovation
 @login_required
 def update_thing(request):
     thing1 = request.GET.get('thing1', None)
@@ -421,7 +421,7 @@ def update_thing(request):
         getattr(t1,thing2.lower()).remove(t2)
     if method=="update":
         setattr(t1,thing2.lower(),t2)
-        if thing1 == "Query" and thing2 == "Technology":
+        if thing1 == "Query" and thing2 == "Category":
             pass
             #query_doc_category.delay(id1,id2)
     t1.save()
@@ -460,7 +460,7 @@ def snowball(request):
             pass
             # Get technologies
 
-    technologies = Technology.objects.all()
+    technologies = Category.objects.all()
 
     context = {
         'sb_sessions'    : sb_sessions,
@@ -471,14 +471,14 @@ def snowball(request):
 
 
 ########################################################
-## Add the technology
+## Add the category
 @login_required
 def add_tech(request):
     tname = request.POST['tname']
     tdesc  = request.POST['tdesc']
     pid = int(request.POST['pid'])
     #  create a new query record in the database
-    t = Technology(
+    t = Category(
         name=tname,
         description=tdesc,
         project_id=pid
@@ -487,10 +487,10 @@ def add_tech(request):
     return HttpResponseRedirect(reverse('scoping:technologies', kwargs={"pid": pid}))
 
 ########################################################
-## update the technology
+## update the category
 @login_required
 def update_tech(request,tid):
-    t = Technology.objects.get(pk=tid)
+    t = Category.objects.get(pk=tid)
     form = CategoryForm(request.POST,instance=t)
     if form.is_valid():
         t = form.save()
@@ -556,12 +556,12 @@ def start_snowballing(request):
     qtitle = request.POST['sbs_name']
     qtext  = request.POST['sbs_initialpearls']
     qdb    = request.POST['qdb']
-    qtech  = request.POST['sbs_technology']
+    qtech  = request.POST['sbs_category']
 
     curdate = timezone.now()
 
-    # Get technology
-    t = Technology.objects.get(pk=qtech)
+    # Get category
+    t = Category.objects.get(pk=qtech)
 
     # Create new snowballing session
     sbs = SnowballingSession(
@@ -570,7 +570,7 @@ def start_snowballing(request):
       initial_pearls = qtext,
       date=curdate,
       status=0,
-      technology=t
+      category=t
     )
     sbs.save()
     if request.session['DEBUG']:
@@ -587,7 +587,7 @@ def start_snowballing(request):
         snowball=sbs,
         step=1,
         substep=1,
-        technology=t
+        category=t
     )
     q.save()
     if request.session['DEBUG']:
@@ -615,7 +615,7 @@ def start_snowballing(request):
         snowball=sbs,
         step=1,
         substep=2,
-        technology=t
+        category=t
     )
     q2.save()
     if request.session['DEBUG']:
@@ -2071,7 +2071,7 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
 
     relevance_fields.append({"path": "fulltext", "name": "Full Text"})
     relevance_fields.append({"path": "docfile__id", "name": "PDF"})
-    relevance_fields.append({"path": "tech_technology", "name": "Category"})
+    relevance_fields.append({"path": "tech_category", "name": "Category"})
     relevance_fields.append({"path": "tech_innovation", "name": "Innovation"})
     relevance_fields.append({"path": "relevance_netrelevant", "name": "Project relevant"})
     relevance_fields.append({"path": "relevance_techrelevant", "name": "Category relevant"})
@@ -2372,7 +2372,7 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                     if did==0:
                         q.database = "manual"
                         q.r_count = 1
-                        #q.technology = t
+                        #q.category = t
                         q.project = p
                         q.qtype='MN'
                         q.upload_link=em
@@ -2417,11 +2417,11 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                 if hasattr(doc,'docfile'):
                     doc.docfile.delete()
 
-            elif "technology[]" in request.POST:
-                tids = request.POST.getlist('technology[]',None)
-                ts = Technology.objects.filter(pk__in=tids)
+            elif "category[]" in request.POST:
+                tids = request.POST.getlist('category[]',None)
+                ts = Category.objects.filter(pk__in=tids)
                 for t in ts:
-                    doc.technology.add(t)
+                    doc.category.add(t)
 
             elif request.FILES.get('file', False):
 
@@ -2486,8 +2486,8 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
             dais = doc.docauthinst_set.filter(AU__isnull=False).count()
 
             if doc.docauthinst_set.filter(AU__isnull=False).count() > 0:
-                doctechs = doc.technology.all()
-                techs = Technology.objects.filter(project=p)
+                doctechs = doc.category.all()
+                techs = Category.objects.filter(project=p)
 
                 if hasattr(doc,'docfile') is False:
                     u = uf is None
@@ -2703,7 +2703,7 @@ def sortdocs(request):
     single_fields = tuple(single_fields)
     mult_fields_tuple = tuple(mult_fields)
 
-    tech = query.technology
+    tech = query.category
     print(len(filt_docs))
     # annotate with relevance
     if "relevance_netrelevant" in rfields:
@@ -2717,7 +2717,7 @@ def sortdocs(request):
     if "relevance_techrelevant" in rfields:
         filt_docs = filt_docs.annotate(relevance_techrelevant=models.Sum(
             models.Case(
-                models.When(docownership__relevant=1,docownership__query__technology=tech,then=1),
+                models.When(docownership__relevant=1,docownership__query__category=tech,then=1),
                 default=0,
                 output_field=models.IntegerField()
             )
@@ -2726,7 +2726,7 @@ def sortdocs(request):
         filt_docs = filt_docs.annotate(
             relevance_max=models.Max(
                 models.Case(
-                    models.When(docownership__relevant__gt=0,docownership__query__technology=tech,
+                    models.When(docownership__relevant__gt=0,docownership__query__category=tech,
                         then=F('docownership__relevant')
                     ),
                     default=0,
@@ -2735,7 +2735,7 @@ def sortdocs(request):
             ),
             relevance_min = models.Min(
                 models.Case(
-                    models.When(docownership__relevant__gt=0,docownership__query__technology=tech,
+                    models.When(docownership__relevant__gt=0,docownership__query__category=tech,
                         then=F('docownership__relevant')
                     ),
                     default=99,
@@ -2748,26 +2748,26 @@ def sortdocs(request):
         )
 
 
-    # Annotate with technology names
-    if "tech_technology" in fields:
+    # Annotate with category names
+    if "tech_category" in fields:
         filt_docs = filt_docs.annotate(
-            qtechnology=StringAgg('query__technology__name','; ',distinct=True),
-            dtechnology=StringAgg('technology__name','; ',distinct=True),
-            #tech_technology=Concat(F('qtechnology'), F('dtechnology'))
+            qcategory=StringAgg('query__category__name','; ',distinct=True),
+            dcategory=StringAgg('category__name','; ',distinct=True),
+            #tech_category=Concat(F('qcategory'), F('dcategory'))
         )
         filt_docs = filt_docs.annotate(
-            tech_technology=Concat('qtechnology', 'dtechnology')
+            tech_category=Concat('qcategory', 'dcategory')
         )
 
     # Annotate with innovation names
     if "tech_innovation" in fields:
         filt_docs = filt_docs.annotate(
-            qtechnology=StringAgg('query__innovation__name','; ',distinct=True),
-            dtechnology=StringAgg('innovation__name','; ',distinct=True),
-            #tech_technology=Concat(F('qtechnology'), F('dtechnology'))
+            qcategory=StringAgg('query__innovation__name','; ',distinct=True),
+            dcategory=StringAgg('innovation__name','; ',distinct=True),
+            #tech_category=Concat(F('qcategory'), F('dcategory'))
         )
         filt_docs = filt_docs.annotate(
-            tech_innovation=Concat('qtechnology', 'dtechnology')
+            tech_innovation=Concat('qcategory', 'dcategory')
         )
 
     if "wosarticle__doc" in fields:
@@ -3125,9 +3125,9 @@ def export_ris_docs(request,qid,docs=False):
         for r in d.docownership_set.filter(query__project=q.project,relevant__gt=0):
             buffer.write('N1  - Relevance_{}_{}: {}\n'.format(r.user.username,r.tag.id,r.relevant))
         ## Category Tags
-        if q.technology is not None:
-            buffer.write('N1  - Category: {}\n'.format(q.technology))
-        for c in d.technology.exclude(name=q.technology):
+        if q.category is not None:
+            buffer.write('N1  - Category: {}\n'.format(q.category))
+        for c in d.category.exclude(name=q.category):
             buffer.write('N1  - Category: {}\n'.format(c))
 
         buffer.write('ER  - \n\n')
@@ -3139,17 +3139,17 @@ def export_ris_docs(request,qid,docs=False):
 
 def get_tech_docs(tid,other=False):
     if tid=='0':
-        tech = Technology.objects.all().values('id')
-        tobj = Technology(pk=0,name="NETS: All Technologies")
+        tech = Category.objects.all().values('id')
+        tobj = Category(pk=0,name="NETS: All Technologies")
     else:
-        tech = Technology.objects.filter(pk=tid).values('id')
-        tobj = Technology.objects.get(pk=tid)
+        tech = Category.objects.filter(pk=tid).values('id')
+        tobj = Category.objects.get(pk=tid)
     docs1 = list(Doc.objects.filter(
-        query__technology__in=tech,
+        query__category__in=tech,
         query__type="default"
     ).values_list('pk',flat=True))
     docs2 = list(Doc.objects.filter(
-        technology__in=tech
+        category__in=tech
     ).values_list('pk',flat=True))
     dids = list(set(docs2)|set(docs1))
     docs = Doc.objects.filter(pk__in=dids)
@@ -3162,8 +3162,8 @@ def get_tech_docs(tid,other=False):
 
 from collections import defaultdict
 
-def technology(request,tid):
-    template = loader.get_template('scoping/technology.html')
+def category(request,tid):
+    template = loader.get_template('scoping/category.html')
     tech, docs, tobj, nqdocs = get_tech_docs(tid,other=True)
     project = tobj.project
     docinfo={}
@@ -3171,14 +3171,14 @@ def technology(request,tid):
     docinfo['tdocs'] = docs.distinct('pk').count()
     docinfo['reldocs'] = docs.filter(
         docownership__relevant=1,
-        docownership__query__technology__in=tech
+        docownership__query__category__in=tech
     ).distinct('pk').count() + nqdocs.distinct('pk').count()
 
     docs = docs.order_by('PY').filter(PY__gt=1985)
 
     rdocids = docs.filter(
         docownership__relevant=1,
-        docownership__query__technology__in=tech
+        docownership__query__category__in=tech
     ).values_list('pk',flat=True)
 
     rdocids = list(rdocids)
@@ -3222,9 +3222,9 @@ def download_tdocs(request,tid):
     tech, docs, tobj, nqdocs = get_tech_docs(tid,other=True)
     rdocs = docs.filter(
         docownership__relevant=1,
-        docownership__query__technology__in=tech
+        docownership__query__category__in=tech
     )
-    trdocs = docs.filter(technology__in=tech).exclude(query__technology__in=tech)
+    trdocs = docs.filter(category__in=tech).exclude(query__category__in=tech)
     rdocs = rdocs | trdocs
     rdocs = rdocs.distinct('pk')
     response = HttpResponse(content_type='text/csv')
@@ -3245,7 +3245,7 @@ def prepare_authorlist(request,tid):
     tech, docs, tobj = get_tech_docs(tid)
     docs = docs.filter(
         docownership__relevant=1,
-        docownership__query__technology__in=tech
+        docownership__query__category__in=tech
     )
     docids = docs.values_list('pk',flat=True)
 
@@ -3263,14 +3263,14 @@ def prepare_authorlist(request,tid):
                 if d.docauthinst_set.count() == 0:
                     continue
                 au = d.docauthinst_set.order_by('position').first().AU
-                audocs = docs.filter(docauthinst__AU=au,query__technology__isnull=False).distinct('pk')
+                audocs = docs.filter(docauthinst__AU=au,query__category__isnull=False).distinct('pk')
                 docset = "; ".join([x.citation() for x in audocs])
                 et, created = EmailTokens.objects.get_or_create(
                     email=evalue,
                     AU=au,
                     category=tobj
                 )
-                pcats = Technology.objects.filter(project=tobj.project)
+                pcats = Category.objects.filter(project=tobj.project)
                 et_existing = EmailTokens.objects.filter(
                     email=evalue,
                     AU=au,
@@ -3415,7 +3415,7 @@ Germany
 
 {}
     '''
-    tobj = Technology.objects.get(pk=tid)
+    tobj = Category.objects.get(pk=tid)
     ems = EmailTokens.objects.filter(
         category=tobj,
         sent=False,
@@ -3444,7 +3444,7 @@ Germany
             et.save()
             time.sleep(30 + random.randrange(1,50,1)/10)
 
-    return HttpResponseRedirect(reverse('scoping:technology', kwargs={'tid': tid}))
+    return HttpResponseRedirect(reverse('scoping:category', kwargs={'tid': tid}))
 
 
 
@@ -3467,7 +3467,7 @@ def document(request, pid, doc_id):
     project = Project.objects.get(pk=pid)
     authors = DocAuthInst.objects.filter(doc=doc)
     queries = Query.objects.filter(doc=doc,project=project)
-    technologies = doc.technology.filter(project=project)
+    technologies = doc.category.filter(project=project)
     innovations = doc.innovation.all()
     ratings = doc.docownership_set.filter(query__project=project)
     if request.user.username in ["galm","roger","nemet"]:
@@ -3486,7 +3486,7 @@ def document(request, pid, doc_id):
         uf.filename = df.file
         uf.action="Delete"
 
-    ptechs = Technology.objects.filter(project=project).exclude(pk__in=technologies)
+    ptechs = Category.objects.filter(project=project).exclude(pk__in=technologies)
 
 
     context = {
@@ -3904,7 +3904,7 @@ def add_statement(request):
         start = start,
         end   = end,
         user  = user,
-        #technology = ,
+        #category = ,
         text_length = len(text))
     docStat.save()
 
@@ -3920,14 +3920,14 @@ def add_statement(request):
     toolbox_html = generate_toolbox(doid, tag, docStat)
 
     # do    = DocOwnership.objects.get(pk=doid)
-    # techs = Technology.objects.filter(project=tag.query.project)
+    # techs = Category.objects.filter(project=tag.query.project)
     # for t in techs:
-    #     if do.docpar.technology.all().filter(pk=t.pk).exists():
+    #     if do.docpar.category.all().filter(pk=t.pk).exists():
     #         t.active="btn-success"
     #     else:
     #         t.active=""
     #
-    # levels = [[(docStat.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).distinct()]
+    # levels = [[(docStat.category.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).distinct()]
     #
     # toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
     # toolbox_html += '<div class="tools_statement2"><button class="btntool btn_del_stat" id="btndel{{s.0.0.0}}"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button></div>'
@@ -3946,15 +3946,15 @@ def add_statement(request):
 
 def generate_toolbox(doid, tag, docStat):
     do    = DocOwnership.objects.get(pk=doid)
-    techs = Technology.objects.filter(project=tag.query.project)
+    techs = Category.objects.filter(project=tag.query.project)
     pid   = tag.query.project.id
     for t in techs:
-        if do.docpar.technology.all().filter(pk=t.pk).exists():
+        if do.docpar.category.all().filter(pk=t.pk).exists():
             t.active="btn-success"
         else:
             t.active=""
 
-    levels = [[(docStat.technology.all().filter(pk=t.pk).exists(),t, docStat.technology.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')]
+    levels = [[(docStat.category.all().filter(pk=t.pk).exists(),t, docStat.category.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')]
 
     # Old implementation
     # toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
@@ -4081,7 +4081,7 @@ def generate_toolbox(doid, tag, docStat):
     return(toolbox_html)
 
 ########################################################
-## Add the technology asynchronously
+## Add the category asynchronously
 @login_required
 def async_add_tech(request):
     pid   = request.GET.get('pid', None)
@@ -4094,14 +4094,14 @@ def async_add_tech(request):
 
     # Get last ID
     try:
-      last = Technology.objects.filter(group="Other", project_id=pid).order_by('-id')[0]
+      last = Category.objects.filter(group="Other", project_id=pid).order_by('-id')[0]
       lastid=last.id
     except IndexError:
       lastid=1
 
 
     #  create a new query record in the database
-    t = Technology(
+    t = Category(
         name="Z"+str(lastid)+"_"+tname,
         description=tdesc,
         project_id=pid,
@@ -4123,9 +4123,9 @@ def add_othercat(request):
     tid = request.GET.get('tid', None)
 
     ds  = DocStatement.objects.get(pk=sid)
-    t   = Technology.objects.get(pk=tid)
+    t   = Category.objects.get(pk=tid)
 
-    getattr(ds, "technology").add(t)
+    getattr(ds, "category").add(t)
 
     ds.save()
 
@@ -4143,14 +4143,14 @@ def del_othercat(request):
     tagid = request.GET.get('tagid', None)
 
     ds  = DocStatement.objects.get(pk=sid)
-    t   = Technology.objects.get(pk=tid)
+    t   = Category.objects.get(pk=tid)
     tag = Tag.objects.get(pk=tagid)
 
-    getattr(ds, "technology").remove(t)
+    getattr(ds, "category").remove(t)
 
     ds.save()
 
-    techs = Technology.objects.filter(project=tag.query.project)
+    techs = Category.objects.filter(project=tag.query.project)
     levels = [t for t in techs.filter(level=6).order_by('name')]
 
     html_response =  '<select id="add_othercat'+str(sid)+'" name="other_categories" class="add_othercat">'
@@ -4203,21 +4203,21 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     pars = [(highlight_words_new(highlight_statement(x.id, debug=False), tag, debug=False), x.id) if x.id==do.docpar.id else (highlight_words_new(x.text, tag, debug=False), x.id) for x in doc.docpar_set.all()]
 
 	# Get technologies/statements
-    techs = Technology.objects.filter(project=tag.query.project)
+    techs = Category.objects.filter(project=tag.query.project)
     for t in techs:
-        if do.docpar.technology.all().filter(pk=t.pk).exists():
+        if do.docpar.category.all().filter(pk=t.pk).exists():
             t.active="btn-success"
         else:
             t.active=""
     #levels = [techs.filter(level=l) for l in techs.values_list('level',flat=True).distinct()]
-    levels = [[(do.docpar.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).exclude(level=6).distinct()]
+    levels = [[(do.docpar.category.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).exclude(level=6).distinct()]
     #print(levels)
 
     # Get all statements registered
     #stats_ids = []
     #stats_cats = []
 
-    stats_cats = [[[(s.id, s.technology.all().filter(pk=t.pk).exists(), t, s.technology.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')] for s in DocStatement.objects.all().filter(par=do.docpar.id)]
+    stats_cats = [[[(s.id, s.category.all().filter(pk=t.pk).exists(), t, s.category.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')] for s in DocStatement.objects.all().filter(par=do.docpar.id)]
 
     #print(stats_cats)
 
@@ -4228,7 +4228,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     #         #print(st.text)
     #         stats_ids.append(st.id)
     #         for t in techs:
-    #             if st.technology.all().filter(pk=t.pk).exists():
+    #             if st.category.all().filter(pk=t.pk).exists():
     #                 #t.active="btn-success"
     #                 stats_cats.append((st.id, [t.name, "btn-success"]))
     #                 #print(t.name+": active")
@@ -4243,7 +4243,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     #     for st in statements:
     #         print(st.text)
     #         for t in techs:
-    #             if do.docstat.technology.all().filter(pk=t.pk).exists():
+    #             if do.docstat.category.all().filter(pk=t.pk).exists():
     #                 #t.active="btn-success"
     #                 print("active")
     #             else:
@@ -4489,7 +4489,7 @@ def delete(request,thing,thingid):
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 @login_required
-def remove_tech(request,doc_id,tid,thing='Technology'):
+def remove_tech(request,doc_id,tid,thing='Category'):
     doc = Doc.objects.get(pk=doc_id)
     obj = apps.get_model(app_label='scoping',model_name=thing).objects.get(pk=tid)
     getattr(doc,thing.lower()).remove(obj)

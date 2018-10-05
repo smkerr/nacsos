@@ -23,7 +23,7 @@ class CategoryForm(forms.ModelForm):
         min_value=1, max_value=9
     )
     class Meta:
-        model = (Technology)
+        model = (Category)
         fields = ('name','level','description',)
         widgets = {
           'name': forms.Textarea(attrs={'rows':1, 'cols':15}),

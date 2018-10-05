@@ -85,8 +85,8 @@ urlpatterns = [
 
     url(r'^switchmode$', views.switch_mode, name='switch_mode'),
 
-    url(r'^technologies/(?P<pid>[0-9]+)',views.technologies, name='technologies'),
-    url(r'^technology/(?P<tid>[0-9]+)$',views.technology, name='technology'),
+    url(r'^categories/(?P<pid>[0-9]+)',views.categories, name='categories'),
+    url(r'^category/(?P<tid>[0-9]+)$',views.category, name='category'),
     url(r'^download_tdocs/(?P<tid>[0-9]+)$',views.download_tdocs, name='download_tdocs'),
     url(r'^authorlist/(?P<tid>[0-9]+)$',views.prepare_authorlist, name='authorlist'),
     url(r'^sendauthorlist/(?P<tid>[0-9]+)$',views.send_authorlist, name='send_authorlist'),

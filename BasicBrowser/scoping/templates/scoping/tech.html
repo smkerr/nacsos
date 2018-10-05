@@ -28,7 +28,7 @@
                 class="form-inline">
                   {% csrf_token %}
                   <!-- {% bootstrap_form t.form layout='inline' %} -->
-                  <td><a href="{% url 'scoping:technology' t.id %}">{{ t.id }}</a></td>
+                  <td><a href="{% url 'scoping:category' t.id %}">{{ t.id }}</a></td>
 
                   {% for field in t.form %}
                   <td>{{field}}
@@ -41,7 +41,7 @@
                 {% bootstrap_button 'Update' %}
                 </td>
                 </form>
-                <td><a href="{% url 'scoping:delete' 'Technology' t.id %}"><button class="btn" onclick="return confirm('Are you sure you would like to delete this technology?');">Delete</button></a></td>
+                <td><a href="{% url 'scoping:delete' 'Category' t.id %}"><button class="btn" onclick="return confirm('Are you sure you would like to delete this technology?');">Delete</button></a></td>
 		    </tr>
 
 		{% endfor %}
