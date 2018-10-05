@@ -1109,6 +1109,13 @@ def topic_presence_detail(request,run_id):
     if stat.method == "BD":
         update_bdtopics(run_id)
 
+    context = {
+        'run_id': run_id,
+        'stat': stat,
+        'project': stat.query.project,
+        'user': request.user
+    }
+
     if stat.status==3:
         run_id = int(run_id)
 
@@ -1132,18 +1139,9 @@ def topic_presence_detail(request,run_id):
             s = topic.score
             topic_tuples.append((topic, topic.score, topic.score/max_score*100))
 
-        context = {
-            'run_id': run_id,
-            'topic_tuples': topic_tuples,
-            'stat': stat
-        }
+        context['topic_tuples'] = topic_tuples
     else:
-        context = {
-            'run_id': run_id,
-            'stat': stat,
-            'unfinished': True
-        }
-
+        context['unfinished'] = True 
 
     return HttpResponse(template.render(context))
 

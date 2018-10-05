@@ -114,6 +114,10 @@ def upload_docs(qid, update):
     return(q.id)
 
 @shared_task
+def download_metacodes(pid):
+    return
+
+@shared_task
 def do_query(qid):
     q = Query.objects.get(pk=qid)
     q.doc_set.clear()

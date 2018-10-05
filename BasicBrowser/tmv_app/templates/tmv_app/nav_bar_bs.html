@@ -1,0 +1,45 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-white border">
+
+    <a class="navbar-brand" href="#"></a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+     <div class="collapse navbar-collapse" id="navbarSupportedContent">
+       <ul class="navbar-nav mr-auto">
+         <li class="nav-item active">
+           <a class="nav-link" href="{% url 'scoping:index' %}">Projects <span class="sr-only">(Projects)</span></a>
+         </li>
+         {% if project %}
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'scoping:project' project.id %}">Home <span class="sr-only">(Home)</span></a>
+         </li>
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'tmv_app:runs' project.id %}">Topic models</a>
+         </li>
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'tmv_app:network' run_id %}">Network</a>
+         </li>
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'tmv_app:network_wg' run_id %}">WG network</a>
+         </li>
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'tmv_app:growth_heatmap' run_id %}">Growth heatmap</a>
+         </li>
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'tmv_app:random_doc' run_id %}">Random doc</a>
+         </li>
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'tmv_app:stats' run_id %}">Stats</a>
+         </li>
+         <li class="nav-item">
+           <a class="nav-link" href="{% url 'scoping:userpage' user.id %}">{{user.username}}</a>
+         </li>
+
+
+         <!-- <li class="nav-item">
+           <a class="nav-link" href="#">Link</a>
+         </li> -->
+         {% endif %}
+     </div>
+</nav>

@@ -1,0 +1,30 @@
+<html>
+<head>
+{% load static %}
+{% load bootstrap4 %}
+{% bootstrap_javascript %}
+{% bootstrap_css %}
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Topic Modelling App</title>
+<link href="{% static 'tmv_app/css/styling.css' %}" rel="stylesheet" type="text/css">
+<script src="{% static 'tmv_app/js/d3.v4.js' %}"></script>
+<script src="{% static 'scoping/js/jquery-3.2.0.min.js' %}"></script>
+<script src="{% static 'tmv_app/js/pie.js' %}"></script>
+<script src="{% static 'tmv_app/js/d3-legend.js' %}"></script>
+
+{% block head %} {% endblock %}
+
+</head>
+  <body>
+     {% include 'tmv_app/nav_bar_bs.html' %}
+
+
+
+
+{% block content %} {% endblock %}
+</div>
+</div>
+
+</body>
+{% block script %} {% endblock %}
+</html>
