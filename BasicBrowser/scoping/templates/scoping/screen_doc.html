@@ -30,32 +30,6 @@
 <div class="row">
 
     <div class="col-3">
-        {% for note in notes %}
-        <div class="border rounded bg-white my-3 p-2 note">
-          <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
-          <hr>
-          {{note.text}}
-          <hr>
-          <a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
-          </a>
-        </div>
-        {% endfor %}
-    </div>
-    <div class="col-6">
-    {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
-    </div>
-    <div class="col-3">
-
-        <div class="border rounded bg-white my-3 p-2">
-           {% csrf_token %}
-           <p class="lead">Is this document relevant according the criteria shown? (Click buttons or use number keys)</p>
-           <hr>
-              <a id="r-1" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}"<label class="btn btn-secondary m-1">Yes (1)</label></a>
-              <a id="r-2" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}"<label class="btn btn-secondary m-1">No (2)</label></a>
-              <a id="r-3" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}"<label class="btn btn-secondary m-1">Maybe (3)</label></a>
-            <!-- </div> -->
-        </div>
-        <br>
         <div class="border rounded bg-white my-3 p-2">
             Add a note to this paragraph
             <hr>
@@ -71,6 +45,46 @@
             <button type="submit" class="btn btn-primary">Add note</button>
             </form>
         </div>
+        {% for note in notes %}
+        <div class="border rounded bg-white my-3 p-2 note">
+          <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
+          <hr>
+          {{note.text}}
+          <hr>
+          <a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
+          </a>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="col-6">
+    {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+
+    <div class="border rounded bg-white my-3 p-2">
+       {% csrf_token %}
+       <p class="lead">Is this document relevant according the criteria shown? (Click buttons or use number keys)</p>
+       <hr>
+          <a id="r-1" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}"<label class="btn btn-secondary m-1">Yes (1)</label></a>
+          <a id="r-2" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}"<label class="btn btn-secondary m-1">No (2)</label></a>
+          <a id="r-3" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}"<label class="btn btn-secondary m-1">Maybe (3)</label></a>
+        <!-- </div> -->
+    </div>
+    </div>
+    <div class="col-3">
+
+
+        <br>
+
+        {% for l in levels %}
+            <div class="border rounded bg-white my-3 p-2">
+                Which level {{l.0.1.level}} categories is this paragraph relevant to?
+                (hover for more info)
+                        <hr>
+                    {% for t in l %}
+                    <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
+
+                    {% endfor %}
+            </div>
+        {% endfor %}
 
     </div>
 
@@ -82,6 +96,24 @@
 
 <script type="text/javascript">
 
+$(".cat").click(function(){
+    id2 = $(this).val()
+    if ($(this).hasClass("True")) {
+        method = "remove"
+    } else {
+        method = "add"
+    }
+    $(this).toggleClass("True")
+    $.ajax({
+        url: "{% url 'scoping:cat_doc' %}",
+        data: {
+          "did": "{{do.doc.pk}}",
+          "cid": id2,
+        },
+        success: function(data) {
+        }
+    })
+})
 
 function review(d) {
 	url = $("#r-"+d).attr("href")

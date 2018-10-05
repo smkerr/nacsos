@@ -403,6 +403,12 @@ class Category(models.Model):
     def __str__(self):
       return self.name
 
+class DocUserCat(models.Model):
+    doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
+    time = models.DateTimeField(auto_now_add=True)
+
 class Innovation(models.Model):
     name = models.TextField(null = True, verbose_name="Innovation Name")
     description = models.TextField(null=True, verbose_name="Innovation Description")
@@ -562,6 +568,46 @@ class UT(models.Model):
     UT = models.CharField(max_length=30,db_index=True,primary_key=True, verbose_name='Document ID')
     sid = models.CharField(max_length=50,db_index=True,verbose_name='Scopus_id',null=True)
 
+class DocCat(models.Model):
+
+    doc = models.ForeignKey('Doc',on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
+    updated = models.DateTimeField(auto_now_add=True)
+    docusercats = models.ManyToManyField('DocUserCat')
+
+    user_inherited = models.BooleanField(default=False)
+    user_tagged = models.BooleanField(default=False)
+    query_tagged = models.BooleanField(default=False)
+
+@receiver(post_save, sender=DocUserCat)
+def handle_cat_doc(sender, instance, **kwargs):
+    dc, created = DocCat.objects.get_or_create(
+        doc=instance.doc,
+        category=instance.category
+    )
+    dc.save()
+    dc.docusercats.add(instance)
+
+@receiver(pre_delete,sender=DocUserCat)
+def handle_uncat_doc(sender, instance, **kwargs):
+    dc, created = DocCat.objects.get_or_create(
+        doc=instance.doc,
+        category=instance.category
+    )
+    if created:
+        dc.delete()
+    if dc.docusercats.count() > 1:
+        dc.docusercats.remove(instance)
+    else:
+        if not dc.user_inherited and not dc.query_tagged:
+            dc.docusercats.remove(instance)
+            dc.delete()
+        else:
+            dc.docusercats.remove(instance)
+            dc.user_tagged=False
+            dc.save()
+
+
 class Doc(models.Model):
     random = DocManager
 
@@ -605,7 +651,7 @@ class Doc(models.Model):
     users = models.ManyToManyField(User, through='DocOwnership')
     journal = models.ForeignKey('JournalAbbrev', on_delete=models.CASCADE, null=True)
 
-    category = models.ManyToManyField('Category',db_index=True)
+    category = models.ManyToManyField('Category',db_index=True, through='DocCat')
     innovation = models.ManyToManyField('Innovation',db_index=True)
     sbscategory = models.ManyToManyField('SBSDocCategory')
     source = models.TextField(null=True)

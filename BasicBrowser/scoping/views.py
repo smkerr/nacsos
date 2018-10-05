@@ -342,7 +342,7 @@ def query_table(request, pid):
 @login_required
 def categories(request, pid):
 
-    template = loader.get_template('scoping/tech.html')
+    template = loader.get_template('scoping/categories.html')
 
     project = Project.objects.get(pk=pid)
 
@@ -365,10 +365,6 @@ def categories(request, pid):
             c.save()
         except:
             pass
-
-
-
-
 
     technologies = Category.objects.filter(project=pid).order_by('id')
 
@@ -4342,9 +4338,16 @@ def screen_doc(request,tid,ctype,pos,todo):
         tag=tag,
         user=request.user
     ).order_by('order')
-    try:
-        do = dois[pos]
-    except:
+
+    s = 0
+    while s < 5:
+        try:
+            do = dois[pos]
+            s = 10
+        except:
+            s+=1
+            time.sleep(1)
+    if s == 5:
         return HttpResponseRedirect(reverse(
             'scoping:userpage',
             kwargs={"pid":tag.query.project.id}
@@ -4356,6 +4359,12 @@ def screen_doc(request,tid,ctype,pos,todo):
         doc = do.doc
     )
 
+    cats = Category.objects.filter(project=tag.query.project)
+    levels = [cats.filter(level=l) for l in cats.values_list('level',flat=True).distinct()]
+    levels = [[(cats.filter(pk=t.pk,docusercat__user=request.user,docusercat__doc=do.doc).exists(),t) for t in cats.filter(level=l)] for l in cats.values_list('level',flat=True).distinct()]
+
+
+
     context = {
         'project':tag.query.project,
         'tag': tag,
@@ -4365,7 +4374,8 @@ def screen_doc(request,tid,ctype,pos,todo):
         'pos': pos,
         'todo': todo,
         'ctype': ctype,
-        'notes': notes
+        'notes': notes,
+        'levels': levels
     }
 
     return render(request, 'scoping/screen_doc.html', context)
@@ -4388,6 +4398,17 @@ def rate_doc(request,tid,ctype,doid,pos,todo,rel):
             'todo': todo
         }
     ))
+
+@login_required
+def cat_doc(request):
+    dc, created = DocUserCat.objects.get_or_create(
+        doc_id=int(request.GET['did']),
+        category_id=int(request.GET['cid']),
+        user=request.user
+    )
+    if not created:
+        dc.delete()
+    return HttpResponse()
 
 ## Universal screening function, ctype = type of documents to show
 @login_required
