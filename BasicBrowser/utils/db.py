@@ -92,7 +92,7 @@ def init(n_f):
         )
         run_id = 0
 
-    run_id +=1
+    run_id += 1
 
     stats = RunStats(
         run_id = run_id,

@@ -3,8 +3,9 @@ from scoping.models import *
 from tmv_app.tasks import *
 from celery import *
 from django.db.models import Q, Count, Func, F, Sum, Avg, Value as V
-from celery import group
 import pandas as pd
+from multiprocess import Pool
+
 
 def compare_topic_queryset(runs):
 
@@ -222,8 +223,11 @@ def yearly_topic_term_scores(run_id):
         #dynamictopicyear__isnull=True
     ).values_list('id',flat=True)
 
-    jobs = group(yearly_topic_term.s(dt,run_id) for dt in dt_ids)
-    result = jobs.apply_async()
+    #pool = Pool(processes=8)
+    #pool.map(partial(yearly_topic_term, run_id=run_id), dt_ids)
+    #pool.terminate()
+    for dt_id in dt_ids:
+        yearly_topic_term(dt_id, run_id)
 
 def update_dtopics(run_id):
     stats = RunStats.objects.get(pk=run_id)
@@ -295,10 +299,12 @@ def update_dtopics(run_id):
         dts = DynamicTopic.objects.filter(
             run_id=run_id
         ).values_list('id',flat=True)
-        jobs = group(update_dtopic.s(dt,parent_run_id) for dt in dts)
-        result = jobs.apply_async()
-        stats.topic_titles_current = True
-        stats.save()
+
+        #pool = Pool(processes=8)
+        #pool.map(partial(update_dtopic, parent_run_id=parent_run_id), dts)
+        #pool.terminate()
+        for dt in dts:
+            update_dtopic(dt, parent_run_id)
 
     return
 

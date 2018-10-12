@@ -47,7 +47,8 @@ class Command(BaseCommand):
                     pass
 
             update_topic_scores(parent_run_id)
-            update_dtopics(run_id)
+            # fmh: not working, therefore disabled
+            #update_dtopics(run_id)
 
 
             pstat = RunStats.objects.get(run_id=parent_run_id)

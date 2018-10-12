@@ -3,10 +3,10 @@ from celery import shared_task
 from parliament.models import *
 from cities.models import Region
 from tmv_app.models import *
-from utils.utils import *
+from utils.utils import flatten
 import os
-from utils.text import german_stemmer, snowball_stemmer, proc_texts
-from utils.tm_mgmt import *
+from utils.text import german_stemmer, snowball_stemmer, process_texts
+from utils.tm_mgmt import update_topic_titles, update_topic_scores
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from scipy.sparse import csr_matrix, find
 from sklearn.decomposition import NMF, LatentDirichletAllocation as LDA
@@ -17,6 +17,11 @@ from functools import partial
 from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
 import time
+
+from utils.run_dtm_parliament import run_dynamic_nmf, run_blei_dtm
+
+# ===================================================================================================================
+# ===================================================================================================================
 
 
 @shared_task
@@ -123,12 +128,23 @@ def do_search(s_id):
         print("search_object_type not valid ({})".format(s.search_object_type))
         return
 
+# ==================================================================================================================
+# ===================================================================================================================
 
 @shared_task
-def run_tm(s, K, language="german", verbosity=1, method='NM', max_features=0):
+def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0):
+
+    if method in ['DT', 'dnmf']:
+        run_dynamic_nmf(s_id, K, language=language)
+        return 0
+    elif method in ['BT', 'BleiDTM']:
+        run_blei_dtm(s_id, K, language=language)
+        return 0
+
+
     start_time = time.time()
 
-    s = Search.objects.get(pk=s)
+    s = Search.objects.get(pk=s_id)
     stat = RunStats(
         psearch=s,
         K=K,
@@ -143,7 +159,7 @@ def run_tm(s, K, language="german", verbosity=1, method='NM', max_features=0):
     if s.search_object_type == 1:
         ps = Paragraph.objects.filter(search_matches=s)
         docs = ps.filter(text__iregex='\w')
-        texts, docsizes, ids = proc_texts(docs, stoplist, stat.fulltext)
+        texts, docsizes, ids = process_texts(docs, stoplist, stat.fulltext)
 
     elif s.search_object_type == 2:
         uts = Utterance.objects.filter(search_matches=s)
@@ -179,7 +195,7 @@ def run_tm(s, K, language="german", verbosity=1, method='NM', max_features=0):
             max_df=stat.max_df,
             min_df=stat.min_freq,
             max_features=n_features,
-            ngram_range=(stat.ngram,stat.ngram),
+            ngram_range=(1, stat.ngram),
             tokenizer=tokenizer,
             stop_words=stopword_list
             )
@@ -195,7 +211,7 @@ def run_tm(s, K, language="german", verbosity=1, method='NM', max_features=0):
         tf_vectorizer = CountVectorizer(max_df=stat.max_df,
                                         min_df=stat.min_freq,
                                         max_features=n_features,
-                                        ngram_range=(stat.ngram, stat.ngram),
+                                        ngram_range=(1, stat.ngram),
                                         tokenizer=tokenizer,
                                         stop_words=stopword_list)
         tf = tf_vectorizer.fit_transform(texts)
@@ -348,6 +364,9 @@ def run_tm(s, K, language="german", verbosity=1, method='NM', max_features=0):
         print("topic model run done ({})".format(time.time() - start_time))
 
     return 0
+
+
+# ===================================================================================================================
 
 
 def merge_utterance_paragraphs(uts, include_interjections=False):

@@ -305,7 +305,7 @@ class RunStats(models.Model):
     METHOD_CHOICES = (
         (LDA, 'lda'),
         (HLDA, 'hlda'),
-        (DTM, 'dtm'),
+        (DTM, 'dnmf'),
         (NMF,'nmf'),
         (BDT,'BleiDTM')
     )
