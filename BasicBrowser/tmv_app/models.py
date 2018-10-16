@@ -316,7 +316,7 @@ class RunStats(models.Model):
     method = models.CharField(
         max_length=2,
         choices=METHOD_CHOICES,
-        default=LDA,
+        default=NMF,
     )
     error = models.FloatField(null=True, default = 0)
     coherence = models.FloatField(null=True)

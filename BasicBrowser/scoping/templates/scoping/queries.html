@@ -66,14 +66,19 @@
 
 {% endif %}
 
+
+
 <div class="explanation">
 <h2> Query Getter </h2>
 
 <p>
+    {% if '@mcc-berlin.net' in request.user.email %}
 Use this form to submit a new query, which will be run in the background. Be aware that queries of external databases may take some time, and involve scraping outside websites and downloading large amounts of information.
 <p>It is recommended that you develop a query at the external page (<a href="http://apps.webofknowledge.com/WOS_AdvancedSearch_input.do?SID=3CWPGcaiOusPROlzkHF&product=WOS&search_mode=AdvancedSearch">Web of Science</a> or <a href="https://www.scopus.com/search/form.uri?display=advanced">Scopus</a>). When you enter it here, an assistant will type it into the box on the relevant page, download bibliographic information about all results, and upload them to the server where they can be analysed in more detail.
 <p>Note that larger queries (more than 2000 results in any single year) cannot currently be carried out in Scopus.
-<p>Choose the source "internal" to compare and combine two existing queries, identified by their IDs, using the operators "NOT", "OR" and "AND"; e.g. "36 AND 42", or "42 NOT 36".
+
+    {% endif %}
+<p>"internal" queries compare and combine two existing queries, identified by their IDs, using the operators "NOT", "OR" and "AND"; e.g. "36 AND 42", or "42 NOT 36".
 </p>
 <form action="{% url 'scoping:create_query' project.id %}" method="post">
   {% csrf_token %}
@@ -87,8 +92,10 @@ Use this form to submit a new query, which will be run in the background. Be awa
 
 
     <select name="qdb">
+        {% if '@mcc-berlin.net' in request.user.email %}
         <option value="WoS">Web of Science</option>
         <option value="scopus">Scopus</option>
+        {% endif %}
         <option value="intern">Internal</option>
     </select>
 
@@ -104,11 +111,12 @@ Use this form to submit a new query, which will be run in the background. Be awa
 
 <hr>
 
+
 <div class="explanation">
 <h2> Query Uploader </h2>
 
 <p>
-<a href="{% url 'scoping:query_create' project.id %}">Click</a> to upload a Web of Science or Scopus file you have downloaded yourself (more formats to be uploaded)</a>
+<a href="{% url 'scoping:query_create' project.id %}">Click</a> to upload a Web of Science or Scopus or RIS file you have downloaded yourself</a>
 
 </div>
 
