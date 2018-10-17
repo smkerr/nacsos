@@ -144,6 +144,8 @@ def add_doc(r, q, update):
             if 'C1' not in r:
                 r['C1'] = [""]
             a_added = False
+            if af is None:
+                continue
             for inst in r['C1']:
                 inst = inst.split('] ',1)
                 iauth = inst[0]
@@ -187,7 +189,10 @@ def add_doc(r, q, update):
                 dai.save()
 
         doc.authors = ', '.join([x.AU for x in doc.docauthinst_set.all().order_by('position')])
-        doc.first_author = doc.docauthinst_set.all().order_by('position').first().AU
+        try:
+            doc.first_author = doc.docauthinst_set.all().order_by('position').first().AU
+        except:
+            pass
         # except:
         #     pass
 
