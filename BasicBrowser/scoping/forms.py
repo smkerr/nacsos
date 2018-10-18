@@ -11,6 +11,9 @@ class ProjectForm(forms.ModelForm):
 
 class QueryForm(forms.ModelForm):
     title = forms.CharField()
+    query_file = forms.FileField(
+        label = "Query file(s)", widget=forms.ClearableFileInput(attrs={'multiple': True})
+    )
     class Meta:
         model = (Query)
         fields=["title","text","database","query_file"]

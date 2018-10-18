@@ -80,9 +80,44 @@ class QueryCreate(CreateView):
         form.instance.project =  Project.objects.get(
             pk=self.kwargs['pid']
         )
+        files = self.request.FILES.getlist('query_file')
         self.object = form.save()
+
+        if len(files) > 1:
+            x = dir(files[0])
+            filename, file_extension = os.path.splitext(files[0].name)
+            d = '{}/queries/{}'.format(settings.MEDIA_ROOT, self.object.id)
+            dname = 'queries/{}'.format( self.object.id)
+
+            if (os.path.isdir(d)):
+                shutil.rmtree(d)
+            os.mkdir(d)
+
+            fname = '{}/results{}'.format(dname, file_extension)
+            fpath = '{}/results{}'.format(d, file_extension)
+
+            with open(fpath,'w', encoding='utf-8') as res:
+                for f in files:
+                    for line in f:
+                        line = line.decode('utf-8')
+                        if re.match("EF",line) or re.match(".*FN Clarivate.*",line):
+                            r = line
+                        else:
+                            try:
+                                r = line # utf8
+                                if line is not None and line != "null":
+                                    res.write(str(line))
+                            except:
+                                pass
+                res.write("EF")
+
+            self.object.query_file.name = fname
+            self.object.save()
+
         upload_docs.delay(self.object.id,True)
         time.sleep(1)
+
+
         return super().form_valid(form)
 
 @login_required

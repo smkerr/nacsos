@@ -8,7 +8,7 @@ import os, shutil
 def tokenize(text):
     transtable = {ord(c): None for c in string.punctuation + string.digits}
     tokens = nltk.word_tokenize(text.translate(transtable))
-    tokens = [i for i in tokens if len(i) > 2]
+    tokens = [i for i in tokens if len(i) > 2 and len(i) < 100]
     return tokens
 
 def get_sentence(abstract):
