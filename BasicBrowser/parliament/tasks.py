@@ -4,7 +4,7 @@ from parliament.models import *
 from cities.models import Region
 from tmv_app.models import *
 from utils.utils import flatten
-import os
+import os, sys, gc
 from utils.text import german_stemmer, snowball_stemmer, process_texts
 from utils.tm_mgmt import update_topic_titles, update_topic_scores
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
@@ -17,6 +17,8 @@ from functools import partial
 from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
 import time
+import django.db
+
 
 from utils.run_dtm_parliament import run_dynamic_nmf, run_blei_dtm
 
@@ -132,15 +134,19 @@ def do_search(s_id):
 # ===================================================================================================================
 
 @shared_task
-def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0):
+def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, **kwargs):
+
+    if method in ['DT', 'dnmf', 'BT', 'BleiDTM'] and max_features == 0:
+        max_features = 20000
 
     if method in ['DT', 'dnmf']:
-        run_dynamic_nmf(s_id, K, language=language)
+        print("Running dynamic NMF algorithm")
+        run_dynamic_nmf(s_id, K, language=language, max_features=max_features, max_df=max_df, min_df=min_df, **kwargs)
         return 0
     elif method in ['BT', 'BleiDTM']:
-        run_blei_dtm(s_id, K, language=language)
+        print("Running Blei DTM algorithm")
+        run_blei_dtm(s_id, K, language=language, max_features=max_features, max_df=max_df, min_df=min_df, **kwargs)
         return 0
-
 
     start_time = time.time()
 
@@ -148,7 +154,8 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0)
     stat = RunStats(
         psearch=s,
         K=K,
-        min_freq=5,
+        min_freq=min_df,
+        max_df=max_df,
         method=method.upper()[0:2],
         max_features=max_features
     )

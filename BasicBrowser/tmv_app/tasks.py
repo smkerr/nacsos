@@ -83,34 +83,42 @@ def update_dtopic(topic_id, parent_run_id):
             tdt.save()
         ptdt = tdt
 
-    maxyear = DocTopic.objects.filter(
+    if len(DocTopic.objects.filter(
         run_id=parent_run_id,
-        topic__primary_dtopic=topic
-    ).order_by('-topic__year')[0].topic.year
-    if score is not None:
-        topic.score = score
-    l1score = DocTopic.objects.filter(
-        run_id=parent_run_id,
-        topic__primary_dtopic=topic,
-        topic__year= maxyear
-    ).annotate(
-        dtopic_score = F('score') * F('topic__topicdtopic__score')
-    ).aggregate(
-        t=Sum('dtopic_score')
-    )['t']
-    if l1score is not None:
-        topic.l1ys = l1score / score
-    l5score = DocTopic.objects.filter(
-        run_id=parent_run_id,
-        topic__primary_dtopic=topic,
-        topic__year__gt= maxyear-5
-    ).annotate(
-        dtopic_score = F('score') * F('topic__topicdtopic__score')
-    ).aggregate(
-        t=Sum('dtopic_score')
-    )['t']
-    if l5score is not None:
-        topic.l5ys = l5score / score
+        topic__primary_dtopic=topic)) < 0:
+
+        maxyear = DocTopic.objects.filter(
+            run_id=parent_run_id,
+            topic__primary_dtopic=topic
+        ).order_by('-topic__year')[0].topic.year
+
+        if score is not None:
+            topic.score = score
+        l1score = DocTopic.objects.filter(
+            run_id=parent_run_id,
+            topic__primary_dtopic=topic,
+            topic__year= maxyear
+        ).annotate(
+            dtopic_score = F('score') * F('topic__topicdtopic__score')
+        ).aggregate(
+            t=Sum('dtopic_score')
+        )['t']
+        if l1score is not None:
+            topic.l1ys = l1score / score
+        l5score = DocTopic.objects.filter(
+            run_id=parent_run_id,
+            topic__primary_dtopic=topic,
+            topic__year__gt= maxyear-5
+        ).annotate(
+            dtopic_score = F('score') * F('topic__topicdtopic__score')
+        ).aggregate(
+            t=Sum('dtopic_score')
+        )['t']
+        if l5score is not None:
+            topic.l5ys = l5score / score
+    else:
+        print("No DocTopics found")
+
     topic.save()
 
     return topic.id

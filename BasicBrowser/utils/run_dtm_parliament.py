@@ -30,7 +30,8 @@ from nltk.corpus import stopwords
 # ===============================================================================================================
 
 # run the dynamic topic model with the algorithm by Blei
-def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm=True):
+def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm=True,
+                 max_features=20000, max_df=0.95, min_df=5,):
 
     # set blei algorithm path
     if platform.node() == "mcc-apsis":
@@ -43,14 +44,13 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm
 
     s = Search.objects.get(pk=s_id)
 
-    n_features =20000
-
     stat = RunStats(
         psearch=s,
         K=K,
-        min_freq=5,
+        max_df=max_df,
+        min_freq=min_df,
         method='BD', # BD = Blei dynamic topic model
-        max_features=n_features
+        max_features=max_features
     )
     stat.save()
     run_id = stat.run_id
@@ -61,13 +61,16 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm
     input_path = './dtm-input'
     output_path = './dtm-output'
 
-    if call_to_blei_algorithm:
-        shutil.rmtree(input_path)
-        shutil.rmtree(output_path)
-
-    if not os.path.isdir(input_path):
+    if os.path.isdir(input_path):
+        if call_to_blei_algorithm:
+            shutil.rmtree(input_path)
+    else:
         os.mkdir(input_path)
-    if not os.path.isdir(output_path):
+
+    if os.path.isdir(output_path):
+        if call_to_blei_algorithm:
+            shutil.rmtree(output_path)
+    else:
         os.mkdir(output_path)
 
     # load text from database
@@ -113,7 +116,7 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm
 
     vectorizer = CountVectorizer(max_df=stat.max_df,
                                  min_df=stat.min_freq,
-                                 max_features=n_features,
+                                 max_features=stat.max_features,
                                  ngram_range=(1 ,stat.ngram),
                                  tokenizer=tokenizer,
                                  stop_words=stopword_list)
@@ -294,20 +297,21 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm
 # ================================================================================================================
 
 # run dynamic nmf
-def run_dynamic_nmf(s_id, K, language="german", verbosity=1):
+def run_dynamic_nmf(s_id, K, language="german", verbosity=1, max_features=20000, max_df=0.95, min_df=5):
+
     t0 = time()
 
     s = Search.objects.get(pk=s_id)
 
-    n_features = 20000
     n_samples = 1000
 
     stat = RunStats(
         psearch=s,
         K=K,
-        min_freq=5,
+        max_df=max_df,
+        min_freq=min_df,
         method='DT',  # DT = dynamic NMF
-        max_features=n_features
+        max_features=max_features
     )
     stat.save()
     run_id = stat.run_id
@@ -361,7 +365,7 @@ def run_dynamic_nmf(s_id, K, language="german", verbosity=1):
         print("Extracting tf-idf features for NMF...")
         tfidf_vectorizer = TfidfVectorizer(max_df=stat.max_df,
                                            min_df=stat.min_freq,
-                                           max_features=n_features,
+                                           max_features=stat.max_features,
                                            ngram_range=(1, stat.ngram),
                                            tokenizer=tokenizer,
                                            stop_words=stopword_list)
@@ -395,8 +399,8 @@ def run_dynamic_nmf(s_id, K, language="german", verbosity=1):
 
         # Fit the NMF model
         print("Fitting the NMF model with tf-idf features, "
-              "n_samples=%d and n_features=%d..."
-              % (n_samples, n_features))
+              "n_samples=%d and max_features=%d..."
+              % (n_samples, stat.max_features))
         t1 = time()
         nmf = NMF(n_components=k, random_state=1,
                   alpha=.0001, l1_ratio=.5).fit(tfidf)
