@@ -260,6 +260,8 @@ class RunStats(models.Model):
     ngram = models.IntegerField(null=True, default=1, help_text='Length of feature n_gram')
     db = models.BooleanField(default=True, help_text='Record the results into the database? Or just run the model and record statistics?')
 
+    fancy_tokenization = models.BooleanField(default=False, help_text='tokenize so that multiple word keywords remain whole')
+
     K = models.IntegerField(null=True, help_text='Number of topics')
     alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter')
     max_iterations  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')

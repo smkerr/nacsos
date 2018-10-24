@@ -358,7 +358,6 @@ def add_doc_text(r,q,update):
 
 def find_with_id(r):
     import scoping.models
-    print(scoping.models)
     doc = None
     try:
         doc = scoping.models.Doc.objects.get(UT__sid=r['UT'])

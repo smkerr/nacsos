@@ -82,7 +82,8 @@ def plot_tsne_2(r_ind,tsne_results,cats,verbose=False):
 
 def plot_tsne(
     r_ind,tsne_results,cats,nocatids,
-    ax=None,verbose=False,hdoc=False
+    ax=None,verbose=False,hdoc=False,
+    legend=True
     ):
     cs = []
     sizes = []
@@ -160,18 +161,18 @@ def plot_tsne(
     ysp = yextent*0.08
 
 
-
-    for i,c in enumerate(cats):
-        ax.text(
-            l*0.95,
-            t-ysp-i*ysp,
-            "{} {:.1%}".format(c['name'],len(c['docs'])/len(r_ind)),
-            fontsize=5,
-            bbox={
-                'facecolor': c['color'],
-                'pad': 3
-            }
-        )
+    if legend:
+        for i,c in enumerate(cats):
+            ax.text(
+                l*0.95,
+                t-ysp-i*ysp,
+                "{} {:.1%}".format(c['name'],len(c['docs'])/len(r_ind)),
+                fontsize=5,
+                bbox={
+                    'facecolor': c['color'],
+                    'pad': 3
+                }
+            )
     # plt.tick_params(
     #     axis='both',
     #     which='both',

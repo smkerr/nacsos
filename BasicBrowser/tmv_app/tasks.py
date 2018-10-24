@@ -388,6 +388,72 @@ and {} topics\n'.format(qid, docs.count(),K))
         ModelSimilarity(w2v)
     )
 
+    stat.fancy_tokenize=False
+    if stat.fancy_tokenize:
+        ######################################
+        ## A fancy tokenizer
+
+        from nltk import wordpunct_tokenize
+        from nltk import WordNetLemmatizer
+        from nltk import sent_tokenize
+        from nltk import pos_tag
+        from nltk.corpus import stopwords as sw
+        punct = set(string.punctuation)
+        from nltk.corpus import wordnet as wn
+        stopwords = set(sw.words('english'))
+
+        def lemmatize(token, tag):
+                tag = {
+                    'N': wn.NOUN,
+                    'V': wn.VERB,
+                    'R': wn.ADV,
+                    'J': wn.ADJ
+                }.get(tag[0], wn.NOUN)
+                return WordNetLemmatizer().lemmatize(token, tag)
+
+        kws = Doc.objects.filter(
+            query=stat.query,
+            kw__text__iregex='\W'
+        ).values('kw__text').annotate(
+            n = Count('pk')
+        ).filter(n__gt=len(abstracts)//20).order_by('-n')
+
+        kw_text = set([x['kw__text'] for x in kws])
+        kw_ws = set([x['kw__text'].split()[0] for x in kws]) - stopwords
+
+        def fancy_tokenize(X):
+
+            common_words = set(X.split()) & kw_ws
+            for w in list(common_words):
+                wpat = "({}\W*\w*)".format(w)
+                wn = re.findall(wpat, X)
+                kw_matches = set(wn) & kw_text
+                if len(kw_matches) > 0:
+                    for m in kw_matches:
+                        yield m.replace(' ','-')
+                        X = X.replace(m," ")
+
+            for sent in sent_tokenize(X):
+                for token, tag in pos_tag(wordpunct_tokenize(sent)):
+                    token = token.lower().strip()
+                    if token in stopwords:
+                        continue
+                    if all(char in punct for char in token):
+                        continue
+                    if len(token) < 3:
+                        continue
+                    if all(char in string.digits for char in token):
+                        continue
+                    lemma = lemmatize(token,tag)
+                    yield lemma
+
+        tokenizer = fancy_tokenize
+    else:
+        tokenizer = snowball_stemmer()
+
+
+    #######################################
+
     #############################################
     # Use tf-idf features for NMF.
     print("Extracting tf-idf features for NMF...")
@@ -396,7 +462,7 @@ and {} topics\n'.format(qid, docs.count(),K))
         min_df=stat.min_freq,
         max_features=n_features,
         ngram_range=(ng,ng),
-        tokenizer=snowball_stemmer(),
+        tokenizer=tokenizer,
         stop_words=stoplist
     )
 
@@ -405,7 +471,7 @@ and {} topics\n'.format(qid, docs.count(),K))
         min_df=stat.min_freq,
         max_features=n_features,
         ngram_range=(ng,ng),
-        tokenizer=snowball_stemmer(),
+        tokenizer=tokenizer,
         stop_words=stoplist
     )
 
