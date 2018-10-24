@@ -388,8 +388,7 @@ and {} topics\n'.format(qid, docs.count(),K))
         ModelSimilarity(w2v)
     )
 
-    stat.fancy_tokenize=False
-    if stat.fancy_tokenize:
+    if stat.fancy_tokenization:
         ######################################
         ## A fancy tokenizer
 
@@ -416,7 +415,7 @@ and {} topics\n'.format(qid, docs.count(),K))
             kw__text__iregex='\W'
         ).values('kw__text').annotate(
             n = Count('pk')
-        ).filter(n__gt=len(abstracts)//20).order_by('-n')
+        ).filter(n__gt=len(abstracts)//200).order_by('-n')
 
         kw_text = set([x['kw__text'] for x in kws])
         kw_ws = set([x['kw__text'].split()[0] for x in kws]) - stopwords

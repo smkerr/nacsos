@@ -17,13 +17,13 @@ with open('OECDWoS.csv') as infile:
         owtable[row[2]] = {"OECD": row[3],"OECD_FOS":row[0],"OECD_FOS_TEXT":row[1]}
 
 docs = Doc.objects.filter(
-    wosarticle__wc__isnull=False,query=1457,
+    wosarticle__wc__isnull=False,
     wc__isnull=True
 )
 
 print(docs.count())
 
-aut = list(Doc.objects.filter(UT__contains='WOS:').values_list('UT',flat=True))
+aut = list(Doc.objects.filter(UT__UT__contains='WOS:').values_list('UT',flat=True))
 
 for d in docs:
     for k in d.wosarticle.wc:

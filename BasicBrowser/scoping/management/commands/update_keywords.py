@@ -27,20 +27,24 @@ class Command(BaseCommand):
             wosarticle__isnull=False
         )
 
+        print(docs.count())
+
         for d in docs.iterator():
             if d.wosarticle.de is not None:
                 for kw in d.wosarticle.de.split(';'):
                     t = kw.strip().lower()
-                    kwobj, created = KW.objects.get_or_create(
-                        text=t,
-                        kwtype=0
-                    )
-                    kwobj.doc.add(d)
+                    if len(t) < 50:
+                        kwobj, created = KW.objects.get_or_create(
+                            text=t,
+                            kwtype=0
+                        )
+                        kwobj.doc.add(d)
             if d.wosarticle.kwp is not None:
                 for kw in d.wosarticle.kwp.split(';'):
                     t = kw.strip().lower()
-                    kwobj, created = KW.objects.get_or_create(
-                        text=t,
-                        kwtype=1
-                    )
-                    kwobj.doc.add(d)
+                    if len(t) < 50:
+                        kwobj, created = KW.objects.get_or_create(
+                            text=t,
+                            kwtype=1
+                        )
+                        kwobj.doc.add(d)
