@@ -44,6 +44,10 @@ class Command(BaseCommand):
                         for f in sdata:
                             if sdata[f] != "none":
                                 try:
+                                    if f=="in_reply_to_status_id":
+                                        ns, created = Status.objects.get_or_create(
+                                            id=sdata[f]
+                                        )
                                     if f=="created_at":
                                         sdata[f] = datetime.strptime(sdata[f],tf)
                                     field = Status._meta.get_field(f)
