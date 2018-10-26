@@ -1134,10 +1134,15 @@ def topic_presence_detail(request,run_id):
     if stat.method == "BD":
         update_bdtopics(run_id)
 
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = None
+
     context = {
         'run_id': run_id,
         'stat': stat,
-        'project': stat.query.project,
+        'project': project,
         'user': request.user
     }
 
