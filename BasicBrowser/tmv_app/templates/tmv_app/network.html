@@ -6,9 +6,20 @@
 <div id="main">
   <div id="top"></div>
   <div id="header">
+  {% if stat.query %}
   <h1>Climate Change Topics</h1>
+  {% else %}
+  <h1>Dynamic NMF Topics</h1>
+  {% endif %}
   <h2>Relative Presence of Topics in all Documents</h2>
-  <h3>Run no. {{run_id}} on query: {{stat.query}}
+  <h3>Run no. {{run_id}} on
+  {% if stat.query %}
+   query: <a href="{% url 'scoping:query' stat.query.id %}">{{stat.query}}</a>
+  {% elif stat.psearch %}
+    search: <a href="{% url 'parliament:search-home' stat.psearch.id %}">{{stat.psearch}}</a>
+  {% else %}
+    None
+  {% endif %}
   <hr noshade>
   </div>
 <div id="graph">
@@ -33,14 +44,20 @@
   <p><b>Force:</b>
     <input class="param" id="force" value="-200" type="range" min="-200" max="200"></input>
     <span id="forcev">-200
-  <p><b>Time Period: </b>
-    <input class="param" name="ar" value="-1" checked type="radio">All</input>
-    <input class="param" name="ar" value="1" type="radio">AR1</input>
-    <input class="param" name="ar" value="2" type="radio">AR2</input>
-    <input class="param" name="ar" value="3" type="radio">AR3</input>
-    <input class="param" name="ar" value="4" type="radio">AR4</input>
-    <input class="param" name="ar" value="5" type="radio">AR5</input>
-    <input class="param" name="ar" value="6" type="radio">AR6</input>
+  {% if stat.method == 'DT' %}
+    {% if stat.query %}
+    <p><b>Time Period: </b>
+      <input class="param" name="ar" value="-1" checked type="radio">All</input>
+      <input class="param" name="ar" value="1" type="radio">AR1</input>
+      <input class="param" name="ar" value="2" type="radio">AR2</input>
+      <input class="param" name="ar" value="3" type="radio">AR3</input>
+      <input class="param" name="ar" value="4" type="radio">AR4</input>
+      <input class="param" name="ar" value="5" type="radio">AR5</input>
+      <input class="param" name="ar" value="6" type="radio">AR6</input>
+      {% else %}
+      <p><b>Several time periods available (todo: implement method to choose) </b>
+      {% endif %}
+  {% endif %}
   <p>Hover over a node to view topic info, click the background
     to refresh the graph
 </div>

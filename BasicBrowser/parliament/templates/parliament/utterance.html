@@ -2,8 +2,8 @@
 
 {% block content %}
 
-<h1>Document</h1>
-<h2>{{document}}</h2>
+<h1>Speech {{ut_id}}</h1>
+<h2>from {{document}}</h2>
 
 {% for ut in uts %}
     <div class="utterance" id="utterance_{{ut.id}}">

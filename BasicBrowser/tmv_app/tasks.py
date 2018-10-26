@@ -107,34 +107,42 @@ def update_dtopic(topic_id, parent_run_id):
             tdt.save()
         ptdt = tdt
 
-    maxyear = DocTopic.objects.filter(
+    if len(DocTopic.objects.filter(
         run_id=parent_run_id,
-        topic__primary_dtopic=topic
-    ).order_by('-topic__year')[0].topic.year
-    if score is not None:
-        topic.score = score
-    l1score = DocTopic.objects.filter(
-        run_id=parent_run_id,
-        topic__primary_dtopic=topic,
-        topic__year= maxyear
-    ).annotate(
-        dtopic_score = F('score') * F('topic__topicdtopic__score')
-    ).aggregate(
-        t=Sum('dtopic_score')
-    )['t']
-    if l1score is not None:
-        topic.l1ys = l1score / score
-    l5score = DocTopic.objects.filter(
-        run_id=parent_run_id,
-        topic__primary_dtopic=topic,
-        topic__year__gt= maxyear-5
-    ).annotate(
-        dtopic_score = F('score') * F('topic__topicdtopic__score')
-    ).aggregate(
-        t=Sum('dtopic_score')
-    )['t']
-    if l5score is not None:
-        topic.l5ys = l5score / score
+        topic__primary_dtopic=topic)) > 0:
+
+        maxyear = DocTopic.objects.filter(
+            run_id=parent_run_id,
+            topic__primary_dtopic=topic
+        ).order_by('-topic__year')[0].topic.year
+
+        if score is not None:
+            topic.score = score
+        l1score = DocTopic.objects.filter(
+            run_id=parent_run_id,
+            topic__primary_dtopic=topic,
+            topic__year= maxyear
+        ).annotate(
+            dtopic_score = F('score') * F('topic__topicdtopic__score')
+        ).aggregate(
+            t=Sum('dtopic_score')
+        )['t']
+        if l1score is not None:
+            topic.l1ys = l1score / score
+        l5score = DocTopic.objects.filter(
+            run_id=parent_run_id,
+            topic__primary_dtopic=topic,
+            topic__year__gt= maxyear-5
+        ).annotate(
+            dtopic_score = F('score') * F('topic__topicdtopic__score')
+        ).aggregate(
+            t=Sum('dtopic_score')
+        )['t']
+        if l5score is not None:
+            topic.l5ys = l5score / score
+    else:
+        print("No DocTopics found for {}".format(topic))
+
     topic.save()
 
     return topic.id
@@ -495,7 +503,7 @@ and {} topics\n'.format(qid, docs.count(),K))
         vocab = vectorizer.get_feature_names()
         vocab_ids = []
         pool = Pool(processes=8)
-        vocab_ids.append(pool.map(partial(add_features,run_id=run_id),vocab))
+        vocab_ids.append(pool.map(partial(add_features, run_id=run_id),vocab))
         pool.terminate()
         del vocab
         vocab_ids = vocab_ids[0]
@@ -592,14 +600,16 @@ and {} topics\n'.format(qid, docs.count(),K))
             #                docsizes=docsizes,docUTset=ids,topic_ids=topic_ids),doc_batches))
             pool.terminate()
             make_t += time() - make_t0
+            print(make_t)
             django.db.connections.close_all()
 
             add_t0 = time()
             values_list = [item for sublist in values_list for item in sublist]
             pool = Pool(processes=ps)
-            pool.map(insert_many,values_list)
+            pool.map(insert_many, values_list)
             pool.terminate()
             add_t += time() - add_t0
+            print(add_t)
             gc.collect()
             sys.stdout.flush()
 

@@ -1,10 +1,14 @@
 from tmv_app.models import *
 from scoping.models import *
 from tmv_app.tasks import *
+from parliament.models import Paragraph, Utterance
+
 from celery import *
 from django.db.models import Q, Count, Func, F, Sum, Avg, Subquery, OuterRef, Value as V
 from celery import group
 import pandas as pd
+from multiprocess import Pool
+
 
 def compare_topic_queryset(runs):
 
@@ -45,8 +49,6 @@ def compare_topic_queryset(runs):
                 topics2 = Topic.objects.filter(run_id=runs[i])
 
 
-
-
         df = pd.DataFrame.from_dict(list(topics2.values('title','score')))
         df2 = pd.DataFrame.from_dict([{'title': 'None','score': 0}])
         df = df.append(df2)
@@ -79,6 +81,7 @@ def compare_topic_queryset(runs):
             titles = [""]
             tscores = [0]
             for ct in topics1:
+                # compare overlap between top words
                 score = len(set(t.top_words).intersection(set(ct.top_words)))
                 if score>0:
                     scores.append(score)
@@ -217,7 +220,6 @@ def yearly_topic_term_scores(run_id):
         yscore = Sum('dtopic_score')
     )
 
-
     dt_ids = DynamicTopic.objects.filter(
         run_id=run_id#,
         #dynamictopicyear__isnull=True
@@ -237,9 +239,21 @@ def update_dtopics(run_id):
 
         ##### DocTopics
 
-        doc_ids = set(list(DocTopic.objects.filter(
-            run_id=parent_run_id
-        ).values_list('doc_id',flat=True)))
+        if stats.query:
+            doc_ids = set(list(DocTopic.objects.filter(
+                run_id=parent_run_id
+            ).values_list('doc_id',flat=True)))
+        elif stats.psearch.search_object_type == 1:
+            doc_ids = set(list(DocTopic.objects.filter(
+                run_id=parent_run_id
+            ).values_list('par_id',flat=True)))
+        elif stats.psearch.search_object_type == 2:
+            doc_ids = set(list(DocTopic.objects.filter(
+                run_id=parent_run_id
+            ).values_list('par_id', flat=True)))
+        else:
+            print("Document id could not be identified")
+
         if stats.periods.count() == 0:
             ys = RunStats.objects.get(
                 pk=stats.parent_run_id
@@ -271,11 +285,6 @@ def update_dtopics(run_id):
                 wt.period = tp
                 wt.save()
 
-            y_ids = list(Doc.objects.filter(
-                pk__in=doc_ids,
-                PY__in=tp.ys
-            ).values_list('id',flat=True))
-
             ds = TopicDTopic.objects.filter(
                 dynamictopic__run_id=run_id,
                 topic__in=wts
@@ -290,7 +299,23 @@ def update_dtopics(run_id):
                 period=tp,
                 run=stats
             )
-            tdt.n_docs = len(y_ids)
+
+            if stats.query:
+                tdt.n_docs = Doc.objects.filter(
+                    pk__in=doc_ids,
+                    PY__in=tp.ys
+                    ).count()
+            elif stats.psearch.search_object_type == 1:
+                tdt.n_docs = Paragraph.objects.filter(
+                    pk__in=doc_ids,
+                    utterance__document__date__year__in=tp.ys
+                    ).count()
+            elif stats.psearch.search_object_type == 2:
+                tdt.n_docs = Utterance.objects.filter(
+                    pk__in=doc_ids,
+                    document__date__year__in=tp.ys
+                    ).count()
+
             tdt.dt_score = ds
             tdt.save()
 
@@ -299,10 +324,12 @@ def update_dtopics(run_id):
         dts = DynamicTopic.objects.filter(
             run_id=run_id
         ).values_list('id',flat=True)
-        jobs = group(update_dtopic.s(dt,parent_run_id) for dt in dts)
-        result = jobs.apply_async()
-        stats.topic_titles_current = True
-        stats.save()
+
+        #pool = Pool(processes=8)
+        #pool.map(partial(update_dtopic, parent_run_id=parent_run_id), dts)
+        #pool.terminate()
+        for dt in dts:
+            update_dtopic(dt, parent_run_id)
 
     return
 
@@ -421,11 +448,16 @@ def normalise_tdts(run_id):
         tptdts = tdts.filter(period=tp['period'])
         try:
             n = abs(tp['av_growth'])
+            if n > 0:
+                tptdts.update(
+                    pgrowthn=F('pgrowth') / n
+                )
+            else:
+                tptdts.update(
+                    pgrowthn=0
+                )
         except:
-            pass
-        tptdts.update(
-            pgrowthn = F('pgrowth') / n
-        )
+            print("Did not find tp['av_growth']")
 
 
 def update_ipcc_coverage(run_id):
