@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from tmv_app.views import *
 from tmv_app.models import *
+from parliament.models import *
 import pandas as pd
 
 class Command(BaseCommand):
@@ -23,10 +24,11 @@ class Command(BaseCommand):
                 })
             return df
 
-        def correlate_topics(df,ar,obj):
+        def correlate_topics(df,period,obj):
+
 
             df = df.pivot(
-                index='doc_id',
+                index=doc_id,
                 columns='topic_id',
                 values='score'
             ).fillna(0)
@@ -42,10 +44,17 @@ class Command(BaseCommand):
                     corrtopic = cols[tc]
                     corrscore = tcor[tc]
                     if corrscore > 0:
-                        topiccorr, created = obj.objects.get_or_create(
-                            topic_id=topic, topiccorr_id=corrtopic, run_id=run_id,
-                            ar=ar['n']
-                        )
+                        # for backward compatibility
+                        if type(period) is dict:
+                            topiccorr, created = obj.objects.get_or_create(
+                                topic_id=topic, topiccorr_id=corrtopic, run_id=run_id,
+                                ar=period['n']
+                            )
+                        else:
+                            topiccorr, created = obj.objects.get_or_create(
+                                topic_id=topic, topiccorr_id=corrtopic, run_id=run_id,
+                                period=period
+                            )
                         topiccorr.score = corrscore
                         topiccorr.save()
 
@@ -55,30 +64,37 @@ class Command(BaseCommand):
             print(run_id)
             stat = RunStats.objects.get(pk=run_id)
 
+            if stat.psearch is not None:
+                doc_id = 'ut_id'
+                tars = DynamicTopicTimePeriodScores
+            else:
+                doc_id = 'doc_id'
+                tars = DynamicTopicARScores
+
             if stat.method=="DT":
+                periods = stat.periods.all()
                 dts = DocTopic.objects.filter(
                     topic__topicdtopic__dynamictopic__run_id=run_id,
                     topic__topicdtopic__score__gt=0.05,
                     score__gt=0.05
                 ).values(
-                    'doc_id','topic__topicdtopic__dynamictopic_id'
+                    doc_id,'topic__topicdtopic__dynamictopic_id'
                 ).annotate(
                     tc=Max(F('score') * F('topic__topicdtopic__score'),
                 )).values(
-                    'doc_id',
+                    doc_id,
                     'topic__topicdtopic__dynamictopic_id',
                     'tc'
                 )
 
                 df = dfdt(list(dts))
 
-
                 obj = DynamicTopicCorr
-                tars = DynamicTopicARScores
 
             else:
+                periods = scoping.models.AR.objects.all()
                 dts = DocTopic.objects.filter(run_id=run_id).values(
-                    'doc_id','topic_id','score'
+                    doc_id,'topic_id','score'
                 )
                 df = dfdt(list(dts))
 
@@ -95,14 +111,37 @@ class Command(BaseCommand):
             obj.objects.filter(run_id=run_id,ar=ar['n']).delete()
             correlate_topics(df,ar,obj)
 
-        ars = scoping.models.AR.objects.all().values()
-        for ar in ars:
-            print(ar)
-            a = ar['name']
-            ar['n'] = ar['ar']
-            ys = range(ar['start'],ar['end']+1)
-            ytopics = dts.filter(doc__PY__in=ys)
+
+        for period in periods:  # can be period or ar object
+            if hasattr(period,'name'):
+                a = period.name
+                ys = range(period.start, period.end + 1)
+                period['n'] = period.ar
+            else:
+                a = period.title
+
+            if stat.query:
+                ytopics = dts.filter(doc__PY__in=ys)
+            elif stat.psearch:
+                if period.start_date:
+                    ytopics = dts.filter(ut__document__date__gte=period.start_date,
+                                         ut__document__date__lte=period.end_date)
+                elif period.ys:
+                    ys = period.ys
+                    #ytopics = dts.filter(ut__document__date__year__in=ys)
+                    ytopics = dts.filter(ut__document__parlperiod__n__in=ys)
+                else:
+                    print("No information for determining time period")
+                    return 1
+
+                # print(ytopics)
+
+            else:
+                print("Error: Did not find query or psearch")
+                return 1
+
             if ytopics.count() == 0:
+                print("No topics in period!")
                 continue
 
             if stat.method=="DT":
@@ -122,15 +161,24 @@ class Command(BaseCommand):
 
 
             for ts in tscores:
-                tar, created = tars.objects.get_or_create(
-                    ar_id=ar['id'],
-                    topic_id=ts['tid']
-                )
+                if stat.psearch:
+                    tar, created = tars.objects.get_or_create(
+                        period_id=period.id,
+                        topic_id=ts['tid']
+                    )
+                else:
+                    tar, created = tars.objects.get_or_create(
+                        ar_id=period.id,
+                        topic_id=ts['tid']
+                    )
                 tar.score = ts['ts']
                 tar.save()
 
-            obj.objects.filter(run_id=run_id,ar=ar['ar']).delete()
+            if isinstance(period, scoping.models.AR):
+                obj.objects.filter(run_id=run_id, ar=period.ar).delete()
+            elif isinstance(period, TimePeriod):
+                obj.objects.filter(run_id=run_id, period=period.n).delete()
 
             df = dfdt(list(ytopics))
 
-            correlate_topics(df,ar,obj)
+            correlate_topics(df,period,obj)

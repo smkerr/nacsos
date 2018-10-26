@@ -44,7 +44,7 @@
       {% if stat.query_id %}
         <td><a href="{% url 'scoping:doclist' stat.query.project_id stat.query_id %}">{{ stat.query.id }}</a></td>
       {% elif stat.psearch %}
-          <td><a href="{% url 'parliament:search-home' stat.psearch.id %}">{{ stat.psearch }}</a></td>
+          <td><a href="{% url 'parliament:search-home' stat.psearch.id %}">{{ stat.psearch.title }} ({{stat.psearch.id}})</a></td>
       {% else %}
       <td>None</td>
       {% endif %}

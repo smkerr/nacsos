@@ -334,7 +334,6 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
 
     ### Go through in chunks
     for i in range(glength//chunk_size+1):
-        dts = []
         values_list = []
         f = i*chunk_size
         l = (i+1)*chunk_size

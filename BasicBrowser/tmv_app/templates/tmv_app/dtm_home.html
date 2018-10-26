@@ -6,13 +6,17 @@
 <div id="main">
   <div id="top"></div>
   <div id="header">
-  <h1>Climate Change Topics</h1>
-  <h2>Relative Presence of Topics in all Documents</h2>
-  <h3>Run no. {{run_id}} on query:
   {% if stat.query %}
-    <a href="{% url 'scoping:query' stat.query.id %}">{{stat.query}}</a>
+  <h1>Climate Change Topics</h1>
+  {% else %}
+  <h1>Dynamic NMF Topics</h1>
+  {% endif %}
+  <h2>Relative Presence of Topics in all Documents</h2>
+  <h3>Run no. {{run_id}} on
+  {% if stat.query %}
+   query: <a href="{% url 'scoping:query' stat.query.id %}">{{stat.query}}</a>
   {% elif stat.psearch %}
-    <a href="{% url 'parliament:search-home' stat.psearch.id %}">{{stat.psearch}}</a>
+    search: <a href="{% url 'parliament:search-home' stat.psearch.id %}">{{stat.psearch}}</a>
   {% else %}
     None
   {% endif %}

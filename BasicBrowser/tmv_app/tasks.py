@@ -85,7 +85,7 @@ def update_dtopic(topic_id, parent_run_id):
 
     if len(DocTopic.objects.filter(
         run_id=parent_run_id,
-        topic__primary_dtopic=topic)) < 0:
+        topic__primary_dtopic=topic)) > 0:
 
         maxyear = DocTopic.objects.filter(
             run_id=parent_run_id,
@@ -117,7 +117,7 @@ def update_dtopic(topic_id, parent_run_id):
         if l5score is not None:
             topic.l5ys = l5score / score
     else:
-        print("No DocTopics found")
+        print("No DocTopics found for {}".format(topic))
 
     topic.save()
 

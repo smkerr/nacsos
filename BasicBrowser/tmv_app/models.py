@@ -89,19 +89,24 @@ class DynamicTopic(models.Model):
     def __str__(self):
         return str(self.title)
 
+
 class TimePeriod(models.Model):
     title = models.CharField(null=True, max_length=80)
     n = models.IntegerField()
     ys = ArrayField(models.IntegerField())
+    start_date = models.DateField(null=True)
+    end_date = models.DateField(null=True)
 
     def __str__(self):
         return str(self.title)
+
 
 class TimeDocTotal(models.Model):
     period = models.ForeignKey(TimePeriod, on_delete=models.CASCADE)
     run = models.ForeignKey('RunStats', on_delete=models.CASCADE)
     n_docs = models.IntegerField(null=True)
     dt_score = models.FloatField(null=True)
+
 
 class TimeDTopic(models.Model):
     period = models.ForeignKey(TimePeriod, on_delete=models.CASCADE)
@@ -125,6 +130,7 @@ class TopicCorr(models.Model):
     topiccorr = models.ForeignKey('Topic', on_delete=models.CASCADE ,null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
     ar = models.IntegerField(default=-1)
+    period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE, null=True)
     run_id = models.IntegerField(db_index=True)
 
     def __unicode__(self):
@@ -135,6 +141,7 @@ class DynamicTopicCorr(models.Model):
     topiccorr = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
     ar = models.IntegerField(default=-1)
+    period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE, null=True)
     run_id = models.IntegerField(db_index=True)
 
     def __unicode__(self):
@@ -170,9 +177,28 @@ class TopicARScores(models.Model):
     pgrowth = models.FloatField(null=True)
     pgrowthn = models.FloatField(null=True)
 
+# connecting topic with time periods
+class TopicTimePeriodScores(models.Model):
+    topic = models.ForeignKey('Topic', on_delete=models.CASCADE,null=True)
+    period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE,null=True)
+    score = models.FloatField(null=True)
+    share = models.FloatField(null=True)
+    pgrowth = models.FloatField(null=True)
+    pgrowthn = models.FloatField(null=True)
+
+
 class DynamicTopicARScores(models.Model):
     topic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
     ar = models.ForeignKey('scoping.AR', on_delete=models.CASCADE,null=True)
+    score = models.FloatField(null=True)
+    share = models.FloatField(null=True)
+    pgrowth = models.FloatField(null=True)
+    pgrowthn = models.FloatField(null=True)
+
+
+class DynamicTopicTimePeriodScores(models.Model):
+    topic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
+    period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE,null=True)
     score = models.FloatField(null=True)
     share = models.FloatField(null=True)
     pgrowth = models.FloatField(null=True)

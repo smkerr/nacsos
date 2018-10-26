@@ -23,6 +23,8 @@ class ParlPeriod(models.Model):
     parliament = models.ForeignKey(Parl, on_delete=models.CASCADE)
     n = models.IntegerField()
     years = ArrayField(models.IntegerField(),null=True)
+    start_date = models.DateField(null=True)
+    end_date = models.DateField(null=True)
     total_seats = models.IntegerField(null=True)
 
     def __str__(self):

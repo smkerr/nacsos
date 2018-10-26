@@ -58,18 +58,20 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm
     ##########################
     ## create input and output folder
 
-    input_path = './dtm-input'
-    output_path = './dtm-output'
+    input_path = './dtm-input-sid{}'.format(s_id)
+    output_path = './dtm-output-sid{}'.format(s_id)
 
     if os.path.isdir(input_path):
         if call_to_blei_algorithm:
             shutil.rmtree(input_path)
+            os.mkdir(input_path)
     else:
         os.mkdir(input_path)
 
     if os.path.isdir(output_path):
         if call_to_blei_algorithm:
             shutil.rmtree(output_path)
+            os.mkdir(output_path)
     else:
         os.mkdir(output_path)
 
@@ -170,7 +172,7 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm
     ##########################
     ##put counts per time step in the seq file
 
-    with open('dtm-input/foo-seq.dat' ,'w') as seq:
+    with open(os.path.join(input_path, 'foo-seq.dat') ,'w') as seq:
         seq.write(str(len(time_range)))
 
         for key, value in time_counts.items():
@@ -355,6 +357,9 @@ def run_dynamic_nmf(s_id, K, language="german", verbosity=1, max_features=20000,
         elif s.search_object_type == 2:
             uts = Utterance.objects.filter(search_matches=s, document__parlperiod__n=timestep)
             texts, docsizes, ids = merge_utterance_paragraphs(uts)
+        else:
+            print("search object type not known")
+            return 1
 
         print("\n#######################")
         print("in period {}: {} docs".format(timestep, len(texts)))
@@ -427,16 +432,13 @@ def run_dynamic_nmf(s_id, K, language="german", verbosity=1, max_features=20000,
 
         chunk_size = 100000
 
-        ps = 16
-        parallel_add = True
-
-        all_dts = []
+        no_cores = 16
 
         make_t = 0
         add_t = 0
 
+        ### Go through in chunks
         for i in range(glength // chunk_size + 1):
-            dts = []
             values_list = []
             f = i * chunk_size
             l = (i + 1) * chunk_size
@@ -444,12 +446,13 @@ def run_dynamic_nmf(s_id, K, language="german", verbosity=1, max_features=20000,
                 l = glength
             docs = range(f, l)
             doc_batches = []
-            for p in range(ps):
-                doc_batches.append([x for x in docs if x % ps == p])
-            pool = Pool(processes=ps)
+            for p in range(no_cores):
+                doc_batches.append([x for x in docs if x % no_cores == p])
+            pool = Pool(processes=no_cores)
             make_t0 = time()
             values_list.append(pool.map(partial(db.f_gamma_batch, gamma=gamma,
-                                                docsizes=docsizes, docUTset=ids, topic_ids=topic_ids, run_id=run_id),
+                                                docsizes=docsizes, docUTset=ids,
+                                                topic_ids=topic_ids, run_id=run_id),
                                         doc_batches))
             pool.terminate()
             make_t += time() - make_t0
@@ -457,7 +460,7 @@ def run_dynamic_nmf(s_id, K, language="german", verbosity=1, max_features=20000,
 
             add_t0 = time()
             values_list = [item for sublist in values_list for item in sublist]
-            pool = Pool(processes=ps)
+            pool = Pool(processes=no_cores)
 
             if s.search_object_type == 1:
                 pool.map(db.insert_many_pars, values_list)
