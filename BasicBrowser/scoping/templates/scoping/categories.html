@@ -1,0 +1,123 @@
+{% extends "scoping/base_bs.html" %}
+{% load bootstrap4 %}
+
+{% block content %}
+<h1> Scoping Review Helper</h1>
+<br>
+
+<!-- Query manager -->
+<h2> Category Manager </h2>
+<br>
+
+
+<table class="table">
+
+		<tr class="title">
+			<td>ID</td>
+            <td>Title</td>
+            <td>Level</td>
+			<td>Description</td>
+            <td>Parent Category</td>
+			<td>Queries</td>
+			<td>Documents</td>
+            <td>Update</td>
+            <td>Delete</td>
+        </tr>
+		{% for t in techs %}
+            <tr>
+                <form action="" method="post"
+                class="form-inline">
+                  {% csrf_token %}
+                  <!-- {% bootstrap_form t.form layout='inline' %} -->
+                  <td><a href="{% url 'scoping:category' t.id %}">{{ t.id }}</a></td>
+
+                  {% for field in t.form %}
+                  <td>{{field}}
+                  {% endfor %}
+
+			    <td>{{ t.queries }}</td>
+			    <td>{{ t.docs }}</td>
+
+                <td>
+                {% bootstrap_button 'Update' %}
+                </td>
+                </form>
+                <td><a href="{% url 'scoping:delete' 'Category' t.id %}"><button class="btn" onclick="return confirm('Are you sure you would like to delete this technology?');">Delete</button></a></td>
+		    </tr>
+
+		{% endfor %}
+
+</table>
+
+<br/><hr/><br/>
+
+
+<h2> Add Category </h2>
+<br/>
+<form action="" method="post" class="form form-horizontal">
+    {% csrf_token %}
+    {% bootstrap_form form layout='horizontal' %}
+    {% bootstrap_button 'Save' %}
+</form>
+</div>
+</div>
+</body>
+
+{% endblock %}
+
+
+{% block script %}
+<script type="text/javascript">
+
+$('*[id*="level"]').change(function() {
+    var pref = $(this).attr('id').split(/[_-]/)[1]
+    changeLevel(pref,$(this).val())
+})
+
+function changeLevel(pref,val) {
+    var sel = $('#id_'+pref+'-parent_category')
+    var row = sel.parent().parent()
+    if (val>1) {
+        row.removeClass("hidden")
+        selected = sel.val()
+        console.log(selected)
+        sel.html('')
+        var pid = {{project.id}}
+        var l = val-1
+        var url = `/scoping/filter_categories/${pid}/${l}`
+        var opt = new Option("---------", "")
+        $(opt).html("---------");
+        sel.append(opt)
+        $.ajax({
+            url: url,
+            success: function(data) {
+                data.forEach(function(o){
+                    var opt = new Option(o.name, o.id)
+                    $(opt).html(o.name);
+                    sel.append(opt)
+                });
+                sel.val(String(selected))
+            }
+        })
+    } else {
+        sel.attr("required",false)
+        sel.html('')
+        var opt = new Option("---------", "")
+        $(opt).html("---------");
+        sel.append(opt)
+        if (pref=="add") {
+            row.addClass("hidden")
+        }
+    }
+}
+
+$('*[id*="level"]').each(function() {
+    var pref = $(this).attr('id').split(/[_-]/)[1]
+    changeLevel(pref,$(this).val())
+})
+
+</script>
+
+{% endblock %}
+
+</html>

@@ -1,4 +1,6 @@
 {% extends "scoping/base_bs.html" %}
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
 {% block content %}
       {% if request.session.appmode == "snowballing" %}
 
@@ -120,6 +122,19 @@
           {% endif %}
         {% endfor %}
       </table>
+
+      {% if codings %}
+
+      <h4> Meta-Analysis codings</h4>
+
+      <form action="" method="get" class="form form-horizontal">
+      {% bootstrap_form filter.form layout="horizontal" %}
+      {% bootstrap_button 'filter' %}
+    </form>
+
+      {% render_table codings %}
+
+      {% endif %}
 
     {% endif %}
       <p><button onclick="location.href='/accounts/logout'">Log Out</button>

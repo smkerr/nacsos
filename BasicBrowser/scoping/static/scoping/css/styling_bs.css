@@ -2,6 +2,35 @@ body {
     background: #D5DFF5;
 }
 
+.flex {
+    display: flex;
+    justify-content: space-between;
+}
+
+.flex > div {
+    margin: 0px 15px;
+}
+
+.pagination > li {
+    margin: 0px 5px;
+}
+
+.buttonp {
+    background-color: yellow;
+    border: 2px solid grey;
+    border-radius: 3px;
+    padding: 2px 7px;
+    cursor: pointer;
+}
+
+.extra-high {
+    line-height: 2.5em;
+}
+
+span.field_name {
+    padding: 0.5em;
+}
+
 html, body {
     height: 100%;
 }
@@ -34,8 +63,16 @@ div.text-con {
     overflow-y: scroll;
 }
 
+connection {
+    z-index: 0;
+    border: 3px solid;
+    border-radius: 7em;
+    color: rgb(128, 128, 128);
+    color: rgba(0, 0, 0, 0.5);
+}
+
 .hidden {
-    display:none
+    display:none !important;
 }
 
 .t1 {
@@ -79,6 +116,55 @@ div.text-con {
     display: none;
 }
 
+.field_name, .inn_name {
+    cursor: pointer;
+    padding: 6px;
+    margin: 6px 2px;
+    white-space:nowrap;
+    background-color: #DCDCDC;
+    border: 1px solid black;
+    border-radius: 2px;
+}
+
+.field_name.active {
+    background-color: #fbb4ae !important;
+}
+
+p.field_container, p#field_container {
+ line-height: 250%;
+}
+
+[data-active="true"] {
+    background-color: #fbb4ae !important;
+}
+
+[data-active="false"] {
+    background-color: white;
+}
+
+[data-active="true"], [data-active="false"] {
+    cursor:pointer;
+    padding: 4px;
+}
+
+button.filter {
+    line-height: 100%;
+    padding: 3px;
+}
+
+button.filter:hover {
+    background-color: #ccc;
+}
+
+a:not([href]):not([tabindex]) {
+    color: #007bff;
+    cursor: pointer;
+}
+
+a:not([href]):not([tabindex]):hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
 
 /* SWITCHES */
 /* The switch - the box around the slider */

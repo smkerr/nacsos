@@ -1,29 +1,9 @@
-<html>
-  <head>
-    {% load static %}
+{% extends "scoping/base_bs.html" %}
     {% load scoping_extras %}
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <script src="{% static 'tmv_app/js/d3.v3.min.js' %}"></script>
-    <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-    {% if request.session.appmode != "snowballing" %}
-      <title>Scoping</title>
-      <link href="{% static 'scoping/css/styling.css' %}" rel="stylesheet" type="text/css">
-    {% else %}
-      <title>Snowballing - Reviewing documents</title>
-      <link href="{% static 'scoping/css/stylingsbs.css' %}" rel="stylesheet" type="text/css">
-    {% endif %}
-  </head>
-  <body>
-    {% include 'scoping/nav_bar.html' with user=user qid=query.id %}
-    <div id="main">
-      <div id="graph">
-        {% if request.session.appmode != "snowballing" %}
-          <h1> Scoping Review Helper</h1>
-        {% else %}
-          <h1> Snowballing Document Review Helper</h1>
-          <p>Quickly exclude irrelevant documents by clicking on the Exclude button</p>
-        {% endif %}
-        <br/>
+    {% load render_table from django_tables2 %}
+    {% block content %}
+      <h1> Scoping Review Helper</h1>
+
 
         <!-- Query manager -->
         {% if request.session.appmode != "snowballing" %}
@@ -32,13 +12,16 @@
           <h2> Document list associated with {{query.type}} query no. {{query.id}} and {{query2.type}} query no. {{query2.id}}</a>.</h2>
         {% endif %}
         <!-- <a href="/scoping/download/{{query.id}}">Download</a> these documents as a csv</h2> -->
-        <h2><a onclick="update_fields(download='true')" id="download">Download</a> these documents as a csv</h2>
+        <h2></h2><p><a onclick="update_fields(download='true')" id="download">Download</a> these documents as a csv</h2>
+        <br/>
+        <p><a onclick="update_fields(download='true',ris='true')">Export</a> these documents as a RIS file</h2>
+        <!-- <p><a href="{% url 'scoping:export-docs' query.id %}">Export</a> these documents as a RIS file</h2> -->
         <br/>
 
         <p class="field_container">
         <p class="field_container"><h2>Basic Fields</h2><p class="field_container">
             {% for f in basic_fields %}
-                <span class="field_name" data-active="true" name="{{f.path}}">{{ f.name }} <button class="filter" onclick="button_filter(event,this)">filter</button></span>,
+                <span class="field_name" data-active="true" name="{{f.path}}">{{ f.name }} <button class="filter btn" onclick="button_filter(event,this)">filter</button></span>,
             {% endfor %}
         <p class="field_container"><h2>Author Fields</h2><p class="field_container">
           {% for f in author_fields %}
@@ -56,7 +39,7 @@
 
         <p style="text-align:left">
           Filter these results...
-          <table id="filtertable">
+          <table id="filtertable" class="table">
             <tr>
               <td>
                 <input class="f_field" type="text">
@@ -103,52 +86,18 @@
         <p style="text-align:left">Showing documents 1-<span id="doc_max">100</span> of <span id="doc_count">{{ ndocs }}</span></p>
         <br/>
 
-        <table class="light" style="width:100%">
-	  <tr class="title">
-            {% for f in fields %}
-              {% if f.name in basic_field_names %}
-                <td class="field" name="{{f.path}}">{{f.name}}<span class="uparrow sort">&uarr;</span><span class="downarrow sort">&darr;</span></td>
-              {% endif %}
-            {% endfor %}
-<!--
-            {% if query.type != "default" %}
-              <td>Keep</td>
-              <td>Exclude</td>
-            {% endif %}
--->
-          </tr>
-          {% for doc in docs %}
-          <tr class="datarow">
-            {% for f in fields %}
-              {% if f.name in basic_field_names %}
-                <td class="data">{{doc|keyvalue:f.path}}</td>
-              {% endif %}
-            {% endfor %}
-<!--
-            {% if query.type != "default" %}
-              <td><a href="scoping:sbsKeepDoc?qid={{query.id}}&did={{doc.UT}}"><button type="button">Keep</button></a></td>
-              <td><a href="scoping:sbsExcludeDoc?qid={{query.id}}&did={{doc.UT}}"><button type="button">Exclude</button></a></td>
-            {% endif %}
--->
-<!--
-			<td class="data">{{ doc.title }}</td>
-            <td class="data">{{ doc.content }}</td>
-			<td class="data">{{ doc.PY }}</td>
--->
-          </tr>
-        {% endfor %}
-      </table>
+        <table class="table" id="doctable" style="width:100%">
+             {{ doctable|safe }}
+        </table>
 
       {% if request.session.appmode == "snowballing" %}
         <div><a href="/scoping/do_snowballing/{{ query.id }}/{{ query2.id }}"><button type="button">Snowball the selected documents</button></a></div>
       {% endif %}
 
       <br/><hr/><br/>
+      {% endblock %}
 
-    </div>
-  </div>
-</body>
-
+{% block script %}
 <script>
 
 var user = $("[name='docownership__{{user.username}}'")
@@ -188,7 +137,7 @@ $(".field_name").click(function() {
         $(this).children().remove()
     } else {
         $(this).attr("data-active","true")
-        $(this).append(' <button class="filter" onclick="button_filter(event,this)">filter</button>')
+        $(this).append(' <button class="filter btn" onclick="button_filter(event,this)">filter</button>')
     }
     update_fields()
 })
@@ -254,7 +203,7 @@ function join_filter(element) {
     }
 }
 
-function update_fields(download="false") {
+function update_fields(download="false",ris="false") {
     console.log(download)
 
     $('body').toggleClass('waiting');
@@ -293,32 +242,25 @@ function update_fields(download="false") {
         active_field_paths.push($(this).attr('name'));
         active_field_names.push($(this).contents().get(0).nodeValue);
     });
+    function url_args(url,name,arr) {
+        for (var j=0;j<arr.length;j++) {
+            url += '&'+name+'[]='+arr[j]
+        }
+        return url
+    }
     if (download=="true") {
         url = '/scoping/sort_docs?'
         url += 'qid='+qid
         url += '&q2id='+q2id
-        for (i =0 ; i<active_field_paths.length; i++) {
-            url += '&fields[]='+active_field_paths[i]
+        var names = ['fields','f_fields','f_operators','join','sort_fields','sort_dirs','f_text']
+        var arrs = [active_field_paths, fields, operators, joins, sortfields, sortdirs, text]
+        for (var i=0;i<arrs.length;i++) {
+            console.log(i)
+            url = url_args(url,names[i],arrs[i])
         }
-        for (i =0 ; i<fields.length; i++) {
-            url += '&f_fields[]='+fields[i]
-        }
-        for (i =0 ; i<operators.length; i++) {
-            url += '&f_operators[]='+operators[i]
-        }
-        for (i =0 ; i<joins.length; i++) {
-            url += '&_join[]='+joins[i]
-        }
-        for (i =0 ; i<sortfields.length; i++) {
-            url += '&sort_fields[]='+sortfields[i]
-        }
-        for (i =0 ; i<sortdirs.length; i++) {
-            url += '&sort_dirs[]='+sortdirs[i]
-        }
-        url += '&f_text='+text
         url += '&download='+download
+        if (ris=="true") { url += '&ris='+ris }
         window.location=url
-        console.log(url)
     } else {
 
         $.ajax({
@@ -336,6 +278,7 @@ function update_fields(download="false") {
                 'download': download
             },
             success: function(data) {
+
                 var n_docs = data.n_docs
                 $("#doc_count").text(n_docs)
                 if (n_docs < 100) {
@@ -345,8 +288,8 @@ function update_fields(download="false") {
                 console.log(data)
                 nfields = active_field_paths.length
                 console.log(data.length)
-                $("table.light tr:first").html("")
-                $("table.light tr:not(:first)").html("")
+                $("table#doctable tr:first").html("")
+                $("table#doctable tr:not(:first)").html("")
                 for (f=0;f<active_field_paths.length;f++) {
                     fpath = active_field_paths[f]
                     fname = active_field_names[f]
@@ -361,8 +304,8 @@ function update_fields(download="false") {
 		                    down = "sort_active"
 		                }
 		            }
-                    $("table.light tr:first").append('<td class="field" name="'+fpath+'">'+fname+' <span class="uparrow sort '+ up +'">&uarr;</span><span class="downarrow sort '+ down +'">&darr;</span></td>');
-                    $("table.light tr:not(:first)").append('<td class="data">');
+                    $("table#doctable tr:first").append('<td class="field" name="'+fpath+'">'+fname+' <span class="uparrow sort '+ up +'">&uarr;</span><span class="downarrow sort '+ down +'">&darr;</span></td>');
+                    $("table#doctable tr:not(:first)").append('<td class="data">');
                 }
 
                 fields.push(fname.replace(".","__"))
@@ -447,4 +390,4 @@ $(function() {
 });
 */
 </script>
-</html>
+{% endblock %}

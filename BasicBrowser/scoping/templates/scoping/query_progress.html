@@ -39,13 +39,18 @@
                 <br/>
                 {% if finished %}
 <!-- Scoping review -->
-                    <p>Looks like it's done!</p>
+                    <p>Looks like download is complete!</p>
                     {% if doclength == 0 %}
                         <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now? [Please wait a while and refresh before clicking multiple times]
                         <br/>
                         <a href="{% url 'scoping:dodocadd' query.id %}"><button>Add Documents</button></a>
-                    {% else %}
+                    {% elif query.r_count %}
+                        <p>Looks like upload is complete!</p>
                         <p><a href="{% url 'scoping:doclist' query.project.id query.id %}">View the documents</a>
+                    {% else %}
+                        <p>Document upload in progress (This may take some time for websites other than Web of Science)
+                        <p>View the <a href="{% url 'scoping:doclist' query.project.id query.id %}">{{doclength}}</a> documents which have been uploaded.
+
                     {% endif %}
                 {% endif %}
             </div>

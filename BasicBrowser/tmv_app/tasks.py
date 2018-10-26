@@ -23,6 +23,8 @@ import gensim
 import random
 from sklearn.decomposition.nmf import _beta_divergence  # needs sklearn 0.19!!!
 from sklearn.preprocessing import RobustScaler
+from django.db import connection, transaction
+from psycopg2.extras import *
 
 @shared_task
 def update_dtopic(topic_id, parent_run_id):
@@ -46,6 +48,28 @@ def update_dtopic(topic_id, parent_run_id):
     ).annotate(
         dtopic_score = F('score') * F('topic__topicdtopic__score')
     )
+
+    ddts = DocDynamicTopic.objects.filter(
+        run_id=parent_run_id,
+        topic__id=topic_id
+    )
+    if ddts.count() == 0:
+
+        cursor = connection.cursor()
+        dts = DocTopic.objects.filter(
+            run_id=parent_run_id,
+            topic__topicdtopic__dynamictopic=topic
+        ).values('doc__id').annotate(
+            dtopic_score = Sum(F('score') * F('topic__topicdtopic__score'))
+        ).filter(dtopic_score__gt=0.01)
+
+        values_list = [(x['doc__id'],topic_id,x['dtopic_score'],parent_run_id) for x in dts]
+
+        execute_values(
+            cursor,
+            "INSERT INTO tmv_app_docdynamictopic (doc_id, topic_id, score, run_id) VALUES %s",
+            values_list
+        )
 
     score = all_scores.aggregate(
         t=Sum('dtopic_score')
@@ -364,6 +388,71 @@ and {} topics\n'.format(qid, docs.count(),K))
         ModelSimilarity(w2v)
     )
 
+    if stat.fancy_tokenization:
+        ######################################
+        ## A fancy tokenizer
+
+        from nltk import wordpunct_tokenize
+        from nltk import WordNetLemmatizer
+        from nltk import sent_tokenize
+        from nltk import pos_tag
+        from nltk.corpus import stopwords as sw
+        punct = set(string.punctuation)
+        from nltk.corpus import wordnet as wn
+        stopwords = set(sw.words('english'))
+
+        def lemmatize(token, tag):
+                tag = {
+                    'N': wn.NOUN,
+                    'V': wn.VERB,
+                    'R': wn.ADV,
+                    'J': wn.ADJ
+                }.get(tag[0], wn.NOUN)
+                return WordNetLemmatizer().lemmatize(token, tag)
+
+        kws = Doc.objects.filter(
+            query=stat.query,
+            kw__text__iregex='\W'
+        ).values('kw__text').annotate(
+            n = Count('pk')
+        ).filter(n__gt=len(abstracts)//200).order_by('-n')
+
+        kw_text = set([x['kw__text'] for x in kws])
+        kw_ws = set([x['kw__text'].split()[0] for x in kws]) - stopwords
+
+        def fancy_tokenize(X):
+
+            common_words = set(X.split()) & kw_ws
+            for w in list(common_words):
+                wpat = "({}\W*\w*)".format(w)
+                wn = re.findall(wpat, X)
+                kw_matches = set(wn) & kw_text
+                if len(kw_matches) > 0:
+                    for m in kw_matches:
+                        yield m.replace(' ','-')
+                        X = X.replace(m," ")
+
+            for sent in sent_tokenize(X):
+                for token, tag in pos_tag(wordpunct_tokenize(sent)):
+                    token = token.lower().strip()
+                    if token in stopwords:
+                        continue
+                    if all(char in punct for char in token):
+                        continue
+                    if len(token) < 3:
+                        continue
+                    if all(char in string.digits for char in token):
+                        continue
+                    lemma = lemmatize(token,tag)
+                    yield lemma
+
+        tokenizer = fancy_tokenize
+    else:
+        tokenizer = snowball_stemmer()
+
+
+    #######################################
+
     #############################################
     # Use tf-idf features for NMF.
     print("Extracting tf-idf features for NMF...")
@@ -372,7 +461,7 @@ and {} topics\n'.format(qid, docs.count(),K))
         min_df=stat.min_freq,
         max_features=n_features,
         ngram_range=(ng,ng),
-        tokenizer=snowball_stemmer(),
+        tokenizer=tokenizer,
         stop_words=stoplist
     )
 
@@ -381,7 +470,7 @@ and {} topics\n'.format(qid, docs.count(),K))
         min_df=stat.min_freq,
         max_features=n_features,
         ngram_range=(ng,ng),
-        tokenizer=snowball_stemmer(),
+        tokenizer=tokenizer,
         stop_words=stoplist
     )
 

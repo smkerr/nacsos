@@ -1,0 +1,71 @@
+{% extends "scoping/base_bs.html" %}
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% load static %}
+{% block content %}
+<p>
+<h2> Add {{ei}} for - {{ dmc.doc.title }}</h2>
+
+<form class="form" action="" method="POST">
+    {% csrf_token %}
+
+    <div class="container border rounded bg-white p-2">
+    {% for g in groups %}
+        {% if g.counter0 > 0 %}
+        <hr>
+        {% endif %}
+        <div data-group="{{g.title}}" class="container">
+            <div class="row">
+            <h4 class="m-2 mb-1">{{g.title}}</h4>
+            </div>
+            <div class="row">
+            {% for f in g.form_fields %}
+                {% include "scoping/snippets/dynamic_form_input.html" with f=f %}
+            {% endfor %}
+            </div>
+        </div>
+
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+    </div>
+
+
+    <div class="row">
+    {% for f in form_fields %}
+        {% if forloop.counter0|divisibleby:2 %}
+    </div>
+    <div class="row">
+        {% else %}
+        {% endif %}
+
+        {% include "scoping/snippets/dynamic_form_input.html" with f=f %}
+
+    {% endfor %}
+    </div>
+
+
+{% endblock %}
+
+
+{% block script %}
+<script src="{% static 'scoping/js/forms.js' %}"></script>
+<script type="text/javascript">
+function meanDiff(s) {
+    if (['Difference of means','ANOVA'].includes(s)) {
+        $('*[data-group="Difference of means"]').removeClass("hidden")
+        $('*[data-group="Coefficient"]').addClass("hidden")
+    } else {
+        $('*[data-group="Difference of means"]').addClass("hidden")
+        $('*[data-group="Coefficient"]').removeClass("hidden")
+    }
+}
+
+$("#select_statistical_technique").change(function() {
+    console.log($(this).val())
+    meanDiff($(this).val())
+})
+
+meanDiff($("#select_statistical_technique").val())
+</script>
+{% endblock %}

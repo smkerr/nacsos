@@ -1,27 +1,36 @@
-{% extends "tmv_app/base.html" %}
-
+{% extends "tmv_app/base_bs.html" %}
+{% load bootstrap4 %}
 {% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=run_id %} {% endblock %}
 
 {% block content %}
 <div id="top"></div>
 <div id="header">
-<h1>Climate Change Topics</h1>
-<h2>Relative Presence of Topics in all Documents</h2>
+<p>
+<h1>Topic browser</h1>
+<br>
+<h2>Relative presence of topics in all documents</h2>
 <h3>Run no. {{run_id}} on query: <a href="{% url 'scoping:query' stat.query.id %}">{{stat.query}}</a>
 <hr noshade>
 </div>
 <div id="graph">
-<table width="100%">
-{% for topic, topic_score, width in topic_tuples %}
-<tr><td><table width="{{ width|floatformat:1 }}%" >
-  <tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" >
-    {% if stat.method == "DT" %}
-    <a href="{% url 'tmv_app:dynamic_topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
-    {% else %}
-    <a href="{% url 'tmv_app:topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
-    {% endif %}
-{% endfor %}
-</table>
+{% if topic_tuples %}
+    <table width="100%">
+    {% for topic, topic_score, width in topic_tuples %}
+    <tr><td><table width="{{ width|floatformat:1 }}%" >
+      <tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}" >
+        {% if stat.method == "DT" %}
+        <a href="{% url 'tmv_app:dynamic_topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
+        {% else %}
+        <a href="{% url 'tmv_app:topic_detail' topic.pk %}">{{ topic.title }}</a></td></tr></table></td></tr>
+        {% endif %}
+    {% endfor %}
+    </table>
+{% else %}
+
+The status of this topic model is currently  [{{stat.get_status_display}}]
+
+{% endif %}
+
 </div>
 
 <div id="footer">

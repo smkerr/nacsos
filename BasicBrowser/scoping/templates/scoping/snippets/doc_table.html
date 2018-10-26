@@ -1,0 +1,13 @@
+{% load scoping_extras %}
+<tr class="title">
+    {% for f in fields %}
+    <td class="field" name="{{f.path}}">{{f.name}}<span class="uparrow sort">&uarr;</span><span class="downarrow sort">&darr;</span></td>
+    {% endfor %}
+</tr>
+{% for doc in docs %}
+<tr class="datarow">
+    {% for f in fields %}
+    <td class="data">{{doc|keyvalue:f.path}}</td>
+    {% endfor %}
+</tr>
+{% endfor %}

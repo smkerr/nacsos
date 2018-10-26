@@ -9,17 +9,60 @@ class ProjectForm(forms.ModelForm):
         model = (Project)
         fields = ('title', 'description',)
 
+class QueryForm(forms.ModelForm):
+    title = forms.CharField()
+    query_file = forms.FileField(
+        label = "Query file(s)", widget=forms.ClearableFileInput(attrs={'multiple': True})
+    )
+    class Meta:
+        model = (Query)
+        fields=["title","text","database","query_file"]
+        help_texts = {
+            'query_file': 'Accepted formats are WoS/Scopus text files or RIS files',
+        }
+
 class CategoryForm(forms.ModelForm):
     level = forms.IntegerField(
         min_value=1, max_value=9
     )
+    parent_category = forms.ModelChoiceField(
+        required=False,
+        queryset=Category.objects.all()
+    )
     class Meta:
-        model = (Technology)
-        fields = ('name','level','description',)
+        model = (Category)
+        fields = ('name','level','description','parent_category')
         widgets = {
-          'name': forms.Textarea(attrs={'rows':1, 'cols':15}),
-          'description': forms.Textarea(attrs={'rows':1, 'cols':15}),
+          'name': forms.TextInput(attrs={'class': "form-control"}),
+          'description': forms.TextInput(attrs={'class': "form-control"}),
         }
+
+class InterventionForm(forms.ModelForm):
+    name = forms.CharField()
+    class Meta:
+        model = InterventionType
+        exclude = ('project',)
+
+class ControlsForm(forms.Form):
+    name = forms.CharField()
+    controls = forms.CharField(widget=forms.HiddenInput(),required=False)
+
+class ExclusionForm(forms.Form):
+    name = forms.CharField()
+    exclusion = forms.CharField(widget=forms.HiddenInput(),required=False)
+
+class PopCharForm(forms.ModelForm):
+    name = forms.CharField()
+    unit = forms.CharField(required=False)
+    class Meta:
+        model = PopCharField
+        exclude = ('project',)
+
+class InterventionSubtypeForm(forms.ModelForm):
+    name = forms.CharField()
+    class Meta:
+        model = InterventionSubType
+        exclude = ('project',)
 
 class NewDoc(forms.ModelForm):
 
@@ -82,6 +125,15 @@ class UploadDocFile(forms.ModelForm):
     def __init__(self,*args,**kwargs):
         super(UploadDocFile, self).__init__(*args, **kwargs)
         self.fields['doc'].widget = forms.HiddenInput()
+
+class FieldChoiceForm(forms.Form):
+    project = forms.IntegerField()
+    field = forms.CharField()
+    name = forms.CharField()
+    def __init__(self,*args,**kwargs):
+        super(FieldChoiceForm, self).__init__(*args, **kwargs)
+        self.fields['project'].widget = forms.HiddenInput()
+        self.fields['field'].widget = forms.HiddenInput()
 
 class DeleteDocField(forms.Form):
     delete = forms.IntegerField()

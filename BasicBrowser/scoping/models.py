@@ -6,13 +6,28 @@ from django.contrib.postgres.fields import ArrayField
 import uuid
 from random import randint
 import cities
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, m2m_changed, pre_delete
 from django.dispatch import receiver
+from django.urls import reverse
 import tmv_app
 import uuid
+import difflib
+from sklearn.metrics import cohen_kappa_score
 import os
 from .validators import *
+import scoping
+from django.db import transaction
+from celery import current_app
+from scoping.utils import utils
+import re
 # Create your models here.
+
+def get_notnull_fields(model):
+    not_null_fields = []
+    for f in model._meta.get_fields():
+        if not f.null:
+            not_null_fields.append(f)
+    return not_null
 
 class SnowballingSession(models.Model):
 
@@ -38,30 +53,217 @@ class SnowballingSession(models.Model):
     working_pb2    = models.BooleanField(default=False) # This a marker for when the last step is going on
     users          = models.ManyToManyField(User)
     database       = models.CharField(max_length=6,null=True, verbose_name="Query database")
-    technology     = models.ForeignKey('Technology', on_delete=models.CASCADE, null=True)
+    category     = models.ForeignKey('Category', on_delete=models.CASCADE, null=True)
 
     def __str__(self):
       return self.name
 
 class Project(models.Model):
 
-    ROLE_CHOICES = (
-        ('OW', 'Owner'),
-        ('AD', 'Admin'),
-        ('RE', 'Reviewer'),
-        ('VE', 'Viewer')
-    )
-
     title = models.TextField(null=True)
     description = models.TextField(null=True)
     users = models.ManyToManyField(User, through='ProjectRoles')
     queries = models.IntegerField(default=0)
     docs = models.IntegerField(default=0)
+    reldocs = models.IntegerField(default=0)
     tms = models.IntegerField(default=0)
-    role = models.CharField(max_length=2, choices=ROLE_CHOICES, null=True)
 
     def __str__(self):
       return self.title
+
+
+
+class StudyEffect(models.Model):
+
+    GROUPS = [
+        (5, "General variables"),
+        (6, "Difference of means"),
+        (1,"Coefficient"),
+        (7,"Uncertainty"),
+        (2,"Significance"),
+        (3,"Sample size"),
+        (4,"Study scope"),
+
+    ]
+
+
+    doc = models.ForeignKey('Doc',on_delete=models.CASCADE)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+
+
+    ## User entered fields
+
+    #g1
+    coefficient = models.FloatField(null=True, blank=True)
+    coefficient.group = 1
+
+    direction = (
+        (1,'Increase'),
+        # definitely not neutral?
+        (-1,'Decrease')
+    )
+    effect_direction=models.IntegerField(choices=direction)
+    effect_direction.group = 1
+
+    #g7
+    coefficient_sd = models.FloatField(null=True, blank=True)
+    coefficient_sd.group = 7
+    coefficient_sd_type = models.TextField(null=True, blank=True)
+    coefficient_sd_type.group=7
+
+    #g2
+    significance_test = models.TextField()
+    significance_test.group = 2
+    test_statistic = models.FloatField(null=True, blank=True)
+    test_statistic.group=2
+    test_statistic_df = models.IntegerField(null=True, blank=True)
+    test_statistic_df.group=2
+    p_value = models.FloatField()
+    p_value.group=2
+
+    tail_choices = (
+        (1,"one-tailed"),
+        (2,"two-tailed")
+    )
+    test_tails = models.IntegerField(choices=tail_choices)
+    test_tails.group=2
+
+    #g3 - sample size
+    total_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    total_sample_size.group=3
+    treatment_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    treatment_sample_size.group=3
+    control_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    control_sample_size.group=3
+
+    #g4 Study variables
+    geographic_scope = models.TextField()
+    geographic_scope.group=4
+    geographic_location = models.TextField(null=True,blank=True)
+    geographic_location.group=4
+    aggregation_level = models.TextField(null=True, blank=True)
+    aggregation_level.group=4
+    controls = models.ManyToManyField('Controls')
+    controls.group=4
+
+    #g5 General
+
+    page = models.PositiveSmallIntegerField()
+    page.group=5
+    statistical_technique = models.TextField()
+    statistical_technique.group=5
+
+    dependent_variable = models.TextField()
+    dependent_variable.group=5
+
+
+
+    treated_mean = models.FloatField(null=True, blank=True)
+    treated_mean.group=6
+    control_mean = models.FloatField(null=True, blank=True)
+    control_mean.group=6
+    diff_mean = models.FloatField(null=True, blank=True)
+    diff_mean.group=6
+
+    treated_sd = models.FloatField(null=True, blank=True)
+    treated_sd.group=6
+    control_sd = models.FloatField(null=True, blank=True)
+    control_sd.group=6
+    pooled_sd = models.FloatField(null=True, blank=True)
+    pooled_sd.group=6
+
+
+    #Choices? Predefined?
+
+
+    # Regions etc from django cities?
+
+
+    def __str__(self):
+        if self.coefficient is not None:
+            return str(self.coefficient)
+        elif self.diff_mean is not None:
+            return str(self.diff_mean)
+        else:
+            return "page {}".format(self.page)
+
+
+    ## Intervention
+class DocMetaCoding(models.Model):
+    doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    assignment_time = models.DateTimeField(auto_now_add=True)
+    start_time = models.DateTimeField(null=True)
+    finish_time = models.DateTimeField(null=True)
+
+    coded = models.BooleanField(default=False)
+
+
+class Controls(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    name = models.TextField()
+
+
+class Intervention(models.Model):
+    effect = models.ForeignKey(StudyEffect, on_delete=models.CASCADE)
+    intervention_subtypes = models.ManyToManyField('InterventionSubType')
+    framing_unit = models.TextField(null=True)
+    timing = models.TextField(null=True)
+    payment = models.TextField(null=True)
+    granularity = models.TextField(null=True)
+    medium = models.TextField(null=True)
+    duration = models.IntegerField(null=True, help_text="weeks")
+    followup = models.IntegerField(null=True)
+
+    def __str__(self):
+        itypes = self.intervention_subtypes.all().values_list('name',flat=True)
+        return "Intervention - {}".format("; ".join(itypes))
+
+
+class PopCharField(models.Model):
+    project = models.ForeignKey('Project',on_delete=models.CASCADE)
+    name = models.TextField()
+    unit = models.TextField(null=True, blank=True)
+    numeric = models.BooleanField(default=False)
+
+    def __str__(self):
+        x = "{} - {}".format(self.name, self.unit)
+        if self.numeric:
+            x+=" (numeric)"
+        return x
+
+class PopChar(models.Model):
+    effect = models.ForeignKey(StudyEffect, on_delete=models.CASCADE)
+    field = models.ForeignKey(PopCharField, on_delete=models.CASCADE)
+    value = models.FloatField(null=True)
+    str_value = models.TextField(null=True)
+
+
+
+
+class InterventionType(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    name = models.TextField()
+
+    def __str__(self):
+      return self.name
+
+class InterventionSubType(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    interventiontype = models.ForeignKey(InterventionType,on_delete=models.CASCADE)
+    name = models.TextField()
+    def __str__(self):
+      return self.name
+
+class ProjectChoice(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    field = models.TextField()
+    name = models.TextField()
+
 
 class ProjectRoles(models.Model):
 
@@ -76,10 +278,68 @@ class ProjectRoles(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=2, choices=ROLE_CHOICES)
 
+    def __str__(self):
+      return self.role
+
 class DocProject(models.Model):
+
+    UNRATED = 0
+    YES = 1
+    NO = 2
+    MIXED = 3
+
+    Relevance = (
+        (UNRATED, 'Unrated'),
+        (YES, 'Yes'),
+        (NO, 'No'),
+        (MIXED, 'Mixed'),
+    )
+
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    relevant = models.BooleanField(default=False)
+    relevant = models.IntegerField(default=0, choices=Relevance)
+
+    class Meta:
+        unique_together = ("doc","project")
+
+class ExclusionCriteria(models.Model):
+    project= models.ForeignKey('Project', on_delete=models.CASCADE)
+    name = models.TextField()
+
+class Exclusion(models.Model):
+    doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    reason = models.TextField()
+    user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    date = models.DateTimeField(auto_now_add=True)
+
+@receiver(post_save, sender=Exclusion)
+def exclude_doc(sender, instance, **kwargs):
+    dp = DocProject.objects.get(
+        doc=instance.doc,
+        project=instance.project
+    )
+    dp.relevant=2
+    dp.save()
+
+@receiver(pre_delete, sender=Exclusion)
+def unexclude_doc(sender,instance,**kwargs):
+    dp = DocProject.objects.get(
+        doc=instance.doc,
+        project=instance.project
+    )
+    dp.relevant=0
+    dos = DocOwnership.objects.filter(
+        query__project=instance.project,
+        doc=instance.doc
+    )
+    for do in dos:
+        if dp.relevant == 0:
+            dp.relevant=do.relevant
+        elif dp.relevant != do.relevant:
+            dp.relevant = 3
+    dp.save()
+
 
 class Query(models.Model):
 
@@ -90,12 +350,21 @@ class Query(models.Model):
         ('MN','Manual Add')
     )
 
+    DB_CHOICES = (
+        ('WoS','Web of Science'),
+        ('Scopus','Scopus'),
+        ('intern','Internal'),
+        ('pop','Publish or Perish'),
+        ('ebsco', 'EBSCO')
+    )
+
+
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     qtype       = models.CharField(max_length=2, choices=TYPE_CHOICES, default='DE')
     type        = models.TextField(null=True, verbose_name="Query Type", default="default")
     title       = models.TextField(null=True, verbose_name="Query Title")
     text        = models.TextField(null=True, verbose_name="Query Text")
-    database    = models.CharField(max_length=6,null=True, verbose_name="Query database")
+    database    = models.CharField(max_length=6,null=True, verbose_name="Query database", choices=DB_CHOICES)
     date        = models.DateTimeField(auto_now_add=True,verbose_name="Query Date")
     r_count     = models.IntegerField(null=True, verbose_name="Query Results Count")
     creator     = models.ForeignKey(User, on_delete=models.CASCADE, null=True, verbose_name="Query Creator", related_name="user_creations")
@@ -107,13 +376,21 @@ class Query(models.Model):
     step        = models.IntegerField(null=True, verbose_name="Snowball steps")
     substep     = models.IntegerField(null=True, verbose_name="Snowball query substeps")
     dlstat      = models.CharField(max_length=6,null=True, verbose_name="Query download status")
-    technology  = models.ForeignKey('Technology', on_delete=models.CASCADE, null=True)
+    category  = models.ForeignKey('Category', on_delete=models.CASCADE, null=True)
     innovation  = models.ForeignKey('Innovation', on_delete=models.CASCADE, null=True)
+    query_file = models.FileField(upload_to='queries/',null=True)
+    queries = models.ManyToManyField("self",symmetrical=False)
+
 
     def __str__(self):
       return self.title
 
-class Technology(models.Model):
+    def get_absolute_url(self):
+        return reverse('scoping:doclist', kwargs={'pid':self.project.pk, 'qid': self.pk})
+
+
+
+class Category(models.Model):
     name = models.TextField(null = True, verbose_name="Category Name")
     level = models.IntegerField(default=1)
     description = models.TextField(null=True, verbose_name="Category Description")
@@ -121,9 +398,16 @@ class Technology(models.Model):
     ndocs = models.IntegerField(null=True)
     nqs = models.IntegerField(null=True)
     group = models.TextField(null = True, verbose_name="Broad Category Name")
+    parent_category = models.ForeignKey('self', related_name='child_category',on_delete=models.CASCADE, null=True,blank=True)
 
     def __str__(self):
       return self.name
+
+class DocUserCat(models.Model):
+    doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
+    time = models.DateTimeField(auto_now_add=True)
 
 class Innovation(models.Model):
     name = models.TextField(null = True, verbose_name="Innovation Name")
@@ -148,8 +432,104 @@ class Tag(models.Model):
     query = models.ForeignKey('Query',null=True, on_delete=models.CASCADE, verbose_name="TagQuery")
     document_linked = models.BooleanField(default=True)
 
+    all_docs = models.IntegerField(default=0, verbose_name="all docs")
+    a_docs = models.IntegerField(default=0, verbose_name="assigned docs")
+    seen_docs = models.IntegerField(default=0)
+    rel_docs = models.IntegerField(default=0)
+    irrel_docs = models.IntegerField(default=0)
+    relevance = models.FloatField(default=0)
+    users = models.IntegerField(default=0)
+    cohens_kappa = models.FloatField(null=True)
+    ratio = models.FloatField(null=True)
+
+
+    def update_tag(self):
+        users = User.objects.filter(docownership__tag=self).distinct()
+        self.all_docs = self.doc_set.count()
+        self.a_docs = self.docownership_set.distinct('doc_id').count()
+        self.seen_docs = self.docownership_set.filter(
+            relevant__gt=0
+        ).distinct('doc_id').count()
+        self.rel_docs = self.docownership_set.filter(
+            relevant=1
+        ).distinct('doc_id').count()
+        self.irrel_docs = self.docownership_set.filter(
+            relevant=2
+        ).distinct('doc_id').count()
+        try:
+            self.relevance = self.rel_docs/self.seen_docs
+        except:
+            self.relevance = 0
+        self.users = users.count()
+        ## Measure scores
+        ## start off with all docs
+        tdocs = Doc.objects.filter(docownership__tag=self).distinct()
+        scores = []
+        ## Filter out those ones which have been rated by more than one person
+        for u in users:
+            utdocs = tdocs.filter(
+                docownership__user=u,
+                docownership__relevant__gt=0,
+                docownership__tag=self
+            ).distinct()
+            if utdocs.count()>0:
+                scores.append([])
+                tdocs = utdocs
+                u.rated=True
+            else:
+                u.rated=False
+        i = 0
+        for u in users:
+            if u.rated:
+                l = tdocs.filter(
+                    docownership__user=u
+                ).order_by('pk').values_list(
+                    'docownership__relevant',flat=True
+                )
+                scores[i] = list(l)
+                i+=1
+        dscores = [None] + scores
+        if len(scores) == 2:
+            self.ratio = round(difflib.SequenceMatcher(*dscores).ratio(),2)
+            self.cohen_kappa = cohen_kappa_score(*scores)
+        else:
+            self.cohen_kappa = None
+            self.ratio = None
+        self.save()
+
     def __str__(self):
       return self.title
+
+class UserTag(models.Model):
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    a_docs = models.IntegerField(default=0, verbose_name="assigned docs")
+    seen_docs = models.IntegerField(default=0)
+    rel_docs = models.IntegerField(default=0)
+    irrel_docs = models.IntegerField(default=0)
+    relevance = models.FloatField(default=0)
+
+    def update_usertag(self):
+        dos = DocOwnership.objects.filter(
+            user=self.user,
+            tag=self.tag
+        )
+        self.a_docs = dos.count()
+        self.seen_docs = dos.filter(
+            relevant__gt=0
+        ).count()
+        self.rel_docs = dos.filter(
+            relevant=1
+        ).count()
+        self.irrel_docs = dos.filter(
+            relevant=2
+        ).count()
+        try:
+            self.relevance = self.rel_docs/self.seen_docs
+        except:
+            self.relevance = 0
+        self.save()
+        #pass user to handle_update_tag, and update the user whose do it was. These objects will need to be created
 
 def random_doc(q=None):
     if q is not None:
@@ -187,6 +567,46 @@ def save_user_profile(sender, instance, **kwargs):
 class UT(models.Model):
     UT = models.CharField(max_length=30,db_index=True,primary_key=True, verbose_name='Document ID')
     sid = models.CharField(max_length=50,db_index=True,verbose_name='Scopus_id',null=True)
+
+class DocCat(models.Model):
+
+    doc = models.ForeignKey('Doc',on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
+    updated = models.DateTimeField(auto_now_add=True)
+    docusercats = models.ManyToManyField('DocUserCat')
+
+    user_inherited = models.BooleanField(default=False)
+    user_tagged = models.BooleanField(default=False)
+    query_tagged = models.BooleanField(default=False)
+
+@receiver(post_save, sender=DocUserCat)
+def handle_cat_doc(sender, instance, **kwargs):
+    dc, created = DocCat.objects.get_or_create(
+        doc=instance.doc,
+        category=instance.category
+    )
+    dc.save()
+    dc.docusercats.add(instance)
+
+@receiver(pre_delete,sender=DocUserCat)
+def handle_uncat_doc(sender, instance, **kwargs):
+    dc, created = DocCat.objects.get_or_create(
+        doc=instance.doc,
+        category=instance.category
+    )
+    if created:
+        dc.delete()
+    if dc.docusercats.count() > 1:
+        dc.docusercats.remove(instance)
+    else:
+        if not dc.user_inherited and not dc.query_tagged:
+            dc.docusercats.remove(instance)
+            dc.delete()
+        else:
+            dc.docusercats.remove(instance)
+            dc.user_tagged=False
+            dc.save()
+
 
 class Doc(models.Model):
     random = DocManager
@@ -231,9 +651,9 @@ class Doc(models.Model):
     users = models.ManyToManyField(User, through='DocOwnership')
     journal = models.ForeignKey('JournalAbbrev', on_delete=models.CASCADE, null=True)
 
-    technology = models.ManyToManyField('Technology',db_index=True)
+    category = models.ManyToManyField('Category',db_index=True, through='DocCat')
     innovation = models.ManyToManyField('Innovation',db_index=True)
-    category = models.ManyToManyField('SBSDocCategory')
+    sbscategory = models.ManyToManyField('SBSDocCategory')
     source = models.TextField(null=True)
     wos = models.BooleanField(default=False)
     scopus = models.BooleanField(default=False)
@@ -256,6 +676,10 @@ class Doc(models.Model):
 
       return self.UT.UT
 
+    def authorlist(self):
+        das = self.docauthinst_set.order_by('AU','position').distinct('AU').values_list('id',flat=True)
+        unique = self.docauthinst_set.filter(id__in=das).order_by('position')
+        return unique
 
     def citation(self):
         used = set()
@@ -272,6 +696,50 @@ class Doc(models.Model):
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
 
+    def highlight_fields(self,q,fields):
+        if q.__class__ == scoping.models.Project:
+            qs = q.query_set.exclude(database="intern")
+        elif q.queries.exists():
+            qs = []
+            for q1 in q.queries.all():
+                if q1.queries.exists():
+                    for q2 in q1.queries.all():
+                        if q2.queries.exists():
+                            for q3 in q2.queries.all():
+                                qs.append(q3)
+                        else:
+                            qs.append(q2)
+                else:
+                    qs.append(q1)
+        else:
+            qs = [q]
+        words = utils.get_query_words(qs)
+        d = {}
+        for f in fields:
+            doc = self
+            for fpart in f.split("__"):
+                doc = getattr(doc,fpart)
+            s = doc
+            if isinstance(s,str):
+                d[f] = ""
+                if f=="wosarticle__di":
+                    if s in words:
+                        s = '<span class="t1">{}</span>'.format(s)
+                else:
+                    for w in sorted(list(words),key=len, reverse=True):
+                        #s = re.sub(w,'<span class="t1">{}</span>'.format(w),s)
+                        s = utils.ihighlight(w,s)
+            d[f] = s
+        d["authors"] = list(self.docauthinst_set.order_by('position').values())
+        for a in d["authors"]:
+            for w in sorted(list(words),key=len, reverse=True):
+                a["institution"] = utils.ihighlight(w,a["institution"])
+
+
+
+        return d
+
+
 class DocSection(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
     title = models.TextField()
@@ -283,7 +751,7 @@ class DocPar(models.Model):
     n = models.IntegerField()
     section = models.ForeignKey(DocSection, on_delete=models.CASCADE, null=True)
     tag = models.ManyToManyField(Tag)
-    technology = models.ManyToManyField('Technology',db_index=True)
+    category = models.ManyToManyField('Category',db_index=True)
 
     # xml paragraph properties
     endColor = models.CharField(null=True, max_length=50)
@@ -311,7 +779,7 @@ class DocStatement(models.Model):
     text = models.TextField()
     start = models.IntegerField(null=False)
     end = models.IntegerField(null=False)
-    technology = models.ManyToManyField('Technology',db_index=True)
+    category = models.ManyToManyField('Category',db_index=True)
     text_length = models.IntegerField(null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
 
@@ -427,7 +895,7 @@ class WC(models.Model):
     oecd_fos_text = models.TextField(null=True)
 
 class EmailTokens(models.Model):
-    category = models.ForeignKey(Technology, on_delete=models.CASCADE ,null=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE ,null=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     email = models.TextField()
     AU = models.TextField()
@@ -472,12 +940,23 @@ class DocRel(models.Model):
     class Meta:
         unique_together = ('seed', 'seedquery', 'text',)
 
+class NoteManager(models.Manager):
+    def prelevant(self,pid):
+        pn = list(self.model.objects.filter(
+            project__id=pid
+        ).values_list('pk',flat=True))
+        tn = list(self.model.objects.filter(
+            tag__query__project__id=pid
+        ).values_list('pk',flat=True))
+        return self.model.objects.filter(pk__in=set(pn+tn))
+
 class Note(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE,null=True)
     par = models.ForeignKey(DocPar, on_delete=models.CASCADE, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Notemaker")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
-    date = models.DateTimeField()
+    objects = NoteManager()
+    date = models.DateTimeField(auto_now_add=True)
     text = models.TextField(null=True)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
     class Meta:
@@ -485,6 +964,8 @@ class Note(models.Model):
 
     def __str__(self):
       return self.text
+
+
 
 class DocOwnership(models.Model):
 
@@ -504,7 +985,7 @@ class DocOwnership(models.Model):
         (YES, 'Yes'),
         (NO, 'No'),
         (MAYBE, 'Maybe'),
-        (OTHERTECH, 'Other Technology'),
+        (OTHERTECH, 'Other Category'),
         (YESYES, 'Tech Relevant & Innovation Relevant'),
         (YESNO, 'Tech Relevant & Innovation Irrelevant'),
         (NOYES, 'Tech Irrelevant & Innovation Relevant'),
@@ -518,6 +999,7 @@ class DocOwnership(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Reviewer")
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
+    order = models.IntegerField(null=True)
     relevant = models.IntegerField(
         choices=Status,
         default=0,
@@ -528,14 +1010,53 @@ class DocOwnership(models.Model):
     start = models.DateTimeField(null=True,verbose_name="Rating Date")
     finish = models.DateTimeField(null=True,verbose_name="Rating Date")
 
+@receiver(post_save, sender=DocOwnership)
+def docownership_update(sender, instance, **kwargs):
+    if instance.relevant > 0:
+        from scoping.tasks import handle_update_tag
+        transaction.on_commit(lambda: current_app.send_task('scoping.tasks.handle_update_tag', args=(instance.tag.pk,)))
+
+def create_docproj(sender,instance,**kwargs):
+    #print("fired!")
+    pk_set = kwargs['pk_set']
+    if kwargs['action'] != "post_add":
+        return
+    if len(pk_set) == 0:
+        return
+    q = Query.objects.get(pk=list(pk_set)[0])
+    d = instance
+    dp, created = DocProject.objects.get_or_create(
+        doc=d,project=q.project
+    )
+
+m2m_changed.connect(create_docproj,sender=Doc.query.through)
+
+@receiver(post_save, sender=DocOwnership)
+def update_docproj(sender, instance, **kwargs):
+    p = instance.query.project
+    if instance.doc is not None:
+        d = instance.doc
+    else:
+        d = instance.docpar.doc
+    if d is None:
+        print(instance.id)
+    if p is None:
+        return
+    dp, created = DocProject.objects.get_or_create(project=p,doc=d)
+    if dp.relevant == 0:
+        dp.relevant=instance.relevant
+        dp.save()
+    elif dp.relevant != instance.relevant:
+        dp.relevant = 3
+        dp.save()
 
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE,null=True, verbose_name="Author - Document")
-    surname = models.CharField(max_length=60, null=True)
+    surname = models.CharField(max_length=90, null=True)
     initials = models.CharField(max_length=10, null=True)
-    AU = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author")
-    AF = models.CharField(max_length=60, db_index=True, null=True, verbose_name="Author Full Name")
+    AU = models.CharField(max_length=90, db_index=True, null=True, verbose_name="Author")
+    AF = models.CharField(max_length=90, db_index=True, null=True, verbose_name="Author Full Name")
     institution = models.TextField(db_index=True, verbose_name="Institution Name")
     position = models.IntegerField(verbose_name="Author Position")
 

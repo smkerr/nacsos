@@ -1,0 +1,93 @@
+
+<div class="m-2 col" data-name="{{f.name}}">
+<label class="m-2" for="{{f.ff.widget.id_for_label}}"
+>{{f.ff.label}}
+{% if f.ff.help_text %}
+    ({{f.ff.help_text}})
+{% endif %}
+</label>
+
+{% ifequal f.ff.widget.input_type "number" %}
+
+    <input name="{{f.name}}" type="{{f.ff.widget.input_type}}"
+    {% if f.errors %}
+    class="form-control is-invalid"
+    {% else %}
+    class="form-control"
+    {% endif %}
+    id="input_{{f.name}}" aria-describedby="{{f.ff.help_text}}" placeholder="Enter {{f.name}}" min={{f.ff.min_value}} step={{f.step}} value={{f.value}}>
+
+{% else %}
+
+    <select {% if f.multiple %} multiple{% endif %}
+    {% if f.choices or f.options %}
+        name="{{f.name}}"
+        {% if f.errors %}
+            class="form-control is-invalid"
+            {% else %}
+            class="form-control"
+        {% endif %}
+    {% else %}
+        {% if f.errors %}
+            class="form-control is-invalid hidden"
+            {% else %}
+            class="form-control hidden"
+        {% endif %}
+    {% endif %}
+        id="select_{{f.name}}">
+
+        {% for o in f.options %}
+        <option value="{{o.name}}"
+        {% ifequal f.value o.name %}
+        selected
+        {% endifequal %}
+        {% if o.name in f.value %}
+        selected
+        {% endif %}
+        >{{o.name}}</option>
+        {% endfor %}
+
+        {% for o in f.choices %}
+        <option
+        {% ifequal o.1 f.value %}
+        selected
+        {% endifequal %}
+        {% if o.1 in f.value %}
+        selected
+        {% endif %}
+        value="{{o.0}}"
+        >{{o.1}}</option>
+        {% endfor %}
+
+    </select>
+
+    <input
+    {% if f.choices or f.options %}
+        {% if f.errors %}
+            class="form-control is-invalid hidden"
+        {% else %}
+            class="form-control hidden"
+        {% endif %}
+    {% else %}
+        name="{{f.name}}"
+        {% if f.errors %}
+            class="form-control is-invalid"
+        {% else %}
+            class="form-control"
+        {% endif %}
+    {% endif %}
+    type="text" class="form-control" id="other_{{f.name}}" aria-describedby="{{f.help}}" placeholder="Enter {{f.name}}" value="{{f.value}}"></input>
+    {% if f.choices or f.options %}
+        <button type="button" class="btn other">Other</button>
+    {% endif %}
+
+
+{% endifequal %}
+
+{% for e in f.errors %}
+    <div class="is-invalid was-validated invalid-feedback">
+        {{e}}
+    </div>
+{% endfor %}
+
+</div>

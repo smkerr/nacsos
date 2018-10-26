@@ -1,0 +1,170 @@
+{% extends "scoping/base_bs.html" %}
+
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% block content %}
+<p>
+<h1> Scoping Review Helper</h1>
+<hr>
+
+<div class="container bg-white border rounded ">
+    <h2> Meta-analysis setup - {{project.title}}</h2>
+    Use this page to
+    <ul>
+        <li>Assign documents to be coded [TODO]</li>
+        <li>define the input options for
+            <ul>
+                <li>the <a href="#effect">effect</a> form</li>
+                <li>the <a href="#intervention">intervention</a> form</li>
+                <li>the <a href="#ecs">exclusion criteria</a></li>
+                <li>the <a href="#controls">controls</a></li>
+                <li>the <a href="#PopChars">population characteristics</a> </li>
+                <li>the <a href="#Interventiontype">intervention types</a> </li>
+
+</div>
+<p>
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h4> Assignments</h4>
+            <table class="table table-bordered">
+                {% for key,value in doc_counts.assignments.items %}
+                <tr>
+                    <td>{{key}}</td>
+                    <td>{{value}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div class="col">
+            <h4> Coded documents</h4>
+            <table class="table table-bordered">
+                {% for key,value in doc_counts.codings.items %}
+                <tr>
+                    <td>{{key}}</td>
+                    <td>{{value}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<br>
+<h4 id="effect">Effect fields</h4>
+{% include 'scoping/snippets/meta_fields.html' with fields=sfields %}
+
+<h4 id="intervention">Intervention fields</h4>
+{% include 'scoping/snippets/meta_fields.html' with fields=ifields %}
+
+
+<div class="container">
+
+    <div class="row">
+        <h4 id="ecs">Exclusion Criteria</h4>
+    </div>
+    <div class="row">
+        <div class="col-sm extra-high">
+            {% for intervention in ecs %}
+                <span class="border rounded bg-white p-2">{{intervention.name}} <a class="confirmation" href="{% url 'scoping:delete' 'ExclusionCriteria' intervention.id %}">x</a></span>
+
+            {% endfor %}
+        </div>
+        <div class="col-6">
+            <form method="POST" class="form-inline">{% csrf_token %}
+                {% bootstrap_form  ec_form layout='inline' %}
+                {% bootstrap_button 'Save' %}
+            </form>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <h4 id="controls">Controls</h4>
+    </div>
+    <div class="row">
+        <div class="col-sm extra-high">
+            {% for intervention in controls %}
+                <span class="border rounded bg-white p-2">{{intervention.name}} <a class="confirmation" href="{% url 'scoping:delete' 'Controls' intervention.id %}">x</a></span>
+
+            {% endfor %}
+        </div>
+        <div class="col-6">
+            <form method="POST" class="form-inline">{% csrf_token %}
+                {% bootstrap_form  controls_form layout='inline' %}
+                {% bootstrap_button 'Save' %}
+            </form>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <h4 id="PopChars">Population Characteristics</h4>
+    </div>
+    <div class="row">
+        <div class="col-sm extra-high">
+            {% for intervention in popchars %}
+                <span class="border rounded bg-white p-2">{{intervention}} <a class="confirmation" href="{% url 'scoping:delete' 'PopCharField' intervention.id %}">x</a></span>
+
+            {% endfor %}
+        </div>
+        <div class="col-6">
+            <form method="POST" class="form-inline">{% csrf_token %}
+                {% bootstrap_form  popchars_form layout='inline' %}
+                {% bootstrap_button 'Save' %}
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <h4 id="Interventiontype">Intervention Types</h4>
+    </div>
+    <div class="row">
+        <div class="col-sm">
+            Intervention Types
+        </div>
+        <div class="col-sm extra-high">
+            {% for intervention in intervention_types %}
+                <span class="border rounded bg-white p-2">{{intervention.name}} <a class="confirmation" href="{% url 'scoping:delete' 'InterventionType' intervention.id %}">x</a></span>
+
+            {% endfor %}
+        </div>
+        <div class="col-6">
+            <form method="POST" class="form-inline">{% csrf_token %}
+                {% bootstrap_form  interventiontype_form layout='inline' %}
+                {% bootstrap_button 'Save' %}
+            </form>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm">
+            Intervention Sub-types
+        </div>
+        <div class="col-sm extra-high">
+            {% for intervention in intervention_subtypes %}
+                <span class="border rounded bg-white p-2">{{intervention.name}} <a class="confirmation" href="{% url 'scoping:delete' 'InterventionSubType' intervention.id %}">x</a></span>
+
+            {% endfor %}
+        </div>
+        <div class="col-6">
+            <form method="POST" class="form-inline">{% csrf_token %}
+                {% bootstrap_form  interventionsubtype_form layout='inline' %}
+                {% bootstrap_button 'Save' %}
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+$('.confirmation').on('click', function () {
+     return confirm('Are you sure you want to delete? This will have repurcussions on other things attached to it!');
+ });
+</script>
+{% endblock %}

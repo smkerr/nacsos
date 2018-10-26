@@ -24,10 +24,14 @@ urlpatterns = [
     url(r'^queries/(?P<pid>[0-9]+)/$', views.queries, name='queries'),
     url(r'^query_table/(?P<pid>[0-9]+)/$', views.query_table, name='query_table'),
 
+    path('generate_query/<int:pid>/<int:t>', views.generate_query,name="generate_query"),
+
 
     url(r'^docs/(?P<pid>[0-9]+)/(?P<qid>[0-9]+)$', views.doclist, name='doclist'),
 
-    url(r'^doquery/(?P<pid>[0-9]+)$', views.doquery, name='doquery'),
+    url(r'^create_query/(?P<pid>[0-9]+)$', views.create_query, name='create_query'),
+
+    path('project/<int:pid>/query/add/', login_required(views.QueryCreate.as_view()),name="query_create"),
 
     ### Paragraph stuff
     path('paragraphs/<int:qid>', views.par_manager, name="par_manager"),
@@ -38,10 +42,21 @@ urlpatterns = [
     path('rate_par/<int:tid>/<int:ctype>/<int:doid>/<int:todo>/<int:done>', views.rate_par, name="rate_par"),
 
 
+    ### Meta-analysis stuff
+    path('meta-setup/<int:pid>', views.meta_setup, name="meta_setup"),
+    path('code-document/<int:docmetaid>',views.code_document,name='code_document'),
+    path('exclude-document/<int:dmc>',views.ExcludeView.as_view(), name="exclude"),
+    path('save-document-code/<int:docmetaid>/<int:dest>',views.save_document_code,name='save_document_code'),
+    path('add-effect/<int:docmetaid>',views.add_effect,name='add_effect'),
+    path('add-effect/<int:docmetaid>/<int:eff_copy>',views.add_effect,name='add_effect'),
+    path('add-effect/<int:docmetaid>/<int:eff_copy>/<int:eff_edit>',views.add_effect,name='add_effect'),
+    path('add-intervention/<int:effectid>',views.add_intervention,name='add_intervention'),
+    path('add-intervention/<int:effectid>/<int:iid>',views.add_intervention,name='add_intervention'),
+    path('add-intervention/<int:effectid>/<int:iid>/<int:i_edit>',views.add_intervention,name='add_intervention'),
+
     url(r'^snowball$', views.snowball, name='snowball'),
     #### Query processing
     url(r'^start_snowballing$', views.start_snowballing, name='start_snowballing'),
-    url(r'^doquery$', views.doquery, name='doquery'),
     url(r'^do_snowballing/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)$', views.do_snowballing, name='do_snowballing'),
     url(r'^dodocadd/(?P<qid>[0-9]+)$', views.dodocadd, name='dodocadd'),
     url(r'^querying/(?P<qid>[0-9]+)/(?P<substep>[0-9]+)/(?P<docadded>[0-9]+)/(?P<q2id>[0-9]+)$', views.querying, name='querying'),
@@ -72,8 +87,9 @@ urlpatterns = [
 
     url(r'^switchmode$', views.switch_mode, name='switch_mode'),
 
-    url(r'^technologies/(?P<pid>[0-9]+)',views.technologies, name='technologies'),
-    url(r'^technology/(?P<tid>[0-9]+)$',views.technology, name='technology'),
+    url(r'^categories/(?P<pid>[0-9]+)',views.categories, name='categories'),
+    path('filter_categories/<int:pid>/<int:level>', views.filter_categories, name="filter_categories"),
+    url(r'^category/(?P<tid>[0-9]+)$',views.category, name='category'),
     url(r'^download_tdocs/(?P<tid>[0-9]+)$',views.download_tdocs, name='download_tdocs'),
     url(r'^authorlist/(?P<tid>[0-9]+)$',views.prepare_authorlist, name='authorlist'),
     url(r'^sendauthorlist/(?P<tid>[0-9]+)$',views.send_authorlist, name='send_authorlist'),
@@ -94,14 +110,22 @@ urlpatterns = [
     url(r'^docssbs/(?P<sbsid>[0-9]+)$', views.doclistsbs, name='doclistsbs'),
     url(r'^docrellist/(?P<sbsid>[0-9]+)/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)/(?P<q3id>[0-9]+)$', views.docrellist, name='docrellist'),
     url(r'^sort_docs$', views.sortdocs, name='sortdocs'),
+    path('export-docs/<int:qid>/',views.export_ris_docs,name='export-docs'),
+
     url(r'^cycle_score$', views.cycle_score, name='cycle_score'),
     url(r'^activate_user$', views.activate_user, name='activate_user'),
     url(r'^assign_docs$', views.assign_docs, name='assign_docs'),
     url(r'^remove_assignments$', views.remove_assignments, name='remove_assignments'),
+
+
     #### Individual docs
     url(r'^screen/(?P<qid>[0-9]+)/(?P<tid>[0-9]+)/(?P<ctype>[0-9]+)/(?P<d>[-0-9]+)$', views.screen, name='screen'),
     url(r'^do_review$', views.do_review, name='do_review'),
     url(r'^add_note', views.add_note, name='add_note'),
+
+    path('screen_doc/<int:tid>/<int:ctype>/<int:pos>/<int:todo>', views.screen_doc, name='screen_doc'),
+    path('rate_doc/<int:tid>/<int:ctype>/<int:doid>/<int:pos>/<int:todo>/<int:rel>', views.rate_doc, name='rate_doc'),
+    path('cat_doc/', views.cat_doc, name='cat_doc'),
 
     # Nice function for updateing many things
     url(r'^update_thing',views.update_thing, name='update_thing'),

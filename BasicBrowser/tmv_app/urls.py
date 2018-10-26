@@ -26,7 +26,7 @@ urlpatterns = [
     url(r'^dynamic_topic/(?P<topic_id>\d+)/$', login_required(dynamic_topic_detail), name="dynamic_topic_detail"),
 
     url(r'^term/(?P<run_id>\d+)/(?P<term_id>\d+)/$', login_required(term_detail), name="term_detail"),
-    url(r'^doc/random/(?P<run_id>\d+)$', login_required(doc_random)),
+    url(r'^doc/random/(?P<run_id>\d+)$', login_required(doc_random), name="random_doc"),
     url(r'^doc/(?P<doc_id>.+)/(?P<run_id>\d+)$', login_required(doc_detail), name="doc_detail"),
     url(r'^author/(?P<author_name>.+)/(?P<run_id>\d+)$', login_required(author_detail), name="author_detail"),
     url(r'^institution/(?P<run_id>\d+)/(?P<institution_name>.+)/$', login_required(institution_detail)),
@@ -36,7 +36,7 @@ urlpatterns = [
 
     url(r'^topics_time/(?P<run_id>\d+)/(?P<stype>\d+)$', login_required(topics_time),name="topics_time"),
 
-    url(r'^stats/(?P<run_id>\d+)$', login_required(stats)),
+    url(r'^stats/(?P<run_id>\d+)$', login_required(stats), name="stats"),
     url(r'^settings$', login_required(settings)),
     url(r'^settings/apply$', login_required(apply_settings)),
 

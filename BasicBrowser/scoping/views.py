@@ -1,3 +1,4 @@
+
 from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 from itertools import chain
@@ -8,8 +9,11 @@ from django.core import serializers
 from django.core.serializers import serialize
 import short_url
 import datetime
-
+from django.views.generic.edit import CreateView, DeleteView, UpdateView
+from django.core.exceptions import ValidationError
+import operator
 from django.forms.models import model_to_dict
+from collections import OrderedDict
 
 from cities.models import *
 from tmv_app.models import *
@@ -22,7 +26,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.template import loader, RequestContext
 from django.utils import timezone
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import user_passes_test
 import json
 from django.apps import apps
@@ -60,9 +64,61 @@ def switch_mode(request):
 
 
 
-########################################################
-## Homepage - list the queries, form for adding new ones
 
+class QueryCreate(CreateView):
+    ''' Create a new query by uploading a file '''
+    model=Query
+    form_class = QueryForm
+
+    def get_context_data(self, **kwargs):
+        context = super(QueryCreate, self).get_context_data(**kwargs)
+        context['project'] = Project.objects.get(pk=self.kwargs['pid'])
+        return context
+
+    def form_valid(self, form, **kwargs):
+        form.instance.creator = self.request.user
+        form.instance.project =  Project.objects.get(
+            pk=self.kwargs['pid']
+        )
+        files = self.request.FILES.getlist('query_file')
+        self.object = form.save()
+
+        if len(files) > 1:
+            x = dir(files[0])
+            filename, file_extension = os.path.splitext(files[0].name)
+            d = '{}/queries/{}'.format(settings.MEDIA_ROOT, self.object.id)
+            dname = 'queries/{}'.format( self.object.id)
+
+            if (os.path.isdir(d)):
+                shutil.rmtree(d)
+            os.mkdir(d)
+
+            fname = '{}/results{}'.format(dname, file_extension)
+            fpath = '{}/results{}'.format(d, file_extension)
+
+            with open(fpath,'w', encoding='utf-8') as res:
+                for f in files:
+                    for line in f:
+                        line = line.decode('utf-8')
+                        if re.match("EF",line) or re.match(".*FN Clarivate.*",line):
+                            r = line
+                        else:
+                            try:
+                                r = line # utf8
+                                if line is not None and line != "null":
+                                    res.write(str(line))
+                            except:
+                                pass
+                res.write("EF")
+
+            self.object.query_file.name = fname
+            self.object.save()
+
+        upload_docs.delay(self.object.id,True)
+        time.sleep(1)
+
+
+        return super().form_valid(form)
 
 @login_required
 def index(request):
@@ -79,10 +135,14 @@ def index(request):
 
     template = loader.get_template('scoping/index.html')
 
-    myproj = Project.objects.filter(users=request.user,projectroles__role="OW")
+    myproj = Project.objects.filter(users=request.user,projectroles__role="OW").annotate(
+        role=Case(
+            When(projectroles__role="OW",then=V('Owner')),
+            default=V('-'),
+            output_field=models.CharField(),
+        )
+    )
 
-    for p in myproj:
-        p.role = ProjectRoles.objects.get(project=p,user=request.user).get_role_display()
 
 
     myproj = ProjectTable(myproj, order_by="id")
@@ -91,9 +151,16 @@ def index(request):
 
     newproj= ProjectForm()
 
-    acproj = Project.objects.filter(users=request.user)
-    for p in acproj:
-        p.role = ProjectRoles.objects.get(project=p,user=request.user).get_role_display()
+    acproj = Project.objects.filter(projectroles__user=request.user).annotate(
+        role=Case(
+            When(projectroles__role="OW",then=V('Owner')),
+            When(projectroles__role="AD",then=V('Admin')),
+            When(projectroles__role="RE",then=V('Reviewer')),
+            When(projectroles__role="VE",then=V('Viewer')),
+            default=V('-'),
+            output_field=models.CharField(),
+        )
+    )
 
     pids = acproj.values_list('id',flat=True)
 
@@ -173,7 +240,7 @@ def project(request, pid):
     newRole = ProjectRoleForm()
     newRole.fields["user"].queryset = User.objects.exclude(
         id__in=projUsers.values_list('id',flat=True)
-    )
+    ).order_by('username')
 
     queries = Query.objects.filter(
         project=p
@@ -182,8 +249,8 @@ def project(request, pid):
         queries = Query.objects.all()
 
     query = queries.last()
-
-
+    p.mixed_docs = p.docproject_set.filter(relevant=3).count()
+    p.unrated_docs = p.docproject_set.filter(relevant=0).count()
 
     context = {
         'newRole': newRole,
@@ -202,6 +269,7 @@ def project(request, pid):
 
 @login_required
 def queries(request, pid):
+    ## Try a table with gets, use django filter?
     request.session['DEBUG'] = False
     request.session['appmode']='scoping'
 
@@ -214,7 +282,7 @@ def queries(request, pid):
 
         users = User.objects.all().order_by('username')
 
-        technologies  = Technology.objects.all()
+        technologies  = Category.objects.all()
         p = None
 
     else:
@@ -228,7 +296,7 @@ def queries(request, pid):
             projectroles__project=p
         ).order_by('username')
 
-        technologies  = Technology.objects.filter(
+        technologies  = Category.objects.filter(
             project=p
         )
 
@@ -238,11 +306,11 @@ def queries(request, pid):
         query = Query.objects.last()
 
     for q in queries:
-        q.tech = q.technology
-        if q.technology==None:
+        q.tech = q.category
+        if q.category==None:
             q.tech="None"
         else:
-            q.tech=q.technology.name
+            q.tech=q.category.name
         #print(q.tech)
 
     if request.user.username in ["galm","rogers","nemet"]:
@@ -266,6 +334,53 @@ def queries(request, pid):
     return HttpResponse(template.render(context, request))
 
 @login_required
+def generate_query(request,pid,t):
+    project=Project.objects.get(pk=pid)
+    q = Query(
+        project=project,
+        creator=request.user,
+        database="intern",
+        title=project.title,
+        text="[GENERATED TYPE {}]".format(t)
+    )
+    q.save()
+    if t==1:
+        q.title=project.title+" - all docs"
+        docs = Doc.objects.filter(docproject__project=project)
+    elif t==2:
+        q.title=project.title+" - all relevant docs"
+        docs = Doc.objects.filter(
+            docproject__project=project,docproject__relevant=1
+        )
+    elif t==3:
+        q.title=project.title+" - all rated docs"
+        docs = Doc.objects.filter(
+            docproject__project=project,docproject__relevant__gt=0
+        )
+    elif t==4:
+        q.title=project.title+" - all possibly relevant docs (maybe or mixed reviews)"
+        docs = Doc.objects.filter(
+            docproject__project=project,docproject__relevant=3
+        )
+    elif t==5:
+        q.title=project.title+" - all unrated docs"
+        docs = Doc.objects.filter(
+            docproject__project=project,docproject__relevant=0
+        )
+
+    dids = set(docs.values_list('pk',flat=True))
+    Through = Doc.query.through
+    dqs = [Through(doc_id=d,query=q) for d in dids]
+    Through.objects.bulk_create(dqs)
+    q.r_count = q.doc_set.count()
+    q.save()
+
+    return HttpResponseRedirect(reverse(
+        'scoping:queries',
+        kwargs={'pid':pid}
+    ))
+
+@login_required
 def query_table(request, pid):
     template = loader.get_template('scoping/snippets/query_table.html')
     p = Project.objects.get(pk=pid)
@@ -278,16 +393,16 @@ def query_table(request, pid):
             project=p,
             creator__id__in=users
         ).filter(
-            Q(technology__isnull=True) | Q(technology__in=techs)
+            Q(category__isnull=True) | Q(category__in=techs)
         ).order_by('-id')
     else:
         queries = Query.objects.filter(
             project=p,
             creator__id__in=users,
-            technology__in=techs
+            category__in=techs
         ).order_by('-id')
 
-    technologies  = Technology.objects.filter(
+    technologies  = Category.objects.filter(
         project=p
     )
 
@@ -307,23 +422,33 @@ def query_table(request, pid):
 ## Tech Homepage - list the technologies, form for adding new ones
 
 @login_required
-def technologies(request, pid):
+def categories(request, pid):
 
-    template = loader.get_template('scoping/tech.html')
+    template = loader.get_template('scoping/categories.html')
 
     project = Project.objects.get(pk=pid)
 
-
+    ## Save or update category
     if request.method=="POST":
-        catform = CategoryForm(request.POST)
-        if catform.is_valid():
-            x = catform
-            cat = catform.save()
-            cat.project = project
-            cat.save()
+        for f in request.POST.keys():
+            if f !="csrfmiddlewaretoken":
+                pref = f.split('-')[0]
+                break
+        if pref=="add":
+            c = Category(project=project)
+        else:
+            c = Category.objects.get(pk=int(pref))
+        c.name = request.POST['{}-name'.format(pref)]
+        c.description = request.POST['{}-description'.format(pref)]
+        c.level = int(request.POST['{}-level'.format(pref)])
+        try:
+            if c.level > 1:
+                c.parent_category_id=int(request.POST['{}-parent_category'.format(pref)])
+            c.save()
+        except:
+            pass
 
-
-    technologies = Technology.objects.filter(project=pid).order_by('id')
+    technologies = Category.objects.filter(project=pid).order_by('id')
 
     users = User.objects.all()
     refresh = False
@@ -331,10 +456,10 @@ def technologies(request, pid):
     #subprocess.Popen(["python3", "/home/galm/software/tmv/BasicBrowser/update_techs.py"], stdout=subprocess.PIPE)
     for t in technologies:
         t.queries = t.query_set.count()
-        tdocs = Doc.objects.filter(technology=t)
+        tdocs = Doc.objects.filter(category=t)
         if refresh==True:
-            tdocs = Doc.objects.filter(technology=t)
-            itdocs = Doc.objects.filter(query__technology=t,query__type="default")
+            tdocs = Doc.objects.filter(category=t)
+            itdocs = Doc.objects.filter(query__category=t,query__type="default")
             tdocs = tdocs | itdocs
             t.docs = tdocs.distinct().count()
             t.nqs = t.queries
@@ -342,9 +467,9 @@ def technologies(request, pid):
             t.save()
         else:
             t.docs = t.ndocs
-        t.form = CategoryForm(instance=t)
+        t.form = CategoryForm(instance=t,prefix=t.id)
 
-    catform = CategoryForm()
+    catform = CategoryForm(prefix="add")
 
     context = {
       'techs'    : technologies,
@@ -355,8 +480,15 @@ def technologies(request, pid):
 
     return HttpResponse(template.render(context, request))
 
+def filter_categories(request,pid,level):
+    cats = Category.objects.filter(
+        project_id=pid,level=level
+    ).values('id','name')
+    #return JsonResponse(cats,safe=False)
+    return HttpResponse(json.dumps(list(cats)), content_type="application/json")
+
 ########################################################
-## edit query technology or innovation
+## edit query category or innovation
 @login_required
 def update_thing(request):
     thing1 = request.GET.get('thing1', None)
@@ -388,7 +520,9 @@ def update_thing(request):
         getattr(t1,thing2.lower()).remove(t2)
     if method=="update":
         setattr(t1,thing2.lower(),t2)
-
+        if thing1 == "Query" and thing2 == "Category":
+            pass
+            #query_doc_category.delay(id1,id2)
     t1.save()
     return HttpResponse()
 
@@ -425,7 +559,7 @@ def snowball(request):
             pass
             # Get technologies
 
-    technologies = Technology.objects.all()
+    technologies = Category.objects.all()
 
     context = {
         'sb_sessions'    : sb_sessions,
@@ -436,14 +570,15 @@ def snowball(request):
 
 
 ########################################################
-## Add the technology
+## Add the category
 @login_required
 def add_tech(request):
     tname = request.POST['tname']
-    tdesc  = request.POST['tdesc']
+    tdesc = request.POST['tdesc']
     pid = int(request.POST['pid'])
+    x = y
     #  create a new query record in the database
-    t = Technology(
+    t = Category(
         name=tname,
         description=tdesc,
         project_id=pid
@@ -452,14 +587,14 @@ def add_tech(request):
     return HttpResponseRedirect(reverse('scoping:technologies', kwargs={"pid": pid}))
 
 ########################################################
-## update the technology
+## update the category
 @login_required
 def update_tech(request,tid):
-    t = Technology.objects.get(pk=tid)
+    t = Category.objects.get(pk=tid)
     form = CategoryForm(request.POST,instance=t)
     if form.is_valid():
         t = form.save()
-    return HttpResponseRedirect(reverse('scoping:technologies', kwargs={'pid': t.project.id}))
+    return HttpResponseRedirect(reverse('scoping:categories', kwargs={'pid': t.project.id}))
 
 
 
@@ -468,7 +603,7 @@ def update_tech(request,tid):
 import subprocess
 import sys
 @login_required
-def doquery(request, pid):
+def create_query(request, pid):
 
     #ssh_test()
 
@@ -499,94 +634,16 @@ def doquery(request, pid):
     )
     q.save()
 
-    # Do internal queries
-    if qdb=="intern":
-        args = qtext.split(" ")
-        # Original one for combining qs
-        if "manually uploaded" in qtext:
-            print("manually uploaded")
-        elif args[1].strip() in ["AND", "OR", "NOT"]:
-            q1 = set(Doc.objects.filter(query=args[0]).values_list('id',flat=True))
-            op = args[1]
-            q2 = set(Doc.objects.filter(query=args[2]).values_list('id',flat=True))
-            if op =="AND":
-                ids = q1 & q2
-            elif op =="OR":
-                ids = q1 | q2
-            elif op == "NOT":
-                ids = q1 - q2
-            combine = Doc.objects.filter(id__in=ids)
-        else:
-            # more complicated filters
-            if args[0].strip()=="*":
-                q1 = Doc.objects.all()
-                q1ids = None
-                cids = q1ids
-            else:
-                q1 = Doc.objects.filter(query=args[0])
-                q1ids = q1.values_list('id',flat=True)
-                cids = q1ids
-            for a in range(1,len(args)):
-                parts = args[a].split(":")
-                print(parts)
-                # Deal WITH tech filters
-                if parts[0] == "TECH":
-                    tech, tdocs, tobj = get_tech_docs(parts[1])
-                    tids = tdocs.values_list('id',flat=True)
-                    if q1ids is not None:
-                        cids = list(set(q1ids).intersection(set(tids)))
-                    else:
-                        cids = tids
-                    q1ids = cids
-                    combine = Doc.objects.filter(pk__in=cids)
-                # Deal with relevance filters
-                if parts[0] == "IS":
-                    if parts[1] == "RELEVANT":
-                        combine = Doc.objects.filter(
-                            pk__in=cids,
-                            docownership__relevant=1
-                        ) | Doc.objects.filter(
-                            pk__in=cids,
-                            technology__isnull=False
-                        )
-                    if parts[1] == "TRELEVANT":
-                        combine = Doc.objects.filter(
-                            pk__in=cids,
-                            docownership__relevant=1,
-                            docownership__query__technology=tobj
-                        ) | Doc.objects.filter(
-                            pk__in=cids,
-                            technology=tobj
-                        )
+    do_query.delay(q.id)
 
-
-        for d in combine.distinct('id'):
-            d.query.add(q)
-        q.r_count = len(combine.distinct('id'))
-        q.save()
-
+    if q.database=="intern":
+        time.sleep(2)
         return HttpResponseRedirect(reverse('scoping:doclist', kwargs={'pid': pid, 'qid': q.id }))
-
-
     else:
-        # write the query into a text file
-        fname = "/queries/"+str(q.id)+".txt"
-        with open(fname,encoding='utf-8',mode="w") as qfile:
-            qfile.write(qtext.encode("utf-8").decode("utf-8"))
-
-
-        time.sleep(1)
-
-    # run "scrapeQuery.py" on the text file in the background
-    if request.user.username=="galm":
-        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", qdb, fname])
-    else:
-        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
-
-    return HttpResponseRedirect(reverse(
-        'scoping:querying',
-        kwargs={'qid': q.id, 'substep': 0, 'docadded': 0, 'q2id': 0}
-    ))
+        return HttpResponseRedirect(reverse(
+            'scoping:querying',
+            kwargs={'qid': q.id, 'substep': 0, 'docadded': 0, 'q2id': 0}
+        ))
 
 #########################################################
 ## Start snowballing
@@ -599,12 +656,12 @@ def start_snowballing(request):
     qtitle = request.POST['sbs_name']
     qtext  = request.POST['sbs_initialpearls']
     qdb    = request.POST['qdb']
-    qtech  = request.POST['sbs_technology']
+    qtech  = request.POST['sbs_category']
 
     curdate = timezone.now()
 
-    # Get technology
-    t = Technology.objects.get(pk=qtech)
+    # Get category
+    t = Category.objects.get(pk=qtech)
 
     # Create new snowballing session
     sbs = SnowballingSession(
@@ -613,7 +670,7 @@ def start_snowballing(request):
       initial_pearls = qtext,
       date=curdate,
       status=0,
-      technology=t
+      category=t
     )
     sbs.save()
     if request.session['DEBUG']:
@@ -630,7 +687,7 @@ def start_snowballing(request):
         snowball=sbs,
         step=1,
         substep=1,
-        technology=t
+        category=t
     )
     q.save()
     if request.session['DEBUG']:
@@ -658,7 +715,7 @@ def start_snowballing(request):
         snowball=sbs,
         step=1,
         substep=2,
-        technology=t
+        category=t
     )
     q2.save()
     if request.session['DEBUG']:
@@ -1335,61 +1392,28 @@ def query(request,qid,q2id='0',sbsid='0'):
 
         query = Query.objects.get(pk=qid)
 
-        tags = Tag.objects.filter(query=query)
+        if query.r_count is None:
+            return HttpResponseRedirect(reverse(
+                'scoping:querying',
+                kwargs={
+                    'qid':query.id
+                }
 
-        tags = tags.values()
+            ))
+
+        tags = Tag.objects.filter(query=query).order_by('-pk')
+
+        tags = tags.select_related('docpar_set').values()
 
         for tag in tags:
             dt = "doc"
             tag['doctype'] = "documents"
             tdocs = Doc.objects.filter(tag=tag['id'])
             tdos = DocOwnership.objects.filter(tag=tag['id'])
-            tpars = DocPar.objects.filter(tag=tag['id'])
-            if tpars.count() > 0:
-                tdocs = tpars
+            if not tag['document_linked']:
+                tdocs = DocPar.objects.filter(tag=tag['id'])
                 tag['doctype'] = "paragraphs"
                 dt = "docpar"
-            tag['docs'] = tdocs.distinct().count()
-
-            tag['a_docs'] = len(set(tdos.values_list(dt,flat=True)))
-
-            if tag['a_docs'] != 0:
-                tag['seen_docs']  = DocOwnership.objects.filter(tag=tag['id'],relevant__gt=0).count()
-                tag['rel_docs']   = DocOwnership.objects.filter(tag=tag['id'],relevant=1).count()
-                tag['irrel_docs'] = DocOwnership.objects.filter(tag=tag['id'],relevant=2).count()
-                try:
-                    tag['relevance'] = round(tag['rel_docs']/(tag['rel_docs']+tag['irrel_docs'])*100)
-                except:
-                    tag['relevance'] = 0
-                tusers = User.objects.filter(docownership__tag=tag['id']).distinct()
-                tag['users'] = tusers.count()
-                scores = []
-                for u in tusers:
-                    scores.append([])
-                tdocs = Doc.objects.filter(tag=tag['id']).distinct()
-                for u in tusers:
-                    tdocs = tdocs.filter(
-                        docownership__user=u,
-                        docownership__relevant__gt=0,
-                        docownership__tag=tag['id']
-                    )
-                i = 0
-                for u in tusers:
-                    l = tdocs.filter(
-                        docownership__user=u,
-                        docownership__relevant__gt=0,
-                        docownership__tag=tag['id']
-                    ).distinct('pk').order_by('pk').values_list('docownership__relevant', flat=True)
-                    scores[i] = list(l)
-                    i+=1
-                dscores = [None] + scores
-
-                if len(scores) == 2:
-                    tag['ratio'] = round(difflib.SequenceMatcher(*dscores).ratio(),2)
-                    tag['cohen_kappa'] = cohen_kappa_score(*scores)
-                else:
-                    tag['cohen_kappa'] = "NA"
-                    tag['ratio'] = "NA"
 
             #print(tag['ratio'])
 
@@ -1422,46 +1446,68 @@ def query(request,qid,q2id='0',sbsid='0'):
             query.cohen_kappa = "NA"
             query.ratio = "NA"
 
+        tagged = len(set(Doc.objects.filter(
+            tag__query=query
+        ).values_list('pk',flat=True)))
 
-        untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
+        untagged = query.r_count - tagged #Doc.objects.filter(query=query,tag__query=query).distinct().count()
+        # untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
 
-
-
-        users = User.objects.filter(project=query.project)
-
-        proj_users = users.query
 
         user_list = []
 
-        for u in users:
+        dos = DocOwnership.objects.filter(
+            query=query
+        ).values('user','relevant')
+        udors = dos.annotate(n=Count('pk'))
+
+        udos = list(DocOwnership.objects.filter(
+            query=query
+        ).values('user').annotate(
+            tdocs=Count('pk')
+        ).values('user__username','user__id','user__email','tdocs'))
+        doccats = (
+            ('reldocs',operator.eq,1),
+            ('irreldocs',operator.eq,2),
+            ('maybedocs',operator.eq,3),
+            ('yesbuts',operator.eq,4),
+            ('checked',operator.gt,0)
+        )
+        qusers = User.objects.filter(docownership__query=query).distinct().values_list('id',flat=True)
+        pusers = ProjectRoles.objects.filter(
+            project=query.project
+        ).exclude(
+            user__in=qusers
+        ).values('user__username','user__id','user__email')
+        for u in pusers:
+            u['tdocs'] = 0
+            udos.append(u)
+        for u in udos:
             user_docs = {}
-            tdocs = DocOwnership.objects.filter(query=query,user=u)
-            user_docs['tdocs'] = tdocs.count()
+            user_docs['tdocs'] = u['tdocs']
             if user_docs['tdocs']==0:
                 user_docs['tdocs'] = False
             else:
-                user_docs['reldocs']         = tdocs.filter(relevant=1).count()
-                user_docs['irreldocs']       = tdocs.filter(relevant=2).count()
-                user_docs['maybedocs']       = tdocs.filter(relevant=3).count()
-                user_docs['yesbuts']         = tdocs.filter(relevant=4).count()
-                user_docs['checked'] = tdocs.filter(relevant__gt=0).count()
-                user_docs['checked_percent'] = round( user_docs['checked'] / user_docs['tdocs'] * 100)
-            if query in u.query_set.all():
+                for c,op,v in doccats:
+                    user_docs[c] = sum([x['n'] for x in udors if x['user']==u['user__id'] and op(x['relevant'],v) ])
+                user_docs['checked_percent'] = user_docs['checked'] / user_docs['tdocs']
+            if u['user__id'] in list(qusers):
                 user_list.append({
-                    'username': u.username,
-                    'email': u.email,
+                    'username': u['user__username'],
+                    'email': u['user__email'],
                     'onproject': True,
                     'user_docs': user_docs
                 })
             else:
                 user_list.append({
-                    'username': u.username,
-                    'email': u.email,
+                    'username': u['user__username'],
+                    'email': u['user__email'],
                     'onproject': False,
                     'user_docs': user_docs
                 })
 
-        if DocPar.objects.filter(doc__query=query).count() > 0:
+
+        if DocPar.objects.filter(doc__query=query).exists():
             pars = True
         else:
             pars = False
@@ -1576,7 +1622,7 @@ def query_tm(request,qid):
         'query': query,
         'form': form,
         'project': query.project,
-        'fields_1': ['min_freq','max_df','max_features','limit','ngram','fulltext','citations'],
+        'fields_1': ['min_freq','max_df','max_features','limit','ngram','fulltext','citations','fancy_tokenization'],
         'fields_2': ['K','alpha','max_iterations','db'],
         'fields_3': ['method']
     }
@@ -1612,7 +1658,7 @@ def run_model(request,run_id):
 
 
 ##################################################
-## User home page
+## User() home page
 
 @login_required
 def userpage(request, pid):
@@ -1623,7 +1669,10 @@ def userpage(request, pid):
     queries = Tag.objects.filter(
         query__users=request.user,
         query__project=project
-    ).values('query__id','query__type','id')
+    ).values('query__id','query__type','id').order_by('-id')
+
+    if project.id==1:
+        queries = queries.filter(id__gt=731)
 
     query_list = []
 
@@ -1666,15 +1715,393 @@ def userpage(request, pid):
                 'docstats': docstats
             })
 
-    query = queries.last()
+    query = Query.objects.filter(project=project).last()#.query
+
+    codings = DocMetaCoding.objects.filter(project=project,user=request.user)
+
+    if codings.count()==0:
+        coding_table=False
+        filter=None
+    else:
+        filter = DocMetaFilter(request.GET, queryset=codings)
+
+        coding_table = CodingTable(filter.qs)
+        RequestConfig(request).configure(coding_table)
+
 
     context = {
         'user': request.user,
         'queries': query_list,
         'query': query,
-        'project': project
+        'project': project,
+        'codings': coding_table,
+        'filter': filter
     }
     return HttpResponse(template.render(context, request))
+
+
+@login_required
+def code_document(request,docmetaid):
+    '''From this page, add effects and interventions'''
+    dmc = DocMetaCoding.objects.get(pk=docmetaid)
+    template = loader.get_template('scoping/doc_meta.html')
+
+    effects = StudyEffect.objects.filter(
+        doc=dmc.doc,
+        project=dmc.project,
+        user=dmc.user
+    ).order_by('id')
+
+    interventions = Intervention.objects.filter(
+        effect__in=effects
+    ).order_by('id')
+
+    dests = [
+        (1,'Next uncoded document'),
+        (2,'Next document I\'ve coded'),
+        (3,'Next document to double code'),
+        (4,'Save and exit')
+    ]
+
+    doc = dmc.doc.highlight_fields(dmc.project,["title","content","id","wosarticle__so","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
+
+    notes = Note.objects.prelevant(dmc.project.id).filter(doc_id=dmc.doc.id).order_by('date')
+
+    ecs = ExclusionCriteria.objects.filter(project=dmc.project)
+
+    exclusions = Exclusion.objects.filter(project=dmc.project,doc=dmc.doc)
+    #print(doc)
+
+    connections = list(interventions.values('id','effect_id'))
+    context = {
+        'ecs': ecs,
+        'exclusions': exclusions,
+        'doc': doc,
+        'notes': notes,
+        'dests': dests,
+        'project': dmc.project,
+        'dmc': dmc,
+        'effects': effects,
+        'interventions': interventions,
+        'connections': connections
+    }
+    return HttpResponse(template.render(context,request))
+
+
+class ExcludeView(CreateView):
+    model = Exclusion
+    fields = ("reason",)
+    def form_valid(self, form):
+        dmc = DocMetaCoding.objects.get(pk=self.kwargs['dmc'])
+        model = form.save(commit=False)
+        model.doc = dmc.doc
+        model.project = dmc.project
+        model.user = dmc.user
+        model.save()
+        return HttpResponseRedirect(reverse('scoping:code_document', kwargs={"docmetaid": dmc.id}))
+    def form_invalid(self, form):
+        return HttpResponseRedirect(reverse('scoping:code_document', kwargs={"docmetaid": self.kwargs['dmc']}))
+
+@login_required
+def save_document_code(request,docmetaid,dest):
+    '''From this page, add effects and interventions'''
+    dmc = DocMetaCoding.objects.get(pk=docmetaid)
+    ## save finished
+    dmc.coded=True
+    dmc.finished=datetime.datetime.now()
+    dmc.save()
+
+    if dest==4:
+        return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
+
+    mycodes = DocMetaCoding.objects.filter(
+        user=request.user,project=dmc.project
+    )
+    docids = set(mycodes.values_list('doc_id',flat=True))
+    docs = Doc.objects.filter(pk__in=docids)
+    uncoded_docs = docs.exclude(docmetacoding__coded=True)
+
+    if dest==1:
+        uncoded = mycodes.filter(doc__in=uncoded_docs)
+        if uncoded.count()==0:
+            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
+        dmc_dest = uncoded.first()
+        return HttpResponseRedirect(reverse(
+            'scoping:code_document',
+            kwargs={'docmetaid':dmc_dest.id}
+        ))
+    elif dest==2:
+        mycoded = mycodes.filter(coded=True)
+        if mycoded.count()==0:
+            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
+        dmc_dest = mycoded.order_by('finish_time').first()
+        if dmc_dest.id==dmc.id:
+            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
+        return HttpResponseRedirect(reverse(
+            'scoping:code_document',
+            kwargs={'docmetaid':dmc_dest.id}
+        ))
+    elif dest==3:
+        myuncoded_docs = set(mycodes.filter(
+            coded=False
+        ).values_list('doc__id',flat=True))
+        docs = docs.filter(id__in=myuncoded_docs)
+        coded = docs.filter(docmetacoding__coded=True)
+        coded = mycodes.filter(doc__in=coded)
+        if coded.count()==0:
+            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={"pid": dmc.project.id}))
+        dmc_dest = coded.order_by('finish_time').first()
+        return HttpResponseRedirect(reverse(
+            'scoping:code_document',
+            kwargs={'docmetaid':dmc_dest.id}
+        ))
+
+    return HttpResponse(template.render(context,request))
+
+def get_form_fields(model,project,instance=False,errors={},data={}):
+    groups = []
+    if hasattr(model, "GROUPS"):
+        mgroups = model.GROUPS
+    else:
+        mgroups = [(None,"")]
+    for g in mgroups:
+        if g[0] is not None:
+            fields = [x for x in model._meta.get_fields() if hasattr(x,"group") and x.group==g[0]]
+        else:
+            fields = model._meta.get_fields()
+
+        form_fields = []
+        for f in fields:
+            if f.name == "id":
+                continue
+            elif f.is_relation and "intervention_subtypes" not in f.name and "controls" not in f.name:
+                continue
+            else:
+                if f.get_internal_type()=="FloatField":
+                    step="any"
+                else:
+                    step=1
+                ff = f.formfield()
+                options=ProjectChoice.objects.filter(
+                    field=f.name,
+                    project=project
+                )
+                choices = f.choices
+                if data:
+                    if f.name in data:
+                        value = data[f.name]
+                    else:
+                        value = None
+                elif instance:
+                    if f.many_to_many:
+                        value=list(getattr(
+                            instance,f.name.replace('_id','')
+                            ).all().values_list('name',flat=True))
+                    else:
+                        value=getattr(instance,f.name)
+                else:
+                    value=None
+                if f.many_to_many:
+                    choices = f.related_model.objects.filter(
+                        project=project
+                    ).values_list('id','name')
+                if f.name in errors:
+                    f_errors = errors[f.name]
+                else:
+                    f_errors = []
+                if f.many_to_many:
+                    multiple = True
+                else:
+                    multiple = False
+                form_fields.append({
+                    'step': step,
+                    'name': f.name,
+                    'ff': ff,
+                    'options': options,
+                    'choices': choices,
+                    'value': value,
+                    'errors': f_errors,
+                    'multiple': multiple
+                })
+        groups.append({
+            "title": g[1],
+            "form_fields": form_fields
+        })
+
+    if model==scoping.models.StudyEffect:
+        form_fields = []
+        pcs = PopCharField.objects.filter(
+            project=project
+        )
+        for pc in pcs:
+            if pc.numeric:
+                input_type="number"
+            else:
+                input_type="text"
+            form_fields.append({
+                "name": "popchars_{}".format(pc.name),
+                "step": 0.1,
+                "ff": {
+                    "widget": {
+                        "input_type": input_type
+                     },
+                     "label": pc.name,
+                     "min_value": 0,
+                     "help_text": pc.unit
+                 }
+            })
+        groups.append({
+            "title": "Population Characteristics",
+            "form_fields": form_fields
+        })
+    return groups
+
+def clean_form_data(data,model):
+    clean_data = {}
+    m2m = {}
+    pcs = {}
+
+    del data['csrfmiddlewaretoken']
+    for key in data:
+        if "popchars_" in key:
+            if isinstance(data[key],list) and len(data[key])==1:
+                data[key]=data[key][0]
+            if data[key]=='':
+                data[key]=None
+            pcs[key.replace("popchars_","")] = data[key]
+        else:
+            f = model._meta.get_field(key)
+            if f.many_to_many:
+                m2m[key]=data[key]
+            else:
+                if isinstance(data[key],list) and len(data[key])==1:
+                    data[key]=data[key][0]
+                if data[key]!='':
+                    clean_data[key]=data[key]
+                else:
+                    clean_data[key]=None
+    return (clean_data, m2m, pcs)
+
+def attempt_effect_intervention_save(model,edit,instance,
+    clean_data,m2m,multi,dmc,pcs=None):
+    if edit:
+        for key in m2m:
+            getattr(instance,key).set(m2m[key])
+        for key in clean_data:
+            setattr(instance,key,clean_data[key])
+    else:
+        instance = model(**clean_data)
+    try:
+        instance.clean_fields()
+        if len(m2m) == 0:
+            raise ValidationError(
+                {multi: 'You must select at least one option'}
+            )
+        instance.save()
+        for key in m2m:
+            getattr(instance,key).set(m2m[key])
+        if pcs is not None:
+            try:
+                for pc in pcs:
+                    pcf = PopCharField.objects.get(
+                        project=dmc.project,
+                        name=pc
+                    )
+                    m, created = PopChar.objects.get_or_create(
+                        effect=instance,
+                        field=pcf
+                    )
+                    v = pcs[pc]
+                    if pcf.numeric:
+                        m.value=v
+                    else:
+                        m.str_value=v
+                    m.save()
+            except ValidationError as e:
+                errors = e.message_dict
+                form_fields = get_form_fields(model,dmc.project,instance, errors, clean_data)
+                return (errors,instance,form_fields)
+        return (False,False,False)
+    except ValidationError as e:
+        errors = e.message_dict
+        form_fields = get_form_fields(model,dmc.project,instance, errors, clean_data)
+        return (errors,instance,form_fields)
+
+@login_required
+def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
+    '''From this page, add effects and interventions'''
+    dmc = DocMetaCoding.objects.get(pk=docmetaid)
+    template = loader.get_template('scoping/add_effect.html')
+
+    errors = {}
+    if eff_copy:
+        instance=StudyEffect.objects.get(pk=eff_copy)
+    else:
+        instance=False
+    if request.method=="POST":
+        data = dict(request.POST.copy())
+        data['doc_id'] = dmc.doc.id
+        data['project_id'] = dmc.project.id
+        data['user_id'] = dmc.user_id
+        clean_data, m2m, popchars = clean_form_data(data,StudyEffect)
+
+        errors, instance, form_fields = attempt_effect_intervention_save(
+            StudyEffect,eff_edit,instance,
+            clean_data,m2m,"controls",dmc,popchars
+        )
+        if not errors:
+            return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
+    else:
+        form_fields = get_form_fields(StudyEffect,dmc.project,instance,errors)
+
+    context = {
+        'project': dmc.project,
+        'dmc': dmc,
+        'groups': form_fields,
+        'ei': "Effect"
+    }
+    return HttpResponse(template.render(context,request))
+
+@login_required
+def add_intervention(request,effectid,iid=False,i_edit=False):
+    '''From this page, add effects and interventions'''
+    effect = StudyEffect.objects.get(pk=effectid)
+    dmc = DocMetaCoding.objects.get(
+        doc=effect.doc,
+        project=effect.project,
+        user=effect.user
+    )
+    if iid:
+        instance=Intervention.objects.get(pk=iid)
+    else:
+        instance=False
+    errors = {}
+
+    if request.method=="POST":
+        data = dict(request.POST.copy())
+        data['effect_id'] = effect.id
+        clean_data, m2m, popchars = clean_form_data(data,Intervention)
+
+        errors, instance, form_fields = attempt_effect_intervention_save(
+            Intervention,i_edit,instance,
+            clean_data,m2m,"intervention_subtypes",
+            dmc
+        )
+        if not errors:
+            return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
+    else:
+        form_fields = get_form_fields(Intervention,dmc.project,instance, errors)
+
+    template = loader.get_template('scoping/add_effect.html')
+
+    context = {
+        'project': dmc.project,
+        'dmc': dmc,
+        'ei': "Intervention",
+        'groups': form_fields
+    }
+    return HttpResponse(template.render(context,request))
+
 
 ##################################################
 ## Exclude docs from snowballing session
@@ -1744,17 +2171,11 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
 
     relevance_fields.append({"path": "fulltext", "name": "Full Text"})
     relevance_fields.append({"path": "docfile__id", "name": "PDF"})
-    relevance_fields.append({"path": "tech_technology", "name": "Technology"})
-    relevance_fields.append({"path": "tech_innovation", "name": "Innovation"})
-    relevance_fields.append({"path": "relevance_netrelevant", "name": "NETs relevant"})
-    relevance_fields.append({"path": "relevance_techrelevant", "name": "Technology relevant"})
+    relevance_fields.append({"path": "category__name", "name": "Category"})
+    relevance_fields.append({"path": "docproject__relevant", "name": "Project relevant"})
     relevance_fields.append({"path": "note__text", "name": "Notes"})
     relevance_fields.append({"path": "relevance_time", "name": "Time of Rating"})
-    relevance_fields.append({"path": "relevance_agreement", "name": "Agreement"})
-    relevance_fields.append({"path": "k", "name": "K Core"})
-    relevance_fields.append({"path": "degree", "name": "Degree"})
-    relevance_fields.append({"path": "eigen_cent", "name": "Eigenvector centrality"})
-    relevance_fields.append({"path": "distance", "name": "Distance to Kates"})
+
 
 
     for f in WoSArticle._meta.get_fields():
@@ -1781,10 +2202,13 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
     relevance_fields.append({"path": "tag__title", "name": "Tag name"})
 
 
-
-
+    #doclist = get_doclist(qid)
+    doctable = get_doclist(
+        request,qid,basic_fields
+    ).content.decode('utf-8')
 
     context = {
+        'doctable': doctable,
         'query': query,
         'project': query.project,
         'query2' : query_f,
@@ -2042,7 +2466,7 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                     if did==0:
                         q.database = "manual"
                         q.r_count = 1
-                        #q.technology = t
+                        #q.category = t
                         q.project = p
                         q.qtype='MN'
                         q.upload_link=em
@@ -2087,11 +2511,11 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                 if hasattr(doc,'docfile'):
                     doc.docfile.delete()
 
-            elif "technology[]" in request.POST:
-                tids = request.POST.getlist('technology[]',None)
-                ts = Technology.objects.filter(pk__in=tids)
+            elif "category[]" in request.POST:
+                tids = request.POST.getlist('category[]',None)
+                ts = Category.objects.filter(pk__in=tids)
                 for t in ts:
-                    doc.technology.add(t)
+                    doc.category.add(t)
 
             elif request.FILES.get('file', False):
 
@@ -2156,8 +2580,8 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
             dais = doc.docauthinst_set.filter(AU__isnull=False).count()
 
             if doc.docauthinst_set.filter(AU__isnull=False).count() > 0:
-                doctechs = doc.technology.all()
-                techs = Technology.objects.filter(project=p)
+                doctechs = doc.category.all()
+                techs = Category.objects.filter(project=p)
 
                 if hasattr(doc,'docfile') is False:
                     u = uf is None
@@ -2288,6 +2712,19 @@ def doclistsbs(request,sbsid):
     }
     return HttpResponse(template.render(context, request))
 
+##################################################
+##
+def get_doclist(request,qid,fields=None):
+    template = loader.get_template('scoping/snippets/doc_table.html')
+    q = Query.objects.get(pk=qid)
+    fpaths = [f['path'] for f in fields]
+
+    docs = Doc.objects.filter(query=q).values(*fpaths)[:100]
+    context = {
+        'docs': docs,
+        'fields': fields
+    }
+    return HttpResponse(template.render(context,request))
 
 
 ##################################################
@@ -2313,6 +2750,12 @@ def sortdocs(request):
 
     tag_title = request.GET.get('tag_title',None)
     download = request.GET.get('download',None)
+    ris = request.GET.get('ris',None)
+
+    print(fields)
+    print(f_fields)
+
+    print(f_text)
 
     # get the query
     query = Query.objects.get(pk=qid)
@@ -2345,7 +2788,8 @@ def sortdocs(request):
             #single_fields.append(f)
         elif "docownership" in f:
             users.append(f)
-        elif "relevance_" in f:
+            single_fields.append(f)
+        elif "relevance" in f:
             rfields.append(f)
             single_fields.append(f)
         else:
@@ -2353,71 +2797,22 @@ def sortdocs(request):
     single_fields = tuple(single_fields)
     mult_fields_tuple = tuple(mult_fields)
 
-    tech = query.technology
-    print(len(filt_docs))
-    # annotate with relevance
-    if "relevance_netrelevant" in rfields:
-        filt_docs = filt_docs.annotate(relevance_netrelevant=models.Sum(
-            models.Case(
-                models.When(docownership__relevant=1,then=1),
-                default=0,
-                output_field=models.IntegerField()
-            )
-        ))
-    if "relevance_techrelevant" in rfields:
-        filt_docs = filt_docs.annotate(relevance_techrelevant=models.Sum(
-            models.Case(
-                models.When(docownership__relevant=1,docownership__query__technology=tech,then=1),
-                default=0,
-                output_field=models.IntegerField()
-            )
-        ))
-    if "relevance_agreement" in rfields:
-        filt_docs = filt_docs.annotate(
-            relevance_max=models.Max(
-                models.Case(
-                    models.When(docownership__relevant__gt=0,docownership__query__technology=tech,
-                        then=F('docownership__relevant')
-                    ),
-                    default=0,
-                    output_field=models.IntegerField()
-                )
-            ),
-            relevance_min = models.Min(
-                models.Case(
-                    models.When(docownership__relevant__gt=0,docownership__query__technology=tech,
-                        then=F('docownership__relevant')
-                    ),
-                    default=99,
-                    output_field=models.IntegerField()
-                )
-            )
-        )
-        filt_docs = filt_docs.annotate(
-            relevance_agreement = F('relevance_max') - F('relevance_min')
+    tech = query.category
+
+    if "docproject__relevant" in fields:
+        filt_docs = filt_docs.filter(
+            docproject__project=query.project
         )
 
-
-    # Annotate with technology names
-    if "tech_technology" in fields:
-        filt_docs = filt_docs.annotate(
-            qtechnology=StringAgg('query__technology__name','; ',distinct=True),
-            dtechnology=StringAgg('technology__name','; ',distinct=True),
-            #tech_technology=Concat(F('qtechnology'), F('dtechnology'))
+    # Annotate with category names
+    if "category__name" in fields:
+        filt_docs = filt_docs.filter(
+            category__project=query.project
+        ) | filt_docs.filter(
+            category__isnull=True
         )
         filt_docs = filt_docs.annotate(
-            tech_technology=Concat('qtechnology', 'dtechnology')
-        )
-
-    # Annotate with innovation names
-    if "tech_innovation" in fields:
-        filt_docs = filt_docs.annotate(
-            qtechnology=StringAgg('query__innovation__name','; ',distinct=True),
-            dtechnology=StringAgg('innovation__name','; ',distinct=True),
-            #tech_technology=Concat(F('qtechnology'), F('dtechnology'))
-        )
-        filt_docs = filt_docs.annotate(
-            tech_innovation=Concat('qtechnology', 'dtechnology')
+            category__name=StringAgg('category__name','; ',distinct=True),
         )
 
     if "wosarticle__doc" in fields:
@@ -2456,23 +2851,27 @@ def sortdocs(request):
                 print(reldocs)
             reldocs = reldocs.values("pk")
             filt_docs = filt_docs.filter(pk__in=reldocs)
-        else:
-            reldocs = filt_docs.filter(docownership__user=user,docownership__query=query)
-            if "tag__title" in f_fields:
-                reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter)
-                print(reldocs)
-            reldocs = reldocs.values("pk")
-            filt_docs = filt_docs.filter(pk__in=reldocs)
+        #else:
+
+            #if download==False:
+            #    reldocs = filt_docs.filter(docownership__user=user,docownership__query=query)
+            #if "tag__title" in f_fields:
+            #    reldocs = filt_docs.filter(docownership__user=user,docownership__query=query, docownership__tag__title__icontains=tag_filter)
+            #    print(reldocs)
+            #reldocs = reldocs.values("pk")
+            #filt_docs = filt_docs.filter(pk__in=reldocs)
         for u in users:
             uname = u.split("__")[1]
             user = User.objects.get(username=uname)
             #uval = reldocs.filter(docownership__user=user).docownership
             if "tag__title" in f_fields:
-                filt_docs = filt_docs.filter(
-                        docownership__user=user,
-                        docownership__query=query,
-                        docownership__tag__title__icontains=tag_filter
-                    ).annotate(**{
+                if download == "false":
+                    filt_docs = filt_docs.filter(
+                            docownership__user=user,
+                            docownership__query=query,
+                            docownership__tag__title__icontains=tag_filter
+                        )
+                filt_docs = filt_docs.annotate(**{
                     u: models.Case(
                             models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
                             default=0,
@@ -2480,7 +2879,9 @@ def sortdocs(request):
                     )
                 })
             else:
-                filt_docs = filt_docs.filter(docownership__user=user,docownership__query=query).annotate(**{
+                if download == "false":
+                    filt_docs = filt_docs.filter(docownership__user=user,docownership__query=query)
+                filt_docs = filt_docs.annotate(**{
                     u: models.Case(
                             models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
                             default=0,
@@ -2488,11 +2889,11 @@ def sortdocs(request):
                     )
                 })
 
-
     all_docs = filt_docs
 
     fids = []
     tag_text = ""
+
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
         if i==0:
@@ -2537,7 +2938,8 @@ def sortdocs(request):
                 kwargs = {
                     '{0}__{1}'.format(f_fields[i],op): f_text[i]
                 }
-                print(kwargs)
+                if "docproject__relevant" in f_fields[i]:
+                    kwargs['docproject__project'] = query.project
                 if joiner=="AND":
                     if exclude:
                         filt_docs = filt_docs.exclude(**kwargs)
@@ -2558,10 +2960,6 @@ def sortdocs(request):
         except:
             break
 
-    if "k" in fields:
-        filt_docs = filt_docs.filter(citation_objects=True)
-
-
 
     if tag_title is not None:
         t = Tag(title=tag_title)
@@ -2571,8 +2969,7 @@ def sortdocs(request):
         Through = Doc.tag.through
         tms = [Through(doc=d,tag=t) for d in filt_docs]
         Through.objects.bulk_create(tms)
-        for doc in filt_docs:
-            doc.tag.add(t)
+        handle_update_tag.delay(t.id)
         return(JsonResponse("",safe=False))
 
     if sortdir=="+":
@@ -2596,8 +2993,8 @@ def sortdocs(request):
 
         docs = filt_docs.order_by(*order_by).values(*single_fields)
         n_docs = len(docs)
+
     if download != "true":
-        x = filt_docs.values()
         docs = docs[:100]
 
 
@@ -2633,6 +3030,11 @@ def sortdocs(request):
 
     for d in docs:
         # work out total relevance
+        if "docproject__relevant" in fields:
+            dp = DocProject.objects.get(
+                project=query.project,doc=d['pk']
+            )
+            d['docproject__relevant'] = dp.get_relevant_display() + " ({}) ".format(dp.relevant)
         if "docfile__id" in fields:
             if d['docfile__id']:
                 d['docfile__id'] = '<a href="/scoping/download_pdf/'+str(d['docfile__id'])+'"">PDF'
@@ -2647,7 +3049,8 @@ def sortdocs(request):
         if "relevance__netrelevantasdfasdf" in rfields:
             d["relevance__netrelevant"] = DocOwnership.objects.filter(doc_id=d['pk'],relevant__gt=0).count()
         # Get the user relevance rating for each doc (if asked)
-        if len(users) > 0:
+
+        if len(users) > 0 and download=="false":
             for u in users:
                 uname = u.split("__")[1]
                 doc = Doc.objects.get(pk=d['pk'])
@@ -2658,7 +3061,7 @@ def sortdocs(request):
                 if "tag__title" in f_fields:
                     do = do.filter(tag__title__icontains=tag_filter)
                 if do.count() > 0:
-                    d[u] = do.first().relevant
+                    d[u] = do.first().get_relevant_display()
                     num = do.first().relevant
                     text = do.first().get_relevant_display()
                     tag = str(do.first().tag.id)
@@ -2676,6 +3079,8 @@ def sortdocs(request):
                             if r == num:
                                 sel = "selected"
                             d[u]+='<option {} value={}>{}</option>'.format(sel, r, dis)
+                else:
+                    d[u] = "not assigned"
 
 
 
@@ -2690,15 +3095,27 @@ def sortdocs(request):
             pass
 
     if download == "true":
+        if ris=="true":
+            return export_ris_docs(request,qid,docs)
+
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="documents.csv"'
 
-        writer = csv.writer(response)
+        writer = csv.writer(response,delimiter=',')
+        writer.writerow(['sep=,'])
 
         writer.writerow(fields)
 
         for d in docs:
-            row = [d[x] for x in fields]
+            if len(users) > 0:
+                row=[]
+                for x in fields:
+                    if "docownership__" in x:
+                        row.append(dict(DocOwnership.Status).get(d[x]))
+                    else:
+                        row.append(d[x])
+            else:
+                row = [d[x] for x in fields]
             writer.writerow(row)
 
         return response
@@ -2716,20 +3133,69 @@ def sortdocs(request):
     #x = y
     return JsonResponse(response,safe=False)
 
+def export_ris_docs(request,qid,docs=False):
+    import io
+    from RISparser.config import TAG_KEY_MAPPING
+    from utils.utils import RIS_KEY_MAPPING
+    from utils.utils import RIS_TY_MAPPING
+    inv_mapping = {v: k for k, v in RIS_KEY_MAPPING.items()}
+    buffer = io.StringIO()
+    q = Query.objects.get(pk=qid)
+    if not docs:
+        docs = Doc.objects.filter(query=q)
+    else:
+        docs = Doc.objects.filter(pk__in=docs.values_list('pk',flat=True))
+
+    for d in docs.filter(wosarticle__isnull=False):
+        ## Do the single meta fields
+        buffer.write('TY  - {}\n'.format(RIS_TY_MAPPING[d.wosarticle.pt]))
+        for f in WoSArticle._meta.get_fields():
+            v = getattr(d.wosarticle,f.name)
+            if v is not None:
+                if f.name in inv_mapping and f.name!="kwp":
+                    if not isinstance(v,list):
+                        v = [v]
+                    for val in v:
+                        buffer.write('{}  - {}\n'.format(
+                            inv_mapping[f.name],
+                            val
+                        ))
+
+        ## Do authors
+        for au in d.authorlist():
+            buffer.write('AU  - {}\n'.format(au.AU))
+        ## Do keywords
+        for kw in KW.objects.filter(doc=d):
+            buffer.write('KW  - {}\n'.format(kw.text))
+        ## Relevance Ratings
+        for r in d.docownership_set.filter(query__project=q.project,relevant__gt=0):
+            buffer.write('N1  - Relevance_{}_{}: {}\n'.format(r.user.username,r.tag.id,r.relevant))
+        ## Category Tags
+        if q.category is not None:
+            buffer.write('N1  - Category: {}\n'.format(q.category))
+        for c in d.category.exclude(name=q.category):
+            buffer.write('N1  - Category: {}\n'.format(c))
+
+        buffer.write('ER  - \n\n')
+
+    response = HttpResponse(buffer.getvalue(),content_type='text')
+    response['Content-Disposition'] = 'attachment; filename="documents_{}.ris"'.format(qid)
+    return response
+
 
 def get_tech_docs(tid,other=False):
     if tid=='0':
-        tech = Technology.objects.all().values('id')
-        tobj = Technology(pk=0,name="NETS: All Technologies")
+        tech = Category.objects.all().values('id')
+        tobj = Category(pk=0,name="NETS: All Technologies")
     else:
-        tech = Technology.objects.filter(pk=tid).values('id')
-        tobj = Technology.objects.get(pk=tid)
+        tech = Category.objects.filter(pk=tid).values('id')
+        tobj = Category.objects.get(pk=tid)
     docs1 = list(Doc.objects.filter(
-        query__technology__in=tech,
+        query__category__in=tech,
         query__type="default"
     ).values_list('pk',flat=True))
     docs2 = list(Doc.objects.filter(
-        technology__in=tech
+        category__in=tech
     ).values_list('pk',flat=True))
     dids = list(set(docs2)|set(docs1))
     docs = Doc.objects.filter(pk__in=dids)
@@ -2742,8 +3208,8 @@ def get_tech_docs(tid,other=False):
 
 from collections import defaultdict
 
-def technology(request,tid):
-    template = loader.get_template('scoping/technology.html')
+def category(request,tid):
+    template = loader.get_template('scoping/category.html')
     tech, docs, tobj, nqdocs = get_tech_docs(tid,other=True)
     project = tobj.project
     docinfo={}
@@ -2751,14 +3217,14 @@ def technology(request,tid):
     docinfo['tdocs'] = docs.distinct('pk').count()
     docinfo['reldocs'] = docs.filter(
         docownership__relevant=1,
-        docownership__query__technology__in=tech
+        docownership__query__category__in=tech
     ).distinct('pk').count() + nqdocs.distinct('pk').count()
 
     docs = docs.order_by('PY').filter(PY__gt=1985)
 
     rdocids = docs.filter(
         docownership__relevant=1,
-        docownership__query__technology__in=tech
+        docownership__query__category__in=tech
     ).values_list('pk',flat=True)
 
     rdocids = list(rdocids)
@@ -2802,9 +3268,9 @@ def download_tdocs(request,tid):
     tech, docs, tobj, nqdocs = get_tech_docs(tid,other=True)
     rdocs = docs.filter(
         docownership__relevant=1,
-        docownership__query__technology__in=tech
+        docownership__query__category__in=tech
     )
-    trdocs = docs.filter(technology__in=tech).exclude(query__technology__in=tech)
+    trdocs = docs.filter(category__in=tech).exclude(query__category__in=tech)
     rdocs = rdocs | trdocs
     rdocs = rdocs.distinct('pk')
     response = HttpResponse(content_type='text/csv')
@@ -2825,7 +3291,7 @@ def prepare_authorlist(request,tid):
     tech, docs, tobj = get_tech_docs(tid)
     docs = docs.filter(
         docownership__relevant=1,
-        docownership__query__technology__in=tech
+        docownership__query__category__in=tech
     )
     docids = docs.values_list('pk',flat=True)
 
@@ -2843,14 +3309,14 @@ def prepare_authorlist(request,tid):
                 if d.docauthinst_set.count() == 0:
                     continue
                 au = d.docauthinst_set.order_by('position').first().AU
-                audocs = docs.filter(docauthinst__AU=au,query__technology__isnull=False).distinct('pk')
+                audocs = docs.filter(docauthinst__AU=au,query__category__isnull=False).distinct('pk')
                 docset = "; ".join([x.citation() for x in audocs])
                 et, created = EmailTokens.objects.get_or_create(
                     email=evalue,
                     AU=au,
                     category=tobj
                 )
-                pcats = Technology.objects.filter(project=tobj.project)
+                pcats = Category.objects.filter(project=tobj.project)
                 et_existing = EmailTokens.objects.filter(
                     email=evalue,
                     AU=au,
@@ -2995,7 +3461,7 @@ Germany
 
 {}
     '''
-    tobj = Technology.objects.get(pk=tid)
+    tobj = Category.objects.get(pk=tid)
     ems = EmailTokens.objects.filter(
         category=tobj,
         sent=False,
@@ -3024,7 +3490,7 @@ Germany
             et.save()
             time.sleep(30 + random.randrange(1,50,1)/10)
 
-    return HttpResponseRedirect(reverse('scoping:technology', kwargs={'tid': tid}))
+    return HttpResponseRedirect(reverse('scoping:category', kwargs={'tid': tid}))
 
 
 
@@ -3047,7 +3513,7 @@ def document(request, pid, doc_id):
     project = Project.objects.get(pk=pid)
     authors = DocAuthInst.objects.filter(doc=doc)
     queries = Query.objects.filter(doc=doc,project=project)
-    technologies = doc.technology.filter(project=project)
+    technologies = doc.category.filter(project=project)
     innovations = doc.innovation.all()
     ratings = doc.docownership_set.filter(query__project=project)
     if request.user.username in ["galm","roger","nemet"]:
@@ -3066,7 +3532,7 @@ def document(request, pid, doc_id):
         uf.filename = df.file
         uf.action="Delete"
 
-    ptechs = Technology.objects.filter(project=project).exclude(pk__in=technologies)
+    ptechs = Category.objects.filter(project=project).exclude(pk__in=technologies)
 
 
     context = {
@@ -3243,9 +3709,8 @@ def assign_docs(request):
 
     print(tags)
 
-    dos = []
-
     for tag in range(len(tags)):
+        dos = []
         t = Tag.objects.get(pk=tags[tag])
         ssize = int(tagdocs[tag])
         if ssize==0:
@@ -3332,8 +3797,10 @@ def assign_docs(request):
                             relevant=r
                         )
                     dos.append(docown)
-    DocOwnership.objects.bulk_create(dos)
+        DocOwnership.objects.bulk_create(dos)
+        t.update_tag()
     print("Done")
+
 
     return HttpResponse("<body>xyzxyz</body>")
 
@@ -3411,6 +3878,9 @@ def par_manager(request, qid):
     }
     return render(request, 'scoping/par_manager.html',context)
 
+
+
+
 @login_required
 def del_statement(request):
     idstat = request.POST.get('idstat', None)
@@ -3480,7 +3950,7 @@ def add_statement(request):
         start = start,
         end   = end,
         user  = user,
-        #technology = ,
+        #category = ,
         text_length = len(text))
     docStat.save()
 
@@ -3496,14 +3966,14 @@ def add_statement(request):
     toolbox_html = generate_toolbox(doid, tag, docStat)
 
     # do    = DocOwnership.objects.get(pk=doid)
-    # techs = Technology.objects.filter(project=tag.query.project)
+    # techs = Category.objects.filter(project=tag.query.project)
     # for t in techs:
-    #     if do.docpar.technology.all().filter(pk=t.pk).exists():
+    #     if do.docpar.category.all().filter(pk=t.pk).exists():
     #         t.active="btn-success"
     #     else:
     #         t.active=""
     #
-    # levels = [[(docStat.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).distinct()]
+    # levels = [[(docStat.category.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).distinct()]
     #
     # toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
     # toolbox_html += '<div class="tools_statement2"><button class="btntool btn_del_stat" id="btndel{{s.0.0.0}}"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button></div>'
@@ -3522,15 +3992,15 @@ def add_statement(request):
 
 def generate_toolbox(doid, tag, docStat):
     do    = DocOwnership.objects.get(pk=doid)
-    techs = Technology.objects.filter(project=tag.query.project)
+    techs = Category.objects.filter(project=tag.query.project)
     pid   = tag.query.project.id
     for t in techs:
-        if do.docpar.technology.all().filter(pk=t.pk).exists():
+        if do.docpar.category.all().filter(pk=t.pk).exists():
             t.active="btn-success"
         else:
             t.active=""
 
-    levels = [[(docStat.technology.all().filter(pk=t.pk).exists(),t, docStat.technology.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')]
+    levels = [[(docStat.category.all().filter(pk=t.pk).exists(),t, docStat.category.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')]
 
     # Old implementation
     # toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
@@ -3657,7 +4127,7 @@ def generate_toolbox(doid, tag, docStat):
     return(toolbox_html)
 
 ########################################################
-## Add the technology asynchronously
+## Add the category asynchronously
 @login_required
 def async_add_tech(request):
     pid   = request.GET.get('pid', None)
@@ -3670,14 +4140,14 @@ def async_add_tech(request):
 
     # Get last ID
     try:
-      last = Technology.objects.filter(group="Other", project_id=pid).order_by('-id')[0]
+      last = Category.objects.filter(group="Other", project_id=pid).order_by('-id')[0]
       lastid=last.id
     except IndexError:
       lastid=1
 
 
     #  create a new query record in the database
-    t = Technology(
+    t = Category(
         name="Z"+str(lastid)+"_"+tname,
         description=tdesc,
         project_id=pid,
@@ -3699,9 +4169,9 @@ def add_othercat(request):
     tid = request.GET.get('tid', None)
 
     ds  = DocStatement.objects.get(pk=sid)
-    t   = Technology.objects.get(pk=tid)
+    t   = Category.objects.get(pk=tid)
 
-    getattr(ds, "technology").add(t)
+    getattr(ds, "category").add(t)
 
     ds.save()
 
@@ -3719,14 +4189,14 @@ def del_othercat(request):
     tagid = request.GET.get('tagid', None)
 
     ds  = DocStatement.objects.get(pk=sid)
-    t   = Technology.objects.get(pk=tid)
+    t   = Category.objects.get(pk=tid)
     tag = Tag.objects.get(pk=tagid)
 
-    getattr(ds, "technology").remove(t)
+    getattr(ds, "category").remove(t)
 
     ds.save()
 
-    techs = Technology.objects.filter(project=tag.query.project)
+    techs = Category.objects.filter(project=tag.query.project)
     levels = [t for t in techs.filter(level=6).order_by('name')]
 
     html_response =  '<select id="add_othercat'+str(sid)+'" name="other_categories" class="add_othercat">'
@@ -3779,21 +4249,21 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     pars = [(highlight_words_new(highlight_statement(x.id, debug=False), tag, debug=False), x.id) if x.id==do.docpar.id else (highlight_words_new(x.text, tag, debug=False), x.id) for x in doc.docpar_set.all()]
 
 	# Get technologies/statements
-    techs = Technology.objects.filter(project=tag.query.project)
+    techs = Category.objects.filter(project=tag.query.project)
     for t in techs:
-        if do.docpar.technology.all().filter(pk=t.pk).exists():
+        if do.docpar.category.all().filter(pk=t.pk).exists():
             t.active="btn-success"
         else:
             t.active=""
     #levels = [techs.filter(level=l) for l in techs.values_list('level',flat=True).distinct()]
-    levels = [[(do.docpar.technology.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).exclude(level=6).distinct()]
+    levels = [[(do.docpar.category.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).exclude(level=6).distinct()]
     #print(levels)
 
     # Get all statements registered
     #stats_ids = []
     #stats_cats = []
 
-    stats_cats = [[[(s.id, s.technology.all().filter(pk=t.pk).exists(), t, s.technology.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')] for s in DocStatement.objects.all().filter(par=do.docpar.id)]
+    stats_cats = [[[(s.id, s.category.all().filter(pk=t.pk).exists(), t, s.category.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')] for s in DocStatement.objects.all().filter(par=do.docpar.id)]
 
     #print(stats_cats)
 
@@ -3804,7 +4274,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     #         #print(st.text)
     #         stats_ids.append(st.id)
     #         for t in techs:
-    #             if st.technology.all().filter(pk=t.pk).exists():
+    #             if st.category.all().filter(pk=t.pk).exists():
     #                 #t.active="btn-success"
     #                 stats_cats.append((st.id, [t.name, "btn-success"]))
     #                 #print(t.name+": active")
@@ -3819,7 +4289,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     #     for st in statements:
     #         print(st.text)
     #         for t in techs:
-    #             if do.docstat.technology.all().filter(pk=t.pk).exists():
+    #             if do.docstat.category.all().filter(pk=t.pk).exists():
     #                 #t.active="btn-success"
     #                 print("active")
     #             else:
@@ -3888,6 +4358,85 @@ def rate_par(request,tid,ctype,doid,todo,done):
         }
     ))
 
+@login_required
+def screen_doc(request,tid,ctype,pos,todo):
+    tag = Tag.objects.get(pk=tid)
+    dois = DocOwnership.objects.filter(
+        order__isnull=False,
+        tag=tag,
+        user=request.user
+    ).order_by('order')
+
+    s = 0
+    while s < 5:
+        try:
+            do = dois[pos]
+            s = 10
+        except:
+            s+=1
+            time.sleep(1)
+    if s == 5:
+        return HttpResponseRedirect(reverse(
+            'scoping:userpage',
+            kwargs={"pid":tag.query.project.id}
+        ))
+    doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
+
+    notes = Note.objects.filter(
+        project=tag.query.project,
+        doc = do.doc
+    )
+
+    cats = Category.objects.filter(project=tag.query.project)
+    levels = [cats.filter(level=l) for l in cats.values_list('level',flat=True).distinct()]
+    levels = [[(cats.filter(pk=t.pk,docusercat__user=request.user,docusercat__doc=do.doc).exists(),t) for t in cats.filter(level=l)] for l in cats.values_list('level',flat=True).distinct()]
+
+
+
+    context = {
+        'project':tag.query.project,
+        'tag': tag,
+        'do': do,
+        'pc': round(pos/todo*100),
+        'doc': doc,
+        'pos': pos,
+        'todo': todo,
+        'ctype': ctype,
+        'notes': notes,
+        'levels': levels
+    }
+
+    return render(request, 'scoping/screen_doc.html', context)
+
+@login_required
+def rate_doc(request,tid,ctype,doid,pos,todo,rel):
+    tag = Tag.objects.get(pk=tid)
+    do = DocOwnership.objects.get(pk=doid)
+    do.relevant=rel
+    do.finish = timezone.now()
+    do.save()
+    pos+=1
+
+    return HttpResponseRedirect(reverse(
+        'scoping:screen_doc',
+        kwargs={
+            'tid': tid,
+            'ctype': ctype,
+            'pos': pos,
+            'todo': todo
+        }
+    ))
+
+@login_required
+def cat_doc(request):
+    dc, created = DocUserCat.objects.get_or_create(
+        doc_id=int(request.GET['did']),
+        category_id=int(request.GET['cid']),
+        user=request.user
+    )
+    if not created:
+        dc.delete()
+    return HttpResponse()
 
 ## Universal screening function, ctype = type of documents to show
 @login_required
@@ -3899,17 +4448,20 @@ def screen(request,qid,tid,ctype,d=0):
 
     user = request.user
 
+
+    dois = DocOwnership.objects.filter(
+        tag=tag,
+        query=query,
+        user=user
+    )
+    dois.update(order=None)
+    if ctype==99:
+        dois = dois.filter(relevant__gt=0)
+    else:
+        dois = dois.filter(relevant=ctype)
+    dois = dois.order_by('date')
+
     if not tag.document_linked:
-        dois = DocOwnership.objects.filter(
-            #docpar__doc__wosarticle__isnull=False,
-            tag=tag,
-            query=query,
-            user=user
-        )
-        if ctype==99:
-            dois = dois.filter(relevant__gt=0)
-        else:
-            dois = dois.filter(relevant=ctype)
         d = dois.order_by('date').first()
         return HttpResponseRedirect(reverse(
             'scoping:screen_par',
@@ -3922,112 +4474,19 @@ def screen(request,qid,tid,ctype,d=0):
                 'last_doid': 0
             }
         ))
-
-    user = request.user
-
-    back = 0
-
-    docs = DocOwnership.objects.filter(
-            doc__wosarticle__isnull=False,
-            query=query,
-            user=user.id,
-            tag=tag
-    )
-    sdocs = docs.filter(relevant__gte=1).count()
-    if ctype==99:
-        docs = docs.filter(relevant__gte=1)
     else:
-        docs = docs.filter(relevant=ctype)
-
-    docs = docs.order_by('date')
-
-    if d < 0:
-        d = docs.count() - 1
-        back = -1
-        ldocs = DocOwnership.objects.filter(
-            doc__wosarticle__isnull=False,
-            query=query,
-            user=user.id,
-            tag=tag
-        ).order_by('-date')[:1]
-        docs = docs | ldocs
-        doc = ldocs.first().doc
-    else:
-        try:
-            doc = docs[d].doc
-        except:
-            doc = None
-            return HttpResponseRedirect(reverse('scoping:userpage', kwargs={'pid': query.project.id }))
-
-    tdocs = docs.count() + sdocs
-
-
-    ndocs = docs.count()
-
-    authors = DocAuthInst.objects.filter(doc=doc)
-    for a in authors:
-        a.institution=highlight_words(a.institution,query)
-    abstract = highlight_words(doc.content,query)
-    title = highlight_words(doc.wosarticle.ti,query)
-    if doc.wosarticle.de is not None:
-        de = highlight_words(doc.wosarticle.de,query)
-    else:
-        de = None
-    if doc.wosarticle.kwp is not None:
-        kwp = highlight_words(doc.wosarticle.kwp,query)
-    else:
-        kwp = None
-
-    # Create the tags for clicking on
-    if request.user.username in ["rogers","nemet","galm"]:
-        tags = {'Technology': {},'Innovation': {}}
-    else:
-        tags = {'Technology': {}}#,'Innovation': {}}
-    for t in tags:
-        m = apps.get_model(app_label='scoping',model_name=t)
-        ctags = m.objects.filter(query__doc=doc) | m.objects.filter(doc=doc)
-
-        tags[t]['thing'] = t
-        tags[t]['ctags'] = ctags.distinct()
-        tags[t]['ntags'] = m.objects.filter(
-            project=query.project
-        ).exclude(
-            query__doc=doc
-        ).exclude(doc=doc)
-        print(tags)
-
-    if not request.user.username in ["rogers","nemet"]:
-    #if request.user.profile.type == "default":
-        innovation=False
-    else:
-        innovation=True
-
-    notes = doc.note_set.filter(project=query.project)
-
-    template = loader.get_template('scoping/doc.html')
-    context = {
-        'query': query,
-        'project': query.project,
-        'doc': doc,
-        'notes': notes,
-        'ndocs': ndocs,
-        'user': user,
-        'authors': authors,
-        'tdocs': tdocs,
-        'sdocs': sdocs,
-        'abstract': abstract,
-        'title': title,
-        'de': de,
-        'kwp': kwp,
-        'ctype': ctype,
-        'tags': tags,
-        'innovation': innovation,
-        'tag': tag,
-        'd': d,
-        'back': back
-    }
-
-    return HttpResponse(template.render(context, request))
+        # do in background
+        doids = dois.values_list('id',flat=True)
+        order_dos.delay(list(doids))
+        return HttpResponseRedirect(reverse(
+            'scoping:screen_doc',
+            kwargs={
+                'tid': tid,
+                'ctype': ctype,
+                'pos': 0,
+                'todo': dois.count()
+            }
+        ))
 
 @login_required
 def download_pdf(request,id):
@@ -4076,6 +4535,8 @@ def remove_assignments(request):
     query = Query.objects.get(pk=qid)
     todelete = DocOwnership.objects.filter(query=query)
     DocOwnership.objects.filter(query=int(qid)).delete()
+    for tag in Tag.objects.filter(query=query):
+        tag.update_tag()
     return HttpResponse("")
 
 @login_required
@@ -4099,7 +4560,7 @@ def delete(request,thing,thingid):
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 @login_required
-def remove_tech(request,doc_id,tid,thing='Technology'):
+def remove_tech(request,doc_id,tid,thing='Category'):
     doc = Doc.objects.get(pk=doc_id)
     obj = apps.get_model(app_label='scoping',model_name=thing).objects.get(pk=tid)
     getattr(doc,thing.lower()).remove(obj)
@@ -4113,39 +4574,50 @@ def add_note(request):
     ctype = request.POST.get('ctype',None)
     d = request.POST.get('d',None)
     text = request.POST.get('note',None)
+    pid = request.POST.get('project',None)
 
-    tag = Tag.objects.get(pk=tid)
+    if tid is not None:
+        tag = Tag.objects.get(pk=tid)
 
-    if not tag.document_linked:
-        par = DocPar.objects.get(pk=doc_id)
+        if not tag.document_linked:
+            par = DocPar.objects.get(pk=doc_id)
+            note = Note(
+                par=par,
+                tag=tag,
+                user=request.user,
+                date=timezone.now(),
+                project=tag.query.project,
+                text=text
+            )
+            note.save()
+            next = request.POST.get('next', '/')
+            return HttpResponseRedirect(next)
+        else:
+            doc = Doc.objects.get(pk=doc_id)
+            note = Note(
+                doc=doc,
+                tag=tag,
+                user=request.user,
+                date=timezone.now(),
+                project=tag.query.project,
+                text=text
+            )
+            note.save()
+            next = request.POST.get('next', '/')
+            return HttpResponseRedirect(next)
+    else:
+        doc = Doc.objects.get(pk=doc_id)
         note = Note(
-            par=par,
-            tag=tag,
+            doc=doc,
             user=request.user,
             date=timezone.now(),
-            project=tag.query.project,
+            project_id=pid,
             text=text
         )
         note.save()
         next = request.POST.get('next', '/')
         return HttpResponseRedirect(next)
-    else:
-        doc = Doc.objects.get(pk=doc_id)
-        note = Note(
-            doc=doc,
-            tag=tag,
-            user=request.user,
-            date=timezone.now(),
-            project=tag.query.project,
-            text=text
-        )
-        note.save()
-        return HttpResponseRedirect(reverse('scoping:screen', kwargs={
-            'qid': qid,
-            'tid': tid,
-            'ctype': ctype,
-            'd': d
-        }))
+
 
 
 #########################################################
@@ -4227,6 +4699,9 @@ def highlight_words(s,query):
         qwords = [item for sublist in qwords for item in sublist]
         if "sustainability" in query.title:
             qwords = ["sustainab"]
+        if "MANUAL" in query.text:
+            qwords = re.findall('\w+',query.text)
+            qwords = [q.lower() for q in qwords if q !="Manual"]
     else:
         qwords = re.findall('\w+',query.text)
         qwords = [q.lower() for q in qwords]
@@ -4418,3 +4893,164 @@ def highlight_statement(pid, debug=False):
         print("  "+curpar+"\n\n")
         print("< Exiting highlight_statement")
     return(curpar)
+
+
+
+@login_required
+def meta_setup(request,pid):
+    ### Return a list of dicts to set up the field tables
+    def get_flist(fields,project):
+        fs = []
+        for f in list(fields):
+            ft = f.get_internal_type()
+            if ft not in ['AutoField','ForeignKey']:
+                if ft=='IntegerField':
+                    choices = None
+                    form = None
+                else:
+                    choices = ProjectChoice.objects.filter(
+                        project=p,
+                        field=f.name
+                    )
+                    form = FieldChoiceForm(
+                        initial = {
+                            'project':p.id,
+                            'field':f.name
+                        }
+                    )
+                fs.append({
+                    'name': f.name,
+                    'type': ft,
+                    'choices': choices,
+                    'form': form
+                })
+        return fs
+
+    p = Project.objects.get(pk=pid)
+
+    # handle new choice form
+    if request.method=="POST":
+        if "field" in request.POST:
+            f = FieldChoiceForm(request.POST)
+            if f.is_valid():
+                c, created = ProjectChoice.objects.get_or_create(
+                    project=p,
+                    field=f.data['field'],
+                    name=f.data['name']
+                )
+                print(f.data)
+        elif "interventiontype" in request.POST:
+            f = InterventionSubtypeForm(request.POST)
+            if f.is_valid():
+                c, created = InterventionSubType.objects.get_or_create(
+                    project=p,
+                    interventiontype_id=f.data['interventiontype'],
+                    name=f.data['name']
+                )
+        elif "controls" in request.POST:
+            f = ControlsForm(request.POST)
+            if f.is_valid():
+                c, created = Controls.objects.get_or_create(
+                    project=p,
+                    name=f.data['name']
+                )
+        elif "unit" in request.POST:
+            f = PopCharForm(request.POST)
+            if f.is_valid():
+                pc, created = PopCharField.objects.get_or_create(
+                    project=p,
+                    name=f.data['name']
+                )
+                pc.unit = f.data['unit']
+                if "numeric" in f.data:
+                    pc.numeric = True
+                else:
+                    pc.numeric = False
+                pc.save()
+        elif "exclusion" in request.POST:
+            f = ExclusionForm(request.POST)
+            if f.is_valid():
+                ec, created = ExclusionCriteria.objects.get_or_create(
+                    project=p,
+                    name=f.data['name']
+                )
+        else:
+            f = InterventionForm(request.POST)
+            if f.is_valid():
+                c, created = InterventionType.objects.get_or_create(
+                    project=p,
+                    name=f.data['name']
+                )
+
+
+    sfields = []
+    sfields = get_flist(StudyEffect._meta.fields, p)
+    ifields = get_flist(Intervention._meta.fields, p)
+
+    doc_counts = {
+        'assignments': OrderedDict({}),
+        'codings': OrderedDict({})
+    }
+
+    all_docs = Doc.objects.filter(
+        docproject__project=p,docproject__relevant=1
+    )
+    all_codings = DocMetaCoding.objects.filter(
+        project=p
+    )
+    for key,value in [('assignments',False),('codings',True)]:
+        acs = all_codings
+        if key=="assignments":
+            nobody="To nobody"
+            one="To one person"
+            many = "To many"
+        else:
+            nobody = "By nobody"
+            one = "By one person"
+            many = "By many"
+
+        if value:
+            acs = all_codings.filter(coded=value)
+        done = len(set(acs.values_list('doc_id',flat=True)))
+        doc_counts[key][nobody] = all_docs.count()-done
+        if doc_counts[key][nobody] < 0:
+            doc_counts[key][nobody] = 0
+        acds = acs.values('doc__id').annotate(
+            doc_count=Count('doc__id')
+        )
+        doc_counts[key][one] = acds.filter(doc_count=1).count()
+        doc_counts[key][many] = acds.filter(doc_count__gt=1).count()
+        #doc_counts[key]['n docs'] = all_docs.count()
+
+    #doc_counts['assignments']
+
+    intervention_types = InterventionType.objects.filter(project=p)
+    interventiontype_form = InterventionForm()
+
+    intervention_subtypes = InterventionSubType.objects.filter(project=p)
+    interventionsubtype_form = InterventionSubtypeForm()
+
+    controls = Controls.objects.filter(project=p)
+    controls_form = ControlsForm()
+    popchars = PopCharField.objects.filter(project=p)
+    popchars_form = PopCharForm()
+    ecs = ExclusionCriteria.objects.filter(project=p)
+    ec_form = ExclusionForm()
+
+    context = {
+        'project': p,
+        'sfields': sfields,
+        'ifields': ifields,
+        'doc_counts': doc_counts,
+        'interventiontype_form': interventiontype_form,
+        'intervention_types': intervention_types,
+        'interventionsubtype_form': interventionsubtype_form,
+        'intervention_subtypes': intervention_subtypes,
+        'controls': controls,
+        'controls_form': controls_form,
+        'popchars': popchars,
+        'popchars_form': popchars_form,
+        'ecs': ecs,
+        'ec_form': ec_form
+    }
+    return render(request, 'scoping/meta_setup.html',context)

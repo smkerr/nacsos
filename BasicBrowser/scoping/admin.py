@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import *
 
 # Register your models here.
-admin.site.register(Technology)
+admin.site.register(Category)
 admin.site.register(SnowballingSession)
 admin.site.register(Query)
 admin.site.register(Doc)

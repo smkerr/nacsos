@@ -1,25 +1,47 @@
-{% extends "scoping/base.html" %}
+{% extends "scoping/base_bs.html" %}
 
 {% load render_table from django_tables2 %}
-
+{% load bootstrap4 %}
 {% block content %}
 
-{% ifequal admin "true" %}
+
 
 <h1> Scoping Review Helper</h1>
+<hr>
+<h2> Project Homepage - {{project.title}}</h2>
 <br>
-<h2> Homepage </h2>
-<br>
 
 
+<div class="row">
+    <div class="col-sm bg-white border rounded m-2 p-2">
+        <h3> Queries</h3>
+        View/manage <a href="{% url 'scoping:queries' project.id%}">Queries</a> for project
+    </div>
+    <div class="col-sm bg-white border rounded m-2 p-2">
+        <h3>Topic Models</h3>
+         View <a href="{% url 'tmv_app:runs' project.id%}">Topic Models</a>
+            for project: {{ project.title }}
+    </div>
 
-<div class="explanation">
-    <h3> View <a href="{% url 'scoping:queries' project.id%}">Queries</a> for project: {{ project.title }} </h3>
-    <h3> View <a href="{% url 'tmv_app:runs' project.id%}">Topic Models</a>
-        for project: {{ project.title }} </h3>
+    <div class="col-sm bg-white border rounded m-2 p-2">
+        <h3>Documents</h3>
+        {{ project.reldocs }} out of {{ project.docs }} documents are relevant. {{project.mixed_docs}} have mixed reviews. {{project.unrated_docs}} have never been rated.
+    </div>
+</div>
+<p>
 
-    <h3> Edit user roles for project {{ project.title }} </h3>
-<table>
+
+    <div class="container bg-white border rounded m-4 p-2">
+        <h3>Meta-analysis</h3>
+        Set up choices for meta-analysis form fields <a href="{% url 'scoping:meta_setup' project.id %}" >>></a>
+    </div>
+
+
+{% ifequal admin "true" %}
+<div class="container">
+<h3> Users</h3>
+Edit user roles for the project
+<table class="table">
 {% for u in projectUsers %}
     <tr>
     <td>
@@ -34,17 +56,17 @@
 {% endfor %}
 </table>
 
-<h3> Add new users to the project </h3>
-<form method="POST" class="post-form">{% csrf_token %}
-{{ newRole.as_p }}
-<button type="submit" class="save btn btn-default">Save</button>
+<h4>Add new users to the project</h4>
+<form method="POST" class="form post-form">{% csrf_token %}
+    {% bootstrap_form newRole  layout='horizontal' %}
+    {% bootstrap_button 'Save' %}
 </form>
 
 <h3>Delete this project?</h3><span class="buttonp" id="delete">-</span>
 
 <form id="deleteForm" class="{{delete}}" method="POST" class="post-form">
     {% csrf_token %}
-{{ deleteForm.as_p }}
+    {{ deleteForm.as_p }}
 <button type="submit" class="save btn btn-default">Delete</button>
 </form>
 

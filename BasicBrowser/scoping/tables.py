@@ -9,14 +9,31 @@ import django_filters
 
 #from .urls import urlpatterns
 
+class DocTable(tables.Table):
+    class Meta:
+        model = Doc
+
+class CodingTable(tables.Table):
+    doc = tables.LinkColumn(
+        'scoping:code_document', args=[A('pk')],
+        accessor='doc.title'
+    ) # link column
+    finish_time = tables.Column()
+    coded = tables.Column()
+    class Meta:
+        template_name = 'django_tables2/bootstrap.html'
+        attrs = {'class': 'table'}
 
 class ProjectTable(tables.Table):
     id = tables.LinkColumn('scoping:project', args=[A('pk')])
     queries = tables.LinkColumn('scoping:queries', args=[A('pk')])
     tms = tables.LinkColumn('tmv_app:runs', args=[A('pk')])
+    role = tables.Column()
     class Meta:
         model = Project
-        fields = ('id','title','description','role','queries','docs','tms')
+        fields = ('id','title','description','queries','docs','tms')
+        template_name = 'django_tables2/bootstrap.html'
+        attrs = {'class': 'table'}
 
 class FloatColumn(tables.Column):
     # def __init__(self, **kwargs):

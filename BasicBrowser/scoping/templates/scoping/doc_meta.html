@@ -1,0 +1,203 @@
+{% extends "scoping/base_bs.html" %}
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% load static %}
+
+{% block content %}
+
+<p>
+<h2> Code document
+    {% if exclusions %}
+    - NOT RELEVANT
+    {% endif %}
+</h2>
+{% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+
+<hr>
+
+<!-- Notes -->
+
+<p>
+    <h3>Notes</h3>
+<div class="container">
+    <div class="row">
+        <div class="col-md-3 border rounded bg-white my-3 mx-2 p-2">
+            Add a note to this paragraph
+            <hr>
+            <form action="{% url 'scoping:add_note' %}" method="post">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.path }}">
+              <input type="hidden" name="docn" value="{{doc.id}}"></input>
+              <input type="hidden" name="project" value="{{project.id}}"></input>
+            <textarea class="form-control" name="note" rows=3></textarea>
+            <br>
+            <p>
+            <button type="submit" class="btn btn-primary">Add note</button>
+            </form>
+        </div>
+        {% for note in notes %}
+        <div class="col-md-3 border rounded bg-white my-3 mx-2 p-2 note">
+          <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
+          <hr>
+          {{note.text}}
+          <hr>
+          <a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
+          </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<hr>
+
+<!-- Exclusion -->
+
+<h3>Exclusion</h3>
+<div class="container">
+<div class="row">
+    <div class="col-md-3 border rounded bg-white my-3 mx-2 p-2">
+        <form action="{% url 'scoping:exclude' dmc.id  %}" method="post" class="form">
+        {% csrf_token %}
+        <div class="form-group" data-name="reason">
+        <select
+            {% if ecs %}
+                name="reason"
+                class="form-control"
+            {% else %}
+                class="form-control hidden"
+            {% endif %}
+            id="reason"
+        >
+            {% for o in ecs %}
+                <option value="{{o.name}}">{{o.name}}</option>
+            {% endfor %}
+        </select>
+        <input
+        {% if ecs %}
+            class="form-control hidden"
+        {% else %}
+            name = "reason"
+            class="form-control"
+        {% endif %}
+            type="text"
+            class="form-control"
+            id="{{reason}}" ></input>
+        {% if ecs %}
+            <button type="button" class="btn other">Other</button>
+        {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary">Exclude document</button>
+        </form>
+    </div>
+    {% for e in exclusions %}
+    <div class="col-md-3 border rounded bg-danger my-3 mx-2 p-2">
+        <p class="notedesc"><b>{{e.date}}, {{e.user.username}} excluded</b>
+        <hr>
+        {{e.reason}}
+        <hr>
+        <a href="{% url 'scoping:delete' thing='Exclusion' thingid=e.pk %}">Delete
+        </a>
+    </div>
+    {% endfor %}
+</div>
+</div>
+
+<hr>
+<!-- Interventions and effects -->
+
+<div class="container m-3">
+  <div class="row">
+    <div class="col-sm">
+        <h4>Effects</h4>
+        {% if effects %}
+            {% for f in effects %}
+                <div class="col-sm bg-white border rounded m-2 p-2 flex" id="eff_{{f.id}}">
+                    <div><a href="{% url 'scoping:add_effect' dmc.id f.id 1 %}">Effect</a> - {{f.coefficient}} -
+                    copy this <a href="{% url 'scoping:add_effect' dmc.id f.id %}"><span class="buttonp" id="reveal_new">v</span></a> <a class="confirmation" href="{% url 'scoping:delete' 'StudyEffect' f.id %}">x</a></div>
+                    <div>Add an intervention <a href="{% url 'scoping:add_intervention' f.id %}"<span class="buttonp" id="reveal_new">-></span></a></div>
+                </div>
+            {% endfor %}
+        {% else %}
+        <p>No effects are recorded for this study
+        {% endif %}
+        <p>Add one <a href="{% url 'scoping:add_effect' dmc.id %}"><span class="buttonp" id="reveal_new">+</span></a>
+    </div>
+    <div class="col-sm">
+        <h4>Interventions</h4>
+        {% if interventions %}
+            {% for f in interventions %}
+                <div class="col-sm bg-white border rounded m-2 p-2" id="int_{{f.id}}">
+                    <a href="{% url 'scoping:add_intervention' f.effect.id f.id 1 %}">{{f}}</a>
+                    <a class="confirmation" href="{% url 'scoping:delete' 'Intervention' f.id %}">x</a>
+
+                </div>
+            {% endfor %}
+        {% else %}
+        <p>No effects are recorded for this study
+        {% endif %}
+    </div>
+  </div>
+</div>
+
+<hr>
+<p>
+<h3>Done coding?</h3>
+</p>
+<div class="container">
+    <div class="row">
+        {% for d in dests %}
+        <div class="col">
+            <a href="{% url 'scoping:save_document_code' dmc.id d.0 %}">
+            <button class="btn btn-primary" type="button">
+                {{d.1}}
+            </button>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'scoping/js/jquery_connections.js' %}"></script>
+<script src="{% static 'scoping/js/forms.js' %}"></script>
+<script>
+  $(window).on('resize',function() {
+      $('connection').remove()
+      data = {{connections | safe}}
+      console.log(data)
+      $.each(data, function(index, value) {
+          console.log(value)
+          jQuery('#eff_'+value.effect_id).connections({ to: '#int_'+value.id });
+      });
+
+      $('.confirmation').on('click', function () {
+           return confirm('Are you sure you want to delete this?');
+       });
+  });
+  $(document).ready(function() {
+      $(window).trigger('resize')
+  });
+</script>
+<script>
+  $(window).on('resize',function() {
+      $('connection').remove()
+      data = {{connections | safe}}
+      console.log(data)
+      $.each(data, function(index, value) {
+          console.log(value)
+          jQuery('#eff_'+value.effect_id).connections({ to: '#int_'+value.id });
+      });
+
+      $('.confirmation').on('click', function () {
+           return confirm('Are you sure you want to delete this?');
+       });
+  });
+  $(document).ready(function() {
+      $(window).trigger('resize')
+  });
+</script>
+
+
+{% endblock %}

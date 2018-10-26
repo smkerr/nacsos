@@ -202,7 +202,11 @@ class DocTopic(models.Model):
     scaled_score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
 
-
+class DocDynamicTopic(models.Model):
+    doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.CASCADE)
+    topic = models.ForeignKey('DynamicTopic',null=True, on_delete=models.CASCADE)
+    score = models.FloatField()
+    run_id = models.IntegerField(db_index=True)
 
 class TopicTerm(models.Model):
     topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
@@ -255,6 +259,8 @@ class RunStats(models.Model):
     limit = models.IntegerField(null=True, default=0, help_text='Limit model to first x documents (leave as zero for no limit)')
     ngram = models.IntegerField(null=True, default=1, help_text='Length of feature n_gram')
     db = models.BooleanField(default=True, help_text='Record the results into the database? Or just run the model and record statistics?')
+
+    fancy_tokenization = models.BooleanField(default=False, help_text='tokenize so that multiple word keywords remain whole')
 
     K = models.IntegerField(null=True, help_text='Number of topics')
     alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter')
@@ -312,7 +318,7 @@ class RunStats(models.Model):
     method = models.CharField(
         max_length=2,
         choices=METHOD_CHOICES,
-        default=LDA,
+        default=NMF,
     )
     error = models.FloatField(null=True, default = 0)
     coherence = models.FloatField(null=True)

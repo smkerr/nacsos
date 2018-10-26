@@ -1,0 +1,30 @@
+{% load bootstrap4 %}
+
+<table class="table">
+    <tr>
+        <th>Field Name</th>
+        <th>Choices</th>
+        <th>Add new choice</th>
+    </tr>
+    {% for sf in fields %}
+        <tr>
+            <td>{{sf.name}}</td>
+            <td class="extra-high">
+                {% if sf.choices == None %}
+                    {{sf.type}}
+                {% else %}
+                    {% for c in sf.choices %}
+                        <a href="{% url 'scoping:delete' 'ProjectChoice' c.id %}"><span class="border rounded bg-white p-2">{{c.name}}</span></a>
+                    {% endfor %}
+                {% endif %}
+            </td>
+            <td>
+                {% if sf.form %}
+                <form method="POST" class="form-inline">{% csrf_token %}
+                    {% bootstrap_form  sf.form layout='inline' %}
+                    {% bootstrap_button 'Save' %}
+                </form>
+                {% endif %}
+            </td>
+    {% endfor %}
+</table>

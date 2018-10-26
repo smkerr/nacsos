@@ -20,20 +20,20 @@
           <td>{{ query.title }}</td>
           <td class="ltext">{{ query.text }}</td>
           <td>{{ query.date }}</td>
-          {% if query.r_count > 0 %}
+          {% if query.r_count is not None %}
             <td><a href="{% url 'scoping:doclist' project.id query.id %}">{{ query.r_count }}</a></td>
           {% else %}
             <td><a href="{% url 'scoping:querying' query.id %}">View progress</a></td>
           {% endif %}
           <td>
             <select class="qtag" data-thing="Technology" data-query="{{query.id}}" autocomplete="off">
-              {% if not query.technology %}
-              <option selected value="None">{{query.technology}}</option>
+              {% if not query.category %}
+              <option selected value="None">{{query.category}}</option>
               {% else %}
               <option value="None">None</option>
               {% endif %}
               {% for t in techs %}
-                  {% if t == query.technology %}
+                  {% if t == query.category %}
                   <option selected value={{t.id}}>{{t.name}}</option>
                   {% else %}
                   <option value={{t.id}}>{{t.name}}</option>
@@ -60,7 +60,7 @@
   </td>
       {% endif %} -->
       <td><a href="{% url 'scoping:delete' 'Query' query.id %}">
-          <button onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button>
+          <button class="btn" onclick="return confirm('Are you sure you would like to delete this query?');">Delete</button>
       </a></td>
   </tr>
 

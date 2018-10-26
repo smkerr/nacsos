@@ -1,2 +1,8 @@
 *.pyc
 *.httr-oauth
+twitter.json
+*bootstrap4
+*crispy_forms
+*django_filters
+*lotto
+

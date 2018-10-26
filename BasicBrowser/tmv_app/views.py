@@ -223,8 +223,10 @@ def return_corrs(request):
 
 def growth_heatmap(request, run_id):
     template = loader.get_template('tmv_app/growth_heatmap.html')
+    stat = RunStats.objects.get(pk=run_id)
     context = {
-        'run_id': run_id
+        'run_id': run_id,
+        'stat': stat
     }
     return HttpResponse(template.render(context, request))
 
@@ -583,6 +585,7 @@ def topic_detail(request, topic_id, run_id=0):
         'corrtops': corrtops,
         'dtops': dtops,
         'run_id': run_id,
+        'stat': stat,
         'journals': journals,
         'ndocs': ndocs
         }
@@ -1002,7 +1005,7 @@ def doc_detail(request, doc_id, run_id):
         'doc_authors': doc_authors,
         'words': words,
         'run_id': run_id,
-
+        'stat': stat,
         'dt_threshold': dt_threshold,
         'ipccrefs': ipccrefs,
         'de': de,
@@ -1038,7 +1041,8 @@ def print_table(request,run_id):
         t.terms = "; ".join(termlist)
         t.mtd = t.score/tsum['tsum']*100
 
-    writer = csv.writer(response)
+    writer = csv.writer(response,delimiter=',')
+    writer.writerow(['sep=,'])
 
     writer.writerow(["Topic ID","Topic Name","Stemmed Keywords","Marginal Topic Distribution"])
 
@@ -1095,6 +1099,7 @@ def topic_list_detail(request):
 ### Main page!
 def topic_presence_detail(request,run_id):
     stat = RunStats.objects.get(run_id=run_id)
+    template = loader.get_template('tmv_app/topic_presence.html')
     if stat.get_method_display() == 'hlda':
         return(topic_presence_hlda(request))
 
@@ -1104,36 +1109,41 @@ def topic_presence_detail(request,run_id):
     if stat.method == "BD":
         update_bdtopics(run_id)
 
-
-    run_id = int(run_id)
-
-    update_topic_titles(run_id)
-    update_topic_scores(run_id)
-
-
-    response = ''
-
-    get_year_filter(request)
-
-    presence_template = loader.get_template('tmv_app/topic_presence.html')
-    if stat.method=="DT":
-        topics = DynamicTopic.objects.filter(run_id=run_id).order_by('-score')
-    else:
-        topics = Topic.objects.filter(run_id=run_id).order_by('-score')
-    max_score = topics[0].score
-
-    topic_tuples = []
-    for topic in topics:
-        s = topic.score
-        topic_tuples.append((topic, topic.score, topic.score/max_score*100))
-
-    presence_page_context = {
+    context = {
         'run_id': run_id,
-        'topic_tuples': topic_tuples,
-        'stat': stat
+        'stat': stat,
+        'project': stat.query.project,
+        'user': request.user
     }
 
-    return HttpResponse(presence_template.render(presence_page_context))
+    if stat.status==3:
+        run_id = int(run_id)
+
+        update_topic_titles(run_id)
+        update_topic_scores(run_id)
+
+
+        response = ''
+
+        get_year_filter(request)
+
+
+        if stat.method=="DT":
+            topics = DynamicTopic.objects.filter(run_id=run_id).order_by('-score')
+        else:
+            topics = Topic.objects.filter(run_id=run_id).order_by('-score')
+        max_score = topics[0].score
+
+        topic_tuples = []
+        for topic in topics:
+            s = topic.score
+            topic_tuples.append((topic, topic.score, topic.score/max_score*100))
+
+        context['topic_tuples'] = topic_tuples
+    else:
+        context['unfinished'] = True 
+
+    return HttpResponse(template.render(context))
 
 def dtm_home(request, run_id):
     template = loader.get_template('tmv_app/dtm_home.html')
