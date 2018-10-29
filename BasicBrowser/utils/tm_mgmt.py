@@ -421,11 +421,12 @@ def normalise_tdts(run_id):
         tptdts = tdts.filter(period=tp['period'])
         try:
             n = abs(tp['av_growth'])
+            tptdts.update(
+                pgrowthn = F('pgrowth') / n
+            )
         except:
             pass
-        tptdts.update(
-            pgrowthn = F('pgrowth') / n
-        )
+
 
 
 def update_ipcc_coverage(run_id):

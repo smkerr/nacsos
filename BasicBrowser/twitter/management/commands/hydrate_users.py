@@ -44,6 +44,10 @@ class Command(BaseCommand):
                         for f in sdata:
                             if sdata[f] != "none":
                                 try:
+                                    if f=="in_reply_to_user_id":
+                                        new_user, created = User.objects.get_or_create(
+                                            id=sdata[f]
+                                        )
                                     if f=="in_reply_to_status_id":
                                         ns, created = Status.objects.get_or_create(
                                             id=sdata[f]
