@@ -7,7 +7,7 @@ from django.db.models import Q, Count, Func, F, Sum, Value as V
 from django.db.models.functions import Concat
 from django.core import serializers
 from django.core.serializers import serialize
-import django_short_url
+import short_url
 import datetime
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.core.exceptions import ValidationError
