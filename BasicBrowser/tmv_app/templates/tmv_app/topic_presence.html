@@ -9,7 +9,14 @@
 <h1>Topic browser</h1>
 <br>
 <h2>Relative presence of topics in all documents</h2>
-<h3>Run no. {{run_id}} on query: <a href="{% url 'scoping:query' stat.query.id %}">{{stat.query}}</a>
+<h3>Run no. {{run_id}} on query:
+  {% if stat.query %}
+    <a href="{% url 'scoping:query' stat.query.id %}">{{stat.query}}</a>
+  {% elif stat.psearch %}
+    <a href="{% url 'parliament:search-home' stat.psearch.id %}">{{stat.psearch}}</a>
+  {% else %}Query
+    None
+  {% endif %}
 <hr noshade>
 </div>
 <div id="graph">

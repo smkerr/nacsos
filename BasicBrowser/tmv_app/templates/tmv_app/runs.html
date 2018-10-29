@@ -8,7 +8,7 @@
 
 <h1 id="header">
     <table><tr>
-        <td id="title">Online LDA Runs</td>
+        <td id="title">Online Topic Model Runs</td>
     </tr></table>
 
     <hr noshade>
@@ -21,7 +21,7 @@
 		<tr>
 			<th>Run id</th>
       <th>Method</th>
-      <th>Query ID</th>
+      <th>Query/Search ID</th>
 			<th>Started</th>
 			<th>Topics</th>
 			<th>Documents</th>
@@ -32,6 +32,7 @@
       <th>Alpha</th>
 			<th>Iterations</th>
       <th>Duration</th>
+      <th>Status</th>
       <th>Actions</th>
       <th>Notes</th>
     </tr>
@@ -42,6 +43,8 @@
       <td>{{ stat.get_method_display }}</td>
       {% if stat.query_id %}
         <td><a href="{% url 'scoping:doclist' stat.query.project_id stat.query_id %}">{{ stat.query.id }}</a></td>
+      {% elif stat.psearch %}
+          <td><a href="{% url 'parliament:search-home' stat.psearch.id %}">{{ stat.psearch.title }} ({{stat.psearch.id}})</a></td>
       {% else %}
       <td>None</td>
       {% endif %}
@@ -59,6 +62,7 @@
             <td>{{ stat.alpha }}</td>
 			<td>{{ stat.iterations }}</td>
       <td>{{ stat.start|timesince:stat.last_update}}</td>
+      <td>{{ stat.get_status_display}}</td>
       <td><button onclick="window.location.href='{% url 'tmv_app:delete_run' stat.run_id %}';event.stopImmediatePropagation();">Delete</button></td>
 
       <td>

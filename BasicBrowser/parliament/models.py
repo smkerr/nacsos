@@ -23,6 +23,8 @@ class ParlPeriod(models.Model):
     parliament = models.ForeignKey(Parl, on_delete=models.CASCADE)
     n = models.IntegerField()
     years = ArrayField(models.IntegerField(),null=True)
+    start_date = models.DateField(null=True)
+    end_date = models.DateField(null=True)
     total_seats = models.IntegerField(null=True)
 
     def __str__(self):
@@ -44,12 +46,10 @@ class Person(models.Model):
     FEMALE = 1
     MALE = 2
 
-
     GENDERS = (
         (FEMALE,'Female'),
         (MALE, 'Male'),
     )
-
 
     #### Names
     surname = models.TextField()
@@ -66,12 +66,16 @@ class Person(models.Model):
 
     ## Parliamentary periods
     in_parlperiod = ArrayField(models.IntegerField(), null=True)
+    active_country = models.ForeignKey(cities.models.Country,on_delete=models.CASCADE, related_name='person_active',
+                                           null=True,verbose_name="Country in which the person is active in politics")
+    positions = ArrayField(models.TextField(), null=True)
 
     ## Bio
     dob = models.DateField(null=True)
     year_of_birth = models.IntegerField(null=True)
     place_of_birth = models.TextField(null=True)
-    country_of_birth = models.ForeignKey(cities.models.Country, on_delete=models.CASCADE,null=True)
+    country_of_birth = models.ForeignKey(cities.models.Country, on_delete=models.CASCADE,
+                                         related_name='person_birth', null=True)
     date_of_death = models.DateField(null=True)
 
     gender = models.IntegerField(null=True,choices=GENDERS)
@@ -80,10 +84,44 @@ class Person(models.Model):
     occupation = models.TextField(null=True)
     short_bio = models.TextField(null=True)
 
-    party = models.ForeignKey(Party, on_delete=models.CASCADE ,null=True)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
+
+    information_source = models.TextField(default="")
 
     def __str__(self):
-        return self.clean_name
+        if self.clean_name:
+            return self.clean_name
+        else:
+            return "{} {}".format(self.first_name, self.surname)
+
+    def save(self, *args, **kwargs):
+        if not self.id and not self.alt_surnames:
+            surnames_list = self.surname.split(" ")
+            if len(surnames_list) > 1:
+                self.alt_surnames = [self.surname, surnames_list[-1]]
+            else:
+                self.alt_surnames = [self.surname]
+
+        if not self.id and not self.alt_first_names:
+            firstnames_list = self.first_name.split(" ")
+            if len(firstnames_list) > 1:
+                self.alt_first_names = [self.first_name] + firstnames_list
+            else:
+                self.alt_first_names = [self.first_name]
+
+        if not self.id and not self.clean_name:
+            self.clean_name = "{} {}".format(self.first_name, self.surname).strip()
+            if self.title:
+                self.clean_name = self.title + " " + self.clean_name
+            if self.ortszusatz:
+                self.clean_name = self.clean_name + " ({})".format(self.ortszusatz)
+
+        super(Person, self).save(*args, **kwargs)
+
+class SpeakerRole(models.Model):
+    name = models.TextField()
+    alt_names = ArrayField(models.TextField(), null=True)
+
 
 ##################################
 ## Texts
@@ -95,13 +133,17 @@ class Document(models.Model):
     #parl_period = models.IntegerField(null=True)
     search_matches = models.ManyToManyField('Search')
     doc_type = models.TextField()
+    text_source = models.TextField(default="")
+    creation_date = models.DateTimeField(auto_now_add=True,verbose_name="Date of entry creation")
 
     def __str__(self):
-        return "{} - {} , {}".format(self.date, self.doc_type,self.parlperiod.n)
+        return "{}, {}/{}, {}".format(self.doc_type, self.parlperiod.n, self.sitting, self.date)
 
 class Utterance(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE)
     speaker = models.ForeignKey(Person, on_delete=models.CASCADE)
+    speaker_role = models.ForeignKey(SpeakerRole, null=True, on_delete=models.SET_NULL)
+    search_matches = models.ManyToManyField('Search')
 
 class Paragraph(models.Model):
     utterance = models.ForeignKey(Utterance, on_delete=models.CASCADE)
@@ -121,6 +163,7 @@ class Interjection(models.Model):
     AMUSEMENT = 4
     LAUGHTER = 5
     OUTCRY = 6
+    OTHER = 7
 
 
     REACTION_CHOICES = (
@@ -129,7 +172,8 @@ class Interjection(models.Model):
         (OBJECTION, 'Objection'),
         (AMUSEMENT, 'Amusement'),
         (LAUGHTER, 'Laughter'),
-        (OUTCRY, 'Outcry')
+        (OUTCRY, 'Outcry'),
+        (OTHER, 'Other')
     )
     paragraph = models.ForeignKey(Paragraph, on_delete=models.CASCADE)
     parties = models.ManyToManyField(Party)
@@ -141,8 +185,10 @@ class Interjection(models.Model):
         APPLAUSE:'em-clap',
         SPEECH:'em-speech_balloon',
         OBJECTION:'em-raised_hand_with_fingers_splayed',
-        AMUSEMENT:'em-laughing',
-        OUTCRY: ''
+        AMUSEMENT:'em-grinning',
+        LAUGHTER:'em-laughing',
+        OUTCRY: '',
+        OTHER: ''
     }
     @property
     def emoji(self):
@@ -251,6 +297,11 @@ class Search(models.Model):
     text = models.TextField()
     party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
     speaker_regions = models.ManyToManyField(cities.models.Region)
+    start_date = models.DateField(null=True,verbose_name="Earliest date for search")
+    stop_date = models.DateField(null=True,verbose_name="Latest date for search")
+    document_source = models.TextField(null=True, verbose_name="Regex for text_source field of document")
+
+    creation_date = models.DateTimeField(auto_now_add=True,verbose_name="Date of Search creation")
     creator = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -259,5 +310,13 @@ class Search(models.Model):
         #related_name="user_creations",
         #reverse_n
     )
-    par_count=models.IntegerField(default=0,verbose_name="Paragraphs")
+    par_count=models.IntegerField(null=True,verbose_name="Number of paragraph objects")
+    utterance_count=models.IntegerField(null=True,verbose_name="Number of utterance objects")
 
+    PARAGRAPH = 1
+    UTTERANCE = 2
+
+    OBJECT_TYPES = ((PARAGRAPH,'Paragraph'),
+                    (UTTERANCE, 'Utterance'))
+
+    search_object_type = models.IntegerField(choices=OBJECT_TYPES, default=PARAGRAPH)

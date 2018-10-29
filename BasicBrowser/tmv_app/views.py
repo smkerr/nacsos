@@ -401,19 +401,36 @@ def dynamic_topic_detail(request,topic_id):
         t.score = round(score,2)
 
     docs = DocTopic.objects.filter(
-        #topic__primary_dtopic=topic,
-        #run_id=run_id,
-        topic__topicdtopic__dynamictopic=topic,
-        topic__topicdtopic__score__gt=0.05,
-        score__gt=0.05#,
-        #doc__ipccref__isnull=False
-    )
+            #topic__primary_dtopic=topic,
+            #run_id=run_id,
+            topic__topicdtopic__dynamictopic=topic,
+            topic__topicdtopic__score__gt=0.05,
+            score__gt=0.05#,
+            #doc__ipccref__isnull=False
+        )
 
-    docs = docs.annotate(
-        topic_combination = F('score') * F('topic__topicdtopic__score')
-    ).order_by('-topic_combination')[:50].values(
-        'doc__pk','doc__PY','doc__title','topic_combination'
-    )
+    if stat.query:
+
+        docs = docs.annotate(
+            topic_combination = F('score') * F('topic__topicdtopic__score')
+        ).order_by('-topic_combination')[:50].values(
+            'doc__pk','doc__PY','doc__title','topic_combination'
+        )
+    elif stat.psearch:
+        if stat.psearch.search_object_type == 1: # paragraph
+            docs = docs.annotate(
+                topic_combination = F('score') * F('topic__topicdtopic__score')
+            ).order_by('-topic_combination')[:50].values(
+                'par__utterance__pk','par__utterance__document__parlperiod__n','par__utterance__speaker','topic_combination'
+            )
+        elif stat.psearch.search_object_type == 2: # utterance
+            docs = docs.annotate(
+                topic_combination = F('score') * F('topic__topicdtopic__score')
+            ).order_by('-topic_combination')[:50].values(
+                'ut__pk','ut__document__parlperiod__n','ut__speaker','topic_combination'
+            )
+    else:
+        docs = None
 
     dtopics = Topic.objects.filter(
         run_id=run_id,
@@ -436,9 +453,12 @@ def dynamic_topic_detail(request,topic_id):
         sum = Sum('score'),
     )
 
-
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = None
     context = {
-        'project': stat.query.project,
+        'project': project,
         'stat': stat,
         'run_id': run_id,
         'topic': topic,
@@ -511,7 +531,7 @@ def topic_detail(request, topic_id, run_id=0):
         ).order_by('-doctopic__scaled_score')[:50]
     else:
         doctopics = Doc.objects.filter(
-            doctopic__topic=topic,doctopic__run_id=run_id
+            doctopic__topic=topic, doctopic__run_id=run_id
         ).order_by('-doctopic__score')[:50]
 
     ndocs = Doc.objects.filter(
@@ -1056,10 +1076,15 @@ def topic_presence_detail(request,run_id):
     if stat.method == "BD":
         update_bdtopics(run_id)
 
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = None
+
     context = {
         'run_id': run_id,
         'stat': stat,
-        'project': stat.query.project,
+        'project': project,
         'user': request.user
     }
 
@@ -1122,7 +1147,6 @@ def dtm_home(request, run_id):
         dtopic__run_id=run_id,
         share__isnull=False
     ).values('period__n','dtopic__id','dtopic__title','score','share'))
-
 
     context = {
         'run_id': run_id,
@@ -1286,9 +1310,12 @@ def update_run(request, run_id):
 def delete_run(request,new_run_id):
     stat = RunStats.objects.get(run_id=new_run_id)
 
-    p = stat.query.project
-    if p is not None:
-        pid = p.id
+    if stat.query:
+        p = stat.query.project
+        if p is not None:
+            pid = p.id
+        else:
+            pid = 0
     else:
         pid = 0
 

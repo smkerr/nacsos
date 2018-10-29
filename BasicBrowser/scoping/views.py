@@ -7,7 +7,7 @@ from django.db.models import Q, Count, Func, F, Sum, Value as V
 from django.db.models.functions import Concat
 from django.core import serializers
 from django.core.serializers import serialize
-import short_url
+import django_short_url
 import datetime
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.core.exceptions import ValidationError
@@ -2447,7 +2447,7 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                         url, created = URLs.objects.get_or_create(
                             url=ndf.cleaned_data['url']
                         )
-                    surl = short_url.encode_url(url.id)
+                    surl = django_short_url.encode_url(url.id)
                     ut, created = UT.objects.get_or_create(UT=surl)
                     if created and did is not 0:
                         doc = Doc.objects.get(pk=did)

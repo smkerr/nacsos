@@ -71,7 +71,7 @@ def docset_to_corpus(docset):
     shutil.rmtree()
 
 
-def proc_texts(docs, stoplist, fulltext=False):
+def process_texts(docs):
     docs = [x for x in docs.iterator()]
     docsizes = [len(x.text) for x in docs]
     ids = [x.pk for x in docs]

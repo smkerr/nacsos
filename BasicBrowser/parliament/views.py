@@ -123,6 +123,26 @@ def document(request,did,page=1):
 
     return HttpResponse(template.render(context, request))
 
+@login_required
+def utterance(request, ut_id):
+    template = loader.get_template('parliament/utterance.html')
+
+    uts = Utterance.objects.filter(id=ut_id)
+
+    context = {
+        'uts': uts.prefetch_related(
+            'paragraph_set',
+            'paragraph_set__interjection_set',
+            'speaker',
+            'paragraph_set__interjection_set__persons',
+            'paragraph_set__interjection_set__parties',
+        ),
+        'document': uts.first().document,
+        'ut_id': ut_id
+    }
+
+    return HttpResponse(template.render(context, request))
+
 
 # list of all searches
 @login_required
