@@ -26,12 +26,21 @@ class Command(BaseCommand):
         stat.topic_titles_current = False
         stat.topic_year_scores_current = False
         stat.topic_scores_current = False
-        stat.docs_seen = DocTopic.objects.filter(
-            run_id=parent_run_id
-        ).values('doc_id').order_by().distinct().count()
+        if stat.query:
+            stat.docs_seen = DocTopic.objects.filter(
+                run_id=parent_run_id
+            ).values('doc_id').order_by().distinct().count()
+        elif stat.psearch.search_object_type == 1:  # paragraphs
+            stat.docs_seen = DocTopic.objects.filter(
+                run_id=parent_run_id
+            ).values('par_id').order_by().distinct().count()
+        elif stat.psearch.search_object_type == 2:  # utterances
+            stat.docs_seen = DocTopic.objects.filter(
+                run_id=parent_run_id
+            ).values('ut_id').order_by().distinct().count()
+        else:
+            print("Did not calculate number of docs/paragraphs/utterances")
         stat.save()
-
-
 
         if stat.method == "DT":
             tops = Topic.objects.filter(run_id=parent_run_id)
@@ -44,11 +53,12 @@ class Command(BaseCommand):
                     t.primary_dtopic.add(tpt)
                     t.save()
                 except:
+                    print("Could not assign dynamic topic to topic object")
                     pass
 
             update_topic_scores(parent_run_id)
+            # fmh: not working, therefore disabled
             update_dtopics(run_id)
-
 
             pstat = RunStats.objects.get(run_id=parent_run_id)
             pstat.topic_titles_current = False

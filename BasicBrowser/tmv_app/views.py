@@ -27,18 +27,6 @@ opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 
 global run_id
 
-def find_run_id(request):
-    try:
-        run_id = request['run_id']
-    except:
-        settings = Settings.objects.all().first()
-        run_id = settings.run_id
-        try:
-            request['run_id'] = run_id
-        except:
-            pass
-    return(int(run_id))
-
 def get_year_filter(request):
     try:
         y1 = request.session['y1']
@@ -60,9 +48,11 @@ DEBUG_TOOLBAR_CONFIG = {
 def author_detail(request, author_name, run_id):
     response = author_name
 
+    stat = RunStats.objects.get(pk=run_id)
+
     documents = Doc.objects.filter(docauthinst__AU=author_name).distinct()
 
-    dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
+    dt_threshold = stat.dt_threshold
 
     topics = DocTopic.objects.filter(
         doc__docauthinst__AU=author_name,
@@ -411,19 +401,36 @@ def dynamic_topic_detail(request,topic_id):
         t.score = round(score,2)
 
     docs = DocTopic.objects.filter(
-        #topic__primary_dtopic=topic,
-        #run_id=run_id,
-        topic__topicdtopic__dynamictopic=topic,
-        topic__topicdtopic__score__gt=0.05,
-        score__gt=0.05#,
-        #doc__ipccref__isnull=False
-    )
+            #topic__primary_dtopic=topic,
+            #run_id=run_id,
+            topic__topicdtopic__dynamictopic=topic,
+            topic__topicdtopic__score__gt=0.05,
+            score__gt=0.05#,
+            #doc__ipccref__isnull=False
+        )
 
-    docs = docs.annotate(
-        topic_combination = F('score') * F('topic__topicdtopic__score')
-    ).order_by('-topic_combination')[:50].values(
-        'doc__pk','doc__PY','doc__title','topic_combination'
-    )
+    if stat.query:
+
+        docs = docs.annotate(
+            topic_combination = F('score') * F('topic__topicdtopic__score')
+        ).order_by('-topic_combination')[:50].values(
+            'doc__pk','doc__PY','doc__title','topic_combination'
+        )
+    elif stat.psearch:
+        if stat.psearch.search_object_type == 1: # paragraph
+            docs = docs.annotate(
+                topic_combination = F('score') * F('topic__topicdtopic__score')
+            ).order_by('-topic_combination')[:50].values(
+                'par__utterance__pk','par__utterance__document__parlperiod__n','par__utterance__speaker','topic_combination'
+            )
+        elif stat.psearch.search_object_type == 2: # utterance
+            docs = docs.annotate(
+                topic_combination = F('score') * F('topic__topicdtopic__score')
+            ).order_by('-topic_combination')[:50].values(
+                'ut__pk','ut__document__parlperiod__n','ut__speaker','topic_combination'
+            )
+    else:
+        docs = None
 
     dtopics = Topic.objects.filter(
         run_id=run_id,
@@ -446,9 +453,12 @@ def dynamic_topic_detail(request,topic_id):
         sum = Sum('score'),
     )
 
-
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = None
     context = {
-        'project': stat.query.project,
+        'project': project,
         'stat': stat,
         'run_id': run_id,
         'topic': topic,
@@ -515,19 +525,19 @@ def topic_detail(request, topic_id, run_id=0):
         topicterm__score__gt=0.00001
     ).order_by('-topicterm__score')[:50]
 
-    if Settings.objects.first().doc_topic_scaled_score==True:
+    if stat.doc_topic_scaled_score==True:
         doctopics = Doc.objects.filter(
             doctopic__topic=topic,doctopic__run_id=run_id
         ).order_by('-doctopic__scaled_score')[:50]
     else:
         doctopics = Doc.objects.filter(
-            doctopic__topic=topic,doctopic__run_id=run_id
+            doctopic__topic=topic, doctopic__run_id=run_id
         ).order_by('-doctopic__score')[:50]
 
     ndocs = Doc.objects.filter(
         doctopic__topic=topic,
         doctopic__run_id=run_id,
-        doctopic__score__gt=stat.dthreshold
+        doctopic__score__gt=stat.dt_threshold
     ).count()
 
     doctopics = doctopics.values('PY','title','pk','doctopic__score')
@@ -571,7 +581,7 @@ def topic_detail(request, topic_id, run_id=0):
     journals = JournalAbbrev.objects.filter(
         doc__doctopic__topic=topic,
         doc__journal__isnull=False,
-        doc__doctopic__score__gt=stat.dthreshold
+        doc__doctopic__score__gt=stat.dt_threshold
     ).values('fulltext').annotate(
         t = Count('doc__doctopic__score')
     ).order_by('-t')[:10]
@@ -600,8 +610,8 @@ def get_topic_docs(request,topic_id):
 
     stat = RunStats.objects.get(run_id=run_id)
 
-    dt_threshold = stat.dthreshold
-    dt_thresh_scaled = Settings.objects.get(id=1).doc_topic_scaled_score
+    dt_threshold = stat.dt_threshold
+    dt_thresh_scaled = stat.doc_topic_scaled_score
     if stat.method=="BD":
         dt_threshold=dt_threshold*100
 
@@ -938,11 +948,11 @@ def doc_detail(request, doc_id, run_id):
 
     topics = []
     pie_array = []
-    dt_threshold = Settings.objects.get(id=1).doc_topic_score_threshold
-    dt_thresh_scaled = Settings.objects.get(id=1).doc_topic_scaled_score
-    if stat.dthreshold is not None:
-        dt_threshold = stat.dthreshold
-        #dt_thresh_scaled = stat.dthreshold
+    dt_threshold = stat.dt_threshold
+    dt_thresh_scaled = stat.dt_threshold_scaled
+    if stat.dt_threshold is not None:
+        dt_threshold = stat.dt_threshold
+        #dt_thresh_scaled = stat.dt_threshold
 
 
     if stat.method=="BD":
@@ -1052,49 +1062,6 @@ def print_table(request,run_id):
 
     return response
 
-def topic_list_detail(request):
-    run_id = find_run_id(request.session)
-    update_topic_titles()
-    response = ''
-
-    template_file = open(TEMPLATE_DIR + 'topic_list.html', 'r')
-    list_template = Template(template_file.read())
-
-    topics = Topic.objects.all()
-
-    terms = []
-    for t in topics:
-        topicterms = TopicTerm.objects.filter(topic=t.topic).order_by('-score')[:5]
-        temp =[]
-        term_count = 5
-        for tt in topicterms:
-            temp.append(Term.objects.get(term=tt.term))
-            term_count -= 1
-        for i in range(term_count):
-            temp.append(None)
-        terms.append(temp)
-
-    div_topics = []
-    div_terms = []
-    rows = []
-    n = 3
-    for i in xrange(0, len(topics), n):
-        temp = []
-        for j in range(5):
-            K = min(len(topics), i+n)
-            t = [terms[k][j] for k in range(i,K,1)]
-            while len(t) < n:
-                t.append(None)
-            temp.append(t)
-        tops = topics[i:i+n]
-        while len(tops) < n:
-            tops.append(None)
-        rows.append((tops, temp))
-
-    list_page_context = {'rows': rows}
-
-    return HttpResponse(list_template.render(list_page_context))
-
 #################################################################
 ### Main page!
 def topic_presence_detail(request,run_id):
@@ -1109,10 +1076,15 @@ def topic_presence_detail(request,run_id):
     if stat.method == "BD":
         update_bdtopics(run_id)
 
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = None
+
     context = {
         'run_id': run_id,
         'stat': stat,
-        'project': stat.query.project,
+        'project': project,
         'user': request.user
     }
 
@@ -1141,7 +1113,7 @@ def topic_presence_detail(request,run_id):
 
         context['topic_tuples'] = topic_tuples
     else:
-        context['unfinished'] = True 
+        context['unfinished'] = True
 
     return HttpResponse(template.render(context))
 
@@ -1175,7 +1147,6 @@ def dtm_home(request, run_id):
         dtopic__run_id=run_id,
         share__isnull=False
     ).values('period__n','dtopic__id','dtopic__title','score','share'))
-
 
     context = {
         'run_id': run_id,
@@ -1265,17 +1236,18 @@ def stats(request,run_id):
 
     template = loader.get_template('tmv_app/stats.html')
 
-    stats = RunStats.objects.get(run_id=run_id)
+    stat = RunStats.objects.get(run_id=run_id)
 
     docs_seen = DocTopic.objects.filter(run_id=run_id).values('doc_id').order_by().distinct().count()
 
-    stats.docs_seen = docs_seen
-    stats.num_docs = stats.query.doc_set.count()
+    stat.docs_seen = docs_seen
+    stat.num_docs = stat.query.doc_set.count()
 
-    stats.save()
+    stat.save()
 
     context = {
-        'stats': stats,
+        'run_id': run_id,
+        'stat': stat,
         'num_topics': Topic.objects.filter(run_id=run_id).count(),
         'num_terms': Term.objects.filter(run_id=run_id).count(),
     }
@@ -1321,42 +1293,6 @@ def runs(request,pid=0):
 
     return HttpResponse(template.render(context, request))
 
-class SettingsForm(ModelForm):
-    class Meta:
-        model = Settings
-        fields = '__all__'
-
-def queries(request):
-
-    return HttpResponse("bla")
-
-def settings(request):
-    run_id = find_run_id(request)
-
-    settings_template = loader.get_template('tmv_app/settings.html')
-
-    settings_page_context = {
-        'settings': Settings.objects.get(id=1)
-    }
-
-    return HttpResponse(settings_template.render(settings_page_context,request))
-    #return render_to_response('settings.html', settings_page_context, context_instance=RequestContext(request))
-
-def apply_settings(request):
-    settings = Settings.objects.get(id=1)
-    form = SettingsForm(request.POST, instance=settings)
-    #TODO: add in checks for threshold (make sure it's a float)
-    settings.doc_topic_score_threshold = float(request.POST['doc_topic_score_threshold'])
-    try:
-        scaled = request.POST['doc_topic_scaled_score']
-        scaled = True
-    except:
-        scaled = False
-    settings.doc_topic_scaled_score = scaled
-    settings.save()
-
-    return HttpResponseRedirect(reverse('tmv_app:topics'))
-
 from django.urls import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
@@ -1371,20 +1307,15 @@ def update_run(request, run_id):
 
     return HttpResponseRedirect(reverse('tmv_app:runs'))
 
-def apply_run_filter(request,new_run_id):
-#    settings = Settings.objects.get(id=1)
-#    settings.run_id = new_run_id
-#    settings.save()
-    request.session['run_id'] = new_run_id
-
-    return HttpResponseRedirect('/tmv_app/runs')
-
 def delete_run(request,new_run_id):
     stat = RunStats.objects.get(run_id=new_run_id)
 
-    p = stat.query.project
-    if p is not None:
-        pid = p.id
+    if stat.query:
+        p = stat.query.project
+        if p is not None:
+            pid = p.id
+        else:
+            pid = 0
     else:
         pid = 0
 
@@ -1399,12 +1330,7 @@ def delete_run(request,new_run_id):
     ht.delete()
     DynamicTopic.objects.filter(run_id=new_run_id).delete()
 
-
-
     return HttpResponseRedirect(reverse('tmv_app:runs', kwargs={'pid': pid}))
-
-
-
 
 
 

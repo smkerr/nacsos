@@ -1,17 +1,34 @@
 <table class="light" id="doc_table">
 <tr class="title">
-  <td>PY</td>
-  <td>Title</td>
+  <td>time</td>
+  <td>Title/Doc ID</td>
   <td>Topic Score</td>
 </tr>
     {% if docs %}
       {% for doc in docs %}
-      <tr id="{{ doc.title }}" class="list">
-            <td>{{ doc.doc__PY }}</td>
-            <td><a href="{% url 'tmv_app:doc_detail' doc.doc__pk topic.run_id.pk %}">
-              {{ doc.doc__title }}</a></td>
-            <td>{{doc.topic_combination|floatformat:4}}</td>
-        <tr>
+          <tr id="{{ doc.title }}" class="list">
+                {% if doc.doc__PY %}
+                    <td>{{ doc.doc__PY }}</td>
+                {% elif doc.ut__document__parlperiod__n %}
+                    <td>{{ doc.ut__document__parlperiod__n }}</td>
+                {% else %}
+                    <td> None </td>
+                {% endif %}
+
+                {% if doc.doc__pk %}
+                        <td><a href="{% url 'tmv_app:doc_detail' doc.doc__pk topic.run_id.pk %}">
+                        {{ doc.doc__title }}</a></td>
+                {% elif doc.ut__document__parlperiod__n %}
+                        <td>
+                        <a href="{% url 'parliament:utterance' doc.ut__pk %}">
+                        {{ doc.ut__pk }}</a>
+                        </td>
+                {% else %}
+                <td> None </td>
+                {% endif %}
+
+                <td>{{doc.topic_combination|floatformat:4}}</td>
+            <tr>
       {% endfor %}
     {% endif %}
 </table>

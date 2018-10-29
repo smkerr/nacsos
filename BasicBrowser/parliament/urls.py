@@ -27,5 +27,6 @@ urlpatterns = [
     url(r'^party/(?P<tid>[0-9]+)/$', views.party, name='party'),
 
     url(r'^document/(?P<did>[0-9]+)/$', views.document, name='document'),
+    url(r'^utterance/(?P<ut_id>[0-9]+)/$', views.utterance, name='utterance'),
 
 ]

@@ -33,6 +33,7 @@ django-extensions==1.8.1
 django-filter==2.0.0
 django-model-utils==3.0.0
 django-tables2==1.10.0
+djangolotto==0.1
 docutils==0.14
 EasyProcess==0.2.3
 et-xmlfile==1.0.1
