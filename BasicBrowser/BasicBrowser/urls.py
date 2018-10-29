@@ -13,7 +13,7 @@ urlpatterns = [
     url(r'^parliament/', include('parliament.urls')),
     url(r'^admin/', admin.site.urls),
 	url(r'^$', site_views.index),
- 	url(r'^accounts/login/$', auth_views.LoginView, {'template_name': 'scoping/login.html'}),
+ 	path('accounts/login/', auth_views.LoginView.as_view(), {'template_name': 'scoping/login.html'}),
  	url(r'^accounts/logout/$', views.logout_view, name='logout_view'),
 ]
 

@@ -181,13 +181,20 @@ class TagForm(forms.ModelForm):
 
 class TopicModelForm(forms.ModelForm):
     METHOD_CHOICES = (
-        ('LD', 'lda'),
         ('NM','nmf'),
+        ('LD', 'lda'),
 
     )
     method = forms.ChoiceField(widget=forms.Select,choices=METHOD_CHOICES)
     class Meta:
         model = (RunStats)
+        fields = (
+            'min_freq','max_df','max_features','limit',
+            'ngram','fulltext','citations',
+            'fancy_tokenization',
+            'K','alpha','max_iterations','db',
+            'method'
+        )
         exclude = (
             'topic',
             'dynamictopic',

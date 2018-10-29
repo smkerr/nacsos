@@ -30,27 +30,19 @@ urlpatterns = [
     url(r'^doc/(?P<doc_id>.+)/(?P<run_id>\d+)$', login_required(doc_detail), name="doc_detail"),
     url(r'^author/(?P<author_name>.+)/(?P<run_id>\d+)$', login_required(author_detail), name="author_detail"),
     url(r'^institution/(?P<run_id>\d+)/(?P<institution_name>.+)/$', login_required(institution_detail)),
-    url(r'^topic_list$', login_required(topic_list_detail)),
     # Home page
     url(r'^topic_presence/(?P<run_id>\d+)$', login_required(topic_presence_detail),name="topics"),
 
     url(r'^topics_time/(?P<run_id>\d+)/(?P<stype>\d+)$', login_required(topics_time),name="topics_time"),
 
     url(r'^stats/(?P<run_id>\d+)$', login_required(stats), name="stats"),
-    url(r'^settings$', login_required(settings)),
-    url(r'^settings/apply$', login_required(apply_settings)),
 
     url(r'^runs$', login_required(runs), name='runs'),
     url(r'^runs/(?P<pid>\d+)/$', login_required(runs), name='runs'),
 
-
-    url(r'^queries$', login_required(queries), name='queries'),
-
     url(r'^adjust_threshold/(?P<run_id>\d+)/(?P<what>.+)$', login_required(adjust_threshold), name='adjust_threshold'),
 
     url(r'^update/(?P<run_id>\d+)$', login_required(update_run), name='update'),
-    url(r'^runs/apply/(?P<new_run_id>\d+)$', login_required(apply_run_filter)),
-
     url(r'^runs/delete/(?P<new_run_id>\d+)$', login_required(delete_run), name='delete_run'),
 
     url(r'^topic/random$', login_required(topic_random)),
