@@ -245,10 +245,16 @@ def project(request, pid):
     queries = Query.objects.filter(
         project=p
     )
-    if queries.count() == 0:
+    if not queries.exists() == 0:
         queries = Query.objects.all()
 
-    query = queries.last()
+    if queries.exists():
+        query = queries.last()
+        qid = query.id
+    else:
+        query = None
+        qid = None
+
     p.mixed_docs = p.docproject_set.filter(relevant=3).count()
     p.unrated_docs = p.docproject_set.filter(relevant=0).count()
 
@@ -261,7 +267,7 @@ def project(request, pid):
         'project': p,
         'projectUsers': projUsers,
         'query': query,
-        'qid': query.id
+        'qid': qid
     }
 
     return HttpResponse(template.render(context, request))

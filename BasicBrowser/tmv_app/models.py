@@ -360,7 +360,9 @@ class RunStats(models.Model):
     term_count = models.IntegerField(null=True)
     periods = models.ManyToManyField('TimePeriod')
 
-    dthreshold = models.FloatField(default = 0.0005 )
+    doc_topic_scaled_score = models.BooleanField(default=False)
+    dt_threshold = models.FloatField(default = 0.0005 )
+    dt_threshold_scaled = models.FloatField( default = 0.01)
     dyn_win_threshold = models.FloatField(default = 0.1 )
 
     def save(self, *args, **kwargs):
