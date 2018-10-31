@@ -75,7 +75,8 @@ class SearchTable(tables.Table):
 
 # class to generate model table
 class ModelsTable(tables.Table):
-    run_id = tables.LinkColumn('parliament:model-home', args=[A('pk')])
+    #run_id = tables.LinkColumn('parliament:model-home', args=[A('pk')])
+    run_id = tables.LinkColumn('tmv_app:topics', args=[A('pk')])
 
     class Meta:
         model = models.RunStats
