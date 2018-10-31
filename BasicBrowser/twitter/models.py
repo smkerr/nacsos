@@ -111,3 +111,5 @@ class TwitterSearch(models.Model):
 
     string = models.TextField()
     scrape_fetched = models.DateTimeField(u'Fetched', null=True, blank=True)
+    until = models.DateTimeField(null=True)
+    since = models.DateTimeField(null=True)

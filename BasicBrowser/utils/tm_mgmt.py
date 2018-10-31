@@ -448,16 +448,14 @@ def normalise_tdts(run_id):
         tptdts = tdts.filter(period=tp['period'])
         try:
             n = abs(tp['av_growth'])
-            if n > 0:
-                tptdts.update(
-                    pgrowthn=F('pgrowth') / n
-                )
-            else:
-                tptdts.update(
-                    pgrowthn=0
-                )
+            tptdts.update(
+                pgrowthn = F('pgrowth') / n
+            )
         except:
-            print("Did not find tp['av_growth']")
+            tptdts.update(
+                pgrowthn=0
+            )
+
 
 
 def update_ipcc_coverage(run_id):

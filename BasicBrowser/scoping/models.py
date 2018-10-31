@@ -1098,6 +1098,9 @@ class WoSArticle(models.Model):
         primary_key=True,
         verbose_name='Document ID'
     )
+
+    ts = models.TextField(null=True, verbose_name="Title Abstract Keyword")
+
     pt = models.CharField(null=True, max_length=50, verbose_name="Publication Type") # pub type
     ti = models.TextField(null=True, verbose_name="Title")
     ab = models.TextField(null=True, verbose_name="Abstract")

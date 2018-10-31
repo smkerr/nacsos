@@ -420,25 +420,28 @@ and {} topics\n'.format(qid, docs.count(),K))
 
         kws = Doc.objects.filter(
             query=stat.query,
-            kw__text__iregex='\W'
+            kw__text__iregex='\w+[\-\ ]'
         ).values('kw__text').annotate(
             n = Count('pk')
         ).filter(n__gt=len(abstracts)//200).order_by('-n')
 
-        kw_text = set([x['kw__text'] for x in kws])
-        kw_ws = set([x['kw__text'].split()[0] for x in kws]) - stopwords
+        kw_text = set([x['kw__text'].replace('-',' ') for x in kws])
+        kw_ws = set([x['kw__text'].replace('-',' ').split()[0] for x in kws]) - stopwords
 
         def fancy_tokenize(X):
 
-            common_words = set(X.split()) & kw_ws
+            common_words = set([x.lower() for x in X.split()]) & kw_ws
             for w in list(common_words):
+                w = w.replace('(','').replace(')','')
                 wpat = "({}\W*\w*)".format(w)
-                wn = re.findall(wpat, X)
+                wn = [x.lower().replace('-',' ') for x in re.findall(wpat, X, re.IGNORECASE)]
                 kw_matches = set(wn) & kw_text
                 if len(kw_matches) > 0:
                     for m in kw_matches:
-                        yield m.replace(' ','-')
-                        X = X.replace(m," ")
+                        print(m)
+                        insensitive_m = re.compile(m, re.IGNORECASE)
+                        X = insensitive_m.sub(' ', X)
+                        yield m.replace(" ","-")
 
             for sent in sent_tokenize(X):
                 for token, tag in pos_tag(wordpunct_tokenize(sent)):
