@@ -256,7 +256,7 @@ def update_dtopics(run_id):
 
         if stats.periods.count() == 0:
             ys = RunStats.objects.get(
-                pk=stats.parent_run_id
+                pk=parent_run_id
             ).topic_set.distinct(
                 'year'
             ).order_by('year').values_list('year',flat=True)
