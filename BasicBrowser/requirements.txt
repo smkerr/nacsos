@@ -3,7 +3,7 @@ adjustText==0.7.3
 alembic==0.9.6
 amqp==2.2.2
 aiohttp==3.4.4
-aiohttp_socks==0.2
+https://files.pythonhosted.org/packages/30/27/5358f5897196269353318ac4fbcb187b0b9cf37c16af408cecfe22dfc67e/aiohttp_socks-0.2-py3-none-any.whl
 astor==0.7.1
 backports-abc==0.5
 banal==0.3.3
@@ -26,7 +26,6 @@ dataset==1.0.3
 decorator==4.1.2
 dill==0.2.7.1
 Django==2.1.2
-django-bootstrap3==10.0.1
 django-bootstrap4==0.0.6
 django-cities==0.5.0.6
 django-crispy-forms==1.7.2
@@ -35,7 +34,7 @@ django-extensions==1.8.1
 django-filter==2.0.0
 django-model-utils==3.0.0
 django-tables2==1.10.0
-djangolotto==0.1
+djangolotto==0.1.1
 docutils==0.14
 EasyProcess==0.2.3
 et-xmlfile==1.0.1
@@ -95,6 +94,7 @@ pyzmq==17.0.0
 redis==2.10.5
 regex==2017.4.5
 requests==2.18.4
+git+https://github.com/mcallaghan/RISparser
 rpy2==2.9.2
 s3transfer==0.1.12
 scikit-learn==0.19.1
@@ -109,9 +109,7 @@ sklearn==0.0
 smart-open==1.5.6
 SQLAlchemy==1.1.15
 sqlparse==0.2.3
-statsmodels==0.8.0
 swapper==1.1.0
-tensorboard==1.10.0
 termcolor==1.1.0
 toolz==0.8.2
 tornado==4.5.2
