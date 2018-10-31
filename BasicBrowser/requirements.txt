@@ -2,6 +2,8 @@ absl-py==0.4.0
 adjustText==0.7.3
 alembic==0.9.6
 amqp==2.2.2
+aiohttp==3.4.4
+aiohttp_socks==0.2
 astor==0.7.1
 backports-abc==0.5
 banal==0.3.3
@@ -17,7 +19,7 @@ celery==4.1.0
 certifi==2017.11.5
 cffi==1.11.5
 chardet==3.0.4
-chromedriver-installer==0.0.6
+chromedriver-installer==0.0.6 --install-option="--chromedriver-version=2.38"
 cycler==0.10.0
 cymem==1.31.2
 dataset==1.0.3
@@ -69,7 +71,7 @@ nltk==3.2.4
 normality==0.5.11
 numpy==1.14.2
 openpyxl==2.5.4
-pandas==0.22.0
+pandas==0.23.4
 parse==1.8.2
 pathlib==1.0.1
 patsy==0.4.1

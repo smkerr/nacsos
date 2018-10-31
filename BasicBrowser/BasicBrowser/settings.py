@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'twitter',
     'parliament',
     'django_tables2',
-    #'lotto',
+    'lotto',
     'django_filters',
     'bootstrap4',
     'crispy_forms',

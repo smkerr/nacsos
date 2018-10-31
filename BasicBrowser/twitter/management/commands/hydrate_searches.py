@@ -5,13 +5,15 @@ import csv
 import twint
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import django
 from django.utils import timezone
 import time
 
 class Command(BaseCommand):
     help = 'redoes searches'
+    def add_arguments(self, parser):
+        parser.add_argument('weeks', type=int)
 
     def handle(self, *args, **options):
 
@@ -23,8 +25,12 @@ class Command(BaseCommand):
                         id=tweet['user_id']
                     )
                     if created:
-                        user.screen_name=tweet['username']
-                        user.save()
+                        try:
+                            user.screen_name=tweet['username']
+                            user.save()
+                        except:
+                            print(tweet)
+                            break
                     status, created = Status.objects.get_or_create(
                         id=tweet['id']
                     )
@@ -39,24 +45,36 @@ class Command(BaseCommand):
                         t = django.utils.timezone.make_aware(t)
                         status.author=user
                         status.created_at=t
-                        status.favourites_count = tweet['likes']
-                        status.retweets_count = tweet['retweets']
+                        status.favourites_count = tweet['likes_count']
+                        status.retweets_count = tweet['retweets_count']
                         status.place = tweet['location']
                         status.text = tweet['tweet']
                         status.save()
 
 
-        for ts in TwitterSearch.objects.all():
-            try:
-                os.remove("twitter.json")
-            except:
-                pass
-            c = twint.Config()
-            c.Search = ts.string
-            c.Store_json = True
-            c.Output = "twitter.json"
-            twint.run.Search(c)
+        now = datetime.now() + timedelta(days=1)
+        for i in range(options['weeks']):
+            now = now - timedelta(days=7*i)
+            then = now - timedelta(days=8)
+            print(now.strftime("%Y-%m-%d"))
+            print(then.strftime("%Y-%m-%d"))
+            for ts in TwitterSearch.objects.all():
+                try:
+                    os.remove("twitter.json")
+                except:
+                    pass
+                c = twint.Config()
+                c.Search = ts.string
+                c.Since = then.strftime("%Y-%m-%d")
+                c.Until = now.strftime("%Y-%m-%d")
+                c.Store_json = True
+                c.Output = "twitter.json"
+                twint.run.Search(c)
 
-            parse_tjson(tsearch)
-            tsearch.scrape_fetched=now
-            tsearch.save()
+                parse_tjson(ts)
+                ts.scrape_fetched=now
+                if ts.since is None or ts.since > django.utils.timezone.make_aware(then):
+                    ts.since = then
+                if ts.until is None or ts.until < django.utils.timezone.make_aware(now):
+                    ts.until = now
+                ts.save()
