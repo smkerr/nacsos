@@ -8,19 +8,3 @@ class Migration(migrations.Migration):
     dependencies = [
         ('twitter', '0005_status_retweeted_by'),
     ]
-
-    operations = [
-        migrations.CreateModel(
-            name='TwitterSearch',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('string', models.TextField()),
-                ('scrape_fetched', models.DateTimeField(blank=True, null=True, verbose_name='Fetched')),
-            ],
-        ),
-        migrations.AddField(
-            model_name='status',
-            name='searches',
-            field=models.ManyToManyField(to='twitter.TwitterSearch'),
-        ),
-    ]

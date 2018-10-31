@@ -8,16 +8,3 @@ class Migration(migrations.Migration):
     dependencies = [
         ('twitter', '0006_auto_20180917_0920'),
     ]
-
-    operations = [
-        migrations.AddField(
-            model_name='twittersearch',
-            name='since',
-            field=models.DateTimeField(null=True),
-        ),
-        migrations.AddField(
-            model_name='twittersearch',
-            name='until',
-            field=models.DateTimeField(null=True),
-        ),
-    ]

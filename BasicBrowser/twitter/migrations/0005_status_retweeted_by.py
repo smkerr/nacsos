@@ -8,11 +8,3 @@ class Migration(migrations.Migration):
     dependencies = [
         ('twitter', '0004_auto_20180913_1659'),
     ]
-
-    operations = [
-        migrations.AddField(
-            model_name='status',
-            name='retweeted_by',
-            field=models.ManyToManyField(to='twitter.User'),
-        ),
-    ]
