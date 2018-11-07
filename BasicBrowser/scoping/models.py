@@ -281,6 +281,13 @@ class ProjectRoles(models.Model):
     def __str__(self):
       return self.role
 
+class Duplicate(models.Model):
+    original = models.ForeignKey('Doc', on_delete=models.CASCADE, related_name='duplicate')
+    copy = models.ForeignKey('Doc', on_delete = models.CASCADE, related_name='duplicated_by')
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+
 class DocProject(models.Model):
 
     UNRATED = 0
@@ -642,6 +649,7 @@ class Doc(models.Model):
     query = models.ManyToManyField('Query')
     tag = models.ManyToManyField('Tag')
     title = models.TextField(null=True)
+    alternative_titles = ArrayField(models.TextField(), null=True)
     tilength = models.IntegerField(null=True)
     content = models.TextField(null=True)
     fulltext = models.TextField(null=True)
@@ -696,24 +704,42 @@ class Doc(models.Model):
     def shingle(self):
         return set(s for s in ngrams(self.title.lower().split(),2))
 
+    def find_duplicates(self,ids,j_thresh,limit_y=False):
+        comparison_docs = Doc.objects.filter(id__in=ids)
+        if limit_y:
+            comparison_docs = comparison_docs.filter(PY=self.PY)
+        for d in comparison_docs:
+            j = utils.jaccard(self.shingle(),d.shingle())
+            if j > j_thresh:
+                return (d,j)
+        return (False, 0)
+
+    def reassign_doc(self, doc):
+        '''When there's a duplicate, merge all info and put the doc into an archive '''
+
+        return
+
     def highlight_fields(self,q,fields):
-        if q.__class__ == scoping.models.Project:
-            qs = q.query_set.exclude(database="intern")
-        elif q.queries.exists():
-            qs = []
-            for q1 in q.queries.all():
-                if q1.queries.exists():
-                    for q2 in q1.queries.all():
-                        if q2.queries.exists():
-                            for q3 in q2.queries.all():
-                                qs.append(q3)
-                        else:
-                            qs.append(q2)
-                else:
-                    qs.append(q1)
+        if q is not None:
+            if q.__class__ == scoping.models.Project:
+                qs = q.query_set.exclude(database="intern")
+            elif q.queries.exists():
+                qs = []
+                for q1 in q.queries.all():
+                    if q1.queries.exists():
+                        for q2 in q1.queries.all():
+                            if q2.queries.exists():
+                                for q3 in q2.queries.all():
+                                    qs.append(q3)
+                            else:
+                                qs.append(q2)
+                    else:
+                        qs.append(q1)
+            else:
+                qs = [q]
+            words = utils.get_query_words(qs)
         else:
-            qs = [q]
-        words = utils.get_query_words(qs)
+            words = set()
         d = {}
         for f in fields:
             doc = self
@@ -738,7 +764,9 @@ class Doc(models.Model):
 
 
         return d
-
+    def delete(self, *args, **kwargs):
+        self.UT.delete()
+        return super(self.__class__, self).delete(*args, **kwargs)
 
 class DocSection(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)

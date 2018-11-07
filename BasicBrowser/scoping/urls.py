@@ -32,6 +32,12 @@ urlpatterns = [
     url(r'^create_query/(?P<pid>[0-9]+)$', views.create_query, name='create_query'),
 
     path('project/<int:pid>/query/add/', login_required(views.QueryCreate.as_view()),name="query_create"),
+    path('duplicates/<int:pid>', views.manage_duplicates, name="manage_duplicates"),
+
+
+    path('find_duplicates/<int:pid>', views.find_duplicates, name="find_duplicates"),
+    path('doc_info/<int:did>/<int:did2>', views.doc_info, name="doc_info"),
+    path('doc_merge/<int:pid>/<int:d1>/<int:d2>', views.doc_merge, name="doc_merge"),
 
     ### Paragraph stuff
     path('paragraphs/<int:qid>', views.par_manager, name="par_manager"),
@@ -53,6 +59,7 @@ urlpatterns = [
     path('add-intervention/<int:effectid>',views.add_intervention,name='add_intervention'),
     path('add-intervention/<int:effectid>/<int:iid>',views.add_intervention,name='add_intervention'),
     path('add-intervention/<int:effectid>/<int:iid>/<int:i_edit>',views.add_intervention,name='add_intervention'),
+
 
     url(r'^snowball$', views.snowball, name='snowball'),
     #### Query processing

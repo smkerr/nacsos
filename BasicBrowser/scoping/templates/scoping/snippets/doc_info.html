@@ -1,11 +1,15 @@
 <div id="docbox">
+
+  {% if merge %}
+    <button class="mergebutton" data-keep="{{merge.keep}}" data-throw="{{merge.throw}}">Merge and keep this copy</button>
+  {% endif %}
 <h4> {{ doc.title | safe }}</h4>
 <p>{{ doc.wosarticle__so | safe}}
     {% if doc.wosarticle__py %}
         ({{ doc.wosarticle__py }})
     {% endif %}
     {% if doc.wosarticle__di %}
-    <a target="_blank" href="http://dx.doi.org/{{ doc.wosarticle.di }}">{{ doc.wosarticle__di | safe}}</a>
+    <a target="_blank" href="http://dx.doi.org/{{ doc.wosarticle__di | safe }}">{{ doc.wosarticle__di | safe}}</a>
     {% endif %}
 <p style="text-align:left">
 {% for au in doc.authors %}

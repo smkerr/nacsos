@@ -365,7 +365,6 @@ def find_with_id(r):
         docs = scoping.models.Doc.objects.filter(UT__sid=r['UT']) | scoping.models.Doc.objects.filter(UT__UT=r['UT'])
         if docs.count()==1: # If it's just there - great!
             doc = docs.first()
-            print("found!")
         elif docs.count() > 1:
             print("OH no! multiple matches!")
     return doc
@@ -389,6 +388,8 @@ def add_scopus_doc(r,q,update):
     except:
         if 'UT' not in r:
             r['UT'] = str(uuid.uuid1())
+        else:
+            print(r['UT'])
         r['url'] = r['UT']
         r['UT'] = None
 
@@ -415,13 +416,19 @@ def add_scopus_doc(r,q,update):
                     wosarticle__ti__iexact=get(r,'ti'),
                     PY=get(r,'py')
             )
+            if not docs.exists() and get(r,'au') is not None:
+                print(get(r,'au')[0].split(',')[0])
+                docs = scoping.models.Doc.objects.filter(
+                    wosarticle__ti__iexact=get(r,'ti'),
+                    docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
+                ).distinct('pk')
+                print(docs)
         else:
             docs = scoping.models.Doc.objects.filter(
                 wosarticle__di=did
             )
 
         if len(docs)==1:
-            print("found it through stage 2")
             docs.first().query.add(q)
             doc = docs.first()
         elif len(docs)>1: # if there are two, that's bad!
@@ -507,20 +514,25 @@ def add_scopus_doc(r,q,update):
             doc.save()
 
             for field in r:
-                f = field.lower()
                 try:
-                    article.f = r[field]
-                    setattr(article,f,r[field])
-                    #article.save()
-                    #print(r[field])
+                    f = article._meta.get_field(field.lower())
+                    if f.max_length is None or f.max_length > len(r[field]):
+                        if f.get_internal_type() != 'ArrayField' and type(r[field]) == list:
+                            setattr(article,f.name,'; '.join(r[field]))
+                        else:
+                            setattr(article,f.name,r[field])
                 except:
-                    print(field)
-                    print(r[field])
+                    # Field in data but not in model
+                    pass
+                    #print(field)
+                    #print(r[field])
+
 
             try:
                 article.save()
 
             except:
+                article.save()
                 pass
 
 
@@ -580,7 +592,7 @@ RIS_KEY_MAPPING = {
     'CN': 'call_number',
     'CY': 'pi',
     'DA': 'pd',
-    'DB': 'datanase',
+    'DB': 'database',
     'DO': 'di',
     'DP': 'database_provider',
     'EP': 'ep',
@@ -592,14 +604,14 @@ RIS_KEY_MAPPING = {
     'JA': 'alternate_title2',
     'JF': 'alternate_title3',
     'JO': 'so',
-    'KW': 'kwp',
+    'KW': 'de',
     'L1': 'file_attachments1',
     'L2': 'file_attachments2',
     'L4': 'figure',
     'LA': 'la',
     'LB': 'label',
     'M1': 'note',
-    'M3': 'type_of_work',
+    'M3': 'pt',
     'N1': 'notes',
     'N2': 'ab',
     'NV': 'number_of_Volumes',
@@ -624,7 +636,13 @@ RIS_KEY_MAPPING = {
     'UR': 'UT',
     'VL': 'vl',
     'Y1': 'py',
-    'Y2': 'access_date'
+    'Y2': 'access_date',
+    'References': 'cr',
+    'Funding details': 'fu',
+    'Funding text': 'fx',
+    'Correspondence Address': 'em',
+    'Cited By ': 'tc',
+    'Cited By': 'tc'
  }
 
 RIS_TY_MAPPING = {
@@ -649,6 +667,7 @@ def read_ris(q, update):
         try:
             for e in entries:
                 add_scopus_doc(e,q,update)
+                r_count+=1
         except:
             with open(
                 "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name

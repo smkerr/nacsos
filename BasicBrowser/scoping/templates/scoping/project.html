@@ -36,6 +36,11 @@
         Set up choices for meta-analysis form fields <a href="{% url 'scoping:meta_setup' project.id %}" >>></a>
     </div>
 
+    <div class="container bg-white border rounded m-4 p-2">
+        <h3>Duplicates</h3>
+        Find duplicated documents in this project <a href="{% url 'scoping:manage_duplicates' project.id %}" >>></a>
+    </div>
+
 
 {% ifequal admin "true" %}
 <div class="container">

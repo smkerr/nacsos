@@ -1,0 +1,117 @@
+{% extends "scoping/base_bs.html" %}
+
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% block content %}
+
+
+
+<h1> Scoping Review Helper</h1>
+<hr>
+<h2> Duplicate removal for - {{project.title}}</h2>
+<br>
+
+<div id="action" class="container">
+
+  Show me potential duplicates with a title similarity score greater than
+
+  <input id="jaccard" type="range" min="0" max="1" step=0.01 oninput="inputUpdate(value)" value="0.5" autocomplete="off">
+  <output id="out">0.5</output>
+
+  <button class="btn" data-did={{did}} onclick="find_duplicates({{did}})">Go</button>
+
+  <div class="progress m-5 position-sticky">
+    <div id="progress_bar" class="progress-bar" role="progressbar" style="width: {{pc}}%;" aria-valuenow="{{pc}}" aria-valuemin="0" aria-valuemax="100">{{pc}}%</div>
+  </div>
+
+  <div class="row m-2">
+
+    <div class="container" id="results"></div>
+
+    <div class="col m-2" id="d1"></div>
+    <div class="col m-2" id="d2"></div>
+
+  </div>
+
+</div>
+
+
+
+{% endblock %}
+
+{% block script %}
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script>
+
+function inputUpdate(x,t) {
+    $('#out').val(x)
+}
+
+function do_merge(k,t) {
+  console.log(k)
+  axios.get('/scoping/doc_merge/{{project.id}}/'+k+'/'+t)
+  .then(function( response ) {
+    console.log(response)
+  });
+  $("div[data-doc='"+t+"']").html('')
+}
+
+//const axios = require('axios');
+function find_duplicates(did) {
+  function fill_div(div1,div2,doc,doc2) {
+    axios.get('/scoping/doc_info/'+doc.id+'/'+doc2.id)
+    .then(function(response) {
+      div.html(response.data)
+    })
+  }
+  $("#d1").html("")
+  $("#d2").html("")
+  $("body").css("cursor", "wait");
+  axios.get('/scoping/find_duplicates/'+{{project.id}}, {
+      params: {
+        did: did,
+        jaccard: $("#jaccard").val()
+      }
+    })
+    .then(function (response) {
+      $("body").css("cursor", "default");
+      var data = response.data
+      console.log(response);
+      if (response.data.matches) {
+        next_button = '<button class="btn" onclick="find_duplicates(' + data.next + ')">Keep searching</button>'
+        $("#results").html("Found a match with a jaccard similarity score of " + response.data.j + " " + next_button)
+        // fill in the boxes with doc data
+        axios.get('/scoping/doc_info/'+data.d1.id+'/'+data.d2.id)
+        .then(function(response) {
+          $("#d1").html(response.data);
+          $("#d1").attr('data-doc', data.d1.id);
+          axios.get('/scoping/doc_info/'+data.d2.id+'/'+ data.d1.id)
+          .then(function(response) {
+            $("#d2").html(response.data)
+            $("#d2").attr('data-doc', data.d2.id)
+            $('.mergebutton').click(function() {
+              do_merge($(this).data('keep'), $(this).data('throw'))
+            })
+          });
+        });
+        $("#progress_bar").css("width", response.data.pc+"%").html(response.data.pc+"%")
+      } else {
+        $("#d1").html("")
+        $("#d2").html("")
+        next_button = '<button class="btn" onclick="find_duplicates(' + response.data.next + ')">Keep searching</button>'
+        if (response.data.done) {
+          $("#results").html("Finished checking for duplicates!")
+        } else {
+          $("#results").html("No matches found yet " + next_button)
+        }
+        $("#progress_bar").css("width", response.data.pc+"%").html(response.data.pc+"%")
+      }
+    });
+}
+
+
+</script>
+
+{% endblock %}

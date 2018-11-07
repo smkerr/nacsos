@@ -272,6 +272,133 @@ def project(request, pid):
 
     return HttpResponse(template.render(context, request))
 
+@login_required
+def manage_duplicates(request, pid):
+
+    template = loader.get_template('scoping/duplicates.html')
+    project = Project.objects.get(pk=pid)
+    did = Doc.objects.filter(query__project=project).order_by('id').first().id
+
+    context = {
+        'project': project,
+        'did': did,
+        'pc': 0
+    }
+
+    return HttpResponse(template.render(context, request))
+
+@login_required
+def doc_info(request,did,did2):
+    d = Doc.objects.get(pk=did)
+    template = loader.get_template('scoping/snippets/doc_info.html')
+    context = {
+        'doc': d.highlight_fields(
+            None,
+            ["title","content","id","wosarticle__so","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"]
+        ),
+        'merge': {
+            'keep': did,
+            'throw': did2
+        }
+    }
+    return HttpResponse(template.render(context, request))
+
+@login_required
+def doc_merge(request,pid,d1,d2):
+    p = Project.objects.get(pk=pid)
+    keep = Doc.objects.get(pk=d1)
+    throw = Doc.objects.get(pk=d2)
+    dup, created = Duplicate.objects.get_or_create(
+        original = keep,
+        copy = throw,
+        project = p,
+        user = request.user
+    )
+    if keep.alternative_titles is None:
+        keep.alternative_titles = [throw.title]
+    elif throw.title not in keep.alternative_titles:
+        keep.alternative_titles.append(throw.title)
+    for q in throw.query.filter(project=p):
+        throw.query.remove(q)
+        keep.query.add(q)
+        q.r_count = q.doc_set.count()
+        q.save()
+    for t in throw.tag.filter(query__project=p):
+        throw.tag.remove(t)
+        keep.tag.add(t)
+        t.update_tag()
+    models = [
+        StudyEffect,DocMetaCoding,DocProject,
+        Exclusion, DocUserCat, DocCat,
+        DocPar
+        ## Need to filter by projectt!!!
+    ]
+    for x in models:
+        if hasattr(x,'project'):
+            insts = x.objects.filter(doc=throw,project=p)
+        elif hasattr(x,'category'):
+            insts = x.objects.filter(doc=throw,category__project=p)
+        else:
+            insts = []
+            print(x)
+        for i in insts:
+            print(i)
+            ignore_fields = ["_state","doc__id","doc_id","doc","id"]
+            instance = {k:v for k,v in i.__dict__.items() if k not in ignore_fields}
+            instance["doc"] = keep
+            new_int, created = x.objects.get_or_create(**instance)
+            i.delete()
+    return HttpResponse("merged")
+
+@login_required
+def find_duplicates(request, pid):
+    def doc_dict(d):
+        return {k:v for k,v in d.__dict__.items() if k!="_state"}
+    did = request.GET.get('did',None)
+    j = float(request.GET.get('jaccard', None))
+    project = Project.objects.get(pk=pid)
+    dids = list(set(list(Doc.objects.filter(
+        query__project=project,id__gte=did
+    ).values_list('pk',flat=True))))
+    all_ids = list(set(list(Doc.objects.filter(
+        query__project=project
+    ).values_list('pk',flat=True))))
+    pc = (len(all_ids) - len(dids) / len(all_ids))
+    t1 = time.time()
+    for i in range(len(dids)):
+        t2 = time.time()
+        if t2 - t1 > 5:
+            next = dids[i]
+            pc = round((len(all_ids) - len(compare_ids)) / len(all_ids) * 100)
+            return JsonResponse({
+                'matches': False,
+                'done': False,
+                'next': next,
+                'pc': pc
+            }, safe=True)
+            # Break, return, show percentage done
+            pass
+        d = Doc.objects.get(pk=dids[i])
+        compare_ids = dids[i+1:]
+        dups, j_score = d.find_duplicates(compare_ids, j)
+        if dups:
+            pc = round((len(all_ids) - len(compare_ids)) / len(all_ids) * 100)
+            next = dids[i+1]
+            return JsonResponse({
+                'matches': True,
+                'done': True,
+                'd1': doc_dict(d) ,
+                'd2': doc_dict(dups),
+                'j': round(j_score,2),
+                'next': next,
+                'pc': pc
+            }, safe=True)
+
+    return JsonResponse({
+        'matches': False,
+        'done': True,
+        'pc': 100
+    }, safe=True)
 
 @login_required
 def queries(request, pid):

@@ -13,6 +13,12 @@ def flatten(container):
         else:
             yield i
 
+def jaccard(s1,s2):
+    try:
+        return len(s1.intersection(s2)) / len(s1.union(s2))
+    except:
+        return 0
+
 SCOPUS_QUERY_FIELDS = [
     "TITLE-ABS-KEY","TITLE",
     "PUBYEAR","DOI","AUTH",
