@@ -201,12 +201,20 @@ def search_home(request, sid):
 
     tm_table = ModelsTable(tms)
 
-    # count paragraphs per year
-    pars = Paragraph.objects.filter(search_matches=s)
+    # count paragraphs/utterances per year
 
-    graph = list(pars.filter(utterance__document__date__isnull=False).order_by().annotate(
-        year=TruncMonth('utterance__document__date')
-    ).order_by('year').values('year').annotate(n = Count('id')))
+    if s.search_object_type == 1:
+        pars = Paragraph.objects.filter(search_matches=s)
+        graph = list(pars.filter(utterance__document__date__isnull=False).order_by().annotate(
+            year=TruncMonth('utterance__document__date')
+        ).order_by('year').values('year').annotate(n = Count('id')))
+        count = pars.count()
+    else:
+        utterances = Utterance.objects.filter(search_matches=s)
+        graph = list(utterances.filter(document__date__isnull=False).order_by().annotate(
+            year=TruncMonth('document__date')
+        ).order_by('year').values('year').annotate(n = Count('id')))
+        count = utterances.count()
 
     for i in range(len(graph)):
         graph[i]['year']=graph[i]['year'].strftime('%Y-%m')
@@ -221,7 +229,7 @@ def search_home(request, sid):
         'search': sid,
         'search_title': s.title,
         'tm_table': tm_table,
-        'pars': pars,
+        'count': count,
         'graph': list(graph),
         's': s,
         'x': 'year',

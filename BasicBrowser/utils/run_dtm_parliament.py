@@ -478,13 +478,11 @@ def run_dynamic_nmf(s_id, K, language="german", verbosity=1, max_features=20000,
     ## After all the years have been run, update the dtops
 
     tops = Topic.objects.filter(run_id=run_id)
-    terms = Term.objects.all()
 
-    B = np.zeros((tops.count(), terms.count()))
+    highest_id = Term.objects.all().order_by('-id').first().id
+    B = np.zeros((tops.count(), highest_id))
 
-    print(tops)
-
-    #
+    #print(tops)
 
     wt = 0
     for topic in tops:

@@ -4,7 +4,11 @@
 
 
 <h2>{{s.title}}</h2>
-<p>Paragraphs found: {{ pars.count}}
+{% if s.search_object_type == 1 %}
+<p>Paragraphs count: {{count}}
+{% else %}
+<p>Utterances count: {{count}}
+{% endif %}
 
 
 <svg width="960" height="500"></svg>
@@ -68,7 +72,7 @@ g.append("g")
   .attr("y", 6)
   .attr("dy", "0.71em")
   .attr("text-anchor", "end")
-  .text("Paragraphs found");
+  .text("Occurrences found");
 
 g.append("path")
   .datum(data)
