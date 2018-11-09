@@ -3835,6 +3835,10 @@ def assign_docs(request):
     tags = request.GET.getlist('tags[]',None)
     tagdocs = request.GET.getlist('tagdocs[]',None)
     docsplit = request.GET.get('docsplit',None)
+    title_only = request.GET.get('title_only',False)
+    if title_only=="true":
+        title_only=True
+
 
     #print(docsplit)
 
@@ -3888,14 +3892,22 @@ def assign_docs(request):
                         r = Docownership.objects.filter(
                             doc=doc,
                             query=query,
-                            user=user
+                            user=user,
+                            title_only=title_only
                         ).first().relevant
                     else:
                         r = 0
                 except:
                     r = 0
                 if t.document_linked:
-                    docown = DocOwnership(doc=doc,query=query,user=user,tag=t,relevant=r)
+                    docown = DocOwnership(
+                        doc=doc,
+                        query=query,
+                        user=user,
+                        tag=t,
+                        relevant=r,
+                        title_only=title_only
+                    )
                 else:
                     docown = DocOwnership(
                         docpar=doc,
@@ -3912,7 +3924,8 @@ def assign_docs(request):
                             r = Docownership.objects.filter(
                                 doc=doc,
                                 query=query,
-                                user=user
+                                user=user,
+                                title_only=title_only
                             ).first().relevant
                         else:
                             r = 0
@@ -3920,7 +3933,14 @@ def assign_docs(request):
                         r = 0
 
                     if t.document_linked:
-                        docown = DocOwnership(doc=doc,query=query,user=user,tag=t,relevant=r)
+                        docown = DocOwnership(
+                            doc=doc,
+                            query=query,
+                            user=user,
+                            tag=t,
+                            relevant=r,
+                            title_only=title_only
+                        )
                     else:
                         docown = DocOwnership(
                             docpar=doc,
@@ -4513,7 +4533,10 @@ def screen_doc(request,tid,ctype,pos,todo):
             'scoping:userpage',
             kwargs={"pid":tag.query.project.id}
         ))
-    doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
+    if do.title_only:
+        doc = do.doc.highlight_fields(tag.query,["title","id","wosarticle__di"])
+    else:
+        doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
 
     notes = Note.objects.filter(
         project=tag.query.project,

@@ -148,6 +148,20 @@
                 Split Documents
             </div>
         </div>
+        <div class="row">
+            <div class="col-sm text-right">
+                Abstracts
+            </div>
+            <div class="col-sm text-center">
+                <label class="switch">
+                  <input type="checkbox" id="title_only" onclick="updateAssignment()" checked />
+                  <div class="slider round"></div>
+                </label>
+            </div>
+            <div class="col-sm text-left">
+                Titles
+            </div>
+        </div>
       </p>
       <p>Assign a total of <span id="docUserTotal"></span> documents each to <span id="userTotal"></span> users? <button onclick="do_assignment()">Assign</button></p>
 
@@ -323,6 +337,7 @@ function updateAssignment() {
     var tagdocs = []
     var total_docs = 0
     var docsplit = $("#split").is(':checked')
+    var title_only = $("#title_only").is(':checked')
 
     $(".user_active").each(function() {
         if ($(this).is(':checked')) {
@@ -392,6 +407,7 @@ function do_assignment() {
     console.log(tagdocs)
     console.log(qid)
     var docsplit = $("#split").is(':checked')
+    var title_only = $("#title_only").is(':checked')
     $.ajax({
         url: '/scoping/assign_docs',
         data : {
@@ -399,7 +415,8 @@ function do_assignment() {
             'users': active_users,
             'tags': tags,
             'tagdocs': tagdocs,
-            'docsplit': docsplit
+            'docsplit': docsplit,
+            'title_only': title_only
         },
         success: function() {
             location.reload()

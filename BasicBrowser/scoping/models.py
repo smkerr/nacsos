@@ -1049,6 +1049,7 @@ class DocOwnership(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True)
     docpar = models.ForeignKey(DocPar, on_delete=models.CASCADE, null=True)
     document_linked = models.BooleanField(default=True)
+    title_only = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Reviewer")
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)

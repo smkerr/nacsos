@@ -20,10 +20,14 @@
     {% endif %}
     [{{au.institution | safe}}];</span>
 {% endfor %}
+{% if doc.wosarticle__de %}
 <p style="text-align:left">
     Author keywords: {{doc.wosarticle__de | safe}}
+{% endif %}
+{% if doc.wosarticle.kwp %}
 <p style="text-align:left">
     WoS Keywords Plus: {{doc.wosarticle__kwp | safe}}
+{% endif %}
 
 {% if doc.docfile %}
     <p style="text-align;left">
