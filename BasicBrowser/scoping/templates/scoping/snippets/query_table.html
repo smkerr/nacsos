@@ -26,7 +26,7 @@
             <td><a href="{% url 'scoping:querying' query.id %}">View progress</a></td>
           {% endif %}
           <td>
-            <select class="qtag" data-thing="Technology" data-query="{{query.id}}" autocomplete="off">
+            <select class="qtag" data-thing="Category" data-query="{{query.id}}" autocomplete="off">
               {% if not query.category %}
               <option selected value="None">{{query.category}}</option>
               {% else %}

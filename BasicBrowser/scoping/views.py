@@ -1804,8 +1804,8 @@ def userpage(request, pid):
         query__project=project
     ).values('query__id','query__type','id').order_by('-id')
 
-    if project.id==1:
-        queries = queries.filter(id__gt=731)
+    # if project.id==1:
+    #     queries = queries.filter(id__gt=731)
 
     query_list = []
 
@@ -4521,9 +4521,24 @@ def screen_doc(request,tid,ctype,pos,todo):
     )
 
     cats = Category.objects.filter(project=tag.query.project)
-    levels = [cats.filter(level=l) for l in cats.values_list('level',flat=True).distinct()]
-    levels = [[(cats.filter(pk=t.pk,docusercat__user=request.user,docusercat__doc=do.doc).exists(),t) for t in cats.filter(level=l)] for l in cats.values_list('level',flat=True).distinct()]
 
+    levels = []
+    for l in cats.values_list('level',flat=True).distinct():
+        lcats = []
+        for t in cats.filter(level=l):
+            dcus = cats.filter(
+                pk=t.pk,
+                docusercat__user=request.user,
+                docusercat__doc=do.doc
+            )
+            dcs = cats.filter(
+                doccat__category=t,
+                doccat__doc=do.doc,
+                doccat__query_tagged=True
+            )
+            e = dcus.exists() or dcs.exists()
+            lcats.append((e,t))
+        levels.append(lcats)
 
 
     context = {

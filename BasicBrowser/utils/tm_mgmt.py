@@ -391,7 +391,7 @@ def update_ar_scores(run_id):
         ytopics = DocTopic.objects.filter(
             doc__PY__in=years,
             run_id=run_id,
-            score__gt=stat.dthreshold
+            score__gt=stat.dt_threshold
         ).values('topic_id').annotate(
             ttotal=models.Sum('score')
         )
@@ -545,9 +545,9 @@ def update_ipcc_coverage(run_id):
         dts = DocTopic.objects.filter(
             run_id=run_id,
             doc__PY__lt=2014,
-            score__gt=runstat.dthreshold,
+            score__gt=runstat.dt_threshold,
             topic__topicdtopic__dynamictopic__run_id=run_id,
-            topic__topicdtopic__score__gt=runstat.dthreshold
+            topic__topicdtopic__score__gt=runstat.dt_threshold
         ).values('topic__topicdtopic__dynamictopic__id')
 
         ipcc_annotate_dts(dts, run_id)
@@ -556,9 +556,9 @@ def update_ipcc_coverage(run_id):
             dts = DocTopic.objects.filter(
                 run_id=run_id,
                 doc__PY__in=tp.ys,
-                score__gt=runstat.dthreshold,
+                score__gt=runstat.dt_threshold,
                 topic__topicdtopic__dynamictopic__run_id=run_id,
-                topic__topicdtopic__score__gt=runstat.dthreshold
+                topic__topicdtopic__score__gt=runstat.dt_threshold
             ).values('topic__topicdtopic__dynamictopic__id')
 
             ipcc_annotate_dts(dts, run_id, tp)
@@ -597,7 +597,7 @@ def update_ipcc_coverage(run_id):
         dts = DocTopic.objects.filter(
             run_id=run_id,
             doc__PY__lt=2014,
-            score__gt=runstat.dthreshold
+            score__gt=runstat.dt_threshold
         ).values('topic_id')
 
         dts = dts.annotate(
@@ -618,7 +618,7 @@ def update_ipcc_coverage(run_id):
             t.save()
 
         for topic in Topic.objects.filter(run_id=run_id):
-            tdocs = Doc.objects.filter(doctopic__topic=topic,doctopic__score__gt=runstat.dthreshold)
+            tdocs = Doc.objects.filter(doctopic__topic=topic,doctopic__score__gt=runstat.dt_threshold)
             for wg in wgs:
                 wgdocs = tdocs.filter(ipccref__wg__wg=wg["WG"])
                 if wgdocs.count() == 0:

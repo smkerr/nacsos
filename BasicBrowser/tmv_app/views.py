@@ -153,7 +153,7 @@ def network(request,run_id):
 def return_corrs(request):
     cor = float(request.GET.get('cor',None))
     run_id = int(request.GET.get('run_id',None))
-    ar = int(request.GET.get('ar',None))
+    ar = int(request.GET.get('ar',-1))
     stat = RunStats.objects.get(pk=run_id)
     if stat.method=="DT":
         topics = DynamicTopic
