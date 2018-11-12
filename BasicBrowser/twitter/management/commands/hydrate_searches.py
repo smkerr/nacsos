@@ -18,7 +18,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         def parse_tjson(tsearch):
-            with open("twitter.json") as f:
+            with open("twitter/tweets.json") as f:
                 for l in f:
                     tweet = json.loads(l)
                     user, created = User.objects.get_or_create(
@@ -45,7 +45,7 @@ class Command(BaseCommand):
                         t = django.utils.timezone.make_aware(t)
                         status.author=user
                         status.created_at=t
-                        status.favourites_count = tweet['likes_count']
+                        status.favorites_count = tweet['likes_count']
                         status.retweets_count = tweet['retweets_count']
                         status.place = tweet['location']
                         status.text = tweet['tweet']
@@ -72,9 +72,9 @@ class Command(BaseCommand):
                 twint.run.Search(c)
 
                 parse_tjson(ts)
-                ts.scrape_fetched=now
+                ts.scrape_fetched=django.utils.timezone.make_aware(now)
                 if ts.since is None or ts.since > django.utils.timezone.make_aware(then):
-                    ts.since = then
+                    ts.since = django.utils.timezone.make_aware(then)
                 if ts.until is None or ts.until < django.utils.timezone.make_aware(now):
-                    ts.until = now
+                    ts.until = django.utils.timezone.make_aware(now)
                 ts.save()

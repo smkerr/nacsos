@@ -26,6 +26,7 @@ dataset==1.0.3
 decorator==4.1.2
 dill==0.2.7.1
 Django==2.1.2
+djangorestframework==3.9.0
 django-bootstrap4==0.0.6
 django-cities==0.5.0.6
 django-crispy-forms==1.7.2
@@ -116,6 +117,7 @@ tornado==4.5.2
 tqdm==4.19.4
 traitlets==4.3.2
 typing==3.6.1
+git+https://github.com/twintproject/twint.git
 ujson==1.35
 unicodecsv==0.14.1
 urllib3==1.22

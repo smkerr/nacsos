@@ -9,6 +9,8 @@ from datetime import datetime
 import django
 from django.utils import timezone
 import time
+import os
+import sys
 
 class Command(BaseCommand):
     help = 'adds users from a csv file'
@@ -19,7 +21,21 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         def parse_tjson(uname):
-            with open("twitter.json") as f:
+            with open("twitter/users.json") as f:
+                for l in f:
+                    u = json.loads(l)
+                    user, created = User.objects.get_or_create(
+                        id=u['id']
+                    )
+                    if u["username"]==uname.replace("@",""):
+                        user.fetched = timezone.now()
+                        user.monitoring = True
+                        user.save()
+                    if created:
+                        user.screen_name=u['username']
+                        user.save()
+                main_user = user
+            with open("twitter/tweets.json") as f:
                 for l in f:
                     tweet = json.loads(l)
                     user, created = User.objects.get_or_create(
@@ -45,33 +61,38 @@ class Command(BaseCommand):
                         t = django.utils.timezone.make_aware(t)
                         status.author=user
                         status.created_at=t
-                        status.favourites_count = tweet['likes']
-                        status.retweets_count = tweet['retweets']
+                        status.favorites_count = tweet['likes_count']
+                        status.retweets_count = tweet['retweets_count']
                         status.place = tweet['location']
                         status.text = tweet['tweet']
                         status.save()
 
-                    if tweet['username'] != tweet['user_rt'].replace("@",""):
-                        try:
-                            retweeter = User.objects.get(
-                                screen_name=tweet['user_rt'].replace("@","")
-                            )
-                            status.retweeted_by.add(retweeter)
-                        except:
-                            print("arg")
-                            pass
+                    if status.author != main_user:
+                        status.retweeted_by.add(main_user)
+
 
         def get_tweets(uname):
+            print(uname)
             try:
-                os.remove("twitter.json")
+                os.remove("twitter/users.json")
+                os.remove("twitter/tweets.json")
             except:
                 pass
+            out = sys.stdout
+
+            f = open(os.devnull, 'w')
+            sys.stdout = f
+
             c = twint.Config()
             c.Username = uname
             c.Store_json = True
             c.Output = "twitter.json"
+            c.Retweets = True
+            c.Profile_full = True
             c.All = uname
             twint.run.Profile(c)
+
+            sys.stdout = out
 
             time.sleep(2)
 

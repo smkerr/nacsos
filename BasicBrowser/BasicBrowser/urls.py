@@ -11,6 +11,7 @@ urlpatterns = [
     url(r'^tmv_app/', include('tmv_app.urls')),
     url(r'^scoping/', include('scoping.urls')),
     url(r'^parliament/', include('parliament.urls')),
+    path('twitter/', include('twitter.urls')),
     path('lotto', include('lotto.urls')),
     url(r'^admin/', admin.site.urls),
 	url(r'^$', site_views.index),
