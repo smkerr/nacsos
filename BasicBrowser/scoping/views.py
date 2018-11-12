@@ -3838,6 +3838,8 @@ def assign_docs(request):
     title_only = request.GET.get('title_only',False)
     if title_only=="true":
         title_only=True
+    else:
+        title_only=False
 
 
     #print(docsplit)
