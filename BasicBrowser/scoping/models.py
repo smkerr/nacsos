@@ -398,25 +398,26 @@ class Query(models.Model):
     def save(self, *args, **kw):
         old = type(self).objects.get(pk=self.pk) if self.pk else None
         super(Query, self).save(*args, **kw)
-        if old.category != self.category:
-            # reassign/assign category to docs
-            dcs = DocCat.objects.filter(
-                doc__query=old,
-                category=old.category,
-            )
-            dcs.filter(user_inherited=False,user_tagged=False).delete()
-            for dc in dcs.filter(user_tagged=True) | dcs.filter(user_inherited=True):
-                dc.query_tagged=False
-                dc.save()
-            dcs = []
-            for d in Doc.objects.filter(query=self):
-                dc, created = DocCat.objects.get_or_create(
-                    doc=d,
-                    category=self.category
+        if old:
+            if old.category != self.category:
+                # reassign/assign category to docs
+                dcs = DocCat.objects.filter(
+                    doc__query=old,
+                    category=old.category,
                 )
-                dc.query_tagged=True
+                dcs.filter(user_inherited=False,user_tagged=False).delete()
+                for dc in dcs.filter(user_tagged=True) | dcs.filter(user_inherited=True):
+                    dc.query_tagged=False
+                    dc.save()
+                dcs = []
+                for d in Doc.objects.filter(query=self):
+                    dc, created = DocCat.objects.get_or_create(
+                        doc=d,
+                        category=self.category
+                    )
+                    dc.query_tagged=True
 
-            pass
+                pass
 
 
 
