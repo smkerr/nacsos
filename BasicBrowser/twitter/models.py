@@ -59,7 +59,7 @@ class User(TwitterBaseModel):
     profile_sidebar_fill_color = models.CharField(max_length=6, null=True)
     profile_text_color = models.CharField(max_length=6, null=True)
 
-    favorites_count = models.PositiveIntegerField(default=0)
+    favourites_count = models.PositiveIntegerField(default=0)
     followers_count = models.PositiveIntegerField(default=0)
     friends_count = models.PositiveIntegerField(default=0)
     listed_count = models.PositiveIntegerField(default=0)
@@ -81,7 +81,7 @@ class Status(TwitterBaseModel):
     retweeted = models.BooleanField(default=False)
     truncated = models.BooleanField(default=False)
 
-    source = models.CharField(max_length=100, null=True)
+    source = models.CharField(max_length=300, null=True)
     source_url = models.URLField(null=True)
 
     favorites_count = models.PositiveIntegerField(default=0,null=True)
