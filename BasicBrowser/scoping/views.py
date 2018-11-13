@@ -2574,7 +2574,7 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
                         url, created = URLs.objects.get_or_create(
                             url=ndf.cleaned_data['url']
                         )
-                    surl = django_short_url.encode_url(url.id)
+                    surl = short_url.encode_url(url.id)
                     ut, created = UT.objects.get_or_create(UT=surl)
                     if created and did is not 0:
                         doc = Doc.objects.get(pk=did)
