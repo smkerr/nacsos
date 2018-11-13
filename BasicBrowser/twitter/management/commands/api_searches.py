@@ -23,8 +23,9 @@ class Command(BaseCommand):
         auth = tweepy.OAuthHandler(settings.CONSUMER_KEY, settings.CONSUMER_SECRET)
         auth.set_access_token(settings.ACCESS_TOKEN, settings.ACCESS_SECRET)
         api = tweepy.API(auth,wait_on_rate_limit=True)
-        forward = False
+
         for ts in TwitterSearch.objects.all():
+            forward = False
             results = True
             #for i in range(1,1501):
             while results:
