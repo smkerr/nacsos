@@ -119,7 +119,7 @@ def download_metacodes(pid):
     return
 
 @shared_task
-def do_query(qid):
+def do_query(qid, background=True):
     q = Query.objects.get(pk=qid)
     q.doc_set.clear()
     # Do internal queries
@@ -207,9 +207,15 @@ def do_query(qid):
 
         time.sleep(1)
         # run "scrapeQuery.py" on the text file in the background
-        if q.creator.username=="galm":
-            subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", q.database, fname])
+        if background:
+            if q.creator.username=="galm":
+                subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", q.database, fname])
+            else:
+                subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", q.database, fname])
         else:
-            subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", q.database, fname])
+            if q.creator.username=="galm":
+                subprocess.call(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", q.database, fname])
+            else:
+                subprocess.call(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", q.database, fname])
 
     return qid

@@ -25,29 +25,46 @@ class Command(BaseCommand):
         api = tweepy.API(auth,wait_on_rate_limit=True)
 
         for ts in TwitterSearch.objects.all():
-            forward = False
+            for d in range(1,15):
+                then = datetime.now() - timedelta(days=d)
+                then = django.utils.timezone.make_aware(then)
+                forward = False
+                results = True
+                n_statuses = 0
+                while results:
+                    db_statuses = Status.objects.filter(
+                        searches=ts,
+                        api_got=True,
+                        created_at__gt=then,
+                        created_at__isnull=False
+                    ).order_by('created_at')
+                    first = db_statuses.first()
+                    last = db_statuses.last()
+
+                    if first is None:
+                        statuses = api.search(ts.string, count=100,result_type="recent")
+                    else:
+                        print(first.created_at)
+                        statuses = api.search(ts.string, max_id=first.id, count=100,result_type="recent")
+                    if len(statuses) == 0 or db_statuses.count()==n_statuses:
+                        results=False
+                    n_statuses = db_statuses.count()
+                    print(f"parsing backward, returns {len(statuses)}")
+                    parse_statuses(statuses, ts)
+
             results = True
-            #for i in range(1,1501):
             while results:
                 statuses = Status.objects.filter(
                     searches=ts,
                     api_got=True,
+                    created_at__gt=then,
                     created_at__isnull=False
                 ).order_by('created_at')
                 first = statuses.first()
                 last = statuses.last()
-                if first is None:
-                    statuses = api.search(ts.string, rpp=100)
-                elif forward==False:
-                    statuses = api.search(ts.string, max_id=first.id, rpp=100)
-                else:
-                    statuses = api.search(ts.string, since_id=last.id, rpp=100)
+                statuses = api.search(ts.string, since_id=last.id, count=100,result_type="recent")
                 if len(statuses) == 0:
-                    if forward:
-                        results=False
-                    else:
-                        forward=True
-                        statuses = api.search(ts.string, since_id=last.id, rpp=100)
+                    results=False
 
                 print(f"parsing forward ({forward}), returns {len(statuses)}")
                 parse_statuses(statuses, ts)

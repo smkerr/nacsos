@@ -20,10 +20,15 @@ def parse_status(s, ts=None):
             id = udata['id']
         )
     except:
-        user, created = User.objects.get_or_create(
-            id = udata['id'],
-            screen_name = udata['screen_name']
-        )
+        try:
+            user, created = User.objects.get_or_create(
+                id = udata['id'],
+                screen_name = udata['screen_name']
+            )
+        except:
+            print("WARNING! Could not save user:")
+            print(udata)
+            return
     for f in udata:
         if udata[f] != "none":
             try:
@@ -34,7 +39,12 @@ def parse_status(s, ts=None):
             except:
                 pass
 
-    user.save()
+    try:
+        user.save()
+    except:
+        print("WARNING! Could not save user:")
+        print(udata)
+        return
 
     for f in sdata:
         if sdata[f] != "none":

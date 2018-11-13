@@ -6,6 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django_tables2.config import RequestConfig
 from django.db.models import Q, Count, Func, F, Sum, Value, Case, When, IntegerField
 from parliament.models import *
+import twitter.models as tm
 from .tables import *
 from .forms import *
 from .tasks import *
@@ -57,11 +58,14 @@ def parliament(request,pid):
     parl = Parl.objects.get(pk=pid)
     ps  = ParlPeriod.objects.filter(parliament=parl).annotate(
         docs = Count('document')
-    )
-    ps = ParlPeriodTable(ps, order_by="id")
+    ).order_by('n')
+    ps = ParlPeriodTable(ps, order_by="n")
 
+    # persons = person_table(Person.objects.filter(
+    #     utterance__document__parlperiod__parliament=parl,
+    # ))
     persons = person_table(Person.objects.filter(
-        utterance__document__parlperiod__parliament=parl,
+        seat__parlperiod__parliament=parl
     ))
 
     RequestConfig(request).configure(persons)
@@ -345,12 +349,16 @@ def person(request,tid):
     seats = SeatTable(
         Seat.objects.filter(occupant=p)
     )
+
+
+    tweets = tm.Status.objects.filter(author__person=p).order_by('-created_at')[:10]
     # RequestConfig(request).configure(seats)
 
     context = {
         'p':p,
         'pars': pt,
-        'seats': seats
+        'seats': seats,
+        'tweets': tweets
     }
 
     return HttpResponse(template.render(context, request))

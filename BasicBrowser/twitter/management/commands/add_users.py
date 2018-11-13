@@ -105,4 +105,6 @@ class Command(BaseCommand):
         with open(options['fpath']) as f:
             reader = csv.DictReader(f)
             for row in reader:
-                get_tweets(row['handle'])
+                if row['handle'].lower()=="@EskenSaskia".lower():
+                    print(row['handle'])
+                    get_tweets(row['handle'])

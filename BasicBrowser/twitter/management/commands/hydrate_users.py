@@ -35,33 +35,37 @@ class Command(BaseCommand):
                 user.fetched = timezone.now()
                 user.save()
                 for p in range(0,160):
-                    statuses = api.user_timeline(u.screen_name)
-                    for s in statuses:
-                        status, created = Status.objects.get_or_create(
-                            id=s.id
-                        )
-                        sdata = s._json
-                        for f in sdata:
-                            if sdata[f] != "none":
-                                try:
-                                    if f=="in_reply_to_user_id":
-                                        new_user, created = User.objects.get_or_create(
-                                            id=sdata[f]
-                                        )
-                                    if f=="in_reply_to_status_id":
-                                        ns, created = Status.objects.get_or_create(
-                                            id=sdata[f]
-                                        )
-                                    if f=="created_at":
-                                        sdata[f] = datetime.strptime(sdata[f],tf)
-                                    field = Status._meta.get_field(f)
-                                    setattr(status, f, sdata[f])
-                                except:
-                                    pass
-                        status.author = user
-                        status.api_got = True
-                        status.fetched = timezone.now()
-                        status.save()
+                    try:
+                        statuses = api.user_timeline(u.screen_name)
+                        for s in statuses:
+                            status, created = Status.objects.get_or_create(
+                                id=s.id
+                            )
+                            sdata = s._json
+                            for f in sdata:
+                                if sdata[f] != "none":
+                                    try:
+                                        if f=="in_reply_to_user_id":
+                                            new_user, created = User.objects.get_or_create(
+                                                id=sdata[f]
+                                            )
+                                        if f=="in_reply_to_status_id":
+                                            ns, created = Status.objects.get_or_create(
+                                                id=sdata[f]
+                                            )
+                                        if f=="created_at":
+                                            sdata[f] = datetime.strptime(sdata[f],tf)
+                                        field = Status._meta.get_field(f)
+                                        setattr(status, f, sdata[f])
+                                    except:
+                                        pass
+                            status.author = user
+                            status.api_got = True
+                            status.fetched = timezone.now()
+                            status.save()
+                    except:
+                        print(f"couldn't get the user {user} timeline")
+
 
 
 

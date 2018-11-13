@@ -21,16 +21,16 @@ class User(TwitterBaseModel):
 
     ## Extra fields
     mdb_name = models.CharField(max_length=50)
-    person = models.ForeignKey(pmodels.Person, null=True, on_delete=models.SET_NULL)
+    person = models.OneToOneField(pmodels.Person, null=True, on_delete=models.SET_NULL)
     monitoring = models.BooleanField(default=False)
     earliest = models.DateTimeField(null=True)
     latest = models.DateTimeField(null=True)
 
     screen_name = models.CharField(u'Screen name', max_length=50, unique=True)
 
-    name = models.CharField(u'Name', max_length=100)
+    name = models.CharField(u'Name', max_length=200)
     description = models.TextField(u'Description')
-    location = models.CharField(u'Location', max_length=100)
+    location = models.CharField(u'Location', max_length=200)
     time_zone = models.CharField(u'Time zone', max_length=100, null=True)
 
     contributors_enabled = models.BooleanField(u'Contributors enabled', default=False)
@@ -70,6 +70,9 @@ class User(TwitterBaseModel):
 
     def __unicode__(self):
         return self.name
+
+    def __str__(self):
+        return f"{self.name} - @{self.screen_name}"
 
 class Status(TwitterBaseModel):
 

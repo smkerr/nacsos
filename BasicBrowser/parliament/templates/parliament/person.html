@@ -10,6 +10,18 @@
 <p><b>Bio</b>: {{p.short_bio}}</p>
 <h3>Seats</h3>
 {% render_table seats %}
+<h3>Tweets</h3>
+{% if tweets %}
+
+{% for t in tweets %}
+    <p>{{ t.text }}</p>
+{% endfor %}
+
+{% else %}
+
+{{p.clean_name}} has not tweeted
+
+{% endif %}
 <h3>Contributions</h3>
 {% render_table pars %}
 {% endblock %}
