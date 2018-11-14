@@ -116,7 +116,7 @@ class Command(BaseCommand):
             if hasattr(period,'name'):
                 a = period.name
                 ys = range(period.start, period.end + 1)
-                period['n'] = period.ar
+                period.n = period.ar
             else:
                 a = period.title
 
