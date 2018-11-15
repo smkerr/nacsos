@@ -80,6 +80,9 @@ def upload_docs(qid, update):
 
     print(q.title)
 
+    if ".xml" in q.query_file.name.lower():
+        r_count = read_xml(q,update)
+
     if ".RIS" in q.query_file.name or ".ris" in q.query_file.name:
         r_count = read_ris(q,update)
 

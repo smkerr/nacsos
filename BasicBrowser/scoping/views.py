@@ -96,20 +96,29 @@ class QueryCreate(CreateView):
             fname = '{}/results{}'.format(dname, file_extension)
             fpath = '{}/results{}'.format(d, file_extension)
 
-            with open(fpath,'w', encoding='utf-8') as res:
-                for f in files:
-                    for line in f:
-                        line = line.decode('utf-8')
-                        if re.match("EF",line) or re.match(".*FN Clarivate.*",line):
-                            r = line
-                        else:
-                            try:
-                                r = line # utf8
-                                if line is not None and line != "null":
-                                    res.write(str(line))
-                            except:
-                                pass
-                res.write("EF")
+            if file_extension.lower()==".xml":
+                with open(fpath,'w', encoding='utf-8') as res:
+                    res.write('<articlelist>')
+                    for f in files:
+                        for line in f:
+                            if "<?xml" not in line:
+                                res.write(str(line))
+
+            else:
+                with open(fpath,'w', encoding='utf-8') as res:
+                    for f in files:
+                        for line in f:
+                            line = line.decode('utf-8')
+                            if re.match("EF",line) or re.match(".*FN Clarivate.*",line):
+                                r = line
+                            else:
+                                try:
+                                    r = line # utf8
+                                    if line is not None and line != "null":
+                                        res.write(str(line))
+                                except:
+                                    pass
+                    res.write("EF")
 
             self.object.query_file.name = fname
             self.object.save()

@@ -2,6 +2,40 @@ from scoping.models import *
 import re
 #from utils.utils import *
 
+XML_TRANS_TABLE = {
+    'journal-title': 'so',
+    'publisher': 'pu',
+    'article-id': 'UT',
+    'article-title': 'ti',
+    'year': 'py',
+    'volume': 'vl',
+    'issue': 'iss',
+    'fpage': 'bp',
+    'lpage': 'ep'
+}
+
+
+
+
+def read_xml(q, update):
+    '''parse a jstor like xml'''
+    r_count = 0
+    import xml.etree.ElementTree as ET
+    ET.parse("{}/{}".format(settings.MEDIA_ROOT,q.query_file.name))
+    root = tree.getroot()
+    for article in root:
+        article_dict = {}
+        for field in article.iter():
+            if field.tag in XML_TRANS_TABLE:
+                f = XML_TRANS_TABLE[field.tag]
+                article_dict[f] = field.text
+            try:
+                add_scopus_doc(e,q,update)
+                r_count+=1
+            except:
+                print(f"couldn't add {e}")
+
+
 ##################################
 ## Flatten nested lists
 
