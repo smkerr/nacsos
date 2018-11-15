@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 from celery import shared_task
 from .models import *
 from utils.utils import *
+from scoping.utils import *
 import os
 from django.db import connection, transaction
 from psycopg2.extras import *
