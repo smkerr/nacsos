@@ -362,7 +362,8 @@ class Query(models.Model):
         ('Scopus','Scopus'),
         ('intern','Internal'),
         ('pop','Publish or Perish'),
-        ('ebsco', 'EBSCO')
+        ('ebsco', 'EBSCO'),
+        ('jstor', 'JSTOR'),
     )
 
 
