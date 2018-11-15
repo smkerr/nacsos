@@ -50,6 +50,11 @@ class Command(BaseCommand):
                                 topic_id=topic, topiccorr_id=corrtopic, run_id=run_id,
                                 ar=period['n']
                             )
+                        elif type(period)==scoping.models.AR:
+                            topiccorr, created = obj.objects.get_or_create(
+                                topic_id=topic, topiccorr_id=corrtopic, run_id=run_id,
+                                ar=period.n
+                            )
                         else:
                             topiccorr, created = obj.objects.get_or_create(
                                 topic_id=topic, topiccorr_id=corrtopic, run_id=run_id,

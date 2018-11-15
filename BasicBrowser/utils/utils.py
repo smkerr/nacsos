@@ -666,9 +666,13 @@ def read_ris(q, update):
         entries = readris(f,mapping=RIS_KEY_MAPPING)
         try:
             for e in entries:
-                add_scopus_doc(e,q,update)
-                r_count+=1
+                try:
+                    add_scopus_doc(e,q,update)
+                    r_count+=1
+                except:
+                    print(f"couldn't add {e}")
         except:
+            r_count = 0
             with open(
                 "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name
             ),'r',encoding='utf-8-sig') as f:
@@ -677,8 +681,19 @@ def read_ris(q, update):
                     if "py" in e:
                         if type(e["py"] is str):
                             e["py"] = int(e["py"][:4])
-                    add_scopus_doc(e,q,update)
-                    r_count+=1
+                    if "tc" in e:
+                        if type(e["tc"] is str):
+                            digits = re.findall(r"\d+",e["tc"])
+                            if len(digits) > 0:
+                                e["tc"] = int(digits[0])
+                            else:
+                                e["tc"] = None
+                    try:
+                        add_scopus_doc(e,q,update)
+                        r_count+=1
+                    except:
+                        print(f"couldn't add {e}")
+                        break
     return r_count
 
 def read_scopus(res, q, update):
