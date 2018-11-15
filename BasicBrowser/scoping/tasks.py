@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 from celery import shared_task
 from .models import *
 from utils.utils import *
-from scoping.utils import *
+from scoping.utils import utils
 import os
 from django.db import connection, transaction
 from psycopg2.extras import *
@@ -82,9 +82,9 @@ def upload_docs(qid, update):
     print(q.title)
 
     if ".xml" in q.query_file.name.lower():
-        r_count = read_xml(q,update)
+        r_count = utils.read_xml(q,update)
 
-    if ".RIS" in q.query_file.name or ".ris" in q.query_file.name:
+    elif ".RIS" in q.query_file.name or ".ris" in q.query_file.name:
         r_count = read_ris(q,update)
 
     elif q.database =="WoS":

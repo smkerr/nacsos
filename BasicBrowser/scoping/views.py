@@ -98,11 +98,13 @@ class QueryCreate(CreateView):
 
             if file_extension.lower()==".xml":
                 with open(fpath,'w', encoding='utf-8') as res:
+                    res.write('<?xml version="1.0" encoding="UTF-8"?>')
                     res.write('<articlelist>')
                     for f in files:
                         for line in f:
-                            if "<?xml" not in line:
-                                res.write(str(line))
+                            if "<?xml" not in str(line):
+                                res.write(line.decode('utf-8'))
+                    res.write('</articlelist>')
 
             else:
                 with open(fpath,'w', encoding='utf-8') as res:
