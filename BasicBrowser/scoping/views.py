@@ -1815,8 +1815,8 @@ def userpage(request, pid):
         query__project=project
     ).values('query__id','query__type','id').order_by('-id')
 
-    # if project.id==1:
-    #     queries = queries.filter(id__gt=731)
+    if project.id==1 and project.title=='Sustainability':
+         queries = queries.filter(id__gt=731)
 
     query_list = []
 

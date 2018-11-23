@@ -20,6 +20,10 @@ class TwitterBaseModel(models.Model):
 class User(TwitterBaseModel):
 
     ## Extra fields
+    scrape_fetched = models.DateTimeField(u'Fetched', null=True, blank=True)
+    until = models.DateTimeField(null=True)
+    since = models.DateTimeField(null=True)
+
     mdb_name = models.CharField(max_length=50)
     person = models.OneToOneField(pmodels.Person, null=True, on_delete=models.SET_NULL)
     monitoring = models.BooleanField(default=False)
