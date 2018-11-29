@@ -388,6 +388,7 @@ class Query(models.Model):
     innovation  = models.ForeignKey('Innovation', on_delete=models.CASCADE, null=True)
     query_file = models.FileField(upload_to='queries/',null=True)
     queries = models.ManyToManyField("self",symmetrical=False)
+    upload_log = models.TextField(null=True)
 
 
     def __str__(self):

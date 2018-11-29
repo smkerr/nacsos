@@ -259,6 +259,8 @@ def read_wos(res, q, update):
 
 def add_doc_text(r,q,update):
 
+    DEBUG=False
+
     scopus2WoSFields = {
         'M3': 'dt',
         'TI': 'ti',
@@ -295,9 +297,14 @@ def add_doc_text(r,q,update):
     mfields = ['au','AF','cr','C1']
     for line in r:
         if re.search("([A-Z][A-Z1-9])(\s{2}-\s*)",line):
+            if DEBUG: print("= IF / Key found! ============================================================")
+            if DEBUG: print(line)
             s = re.search("([A-Z][A-Z1-9])(\s{2}-\s*)(.*)",line)
+            if DEBUG: print(s)
             key = s.group(1).strip()
+            if DEBUG: print(key)
             value = s.group(3).strip()
+            if DEBUG: print(value)
             if re.search("(.*)([A-Z][A-Z1-9])(\ {2}-\s*)",value):
                 s = re.search("(.*)([A-Z][A-Z1-9])(\s*-\s*)(.*)",value)
                 value = s.group(1).strip()
@@ -314,38 +321,57 @@ def add_doc_text(r,q,update):
                 else:
                     record[nextkey] = nextvalue
 
-
+            if DEBUG: print("= N1 ============================================================")
             if key=="N1":
+                if DEBUG: print("= N1 ============================================================")
                 s = re.search("([a-zA-Z1-9 ]*): *(.*)",value)
+                if DEBUG: print(s)
                 try:
                     key = s.group(1).strip()
                     value = s.group(2).strip()
+                    if DEBUG: print(key)
+                    if DEBUG: print(value)
                 except:
                     print(key)
                     print(value)
 
+            if DEBUG: print("= scopus2WoSFields ============================================================")
             try:
                 key = scopus2WoSFields[key]
+                if DEBUG: print("try...")
+                if DEBUG: print(key)
             except:
+                if DEBUG: print("except...")
+                if DEBUG: print(key)
                 pass
 
 
-
+            if DEBUG: print("= key in mfields ============================================================")
             if key in mfields:
+                if DEBUG: print("  > True")
                 if key in record:
+                    if DEBUG: print("    > Key already in record. Appending...")
                     record[key].append(value)
                 else:
+                    if DEBUG: print("    > Key not in record. Adding...")
                     record[key] = [value]
             else:
+                if DEBUG: print("  > False")
                 if key in record:
+                    if DEBUG: print("    > Key already in record. Appending...")
                     record[key] += "; " + value
                 else:
+                    if DEBUG: print("    > Key not in record. Adding...")
                     record[key] = value
 
         elif len(line) > 1:
+            if DEBUG: print("= ELIF / Key not found! ============================================================")
+            if DEBUG: print(line)
             if key in mfields:
+                if DEBUG: print("  > Key in mfields. Appending...")
                 record[key].append(line.strip())
             else:
+                if DEBUG: print("  > Key not in mfields. Adding...")
                 record[key] += line.strip()
 
     try:
@@ -429,7 +455,6 @@ def add_scopus_doc(r,q,update):
             )
 
         if len(docs)==1:
-            docs.first().query.add(q)
             doc = docs.first()
         elif len(docs)>1: # if there are two, that's bad!
             print("more than one doc matching!!!!!")
@@ -458,7 +483,6 @@ def add_scopus_doc(r,q,update):
             for d in py_docs.iterator():
                 j = jaccard(s1,d.shingle())
                 if j > 0.51:
-                    d.query.add(q)
                     doc = d
                     break
 
@@ -482,6 +506,9 @@ def add_scopus_doc(r,q,update):
                 doc.save()
                 #print(doc)
     if doc is not None:
+        if doc.query.filter(pk=q.id).exists():
+            q.upload_log+=f"<p>This document ({doc.title}) is considered an internal duplicate of ({get(r,'ti')}) "
+            q.save()
         if r['UT'] is not None:
             doc.UT.sid = r['UT']
             doc.UT.save()
@@ -504,6 +531,7 @@ def add_scopus_doc(r,q,update):
             pass
         doc.save()
         article.save()
+
         doc.query.add(q)
         #doc.projects.add(q.project)
     if doc is not None and "WOS:" not in str(doc.UT.UT):

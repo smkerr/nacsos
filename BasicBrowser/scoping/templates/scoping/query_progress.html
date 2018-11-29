@@ -52,6 +52,9 @@
                         <p>View the <a href="{% url 'scoping:doclist' query.project.id query.id %}">{{doclength}}</a> documents which have been uploaded.
 
                     {% endif %}
+
+                    <h4> Upload Log
+                        <p>{{query.upload_log | safe}}
                 {% endif %}
             </div>
         </div>
