@@ -78,11 +78,15 @@ def ihighlight(word, text):
     idx = 0
     remaining_text = text
     parsed_text = ""
-    for m in re.finditer(word.lower().replace("*","\w*"),text.lower()):
-        parsed_text += f'{text[idx:m.span()[0]]}<span class="t1">{m.group()}</span>'
-        idx = m.span()[1]
-        remaining_text = text[idx:]
-        
+    word = word.replace("(","").replace(")","")
+    try:
+        for m in re.finditer(word.lower().replace("*","\w*"),text.lower()):
+            parsed_text += f'{text[idx:m.span()[0]]}<span class="t1">{m.group()}</span>'
+            idx = m.span()[1]
+            remaining_text = text[idx:]
+    except:
+        pass
+
     return parsed_text + remaining_text
 
 
