@@ -71,6 +71,9 @@ def update_techs(pid):
 @shared_task
 def upload_docs(qid, update):
     q = Query.objects.get(pk=qid)
+    q.doc_set.clear()
+    q.upload_log = ""
+    q.save()
 
     title = str(q.id)
 
