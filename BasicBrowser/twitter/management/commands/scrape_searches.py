@@ -18,7 +18,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         def parse_tjson(tsearch):
-            with open("twitter/tweets.json") as f:
+            with open("tweets/tweets.json") as f:
                 for l in f:
                     tweet = json.loads(l)
                     user, created = User.objects.get_or_create(
@@ -60,7 +60,7 @@ class Command(BaseCommand):
             print(then.strftime("%Y-%m-%d"))
             for ts in TwitterSearch.objects.all():
                 try:
-                    os.remove("twitter.json")
+                    os.remove("tweets.json")
                 except:
                     pass
                 c = twint.Config()
@@ -68,7 +68,7 @@ class Command(BaseCommand):
                 c.Since = then.strftime("%Y-%m-%d")
                 c.Until = now.strftime("%Y-%m-%d")
                 c.Store_json = True
-                c.Output = "twitter.json"
+                c.Output = "tweets.json"
                 twint.run.Search(c)
 
                 parse_tjson(ts)

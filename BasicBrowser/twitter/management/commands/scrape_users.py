@@ -19,9 +19,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         def parse_tjson(uname):
-            if not Path("twitter/users.json").is_file():
+            if not Path("tweets/users.json").is_file():
                 return
-            with open("twitter/users.json") as f:
+            with open("tweets/users.json") as f:
                 for l in f:
                     u = json.loads(l)
                     user, created = User.objects.get_or_create(
@@ -35,9 +35,9 @@ class Command(BaseCommand):
                         user.screen_name=u['username']
                         user.save()
                 main_user = user
-            if not Path("twitter/tweets.json").is_file():
+            if not Path("tweets/tweets.json").is_file():
                 return
-            with open("twitter/tweets.json") as f:
+            with open("tweets/tweets.json") as f:
                 for l in f:
                     tweet = json.loads(l)
                     try:
@@ -87,8 +87,8 @@ class Command(BaseCommand):
             for u in User.objects.filter(monitoring=True):
                 print(u.screen_name)
                 try:
-                    os.remove("twitter/users.json")
-                    os.remove("twitter/tweets.json")
+                    os.remove("tweets/users.json")
+                    os.remove("tweets/tweets.json")
                 except:
                     pass
                 c = twint.Config()
@@ -98,7 +98,7 @@ class Command(BaseCommand):
                 c.Until = now.strftime("%Y-%m-%d")
                 c.Store_json = True
                 c.All = u.screen_name
-                c.Output = "twitter.json"
+                c.Output = "tweets.json"
                 twint.run.Profile(c)
 
                 parse_tjson(u.screen_name)

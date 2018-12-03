@@ -74,15 +74,17 @@ def is_number(s):
     except ValueError:
         return False
 
-def ihighlight(old, text):
+def ihighlight(word, text):
     idx = 0
-    while idx < len(text):
-        index_l = text.lower().find(old.lower(), idx)
-        if index_l == -1:
-            return text
-        text = text[:index_l] + '<span class="t1">' + text[index_l:index_l+len(old)] + '</span>' + text[index_l + len(old):]
-        idx = index_l + len('<span class="t1">'+'</span>')
-    return text
+    remaining_text = text
+    parsed_text = ""
+    for m in re.finditer(word.lower().replace("*","\w*"),text.lower()):
+        parsed_text += f'{text[idx:m.span()[0]]}<span class="t1">{m.group()}</span>'
+        idx = m.span()[1]
+        remaining_text = text[idx:]
+        
+    return parsed_text + remaining_text
+
 
 def clean_qword(s):
     # Remove WoS + Scopus Field Keys
@@ -97,7 +99,7 @@ def clean_qword(s):
         return False
     if s in OPERATORS:
         return False
-    return s
+    return
 
 
 def extract_words_phrases(s):
