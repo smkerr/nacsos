@@ -85,6 +85,7 @@ def ihighlight(word, text):
             idx = m.span()[1]
             remaining_text = text[idx:]
     except:
+        print(word)
         pass
 
     return parsed_text + remaining_text

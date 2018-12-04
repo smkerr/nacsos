@@ -9,6 +9,8 @@
   <div class="explanation">
   <h2> Query #{{query.id}} ({{query.title}}) Overview - <a href="{% url 'scoping:doclist' query.project.id query.id %}">View Docs</a></h2>
   <p/>
+  <p>Check out the query's upload <a href="{% url 'scoping:querying' query.id %}">log</a>
+      <p>
   This query is used in <b>[{{ query.tms }}]</b> topic models. Click <a href="{% url 'scoping:query_tm_manager' query.id %}">here</a>
       to manage topic models with this query
       {% if pars %}

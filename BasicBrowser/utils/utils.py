@@ -169,6 +169,7 @@ def add_doc(r, q, update):
                         a_added=True
                     except:
                         doc.docauthinst_set.all().delete()
+                        print("{} {} {} {} {}".format(doc,au,af,institute,a+1))
                         dai,created = scoping.models.DocAuthInst.objects.get_or_create(
                             doc=doc,
                             AU = au,
@@ -180,13 +181,27 @@ def add_doc(r, q, update):
                         a_added=True
                         print("{} {} {} {} {}".format(doc,au,af,institute,a+1))
             if a_added == False: # i.e. if there is nothing in institution...
-                dai, created = scoping.models.DocAuthInst.objects.get_or_create(
-                    doc=doc,
-                    AU = au,
-                    AF = af,
-                    position = a+1
-                )
-                dai.save()
+                try:
+                    dai, created = scoping.models.DocAuthInst.objects.get_or_create(
+                        doc=doc,
+                        AU = au,
+                        AF = af,
+                        position = a+1
+                    )
+                    dai.save()
+                except:
+                    dais = scoping.models.DocAuthInst.objects.filter(
+                        doc=doc,
+                        AU = au,
+                        AF = af,
+                        position = a+1
+                    )
+                    if dais[0] != dais[1]:
+                        pass
+                    else:
+                        print(dais.values_list('institution',flat=True))
+
+
 
         doc.authors = ', '.join([x.AU for x in doc.docauthinst_set.all().order_by('position')])
         try:
@@ -412,8 +427,11 @@ def add_scopus_doc(r,q,update):
     try:
         r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid'].strip()
     except:
-        if 'UT' not in r:
-            r['UT'] = str(uuid.uuid1())
+        if 'UT' not in r or r['UT'] is None:
+            if r['url'] is not None:
+                r['UT'] = r['url']
+            else:
+                r['UT'] = str(uuid.uuid1())
         else:
             print(r['UT'])
         r['url'] = r['UT']
@@ -694,10 +712,16 @@ def read_ris(q, update):
         entries = readris(f,mapping=RIS_KEY_MAPPING)
         try:
             for e in entries:
+                if "py" in e:
+                    if type(e["py"] is str):
+                        e["py"] = int(e["py"][:4])
+                if "unknown_tag" in e:
+                    del e["unknown_tag"]
                 try:
                     add_scopus_doc(e,q,update)
                     r_count+=1
                 except:
+                    return e
                     print(f"couldn't add {e}")
         except:
             r_count = 0
@@ -716,6 +740,9 @@ def read_ris(q, update):
                                 e["tc"] = int(digits[0])
                             else:
                                 e["tc"] = None
+                    if "unknown_tag" in e:
+                        del e["unknown_tag"]
+
                     try:
                         add_scopus_doc(e,q,update)
                         r_count+=1

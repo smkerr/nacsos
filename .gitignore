@@ -19,3 +19,4 @@ env.bak/
 venv.bak/
 BasicBrowser/twitter/users.json
 BasicBrowser/twitter/tweets.json
+BasicBrowser/tweets/*

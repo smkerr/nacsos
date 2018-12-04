@@ -256,15 +256,9 @@ def project(request, pid):
     queries = Query.objects.filter(
         project=p
     )
-    if not queries.exists() == 0:
-        queries = Query.objects.all()
 
-    if queries.exists():
-        query = queries.last()
-        qid = query.id
-    else:
-        query = None
-        qid = None
+
+    qid = None
 
     p.mixed_docs = p.docproject_set.filter(relevant=3).count()
     p.unrated_docs = p.docproject_set.filter(relevant=0).count()
@@ -444,10 +438,7 @@ def queries(request, pid):
             project=p
         )
 
-    query = queries.last()
-
-    if query is None:
-        query = Query.objects.last()
+    query = None
 
     for q in queries:
         q.tech = q.category
