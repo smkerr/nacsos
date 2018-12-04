@@ -141,11 +141,18 @@ def network(request,run_id):
         target=F('topiccorr')
     )
     links = json.dumps(list(links.values('source','target','score')),indent=4,sort_keys=True)
+
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = 'parliament'
+
     context = {
         "nodes":nodes,
         "links":links,
         "run_id":run_id,
-        "stat": RunStats.objects.get(pk=run_id)
+        "stat": RunStats.objects.get(pk=run_id),
+        "project": project
     }
 
     return HttpResponse(template.render(context, request))
@@ -1079,7 +1086,7 @@ def topic_presence_detail(request,run_id):
     if stat.query:
         project = stat.query.project
     else:
-        project = None
+        project = 'parliament'
 
     context = {
         'run_id': run_id,
@@ -1117,6 +1124,7 @@ def topic_presence_detail(request,run_id):
 
     return HttpResponse(template.render(context))
 
+
 def dtm_home(request, run_id):
     template = loader.get_template('tmv_app/dtm_home.html')
 
@@ -1148,13 +1156,19 @@ def dtm_home(request, run_id):
         share__isnull=False
     ).values('period__n','dtopic__id','dtopic__title','score','share'))
 
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = 'parliament'
+
     context = {
         'run_id': run_id,
         'wtopics': wtopics,
         'dtopics': dtopics,
         'periods': periods,
         'stat': stat,
-        'yts': yscores
+        'yts': yscores,
+        'project': project
     }
     return HttpResponse(template.render(context))
 
@@ -1241,15 +1255,28 @@ def stats(request,run_id):
     docs_seen = DocTopic.objects.filter(run_id=run_id).values('doc_id').order_by().distinct().count()
 
     stat.docs_seen = docs_seen
-    stat.num_docs = stat.query.doc_set.count()
+
+    if stat.query:
+        stat.num_docs = stat.query.doc_set.count()
+    elif stat.psearch:
+        if stat.psearch.search_object_type == 1:
+            stat.num_docs = stat.psearch.par_count
+        else:
+            stat.num_docs = stat.psearch.utterance_count
 
     stat.save()
+
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = 'parliament'
 
     context = {
         'run_id': run_id,
         'stat': stat,
         'num_topics': Topic.objects.filter(run_id=run_id).count(),
         'num_terms': Term.objects.filter(run_id=run_id).count(),
+        'project': project
     }
 
     return HttpResponse(template.render(context))
