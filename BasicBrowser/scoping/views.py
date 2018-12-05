@@ -502,13 +502,37 @@ def generate_query(request,pid,t):
         docs = Doc.objects.filter(
             docproject__project=project,docproject__relevant=0
         )
-
+    elif t==6:
+        q.title=project.title+" - all title-relevant docs"
+        docs = Doc.objects.filter(
+            docownership__query__project=project,
+            docownership__relevant=1,
+            docownership__title_only=True
+        )
+    elif t==7:
+        q.title=project.title+" - all abstract-relevant docs"
+        docs = Doc.objects.filter(
+            docownership__query__project=project,
+            docownership__relevant=1,
+            docownership__title_only=False
+        )
     dids = set(docs.values_list('pk',flat=True))
     Through = Doc.query.through
     dqs = [Through(doc_id=d,query=q) for d in dids]
     Through.objects.bulk_create(dqs)
     q.r_count = q.doc_set.count()
     q.save()
+
+    t = Tag(
+        title="all",
+        text="all",
+        query=q
+    )
+    t.save()
+    Through = Doc.tag.through
+    dts = [Through(doc_id=d,tag=t) for d in dids]
+    Through.objects.bulk_create(dts)
+    t.update_tag()
 
     return HttpResponseRedirect(reverse(
         'scoping:queries',

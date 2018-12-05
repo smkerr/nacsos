@@ -35,9 +35,7 @@ html, body {
     height: 100%;
 }
 
-.scoped-doc {
-    stroke: lightgrey;
-}
+
 
 div.tooltip {
     position: absolute;
@@ -349,6 +347,6 @@ button.btntag{
   padding: 1px;
 }
 
-button.True {
+button.True, a.True {
     background-color: #ccebc5;
 }

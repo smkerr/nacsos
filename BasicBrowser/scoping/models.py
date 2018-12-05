@@ -752,6 +752,8 @@ class Doc(models.Model):
         if q is not None:
             if q.__class__ == scoping.models.Project:
                 qs = q.query_set.exclude(database="intern")
+            elif "GENERATED" in q.text:
+                qs = q.project.query_set.exclude(database="intern")
             elif q.queries.exists():
                 qs = []
                 for q1 in q.queries.all():
