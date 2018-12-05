@@ -166,7 +166,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
     if s.search_object_type == 1:
         ps = Paragraph.objects.filter(search_matches=s)
         docs = ps.filter(text__iregex='\w')
-        texts, docsizes, ids = process_texts(docs, stoplist, stat.fulltext)
+        texts, docsizes, ids = process_texts(docs)
 
     elif s.search_object_type == 2:
         uts = Utterance.objects.filter(search_matches=s)

@@ -443,6 +443,10 @@ td.high-contrast a {
     color:black;
 }
 
+td.word_list_item a {
+    color:black;
+}
+
 #topics td:active {
     color: #0050FF;
 }

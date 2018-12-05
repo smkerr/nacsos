@@ -1,6 +1,5 @@
-{% extends "tmv_app/base.html" %}
-
-{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=topic.run_id.pk %} {% endblock %}
+{% extends "tmv_app/base_bs.html" %}
+{% load bootstrap4 %}
 
 {% block content %}
 
@@ -31,7 +30,7 @@
     {% if terms %}
 	    {% for term in terms %}
 	    <tr class="list" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')">
-                <td id="{{ term.title }}_list"><a href="{% url 'tmv_app:term_detail' run_id term.id %}">{{ term.title }} - {{term.score}}</a>
+                <td class="word_list_item" id="{{ term.title }}_list"><a href="{% url 'tmv_app:term_detail' run_id term.id %}">{{ term.title }} - {{term.score}}</a>
                 </td>
 
         </tr>

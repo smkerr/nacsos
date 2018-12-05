@@ -28,5 +28,6 @@ urlpatterns = [
 
     url(r'^document/(?P<did>[0-9]+)/$', views.document, name='document'),
     url(r'^utterance/(?P<ut_id>[0-9]+)/$', views.utterance, name='utterance'),
+    url(r'^paragraph/(?P<par_id>[0-9]+)/$', views.paragraph, name='paragraph'),
 
 ]

@@ -1,13 +1,12 @@
-{% extends "tmv_app/base.html" %}
-
-{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=topic.run_id.pk %} {% endblock %}
+{% extends "tmv_app/base_bs.html" %}
+{% load bootstrap4 %}
 
 {% block content %}
 
 <div id="top"></div>
 <h1 id="header">
 <table><tr>
-<td id="title">{{ topic.title }}</td>
+<td id="title">Dynamic Topic: {{ topic.title }}</td>
 </tr></table></span>
 <hr noshade>
 </h1>
@@ -50,7 +49,7 @@
 
   </table>
 </td>
-</table
+</table>
 
 {% endblock %}
 

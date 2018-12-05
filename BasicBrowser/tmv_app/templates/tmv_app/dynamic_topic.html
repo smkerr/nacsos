@@ -1,11 +1,11 @@
-{% extends "tmv_app/base.html" %}
-
-{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=run_id %} {% endblock %}
+{% extends "tmv_app/base_bs.html" %}
+{% load bootstrap4 %}
 
 {% block content %}
 <div id="top"></div>
 <div id="header">
 <h1>{{project.title}} Topics</h1>
+<br>
 <h2>Dynamic Topic Overview</h2>
 <h3>{{topic.title}}
 <hr noshade>

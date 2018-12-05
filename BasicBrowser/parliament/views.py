@@ -127,6 +127,7 @@ def document(request,did,page=1):
 
     return HttpResponse(template.render(context, request))
 
+
 @login_required
 def utterance(request, ut_id):
     template = loader.get_template('parliament/utterance.html')
@@ -143,6 +144,23 @@ def utterance(request, ut_id):
         ),
         'document': uts.first().document,
         'ut_id': ut_id
+    }
+
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def paragraph(request, par_id):
+    template = loader.get_template('parliament/paragraph.html')
+
+    par = Paragraph.objects.get(id=par_id)
+
+    context = {
+        'par': par,
+        'speaker': par.utterance.speaker,
+        'document': par.utterance.document,
+        'utterance': par.utterance,
+        'par_id': par_id
     }
 
     return HttpResponse(template.render(context, request))
