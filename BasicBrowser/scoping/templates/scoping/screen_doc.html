@@ -23,9 +23,9 @@
     <div class="m-5" style="margin-top:-25px !important">
         <div class="d-flex justify-content-center">
             <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype 0 todo %}"><<</a></div>
-            <div class="p-2"><a ><</a></div>
-            <div class="p-2"><a>></a></div>
-            <div class="p-2"><a>>></a></div>
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype prev todo %}"><</a></div>
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype next todo %}">></a></div>
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype last todo %}">>></a></div>
         </div>
     </div>
 
@@ -174,6 +174,7 @@ d3.json(url, function(json) {
     var rows = 1 + Math.floor(n/250)
     var wn = (w*rows)/n
     var hn = h/rows
+    var pos = {{pos|safe}}
 
     console.log(wn)
 
@@ -211,16 +212,19 @@ d3.json(url, function(json) {
             .style("opacity", 0);
     })
     .on("click", function(d) {
-        console.log(urlparts)
-        var link = urlparts.slice(0,3).join('/')
-        for (var i = 3; i < urlparts.length; i++) {
-            if (urlparts[i-3]=="screen_doc") {
-                link+="/"+d.order
-            } else {
-                link+="/"+urlparts[i]
+        
+        if (d.order <= pos) {
+            console.log(urlparts)
+            var link = urlparts.slice(0,3).join('/')
+            for (var i = 3; i < urlparts.length; i++) {
+                if (urlparts[i-3]=="screen_doc") {
+                    link+="/"+d.order
+                } else {
+                    link+="/"+urlparts[i]
+                }
             }
+            window.location = link
         }
-        window.location = link
     })
     .attr("y",function(d,i) {
         return (i%rows)*hn

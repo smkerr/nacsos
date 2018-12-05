@@ -4574,6 +4574,17 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
             lcats.append((e,t))
         levels.append(lcats)
 
+    last = dois.filter(relevant__gt=0).count()
+    if pos==last:
+        next=last
+    else:
+        next=pos+1
+
+    if pos==0:
+        prev=0
+    else:
+        prev=pos-1
+
 
     context = {
         'project':tag.query.project,
@@ -4585,7 +4596,10 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
         'todo': todo,
         'ctype': ctype,
         'notes': notes,
-        'levels': levels
+        'levels': levels,
+        'prev': prev,
+        'next': pos+1,
+        'last': last
     }
 
     return render(request, 'scoping/screen_doc.html', context)
