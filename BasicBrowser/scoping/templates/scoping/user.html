@@ -76,7 +76,6 @@
           <td>Query ID</td>
           <td>Query Title</td>
           <td>Tag Title</td>
-          <td># Documents</td>
           <td>! To review</td>
           <td>Reviewed</td>
           {% if user.profile.type == "default" %}
@@ -97,7 +96,6 @@
               <td><a href="/scoping/query/{{q.id}}">{{q.id}}</td>
               <td>{{q.title}}</td>
               <td>{{q.tag.title}}</td>
-              <td>{{q.docstats.ndocs}}</td>
               {% if q.docstats.revdocs > 0 %}
                 <td class="review{{q.unreviewed_docs}} review">
                   <a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/0/0">
