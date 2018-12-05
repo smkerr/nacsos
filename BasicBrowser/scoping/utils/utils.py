@@ -108,6 +108,7 @@ def clean_qword(s):
 
 
 def extract_words_phrases(s):
+    s = s.replace('“','"').replace('”','"')
     s = s.replace("All of the words:","")
     phrase = re.compile('"([^"]*)"')
 

@@ -16,7 +16,7 @@ class Command(BaseCommand):
 
         print("\n\n#########\n\n")
         print("using twint to scrape searches")
-        call_command('scrape_searches', 250)
+        call_command('scrape_searches', 500)
         print("\n\n#########\n\n")
         print("using twint to scrape users")
-        call_command('scrape_users', 250)
+        call_command('scrape_users', 500)

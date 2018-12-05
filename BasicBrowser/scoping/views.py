@@ -502,13 +502,37 @@ def generate_query(request,pid,t):
         docs = Doc.objects.filter(
             docproject__project=project,docproject__relevant=0
         )
-
+    elif t==6:
+        q.title=project.title+" - all title-relevant docs"
+        docs = Doc.objects.filter(
+            docownership__query__project=project,
+            docownership__relevant=1,
+            docownership__title_only=True
+        )
+    elif t==7:
+        q.title=project.title+" - all abstract-relevant docs"
+        docs = Doc.objects.filter(
+            docownership__query__project=project,
+            docownership__relevant=1,
+            docownership__title_only=False
+        )
     dids = set(docs.values_list('pk',flat=True))
     Through = Doc.query.through
     dqs = [Through(doc_id=d,query=q) for d in dids]
     Through.objects.bulk_create(dqs)
     q.r_count = q.doc_set.count()
     q.save()
+
+    t = Tag(
+        title="all",
+        text="all",
+        query=q
+    )
+    t.save()
+    Through = Doc.tag.through
+    dts = [Through(doc_id=d,tag=t) for d in dids]
+    Through.objects.bulk_create(dts)
+    t.update_tag()
 
     return HttpResponseRedirect(reverse(
         'scoping:queries',
@@ -1850,7 +1874,7 @@ def userpage(request, pid):
                 'docstats': docstats
             })
 
-    query = Query.objects.filter(project=project).last()#.query
+    query = None # Query.objects.filter(project=project).last()#.query
 
     codings = DocMetaCoding.objects.filter(project=project,user=request.user)
 
@@ -4515,14 +4539,21 @@ def rate_par(request,tid,ctype,doid,todo,done):
         }
     ))
 
+
 @login_required
-def screen_doc(request,tid,ctype,pos,todo):
+def screen_doc(request,tid,ctype,pos,todo, js=0):
     tag = Tag.objects.get(pk=tid)
     dois = DocOwnership.objects.filter(
         order__isnull=False,
         tag=tag,
         user=request.user
     ).order_by('order')
+
+    if js==1:
+        if pos==0:
+            time.sleep(3)
+        dois = dois.values('order','doc__title','relevant')
+        return HttpResponse(json.dumps(list(dois)), content_type="application/json")
 
     s = 0
     while s < 5:
@@ -4567,6 +4598,17 @@ def screen_doc(request,tid,ctype,pos,todo):
             lcats.append((e,t))
         levels.append(lcats)
 
+    last = dois.filter(relevant__gt=0).count()
+    if pos==last:
+        next=last
+    else:
+        next=pos+1
+
+    if pos==0:
+        prev=0
+    else:
+        prev=pos-1
+
 
     context = {
         'project':tag.query.project,
@@ -4578,7 +4620,10 @@ def screen_doc(request,tid,ctype,pos,todo):
         'todo': todo,
         'ctype': ctype,
         'notes': notes,
-        'levels': levels
+        'levels': levels,
+        'prev': prev,
+        'next': pos+1,
+        'last': last
     }
 
     return render(request, 'scoping/screen_doc.html', context)
