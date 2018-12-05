@@ -1,6 +1,5 @@
-{% extends "tmv_app/base.html" %}
-
-{% block navbar %} {% include 'tmv_app/nav_bar.html' with run_id=stats.run_id %} {% endblock %}
+{% extends "tmv_app/base_bs.html" %}
+{% load bootstrap4 %}
 
 {% block content %}
 
@@ -18,7 +17,11 @@
         Model started running at {{ stat.start }}, and has run {{ stats_start|timesince:stat.last_update }}.
         <br>Last update at {{ stat.last_update }}, or {{ stat.last_update|timesince}} ago.
         <br>{{ num_batches }} Batches Completed
-        <br>{{ stat.docs_seen }} out of {{ stat.num_docs }} Documents seen
+        {% if stat.query %}
+            <br>{{ stat.docs_seen }} out of {{ stat.num_docs }} Documents seen
+        {% elif stat.psearch %}
+            <br>{{ stat.num_docs }} Paragraphs / Utterances
+        {% endif %}
         <br>{{ num_topics }} Topics
         <br>{{ num_terms }} Terms
         </td></tr>

@@ -7,35 +7,62 @@
 
      <div class="collapse navbar-collapse" id="navbarSupportedContent">
        <ul class="navbar-nav mr-auto">
+       {% if project != 'parliament' %}
          <li class="nav-item active">
            <a class="nav-link" href="{% url 'scoping:index' %}">Projects <span class="sr-only">(Projects)</span></a>
          </li>
          {% if project %}
-         <li class="nav-item">
-           <a class="nav-link" href="{% url 'scoping:project' project.id %}">Home <span class="sr-only">(Home)</span></a>
-         </li>
-         <li class="nav-item">
-           <a class="nav-link" href="{% url 'tmv_app:runs' project.id %}">Topic models</a>
-         </li>
-         <li class="nav-item">
-           <a class="nav-link" href="{% url 'tmv_app:network' run_id %}">Network</a>
-         </li>
-         <li class="nav-item">
-           <a class="nav-link" href="{% url 'tmv_app:network_wg' run_id %}">WG network</a>
-         </li>
-         <li class="nav-item">
-           <a class="nav-link" href="{% url 'tmv_app:growth_heatmap' run_id %}">Growth heatmap</a>
-         </li>
-         <li class="nav-item">
-           <a class="nav-link" href="{% url 'tmv_app:random_doc' run_id %}">Random doc</a>
-         </li>
-         <li class="nav-item">
-           <a class="nav-link" href="{% url 'tmv_app:stats' run_id %}">Stats</a>
-         </li>
-         <li class="nav-item">
-           <a class="nav-link" href="{% url 'scoping:userpage' user.id %}">{{user.username}}</a>
-         </li>
+           <li class="nav-item">
+             <a class="nav-link" href="{% url 'scoping:project' project.id %}">Home <span class="sr-only">(Home)</span></a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="{% url 'tmv_app:runs' project.id %}">Topic models</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="{% url 'tmv_app:network' run_id %}">Network</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="{% url 'tmv_app:network_wg' run_id %}">WG network</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="{% url 'tmv_app:growth_heatmap' run_id %}">Growth heatmap</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="{% url 'tmv_app:random_doc' run_id %}">Random doc</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="{% url 'tmv_app:stats' run_id %}">Stats</a>
+           </li>
+           <li class="nav-item">
+             <a class="nav-link" href="{% url 'scoping:userpage' user.id %}">{{user.username}}</a>
+           </li>
+         {% endif %}
 
+         {# navigation bar for parliament project #}
+         {% else %}
+            {% if run_id %}
+             <li class="nav-item">
+               <a class="nav-link" href="{% url 'parliament:index' %}">Parliament Viewer<span class="sr-only">(Home)</span></a>
+             </li>
+             <li class="nav-item">
+               <a class="nav-link" href="{% url 'parliament:search' %}">Searches <span class="sr-only">(Home)</span></a>
+             </li>
+             <li class="nav-item">
+               <a class="nav-link" href="{% url 'tmv_app:topics' run_id %}">Topics</a>
+             </li>
+             <li class="nav-item">
+               <a class="nav-link" href="{% url 'tmv_app:network' run_id %}">Network</a>
+             </li>
+             <li class="nav-item">
+               <a class="nav-link" href="{% url 'tmv_app:stats' run_id %}">Stats</a>
+             </li>
+             <li class="nav-item">
+               <a class="nav-link" href="/accounts/logout">Logout</a>
+             </li>
+            {% else %}
+            <td class="navtext linked"><a href="{% url 'tmv_app:runs' %}">Home
+              &nbsp;&#x25B8; Select a run to explore topic models</a></td>
+            {% endif %}
 
          <!-- <li class="nav-item">
            <a class="nav-link" href="#">Link</a>

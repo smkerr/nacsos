@@ -439,6 +439,10 @@ border-spacing: 2px 2px;*/
     cursor: pointer;
 }
 
+td.high-contrast a {
+    color:black;
+}
+
 #topics td:active {
     color: #0050FF;
 }
