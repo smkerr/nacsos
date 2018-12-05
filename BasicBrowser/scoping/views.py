@@ -1850,7 +1850,7 @@ def userpage(request, pid):
                 'docstats': docstats
             })
 
-    query = Query.objects.filter(project=project).last()#.query
+    query = None # Query.objects.filter(project=project).last()#.query
 
     codings = DocMetaCoding.objects.filter(project=project,user=request.user)
 
@@ -4515,14 +4515,21 @@ def rate_par(request,tid,ctype,doid,todo,done):
         }
     ))
 
+
 @login_required
-def screen_doc(request,tid,ctype,pos,todo):
+def screen_doc(request,tid,ctype,pos,todo, js=0):
     tag = Tag.objects.get(pk=tid)
     dois = DocOwnership.objects.filter(
         order__isnull=False,
         tag=tag,
         user=request.user
     ).order_by('order')
+
+    if js==1:
+        if pos==0:
+            time.sleep(3)
+        dois = dois.values('order','doc__title','relevant')
+        return HttpResponse(json.dumps(list(dois)), content_type="application/json")
 
     s = 0
     while s < 5:

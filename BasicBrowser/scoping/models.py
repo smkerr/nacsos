@@ -418,6 +418,7 @@ class Query(models.Model):
                         category=self.category
                     )
                     dc.query_tagged=True
+                    dc.save()
 
                 pass
 
