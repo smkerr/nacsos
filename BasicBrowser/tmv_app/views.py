@@ -564,11 +564,36 @@ def topic_detail(request, topic_id, run_id=0):
             doctopic__topic=topic, doctopic__run_id=run_id
         ).order_by('-doctopic__score')[:50]
 
-    ndocs = Doc.objects.filter(
-        doctopic__topic=topic,
-        doctopic__run_id=run_id,
-        doctopic__score__gt=stat.dt_threshold
-    ).count()
+    if stat.query:
+        ndocs = Doc.objects.filter(
+            doctopic__topic=topic,
+            doctopic__run_id=run_id,
+            doctopic__score__gt=stat.dt_threshold
+        ).count()
+
+        ### Journals
+        journals = JournalAbbrev.objects.filter(
+            doc__doctopic__topic=topic,
+            doc__journal__isnull=False,
+            doc__doctopic__score__gt=stat.dt_threshold
+        ).values('fulltext').annotate(
+            t=Count('doc__doctopic__score')
+        ).order_by('-t')[:10]
+
+    elif stat.psearch.search_object_type == 1:
+        ndocs = pm.Paragraph.objects.filter(
+            doctopic__topic=topic,
+            doctopic__run_id=run_id,
+            doctopic__score__gt=stat.dt_threshold
+        ).count()
+        journals = None
+    else:
+        ndocs = pm.Utterance.objects.filter(
+            doctopic__topic=topic,
+            doctopic__run_id=run_id,
+            doctopic__score__gt=stat.dt_threshold
+        ).count()
+        journals = None
 
     doctopics = doctopics.values('PY','title','pk','doctopic__score')
     terms = []
@@ -606,15 +631,6 @@ def topic_detail(request, topic_id, run_id=0):
         topic=topic_id,
         dynamictopic__run_id=run_id
     ).order_by('-score')[:10]
-
-    ### Journals
-    journals = JournalAbbrev.objects.filter(
-        doc__doctopic__topic=topic,
-        doc__journal__isnull=False,
-        doc__doctopic__score__gt=stat.dt_threshold
-    ).values('fulltext').annotate(
-        t = Count('doc__doctopic__score')
-    ).order_by('-t')[:10]
 
     topic_page_context = {
         'topic': topic,

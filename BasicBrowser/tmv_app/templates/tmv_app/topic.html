@@ -45,10 +45,12 @@
     <h2>Related Documents ({{ndocs}})</h2>
     <p>Sort by: <select id="sort">
       <option value="-doctopic__score">Score (descending)</option>
+      {% if stat.query %}
       <option value="PY">Year (ascending)</option>
       <option value="-PY">Year (descending)</option>
       <option value="wosarticle__tc">Citations (ascending)</option>
       <option value="-wosarticle__tc">Citations (descending)</option>
+      {% endif %}
     </select>
   </div>
   <p>
