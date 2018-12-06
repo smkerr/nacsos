@@ -303,48 +303,90 @@ def parl_topic(request, tid, pid=0):
     topic = Topic.objects.get(pk=tid)
     stat = topic.run_id
     s = stat.psearch
-    pars = Paragraph.objects.filter(
-        search_matches=s,doctopic__topic=topic
-    ).order_by(
-        '-doctopic__score'
-    )
 
-    if pid !=0:
-        pars = pars.filter(utterance__speaker__party=Party.objects.get(pk=pid))
+    if stat.psearch.search_object_type == 1:
+        pars = Paragraph.objects.filter(
+            search_matches=s,doctopic__topic=topic
+        ).order_by(
+            '-doctopic__score'
+        )
 
-    pt = SearchParTableTopic(pars)
+        if pid !=0:
+            pars = pars.filter(utterance__speaker__party=Party.objects.get(pk=pid))
 
-    pt.reg_replace("|".join([s.text]+[x for x in topic.top_words]),stemmer=SnowballStemmer("german").stemmer)
-    RequestConfig(request).configure(pt)
+        texts = SearchParTableTopic(pars)
 
-    stat = topic.run_id
-    topics = stat.topic_set.all()
+        texts.reg_replace("|".join([s.text] + [x for x in topic.top_words]), stemmer=SnowballStemmer("german").stemmer)
+        RequestConfig(request).configure(texts)
 
-    party_totals = Paragraph.objects.filter(
-        search_matches=s,
-        doctopic__topic__run_id=stat,
-        utterance__speaker__party__name__isnull=False,
-        utterance__speaker__party__colour__isnull=False
-    ).order_by().values('utterance__speaker__party__name').annotate(
-        topic_score=Sum(
-            Case(
-                When(doctopic__topic=topic, then=F('doctopic__score')),
-                default=0,
-                output_field=models.FloatField()
-            )
-        ),
-        total_score=Sum('doctopic__score'),
-    ).annotate(
-        topic_proportion=F('topic_score') / F('total_score')
-    ).values(
-        'topic_proportion',
-        'utterance__speaker__party__id',
-        'utterance__speaker__party__name',
-        'utterance__speaker__party__colour'
-    ).order_by('-topic_proportion')
+        stat = topic.run_id
+        topics = stat.topic_set.all()
+
+        party_totals = Paragraph.objects.filter(
+            search_matches=s,
+            doctopic__topic__run_id=stat,
+            utterance__speaker__party__name__isnull=False,
+            utterance__speaker__party__colour__isnull=False
+        ).order_by().values('utterance__speaker__party__name').annotate(
+            topic_score=Sum(
+                Case(
+                    When(doctopic__topic=topic, then=F('doctopic__score')),
+                    default=0,
+                    output_field=models.FloatField()
+                )
+            ),
+            total_score=Sum('doctopic__score'),
+        ).annotate(
+            topic_proportion=F('topic_score') / F('total_score')
+        ).values(
+            'topic_proportion',
+            'utterance__speaker__party__id',
+            'utterance__speaker__party__name',
+            'utterance__speaker__party__colour'
+        ).order_by('-topic_proportion')
+
+    else:
+        uts = Utterance.objects.filter(
+            search_matches=s, doctopic__topic=topic
+        ).order_by('-doctopic__score')
+
+        if pid !=0:
+            uts = uts.filter(utterance__speaker__party=Party.objects.get(pk=pid))
+
+        texts = SearchSpeechTableTopic(uts)
+
+        texts.reg_replace("|".join([s.text]+[x for x in topic.top_words]),stemmer=SnowballStemmer("german").stemmer)
+        RequestConfig(request).configure(texts)
+
+        stat = topic.run_id
+        topics = stat.topic_set.all()
+
+        party_totals = Utterance.objects.filter(
+            search_matches=s,
+            doctopic__topic__run_id=stat,
+            speaker__party__name__isnull=False,
+            speaker__party__colour__isnull=False
+        ).order_by().values('speaker__party__name').annotate(
+            topic_score=Sum(
+                Case(
+                    When(doctopic__topic=topic, then=F('doctopic__score')),
+                    default=0,
+                    output_field=models.FloatField()
+                )
+            ),
+            total_score=Sum('doctopic__score'),
+        ).annotate(
+            topic_proportion=F('topic_score') / F('total_score')
+        ).values(
+            'topic_proportion',
+            'speaker__party__id',
+            'speaker__party__name',
+            'speaker__party__colour'
+        ).order_by('-topic_proportion')
+
 
     context = {
-        'pars': pt,
+        'texts': texts,
         's': s,
         'x': 'year',
         'y': 'n',

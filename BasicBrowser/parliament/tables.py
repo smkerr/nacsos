@@ -91,22 +91,34 @@ class ModelsTable(tables.Table):
 
 class SearchParTable(tables.Table):
     text = tables.Column()
+
     speaker = tables.LinkColumn(
         'parliament:person',args=[A('utterance.speaker.id')],
-        accessor='utterance.speaker.clean_name',verbose_name='Speaker',
+        accessor='utterance.speaker.clean_name',
+        verbose_name='Speaker',
+        attrs={'td': {'valign': 'top'}}
     )
     party = tables.LinkColumn(
         'parliament:party',args=[A('utterance.speaker.party.id')],
-        accessor='utterance.speaker.party'
+        accessor='utterance.speaker.party',
+        attrs={'td': {'valign': 'top'}}
     )
     utterance = tables.Column(
         accessor='utterance',
-        verbose_name='Document'
+        verbose_name='Document',
+        attrs={'td': {'valign':'top'}}
     )
     date = tables.DateColumn(
         accessor='utterance.document.date',
-        verbose_name='Date'
+        verbose_name='Date',
+        attrs={'td': {'valign': 'top'}}
     )
+    word_count = tables.Column(attrs={'td': {'valign':'top'}})
+
+    char_len = tables.Column(attrs={'td': {'valign':'top'}})
+
+    score = tables.Column(attrs={'td': {'valign':'top'}})
+
     def __init__(self,*args,**kwargs):
         super(SearchParTable, self).__init__(*args, **kwargs)
         self.pattern=None
@@ -146,6 +158,68 @@ class SearchParTableTopic(SearchParTable):
 
     class Meta:
         attrs = {'class': 'partable'}
+
+
+# the same as SearchParTable but for utterances
+class SearchSpeechTable(tables.Table):
+
+    speech_id = tables.LinkColumn('parliament:utterance',
+                             args=[A('id')],
+                             accessor='id')
+
+    document = tables.LinkColumn('parliament:document',
+        args=[A('document.id')],
+        accessor='document',
+        verbose_name='Document',
+        attrs={'td': {'valign':'top'}}
+    )
+
+    speaker = tables.LinkColumn(
+        'parliament:person',args=[A('speaker.id')],
+        accessor='speaker.clean_name',
+        verbose_name='Speaker',
+        attrs={'td': {'valign': 'top'}}
+    )
+    party = tables.LinkColumn(
+        'parliament:party',args=[A('speaker.party.id')],
+        accessor='speaker.party',
+        attrs={'td': {'valign': 'top'}}
+    )
+
+    def __init__(self,*args,**kwargs):
+        super(SearchSpeechTable, self).__init__(*args, **kwargs)
+        self.pattern=None
+
+    def reg_replace(self,pattern,stemmer=None):
+        self.pattern = '('+pattern+')'
+        self.stemmer=stemmer
+
+    def render_text(self,value):
+        if self.pattern is not None:
+            parts = re.split(self.pattern,value,flags=re.IGNORECASE)
+            parts = value.split()
+            if self.stemmer is not None:
+                parts_span = ['<span class="h1">'+x+'</span>' if re.match(self.pattern,self.stemmer.stem(x),re.IGNORECASE) else x for x in parts]
+            else:
+                parts_span = ['<span class="h1">'+x+'</span>' if re.match(self.pattern,x,re.IGNORECASE) else x for x in parts]
+            return format_html(' '.join(parts_span))
+        else:
+            return value
+
+    class Meta:
+        model = Utterance
+        exclude = ('id','speaker_role')
+        attrs = {'class': 'partable'}
+
+
+class SearchSpeechTableTopic(SearchSpeechTable):
+    score = tables.Column(
+        accessor='doctopic.score'
+    )
+
+    class Meta:
+        attrs = {'class': 'partable'}
+
 
 class SeatTable(tables.Table):
 

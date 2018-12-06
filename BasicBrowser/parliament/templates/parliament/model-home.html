@@ -3,10 +3,10 @@
 {% block content %}
 
 
-<h2>Topics for run {{stat.run_id}} on Search <a href="{% url 'parliament:search-home' s.pk ">{{s.title}}</a> </h2>
+<h2>Topics for run <a href="{% url 'tmv_app:topics' stat.run_id%}">{{stat.run_id}}</a> on Search <a href="{% url 'parliament:search-home' s.pk ">{{s.title}}</a> </h2>
 
 {% for t in topics %}
-    <p><a href={% url 'parliament:parl-topic' t.id %}>view party distribution</a>
+    <p><a href="{% url 'parliament:parl-topic' t.id %}">view party distribution</a>
         {% for w in t.top_words %}
         {{w}},
         {% endfor %}

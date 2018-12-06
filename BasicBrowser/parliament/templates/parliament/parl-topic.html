@@ -5,17 +5,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 
 
-<h2>{{topic.title}}</h2>
-<h3>{{topic.top_words}}</h3>
+<h2>Party proportions for Topic {{stat.pk}}: {{topic.title}}</h2>
+<h3>Top words: {% for w in topic.top_words %} {{w}}, {% endfor %}</h3>
 
 <svg id="chartarea"></svg>
 
-{% render_table pars %}
+{% render_table texts %}
 
 <!-- <svg width="960" height="500"></svg> -->
-
-<p>Topic {{stat.pk}}:
-
 
 {% endblock %}
 
