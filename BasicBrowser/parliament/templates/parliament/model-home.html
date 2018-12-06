@@ -3,84 +3,13 @@
 {% block content %}
 
 
-<h2>{{s.title}}</h2>
-<p>Paragraphs found: {{ pars.count}}
-
-
-<svg width="960" height="500"></svg>
-
-<p>Topics {{stat.pk}}:
+<h2>Topics for run {{stat.run_id}} on Search <a href="{% url 'parliament:search-home' s.pk ">{{s.title}}</a> </h2>
 
 {% for t in topics %}
-    <p><a href={% url 'parliament:parl-topic' t.id %}>view</a> {{ t.top_words }}
+    <p><a href={% url 'parliament:parl-topic' t.id %}>view party distribution</a>
+        {% for w in t.top_words %}
+        {{w}},
+        {% endfor %}
 {% endfor %}
 
-{% endblock %}
-
-
-
-
-
-
-{% block script %}
-<script type="text/javascript">
-
-var data = {{graph|safe}};
-
-console.log(data)
-
-var svg = d3.select("svg"),
-    margin = {top: 20, right: 20, bottom: 30, left: 50},
-    width = +svg.attr("width") - margin.left - margin.right,
-    height = +svg.attr("height") - margin.top - margin.bottom,
-    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-var parseTime = d3.timeParse("%Y-%m");
-
-for (i=0;i<data.length;i++) {
-    data[i].year = parseTime(data[i].year)
-}
-
-var x = d3.scaleTime()
-    .rangeRound([0, width]);
-
-var y = d3.scaleLinear()
-    .rangeRound([height, 0]);
-
-var line = d3.line()
-    .x(function(d) { return x(d.year); })
-    .y(function(d) { return y(d.n); });
-
-
-
-
-x.domain(d3.extent(data, function(d) { return d.year; }));
-y.domain(d3.extent(data, function(d) { return d.n; }));
-
-g.append("g")
-  .attr("transform", "translate(0," + height + ")")
-  .call(d3.axisBottom(x))
-.select(".domain")
-  .remove();
-
-g.append("g")
-  .call(d3.axisLeft(y))
-.append("text")
-  .attr("fill", "#000")
-  .attr("transform", "rotate(-90)")
-  .attr("y", 6)
-  .attr("dy", "0.71em")
-  .attr("text-anchor", "end")
-  .text("Paragraphs found");
-
-g.append("path")
-  .datum(data)
-  .attr("fill", "none")
-  .attr("stroke", "steelblue")
-  .attr("stroke-linejoin", "round")
-  .attr("stroke-linecap", "round")
-  .attr("stroke-width", 1.5)
-  .attr("d", line);
-
-</script>
 {% endblock %}
