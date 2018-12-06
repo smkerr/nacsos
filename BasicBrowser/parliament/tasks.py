@@ -157,7 +157,8 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         min_freq=min_df,
         max_df=max_df,
         method=method.upper()[0:2],
-        max_features=max_features
+        max_features=max_features,
+        status=1
     )
 
     stat.save()
