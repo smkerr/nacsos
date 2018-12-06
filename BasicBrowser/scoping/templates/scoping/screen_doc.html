@@ -185,6 +185,9 @@ d3.json(url, function(json) {
     } else {
         sw = m
     }
+    if (wn > 5) {
+        m = 1.5
+    }
     console.log(json)
     graph.selectAll("rect")
     .data(json)
