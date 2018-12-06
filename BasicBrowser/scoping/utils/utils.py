@@ -104,7 +104,7 @@ def clean_qword(s):
         return False
     if s in OPERATORS:
         return False
-    return
+    return s
 
 
 def extract_words_phrases(s):
