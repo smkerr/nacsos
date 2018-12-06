@@ -57,6 +57,9 @@
                <a class="nav-link" href="{% url 'tmv_app:stats' run_id %}">Stats</a>
              </li>
              <li class="nav-item">
+               <a class="nav-link" href="{% url 'parliament:model-home' run_id %}">Topic party views</a>
+             </li>
+             <li class="nav-item">
                <a class="nav-link" href="/accounts/logout">Logout</a>
              </li>
             {% else %}
