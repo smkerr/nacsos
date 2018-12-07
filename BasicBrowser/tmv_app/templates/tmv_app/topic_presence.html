@@ -8,7 +8,7 @@
 <h1>Topic browser</h1>
 <br>
 <h2>Relative presence of topics in all documents</h2>
-<h3>Run no. {{run_id}} on query:
+<h3>Run no. {{run_id}} with {{stat.get_method_display}} model on query
   {% if stat.query %}
     <a href="{% url 'scoping:query' stat.query.id %}">{{stat.query}}</a>
   {% elif stat.psearch %}

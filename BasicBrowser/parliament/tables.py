@@ -90,7 +90,7 @@ class ModelsTable(tables.Table):
             )
 
 class SearchParTable(tables.Table):
-    text = tables.Column()
+    text = tables.Column(verbose_name='Paragraph Text')
 
     speaker = tables.LinkColumn(
         'parliament:person',args=[A('utterance.speaker.id')],
@@ -103,31 +103,31 @@ class SearchParTable(tables.Table):
         accessor='utterance.speaker.party',
         attrs={'td': {'valign': 'top'}}
     )
-    utterance = tables.Column(
-        accessor='utterance',
+
+    utterance = tables.LinkColumn(
+        'parliament:utterance', args=[A('utterance.id')],
+        accessor='utterance.id',
+        verbose_name='From Speech',
+        attrs={'td': {'valign':'top'}}
+    )
+
+    paragraph_id = tables.LinkColumn(
+        'parliament:paragraph', args=[A('id')],
+        accessor='id',
+        verbose_name='Paragraph ID',
+        attrs={'td': {'valign':'top'}}
+    )
+
+    document = tables.LinkColumn(
+        'parliament:document', args=[A('utterance.document.id')],
+        accessor='utterance.document',
         verbose_name='Document',
         attrs={'td': {'valign':'top'}}
     )
-    date = tables.DateColumn(
-        accessor='utterance.document.date',
-        verbose_name='Date',
-        attrs={'td': {'valign': 'top'}}
-    )
-    word_count = tables.Column(attrs={'td': {'valign':'top'}})
-
-    char_len = tables.Column(attrs={'td': {'valign':'top'}})
-
-    score = tables.Column(attrs={'td': {'valign':'top'}})
 
     def __init__(self,*args,**kwargs):
         super(SearchParTable, self).__init__(*args, **kwargs)
         self.pattern=None
-
-    def render_utterance(self,value):
-        d = value.document
-        l = reverse("parliament:document",args=[d.pk])+'#utterance_'+str(value.id)
-        t = "{} - {} , {}".format(d.date, d.doc_type,d.parlperiod.n)
-        return format_html('<a href="{}">{}</a>'.format(l,t))
 
     def reg_replace(self,pattern,stemmer=None):
         self.pattern = '('+pattern+')'
@@ -147,17 +147,29 @@ class SearchParTable(tables.Table):
 
     class Meta:
         model = Paragraph
-        exclude = ('id',)
+        exclude = ('id', 'char_len', 'word_count')
         attrs = {'class': 'partable'}
 
 
 class SearchParTableTopic(SearchParTable):
     score = tables.Column(
-        accessor='doctopic.score'
+        accessor='doctopic_set',
+        verbose_name='Score',
+        attrs={'td': {'valign': 'top'}}
     )
+
+    def render_score(self, value):
+        try:
+            score = value.get(topic__id=self.topic_id).score
+            score_text = "{0:.3g}".format(score)
+        except:
+            score_text = ""
+        return score_text
 
     class Meta:
         attrs = {'class': 'partable'}
+        sequence = ('paragraph_id', 'utterance', 'speaker', 'party', 'document', 'text', 'score')
+
 
 
 # the same as SearchParTable but for utterances
@@ -165,7 +177,10 @@ class SearchSpeechTable(tables.Table):
 
     speech_id = tables.LinkColumn('parliament:utterance',
                              args=[A('id')],
-                             accessor='id')
+                             accessor='id',
+                             verbose_name='Speech ID',
+                             attrs={'td': {'valign': 'top'}}
+                                  )
 
     document = tables.LinkColumn('parliament:document',
         args=[A('document.id')],
@@ -183,6 +198,12 @@ class SearchSpeechTable(tables.Table):
     party = tables.LinkColumn(
         'parliament:party',args=[A('speaker.party.id')],
         accessor='speaker.party',
+        attrs={'td': {'valign': 'top'}}
+    )
+
+    text = tables.Column(
+        accessor='paragraph_texts',
+        verbose_name='Text',
         attrs={'td': {'valign': 'top'}}
     )
 
@@ -206,19 +227,30 @@ class SearchSpeechTable(tables.Table):
         else:
             return value
 
+
     class Meta:
         model = Utterance
         exclude = ('id','speaker_role')
         attrs = {'class': 'partable'}
 
-
 class SearchSpeechTableTopic(SearchSpeechTable):
     score = tables.Column(
-        accessor='doctopic.score'
+        accessor='doctopic_set',
+        verbose_name='Score',
+        attrs={'td': {'valign': 'top'}}
     )
+
+    def render_score(self, value):
+        try:
+            score = value.get(topic__id=self.topic_id).score
+            score_text = "{0:.3g}".format(score)
+        except:
+            score_text = ""
+        return score_text
 
     class Meta:
         attrs = {'class': 'partable'}
+        sequence = ('speech_id', 'speaker', 'party', 'document', 'text', '...')
 
 
 class SeatTable(tables.Table):

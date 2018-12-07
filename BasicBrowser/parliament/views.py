@@ -314,10 +314,12 @@ def parl_topic(request, tid, pid=0):
         if pid !=0:
             pars = pars.filter(utterance__speaker__party=Party.objects.get(pk=pid))
 
-        texts = SearchParTableTopic(pars)
+        texts_table = SearchParTableTopic(pars)
 
-        texts.reg_replace("|".join([s.text] + [x for x in topic.top_words]), stemmer=SnowballStemmer("german").stemmer)
-        RequestConfig(request).configure(texts)
+        texts_table.reg_replace("|".join([s.text] + [x for x in topic.top_words]), stemmer=SnowballStemmer("german").stemmer)
+        texts_table.topic_id = tid
+
+        RequestConfig(request).configure(texts_table)
 
         stat = topic.run_id
         topics = stat.topic_set.all()
@@ -351,12 +353,14 @@ def parl_topic(request, tid, pid=0):
         ).order_by('-doctopic__score')
 
         if pid !=0:
-            uts = uts.filter(utterance__speaker__party=Party.objects.get(pk=pid))
+            uts = uts.filter(speaker__party=Party.objects.get(pk=pid))
 
-        texts = SearchSpeechTableTopic(uts)
+        texts_table = SearchSpeechTableTopic(uts)
 
-        texts.reg_replace("|".join([s.text]+[x for x in topic.top_words]),stemmer=SnowballStemmer("german").stemmer)
-        RequestConfig(request).configure(texts)
+        texts_table.reg_replace("|".join([s.text]+[x for x in topic.top_words]),stemmer=SnowballStemmer("german").stemmer)
+        texts_table.topic_id = tid
+
+        RequestConfig(request).configure(texts_table)
 
         stat = topic.run_id
         topics = stat.topic_set.all()
@@ -384,9 +388,10 @@ def parl_topic(request, tid, pid=0):
             'speaker__party__colour'
         ).order_by('-topic_proportion')
 
+    # print(party_totals)
 
     context = {
-        'texts': texts,
+        'texts': texts_table,
         's': s,
         'x': 'year',
         'y': 'n',
