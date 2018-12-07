@@ -2332,6 +2332,8 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
     relevance_fields.append({"path": "docfile__id", "name": "PDF"})
     relevance_fields.append({"path": "category__name", "name": "Category"})
     relevance_fields.append({"path": "docproject__relevant", "name": "Project relevant"})
+    relevance_fields.append({"path": "docproject__ti_relevant", "name": "Project relevant (title)"})
+    relevance_fields.append({"path": "docproject__ab_relevant", "name": "Project relevant (abstract)"})
     relevance_fields.append({"path": "note__text", "name": "Notes"})
     relevance_fields.append({"path": "relevance_time", "name": "Time of Rating"})
 
@@ -2958,7 +2960,7 @@ def sortdocs(request):
 
     tech = query.category
 
-    if "docproject__relevant" in fields:
+    if "docproject__relevant" in fields or "docproject__ti_relevant" in fields or "docproject__ab_relevant" in fields:
         filt_docs = filt_docs.filter(
             docproject__project=query.project
         )

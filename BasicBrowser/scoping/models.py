@@ -305,6 +305,8 @@ class DocProject(models.Model):
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     relevant = models.IntegerField(default=0, choices=Relevance)
+    ti_relevant = models.IntegerField(default=0, choices=Relevance)
+    ab_relevant = models.IntegerField(default=0, choices=Relevance)
 
     class Meta:
         unique_together = ("doc","project")
@@ -1102,6 +1104,8 @@ def update_docproj(sender, instance, **kwargs):
         print(instance.id)
     if p is None:
         return
+    if instance.relevant==0:
+        return
     dp, created = DocProject.objects.get_or_create(project=p,doc=d)
     if dp.relevant == 0:
         dp.relevant=instance.relevant
@@ -1109,7 +1113,20 @@ def update_docproj(sender, instance, **kwargs):
     elif dp.relevant != instance.relevant:
         dp.relevant = 3
         dp.save()
-
+    if instance.title_only:
+        if dp.ti_relevant == 0:
+            dp.ti_relevant=instance.relevant
+            dp.save()
+        elif dp.ti_relevant != instance.relevant:
+            dp.ti_relevant = 3
+            dp.save()
+    else:
+        if dp.ab_relevant == 0:
+            dp.ab_relevant=instance.relevant
+            dp.save()
+        elif dp.ab_relevant != instance.relevant:
+            dp.ab_relevant = 3
+            dp.save()
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE,null=True, verbose_name="Author - Document")
