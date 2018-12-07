@@ -99,7 +99,6 @@ class Command(BaseCommand):
                 obj = DynamicTopicCorr
 
             else:
-                periods = scoping.models.AR.objects.all()
                 dts = DocTopic.objects.filter(run_id=run_id).values(
                     doc_id,'topic_id','score'
                 )
@@ -107,6 +106,11 @@ class Command(BaseCommand):
 
                 tars = TopicARScores
                 obj = TopicCorr
+
+                if stat.query:
+                    periods = scoping.models.AR.objects.all()
+                else:
+                    periods = stat.periods.all()
 
             #df = df.pivot(index='topic_id',columns='doc_id',values='scaled_score')
 
@@ -134,7 +138,7 @@ class Command(BaseCommand):
                     ytopics = ytopics.filter(ut__document__date__gte=period.start_date,
                                              ut__document__date__lte=period.end_date)
 
-                elif period.ys:
+                elif hasattr(period, 'ys'):
                     ys = period.ys
                     #ytopics = dts.filter(ut__document__date__year__in=ys)
                     ytopics = dts.filter(ut__document__parlperiod__n__in=ys)
