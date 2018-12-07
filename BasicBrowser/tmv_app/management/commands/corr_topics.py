@@ -26,7 +26,6 @@ class Command(BaseCommand):
 
         def correlate_topics(df,period,obj):
 
-
             df = df.pivot(
                 index=doc_id,
                 columns='topic_id',
@@ -62,7 +61,10 @@ class Command(BaseCommand):
                             )
                         topiccorr.score = corrscore
                         topiccorr.save()
+            # end def correlate_topics
 
+
+        # prepare for calculating topic correlation
         run_id = options['run_id']
         allys = True
         if allys:
@@ -128,9 +130,10 @@ class Command(BaseCommand):
             if stat.query:
                 ytopics = dts.filter(doc__PY__in=ys)
             elif stat.psearch:
-                if period.start_date:
-                    ytopics = dts.filter(ut__document__date__gte=period.start_date,
-                                         ut__document__date__lte=period.end_date)
+                if hasattr(period, 'start_date'):
+                    ytopics = ytopics.filter(ut__document__date__gte=period.start_date,
+                                             ut__document__date__lte=period.end_date)
+
                 elif period.ys:
                     ys = period.ys
                     #ytopics = dts.filter(ut__document__date__year__in=ys)
