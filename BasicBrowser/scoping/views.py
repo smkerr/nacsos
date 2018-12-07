@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 import operator
 from django.forms.models import model_to_dict
 from collections import OrderedDict
+import markdown
 
 from cities.models import *
 from tmv_app.models import *
@@ -4611,10 +4612,15 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
     else:
         prev=pos-1
 
+    try:
+        criteria = markdown.markdown(tag.query.criteria)
+    except:
+        criteria = tag.query.criteria
 
     context = {
         'project':tag.query.project,
         'tag': tag,
+        'criteria': criteria,
         'do': do,
         'pc': round(pos/todo*100),
         'doc': doc,

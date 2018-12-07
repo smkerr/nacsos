@@ -4,13 +4,12 @@
 
 {% block content %}
 
-<br>
-<h1> Scoping Review Helper</h1>
+
 
 
 <div class="container ">
     <br>
-    <h4> Query Sampler (<a href="{% url 'scoping:query' tag.query.id %}">Query no. {{tag.query.id}}</a>) - Welcome, {{user.username}}, your progress: </h4>
+    <h4> Query Screener (<a href="{% url 'scoping:query' tag.query.id %}">Query no. {{tag.query.id}}</a>) - Welcome, {{user.username}}, your progress: </h4>
 
     <div class="m-4" style="margin-bottom:-15px !important">
         <div id="graphBox" style="width:100%; height:20px"></div>
@@ -20,7 +19,7 @@
         <div class="progress-bar" role="progressbar" style="width: {{pc}}%;" aria-valuenow="{{pc}}" aria-valuemin="0" aria-valuemax="100">{{pc}}%</div>
     </div>
 
-    <div class="m-4" style="margin-bottom: 5px !important; margin-top:-25px !important">
+    <div class="m-4" style="margin-bottom:-5px !important; margin-top:-25px !important">
         <div class="d-flex justify-content-center">
             <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype 0 todo %}"><<</a></div>
             <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype prev todo %}"><</a></div>
@@ -33,73 +32,95 @@
 </div>
 
 <div class="row">
-<div class="col-3"></div>
-<div class="border rounded bg-white p-4 col-6 m-2 position-sticky sticky-top">
-    <h4>Query criteria</h4>
-    {{tag.query.criteria |safe }}
-</div>
-</div>
 
-<div class="row">
+    <div class="col-9">
+        <div class="row">
+            <div class="col-12">
+                <div class="border rounded bg-white p-3 m-2 position-sticky sticky-top">
+                    <div><h4>Query criteria</h4></div>
+                    <div style="column-count: 2;">
+                    {{criteria |safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <!--  NOTES -->
+            <div class="col-4">
+                <div class="border rounded bg-white my-3 p-2">
+                    Add a note to this document
+                    <hr>
+                    <form action="{% url 'scoping:add_note' %}" method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.path }}">
+                      <input type="hidden" name="docn" value="{{do.doc.id}}"></input>
+                      <input type="hidden" name="tag" value="{{tag.id}}"></input>
+                    <textarea class="form-control" name="note" rows=3>
+                    </textarea>
+                    <br>
+                    <p>
+                    <button type="submit" class="btn btn-primary">Add note</button>
+                    </form>
+                </div>
+                {% for note in notes %}
+                <div class="border rounded bg-white my-3 p-2 note">
+                  <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
+                  <hr>
+                  {{note.text}}
+                  <hr>
+                  <a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
+                  </a>
+                </div>
+                {% endfor %}
+            </div>
+            <!--  DOC -->
+            <div class="col-8">
+            {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+
+            </div>
+        </div>
+    </div>
 
     <div class="col-3">
-        <div class="border rounded bg-white my-3 p-2">
-            Add a note to this document
-            <hr>
-            <form action="{% url 'scoping:add_note' %}" method="post">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{{ request.path }}">
-              <input type="hidden" name="docn" value="{{do.doc.id}}"></input>
-              <input type="hidden" name="tag" value="{{tag.id}}"></input>
-            <textarea class="form-control" name="note" rows=3>
-            </textarea>
-            <br>
-            <p>
-            <button type="submit" class="btn btn-primary">Add note</button>
-            </form>
-        </div>
-        {% for note in notes %}
-        <div class="border rounded bg-white my-3 p-2 note">
-          <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
-          <hr>
-          {{note.text}}
-          <hr>
-          <a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
-          </a>
-        </div>
-        {% endfor %}
-    </div>
-    <div class="col-6">
-    {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+    {% for l in levels %}
 
+        <div class="border rounded bg-white my-3 p-2">
+            Which level {{l.0.1.level}} categories is this paragraph relevant to?
+            (hover for more info)
+                    <hr>
+                {% for t in l %}
+                <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
+
+                {% endfor %}
+        </div>
+
+    {% endfor %}
+    <div class="border rounded bg-white my-3 p-2">
+       {% csrf_token %}
+       <p >Is this document relevant according the criteria shown? (Click buttons or use number keys)</p>
+       <hr>
+
+          <a id="r-1" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}" class="btn btn-secondary m-1 b-yes {% if do.relevant == 1 %} True {% endif %}">Yes (1)</a>
+          <a id="r-2" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}" class="btn btn-secondary m-1 b-no {% if do.relevant == 2 %} True {% endif %}">No (2)</a>
+          <a id="r-3" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}" class="btn btn-secondary m-1 b-maybe {% if do.relevant == 3 %} True {% endif %}">Maybe (3)</a>
+        <!-- </div> -->
     </div>
+    </div>
+
+<!-- </div>
+<div class="row"> -->
+
+
+
+
     <div class="col-3">
 
 
         <br>
 
-        {% for l in levels %}
-            <div class="border rounded bg-white my-3 p-2">
-                Which level {{l.0.1.level}} categories is this paragraph relevant to?
-                (hover for more info)
-                        <hr>
-                    {% for t in l %}
-                    <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
 
-                    {% endfor %}
-            </div>
-        {% endfor %}
 
-        <div class="border rounded bg-white my-3 p-2">
-           {% csrf_token %}
-           <p >Is this document relevant according the criteria shown? (Click buttons or use number keys)</p>
-           <hr>
 
-              <a id="r-1" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}" class="btn btn-secondary m-1 {% if do.relevant == 1 %} True {% endif %}">Yes (1)</a>
-              <a id="r-2" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}" class="btn btn-secondary m-1 {% if do.relevant == 2 %} True {% endif %}">No (2)</a>
-              <a id="r-3" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}" class="btn btn-secondary m-1 {% if do.relevant == 3 %} True {% endif %}">Maybe (3)</a>
-            <!-- </div> -->
-        </div>
 
     </div>
 

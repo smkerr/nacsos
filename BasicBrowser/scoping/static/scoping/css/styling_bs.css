@@ -347,6 +347,24 @@ button.btntag{
   padding: 1px;
 }
 
-button.True, a.True {
+button.True {
     background-color: #ccebc5;
 }
+
+a.True.b-yes {
+    border-color: #91cf60;
+    border-width: 5px;
+}
+
+a.True.b-no {
+    border-color: #fc8d59;
+    border-width: 5px;
+}
+
+a.True.b-maybe {
+    border-color: #FFC30B;
+    border-width: 5px;
+}
+
+
+"#91cf60", 2: "#fc8d59", 3: "#ffffbf", 0: "#F5F5F5"
