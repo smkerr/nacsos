@@ -7,7 +7,7 @@
   <div id="header">
   <h1>Topic network</h1>
     <br>
-  <h3>Run no. {{run_id}} on
+  <h3>Run no. {{run_id}} with {{stat.get_method_display}} model on
   {% if stat.query %}
    query: <a href="{% url 'scoping:query' stat.query.id %}">{{stat.query}}</a>
   {% elif stat.psearch %}

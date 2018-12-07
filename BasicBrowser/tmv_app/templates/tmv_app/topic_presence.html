@@ -13,7 +13,7 @@
     <a href="{% url 'scoping:query' stat.query.id %}">{{stat.query}}</a>
   {% elif stat.psearch %}
     <a href="{% url 'parliament:search-home' stat.psearch.id %}">{{stat.psearch}}</a>
-  {% else %}Query
+  {% else %}
     None
   {% endif %}
 <hr noshade>
