@@ -12,15 +12,15 @@
     <br>
     <h4> Query Sampler (<a href="{% url 'scoping:query' tag.query.id %}">Query no. {{tag.query.id}}</a>) - Welcome, {{user.username}}, your progress: </h4>
 
-    <div class="m-5" style="margin-bottom:-25px !important">
+    <div class="m-4" style="margin-bottom:-15px !important">
         <div id="graphBox" style="width:100%; height:20px"></div>
     </div>
 
-    <div class="progress m-5 position-sticky">
+    <div class="progress m-4 position-sticky">
         <div class="progress-bar" role="progressbar" style="width: {{pc}}%;" aria-valuenow="{{pc}}" aria-valuemin="0" aria-valuemax="100">{{pc}}%</div>
     </div>
 
-    <div class="m-5" style="margin-top:-25px !important">
+    <div class="m-4" style="margin-bottom: 5px !important; margin-top:-25px !important">
         <div class="d-flex justify-content-center">
             <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype 0 todo %}"><<</a></div>
             <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype prev todo %}"><</a></div>
@@ -72,16 +72,6 @@
     <div class="col-6">
     {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
 
-    <div class="border rounded bg-white my-3 p-2">
-       {% csrf_token %}
-       <p class="lead">Is this document relevant according the criteria shown? (Click buttons or use number keys)</p>
-       <hr>
-
-          <a id="r-1" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}" class="btn btn-secondary m-1 {% if do.relevant == 1 %} True {% endif %}">Yes (1)</a>
-          <a id="r-2" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}" class="btn btn-secondary m-1 {% if do.relevant == 2 %} True {% endif %}">No (2)</a>
-          <a id="r-3" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}" class="btn btn-secondary m-1 {% if do.relevant == 3 %} True {% endif %}">Maybe (3)</a>
-        <!-- </div> -->
-    </div>
     </div>
     <div class="col-3">
 
@@ -99,6 +89,17 @@
                     {% endfor %}
             </div>
         {% endfor %}
+
+        <div class="border rounded bg-white my-3 p-2">
+           {% csrf_token %}
+           <p >Is this document relevant according the criteria shown? (Click buttons or use number keys)</p>
+           <hr>
+
+              <a id="r-1" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}" class="btn btn-secondary m-1 {% if do.relevant == 1 %} True {% endif %}">Yes (1)</a>
+              <a id="r-2" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}" class="btn btn-secondary m-1 {% if do.relevant == 2 %} True {% endif %}">No (2)</a>
+              <a id="r-3" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}" class="btn btn-secondary m-1 {% if do.relevant == 3 %} True {% endif %}">Maybe (3)</a>
+            <!-- </div> -->
+        </div>
 
     </div>
 
