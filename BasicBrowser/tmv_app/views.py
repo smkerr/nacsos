@@ -483,7 +483,8 @@ def dynamic_topic_detail(request,topic_id):
         'ysums': list(ysums.values('year','sum')),
         'docs': docs,
         'ytterms': ytterms,
-        'yscores': yscores
+        'yscores': yscores,
+        'user': request.user
     }
     return HttpResponse(template.render(request =request, context=context))
 
@@ -515,7 +516,8 @@ def dtopic_detail(request,topic_id):
         "run_id": run_id,
         "topic":topic,
         "tterms": tterms,
-        "docs": docs
+        "docs": docs,
+        "user": request.user
     }
 
     return HttpResponse(template.render(context))
@@ -644,7 +646,8 @@ def topic_detail(request, topic_id, run_id=0):
         'stat': stat,
         'journals': journals,
         'ndocs': ndocs,
-        'project': project
+        'project': project,
+        'user': request.user
         }
 
     return HttpResponse(topic_template.render(topic_page_context))
@@ -1243,7 +1246,8 @@ def dtm_home(request, run_id):
         'periods': periods,
         'stat': stat,
         'yts': yscores,
-        'project': project
+        'project': project,
+        'user': request.user
     }
     return HttpResponse(template.render(context))
 
