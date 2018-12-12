@@ -428,7 +428,7 @@ def add_scopus_doc(r,q,update):
         r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid'].strip()
     except:
         if 'UT' not in r or r['UT'] is None:
-            if r['url'] is not None:
+            if get(r, 'url') is not None:
                 r['UT'] = r['url']
             else:
                 r['UT'] = str(uuid.uuid1())
