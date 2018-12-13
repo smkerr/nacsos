@@ -1111,21 +1111,39 @@ def update_docproj(sender, instance, **kwargs):
         dp.relevant=instance.relevant
         dp.save()
     elif dp.relevant != instance.relevant:
-        dp.relevant = 3
+        ratings = set(DocOwnership.objects.filter(
+            doc=d,tag__query__project=p
+        ).values_list('relevant', flat=True))
+        if len(ratings) < 2:
+            dp.relevant = instance.relevant
+        else:
+            dp.relevant = 3
         dp.save()
     if instance.title_only:
         if dp.ti_relevant == 0:
             dp.ti_relevant=instance.relevant
             dp.save()
         elif dp.ti_relevant != instance.relevant:
-            dp.ti_relevant = 3
+            ratings = set(DocOwnership.objects.filter(
+                doc=d,tag__query__project=p,title_only=True
+            ).values_list('relevant', flat=True))
+            if len(ratings) < 2:
+                dp.ti_relevant = instance.relevant
+            else:
+                dp.ti_relevant = 3
             dp.save()
     else:
         if dp.ab_relevant == 0:
             dp.ab_relevant=instance.relevant
             dp.save()
         elif dp.ab_relevant != instance.relevant:
-            dp.ab_relevant = 3
+            ratings = set(DocOwnership.objects.filter(
+                doc=d,tag__query__project=p,title_only=False
+            ).values_list('relevant', flat=True))
+            if len(ratings) < 2:
+                dp.ab_relevant = instance.relevant
+            else:
+                dp.ab_relevant = 3
             dp.save()
 
 class DocAuthInst(models.Model):
