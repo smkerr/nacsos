@@ -68,7 +68,7 @@ def doc_cites(doc):
 
 
 def shingle(text):
-    return set(s for s in ngrams(text.lower().split(),2))
+    return set(s for s in ngrams(text.lower().replace("-"," ").split(),2))
 
 def get(r, k):
     try:
@@ -112,6 +112,11 @@ def add_doc(r, q, update):
             pass
         r['kwp'] = get(r,'ID')
         r['iss'] = get(r,'IS')
+        # handle lists of emails
+        if get(r, "EM") is not None:
+            if "; " in get(r,'EM'):
+                r["EMS"] = get(r, "EM").split("; ")
+                r["EM"] = r["EMS"][0]
         for field in r:
             f = field.lower()
             try:

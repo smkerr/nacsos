@@ -4559,14 +4559,14 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
         return HttpResponse(json.dumps(list(dois)), content_type="application/json")
 
     s = 0
-    while s < 5:
+    while s < 15:
         try:
             do = dois[pos]
-            s = 10
+            s = 20
         except:
             s+=1
-            time.sleep(1)
-    if s == 5:
+            time.sleep(1.5)
+    if s == 15:
         return HttpResponseRedirect(reverse(
             'scoping:userpage',
             kwargs={"pid":tag.query.project.id}

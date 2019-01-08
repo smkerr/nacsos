@@ -1003,7 +1003,6 @@ def doc_detail(request, doc_id, run_id):
 
     snowball_stemmer = SnowballStemmer("english")
 
-
     stat = RunStats.objects.get(run_id=run_id)
     if stat.get_method_display() == 'hlda':
         return(doc_detail_hlda(request, doc_id))
@@ -1045,10 +1044,11 @@ def doc_detail(request, doc_id, run_id):
     topicwords = {}
     ntopic = 0
 
-    if dt_thresh_scaled:
-        doctopics = doctopics.filter(scaled_score__gte=dt_threshold/80)
-    else:
-        doctopics = doctopics.filter(score__gte=dt_threshold)
+    # if dt_thresh_scaled:
+    #     doctopics = doctopics.filter(scaled_score__gte=dt_threshold/80)
+    # else:
+    #     doctopics = doctopics.filter(score__gte=dt_threshold)
+    doctopics = doctopics.filter(score__gte=dt_threshold)
     for dt in doctopics:
         topic = Topic.objects.get(pk=dt.topic_id)
         ntopic+=1

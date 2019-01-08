@@ -216,12 +216,12 @@ def do_query(qid, background=True):
         # run "scrapeQuery.py" on the text file in the background
         if background:
             if q.creator.username in ["galm","khat","hilj"]:
-                subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", q.database, fname])
+                subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","2000000","-s", q.database, fname])
             else:
                 subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", q.database, fname])
         else:
             if q.creator.username in ["galm","khat","hilj"]:
-                subprocess.call(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", q.database, fname])
+                subprocess.call(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","2000000","-s", q.database, fname])
             else:
                 subprocess.call(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", q.database, fname])
 

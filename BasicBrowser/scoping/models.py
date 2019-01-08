@@ -733,7 +733,7 @@ class Doc(models.Model):
         return len(str(self.content).split())
 
     def shingle(self):
-        return set(s for s in ngrams(self.title.lower().split(),2))
+        return set(s for s in ngrams(self.title.lower().replace("-"," ").split(),2))
 
     def find_duplicates(self,ids,j_thresh,limit_y=False):
         comparison_docs = Doc.objects.filter(id__in=ids)
@@ -1212,6 +1212,7 @@ class WoSArticle(models.Model):
     di = models.CharField(null=True, db_index=True, max_length=250, verbose_name="DOI") # DOI
     dt = models.CharField(null=True, max_length=50, verbose_name="Document Type") # doctype
     em = models.TextField(null=True, verbose_name="E-mail Address",db_index=True) #email
+    ems = ArrayField(models.TextField(), verbose_name="Email List", null=True)
     ep = models.CharField(null=True, max_length=50, verbose_name="Ending Page") # last page
     fn = models.CharField(null=True, max_length=250, verbose_name="File Name") # filename?
     fu = models.TextField(null=True, verbose_name="Funding Agency and Grant Number") #funding agency + grant number
