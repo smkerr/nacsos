@@ -5,6 +5,7 @@ import csv
 import twint
 import json
 import os
+import sys
 from datetime import datetime, timedelta
 import django
 from django.utils import timezone
@@ -21,9 +22,13 @@ class Command(BaseCommand):
             with open("tweets/tweets.json") as f:
                 for l in f:
                     tweet = json.loads(l)
-                    user, created = User.objects.get_or_create(
-                        id=tweet['user_id']
-                    )
+                    try:
+                        user, created = User.objects.get_or_create(
+                            id=tweet['user_id']
+                        )
+                    except:
+                        print(tweet)
+                        sys.exit()
                     if created:
                         try:
                             user.screen_name=tweet['username']

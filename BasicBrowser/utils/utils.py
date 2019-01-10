@@ -159,6 +159,8 @@ def add_doc(r, q, update):
                     if len(r['AU'])==1:
                         institute = inst
                         iauth = af
+                    else:
+                        institute = inst
                 else:
                     institute = inst[1]
                 if af in iauth:

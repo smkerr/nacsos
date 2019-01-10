@@ -499,38 +499,39 @@ class Tag(models.Model):
         self.users = users.count()
         ## Measure scores
         ## start off with all docs
-        tdocs = Doc.objects.filter(docownership__tag=self).distinct()
-        scores = []
-        ## Filter out those ones which have been rated by more than one person
-        for u in users:
-            utdocs = tdocs.filter(
-                docownership__user=u,
-                docownership__relevant__gt=0,
-                docownership__tag=self
-            ).distinct()
-            if utdocs.count()>0:
-                scores.append([])
-                tdocs = utdocs
-                u.rated=True
-            else:
-                u.rated=False
-        i = 0
-        for u in users:
-            if u.rated:
-                l = tdocs.filter(
-                    docownership__user=u
-                ).order_by('pk').values_list(
-                    'docownership__relevant',flat=True
+        users = User.objects.filter(
+            docownership__tag=self,
+            docownership__relevant__gt=0
+        ).distinct()
+        if users.count()==2:
+            scores = []
+            coded = Doc.objects.filter(
+                docownership__tag=self,
+                docownership__relevant__gt=0
+            ).values('pk').annotate(users=Count('pk')).filter(
+                users=2
+            )
+
+            coded_ids = set(coded.values_list('pk',flat=True))
+
+            for u in users:
+                l = DocOwnership.objects.filter(
+                    doc__id__in=coded_ids,
+                    tag=self,
+                    user=u,
+                    relevant__gt=0
+                ).order_by('doc__pk').values_list(
+                    'relevant',flat=True
                 )
-                scores[i] = list(l)
-                i+=1
-        dscores = [None] + scores
-        if len(scores) == 2:
-            self.ratio = round(difflib.SequenceMatcher(*dscores).ratio(),2)
-            self.cohen_kappa = cohen_kappa_score(*scores)
-        else:
-            self.cohen_kappa = None
-            self.ratio = None
+                scores.append(list(l))
+
+            dscores = [None] + scores
+            if len(scores) == 2:
+                self.ratio = round(difflib.SequenceMatcher(*dscores).ratio(),2)
+                self.cohens_kappa = cohen_kappa_score(*scores)
+            else:
+                self.cohens_kappa = None
+                self.ratio = None
         self.save()
 
     def __str__(self):

@@ -30,7 +30,7 @@ class User(TwitterBaseModel):
     earliest = models.DateTimeField(null=True)
     latest = models.DateTimeField(null=True)
 
-    screen_name = models.CharField(u'Screen name', max_length=50, unique=True)
+    screen_name = models.CharField(u'Screen name', max_length=50)
 
     name = models.CharField(u'Name', max_length=200)
     description = models.TextField(u'Description')
