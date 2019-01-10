@@ -2989,16 +2989,20 @@ def sortdocs(request):
 
 
     print(len(filt_docs))
+
     # filter documents with user ratings
     if len(users) > 0:
         uname = users[0].split("__")[1]
         user = User.objects.get(username=uname)
+        all_users = User.objects.filter(
+            username__in=[x.split('__')[1] for x in users]
+        )
         if "relevance_time" in rfields:
             filt_docs = filt_docs.annotate(
                 relevance_time = models.Max(
                     models.Case(
-                        models.When(docownership__user=user,
-                            then=F('docownership__date')
+                        models.When(docownership__user__in=all_users,
+                            then=F('docownership__finish')
                         )#,
                         #default=datetime.date(2000,1,2)
                     )
@@ -3051,6 +3055,18 @@ def sortdocs(request):
                     )
                 })
 
+    else:
+        if "relevance_time" in rfields:
+            filt_docs = filt_docs.annotate(
+                relevance_time = models.Max(
+                    models.Case(
+                        models.When(docownership__query=query,
+                            then=F('docownership__finish')
+                        )#,
+                        #default=datetime.date(2000,1,2)
+                    )
+                )
+            )
     all_docs = filt_docs
 
     fids = []
