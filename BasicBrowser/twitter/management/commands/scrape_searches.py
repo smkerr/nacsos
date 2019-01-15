@@ -59,7 +59,7 @@ class Command(BaseCommand):
 
         now = datetime.now() + timedelta(days=1)
         for i in range(options['weeks']):
-            now = now - timedelta(days=7*i)
+            now = now - timedelta(days=7)
             then = now - timedelta(days=8)
             print(now.strftime("%Y-%m-%d"))
             print(then.strftime("%Y-%m-%d"))

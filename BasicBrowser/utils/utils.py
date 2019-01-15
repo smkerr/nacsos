@@ -42,6 +42,7 @@ def run_status(run_id):
 # and links citations and docs
 
 def doc_cites(doc):
+    from scoping.models import Citation, CDO
     django.db.connections.close_all()
     citations = doc.wosarticle.cr
     cdos = []
@@ -56,11 +57,31 @@ def doc_cites(doc):
             if created:
                 cobject.ftext = c
                 cobject.save()
+            else:
+                if cobject.ftext != c:
+                    if cobject.alt_text is None:
+                        cobject.alt_text = [c]
+                    else:
+                        cobject.alt_text = cobject.alt_text.append(c)
             #otherise append to alt text
         else:
-            cobject, created = Citation.objects.get_or_create(
-                ftext = c
-            )
+            try:
+                cobject = Citation.objects.get(
+                    ftext = c
+                )
+            except:
+                try:
+                    cobject = Citation.objects.get(
+                        alt_text = c
+                    )
+                except:
+                    try:
+                        cobject = Citation(ftext=c)
+                        cobject.save()
+                    except:
+                        print("!!ERROR saving!!")
+                        print(c)
+                        continue
 
         cdo = CDO(doc=doc,citation=cobject)
         cdos.append(cdo)
