@@ -3119,9 +3119,11 @@ def sortdocs(request):
                 kwargs = {
                     '{0}__{1}'.format(f_fields[i],op): f_text[i]
                 }
-                if "docproject__relevant" in f_fields[i]:
+                if "docproject__relevant" in f_fields[i] or "docproject__ti_relevant" in f_fields[i]:
                     kwargs['docproject__project'] = query.project
                 if joiner=="AND":
+
+                    bla = filt_docs.count()
                     if exclude:
                         filt_docs = filt_docs.exclude(**kwargs)
                     else:
@@ -3140,7 +3142,6 @@ def sortdocs(request):
                 tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
         except:
             break
-
 
     if tag_title is not None:
         t = Tag(title=tag_title)
