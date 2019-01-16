@@ -3089,7 +3089,7 @@ def sortdocs(request):
         else:
             op =  f_operators[i]
             exclude = False
-        if "a"=="a":
+        try:
             if "tag__title" in f_fields[i]:
                 if q2id != '0':
                     filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i]) | filt_docs.filter(tag__query__id=q2id,tag__title__icontains=f_text[i])
@@ -3138,8 +3138,8 @@ def sortdocs(request):
                         filt_docs = all_docs.filter(id__in=set(fids))
 
                 tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
-        #except:
-        #    break
+        except:
+            break
 
 
     if tag_title is not None:
