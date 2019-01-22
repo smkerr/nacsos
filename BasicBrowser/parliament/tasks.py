@@ -134,7 +134,7 @@ def do_search(s_id):
 # ===================================================================================================================
 
 @shared_task
-def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, **kwargs):
+def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha = 0.01, **kwargs):
 
     if method in ['DT', 'dnmf', 'BT', 'BleiDTM'] and max_features == 0:
         max_features = 20000
@@ -158,8 +158,11 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         max_df=max_df,
         method=method.upper()[0:2],
         max_features=max_features,
+        max_iter=5,
         status=1
     )
+
+    stat.status = 1  # 3 = finished
 
     stat.save()
     run_id=stat.run_id
@@ -278,6 +281,9 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         # initialization with Nonnegative Double Singular Value Decomposition (nndsvd)
         print("Reconstruction error of nmf: {}".format(model.reconstruction_err_))
 
+        stat.error = model.reconstruction_err_
+        stat.errortype = "Frobenius"
+
         # document topic matrix
         dtm = csr_matrix(model.transform(tfidf))
 
@@ -292,6 +298,9 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
             learning_offset=50.
             #n_jobs=6
         ).partial_fit(tf)
+
+        stat.error = model.perplexity(tf)
+        stat.errortype = "Perplexity"
 
         dtm = csr_matrix(model.transform(tf))
 
