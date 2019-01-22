@@ -292,7 +292,7 @@ class RunStats(models.Model):
 
     K = models.IntegerField(null=True, help_text='Number of topics')
     alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter')
-    max_iterations  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
+    max_iter  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
     fulltext  = models.BooleanField(default=False, help_text='do analysis on fullText? (dependent on availability)')
     citations = models.BooleanField(default=False, help_text='scale term scores by citations?')
 

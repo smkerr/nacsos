@@ -30,7 +30,7 @@ class Command(BaseCommand):
                 db=False,
                 K=K,
                 alpha=stat.alpha,
-                max_iterations=stat.max_iterations,
+                max_iter=stat.max_iter,
                 query=stat.query,
                 method=stat.method
             )

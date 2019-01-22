@@ -246,12 +246,12 @@ def k_fold(run_id,k_folds):
     ng = stat.ngram
 
     if stat.method=="LD":
-        if stat.max_iterations == 200:
-            stat.max_iterations = 10
-        if stat.max_iterations > 100:
-            stat.max_iterations = 90
+        if stat.max_iter == 200:
+            stat.max_iter = 10
+        if stat.max_iter > 100:
+            stat.max_iter = 90
 
-    n_samples = stat.max_iterations
+    n_samples = stat.max_iter
 
     if stat.fulltext:
         docs = Doc.objects.filter(query=qid,fulltext__iregex='\w')
@@ -319,7 +319,7 @@ def k_fold(run_id,k_folds):
             model = LDA(
                 n_components=K,
                 doc_topic_prior=stat.alpha,
-                max_iter=stat.max_iterations,
+                max_iter=stat.max_iter,
                 n_jobs=6
             ).fit(X_test)
             w_test = model.transform(X_test)
@@ -360,12 +360,12 @@ def do_nmf(run_id):
     ng = stat.ngram
 
     if stat.method=="LD":
-        if stat.max_iterations == 200:
-            stat.max_iterations = 10
-        if stat.max_iterations > 100:
-            stat.max_iterations = 90
+        if stat.max_iter == 200:
+            stat.max_iter = 10
+        if stat.max_iter > 100:
+            stat.max_iter = 90
 
-    n_samples = stat.max_iterations
+    n_samples = stat.max_iter
 
 
     stat.process_id = os.getpid()
@@ -534,7 +534,7 @@ and {} topics\n'.format(qid, docs.count(),K))
         model = LDA(
             n_components=K,
             doc_topic_prior=stat.alpha,
-            max_iter=stat.max_iterations,
+            max_iter=stat.max_iter,
             n_jobs=6
         ).fit(tfidf)
 

@@ -192,7 +192,7 @@ class TopicModelForm(forms.ModelForm):
             'min_freq','max_df','max_features','limit',
             'ngram','fulltext','citations',
             'fancy_tokenization',
-            'K','alpha','max_iterations','db',
+            'K','alpha','max_iter','db',
             'method'
         )
         exclude = (
@@ -228,4 +228,4 @@ class TopicModelForm(forms.ModelForm):
             'periods',
             'coherence',
         )
-        #fields = ('K','alpha','limit','ngram','min_freq','max_df','max_features','max_iterations')
+        #fields = ('K','alpha','limit','ngram','min_freq','max_df','max_features','max_iter')

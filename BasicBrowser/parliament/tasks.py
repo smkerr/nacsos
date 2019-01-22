@@ -276,7 +276,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         model = NMF(
             n_components=K, random_state=1,
             alpha=stat.alpha, l1_ratio=.1, verbose=v,
-            init='nndsvd', max_iter=stat.max_iterations
+            init='nndsvd', max_iter=stat.max_iter
         ).fit(tfidf)
         # initialization with Nonnegative Double Singular Value Decomposition (nndsvd)
         print("Reconstruction error of nmf: {}".format(model.reconstruction_err_))
@@ -293,7 +293,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         model = LDA(
             n_components=K,
             doc_topic_prior=stat.alpha,
-            max_iter=stat.max_iterations,
+            max_iter=stat.max_iter,
             learning_method='online',
             learning_offset=50.
             #n_jobs=6

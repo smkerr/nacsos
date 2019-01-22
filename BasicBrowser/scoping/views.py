@@ -1786,7 +1786,7 @@ def query_tm(request,qid):
         'form': form,
         'project': query.project,
         'fields_1': ['min_freq','max_df','max_features','limit','ngram','fulltext','citations','fancy_tokenization'],
-        'fields_2': ['K','alpha','max_iterations','db'],
+        'fields_2': ['K','alpha','max_iter','db'],
         'fields_3': ['method']
     }
     return HttpResponse(template.render(context, request))
