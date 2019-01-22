@@ -371,6 +371,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         gc.collect()
         sys.stdout.flush()
 
+    stat.iterations = model.n_iter_
     stat.status = 3  # 3 = finished
     stat.save()
     update_topic_titles(run_id)
