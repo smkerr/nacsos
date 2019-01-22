@@ -1637,11 +1637,13 @@ def query(request,qid,q2id='0',sbsid='0'):
             ('checked',operator.gt,0)
         )
         qusers = User.objects.filter(docownership__query=query).distinct().values_list('id',flat=True)
+
         pusers = ProjectRoles.objects.filter(
             project=query.project
         ).exclude(
             user__in=qusers
         ).values('user__username','user__id','user__email')
+
         for u in pusers:
             u['tdocs'] = 0
             udos.append(u)
@@ -1669,6 +1671,7 @@ def query(request,qid,q2id='0',sbsid='0'):
                     'user_docs': user_docs
                 })
 
+        user_list = sorted(user_list, key=lambda k: k['username'].lower())
 
         if DocPar.objects.filter(doc__query=query).exists():
             pars = True
@@ -1707,7 +1710,7 @@ def query(request,qid,q2id='0',sbsid='0'):
 
         untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count() + Doc.objects.filter(query=query2).count() - Doc.objects.filter(query=query2,tag__query=query2).distinct().count()
 
-        users = User.objects.all()
+        users = User.objects.all().order_by('username')
 
         proj_users = users.query
 
