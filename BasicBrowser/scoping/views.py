@@ -352,7 +352,10 @@ def doc_merge(request,pid,d1,d2):
             ignore_fields = ["_state","doc__id","doc_id","doc","id"]
             instance = {k:v for k,v in i.__dict__.items() if k not in ignore_fields}
             instance["doc"] = keep
-            new_int, created = x.objects.get_or_create(**instance)
+            try:
+                new_int, created = x.objects.get_or_create(**instance)
+            except django.db.utils.IntegrityError:
+                print("already exists")
             i.delete()
     return HttpResponse("merged")
 
@@ -3896,6 +3899,8 @@ def assign_docs(request):
     query = Query.objects.get(pk=qid)
 
     print(tags)
+
+
 
     for tag in range(len(tags)):
         dos = []

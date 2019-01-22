@@ -774,6 +774,9 @@ class Doc(models.Model):
             words = utils.get_query_words(qs)
         else:
             words = set()
+
+        from utils.text import stoplist
+        words = set([w for w in words if w not in stoplist])
         d = {}
         for f in fields:
             doc = self
