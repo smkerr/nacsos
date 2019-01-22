@@ -14,6 +14,8 @@ def tokenize(text):
 def get_sentence(abstract):
     return [snowball_stemmer().stemmer.stem(t) for t in tokenize(abstract)]
 
+def get_sentence_g(texts):
+    return [german_stemmer().stemmer.stem(t) for t in tokenize(texts)]
 
 stoplist = set(nltk.corpus.stopwords.words("english"))
 
@@ -28,7 +30,6 @@ class german_stemmer(object):
         self.stemmer = SnowballStemmer("german")
     def __call__(self, doc):
         return [self.stemmer.stem(t) for t in tokenize(doc)]
-
 
 def proc_docs(docs, stoplist, fulltext=False, citations=False):
 

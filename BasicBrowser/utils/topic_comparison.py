@@ -73,9 +73,12 @@ def compare_topic_queryset(runs, method='top_word_overlap', verbosity=0, order_b
 
         df = df.rename(columns={'title': col2, 'score': scol})
 
+        df[scol] = df[scol].astype(object)
+
         df[s] = 0
         df[col1] = "None"
         df[bscol] = 0
+        df[bscol] = df[bscol].astype(object)
 
         for j, t in enumerate(topics2):
             scores = [0]
@@ -129,10 +132,15 @@ def compare_topic_queryset(runs, method='top_word_overlap', verbosity=0, order_b
                 df.loc[df[col2] == t.title, col1] = titles[scores.index(max(scores))]
                 df.loc[df[col2] == t.title, bscol] = tscores[scores.index(max(scores))]
 
+        for c in df.columns:
+            df[c] = df[c].astype(object)
+
         if i == 1:
             # df = pd.DataFrame.from_dict(list(topics2.values('title')))
             mdf = df
         else:
+            for c in mdf.columns:
+                mdf[c] = mdf[c].astype(object)
             mdf = mdf.merge(df, how="outer").fillna("")
 
         # print(df.head())
