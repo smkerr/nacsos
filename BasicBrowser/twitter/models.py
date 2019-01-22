@@ -20,13 +20,17 @@ class TwitterBaseModel(models.Model):
 class User(TwitterBaseModel):
 
     ## Extra fields
+    scrape_fetched = models.DateTimeField(u'Fetched', null=True, blank=True)
+    until = models.DateTimeField(null=True)
+    since = models.DateTimeField(null=True)
+
     mdb_name = models.CharField(max_length=50)
     person = models.OneToOneField(pmodels.Person, null=True, on_delete=models.SET_NULL)
     monitoring = models.BooleanField(default=False)
     earliest = models.DateTimeField(null=True)
     latest = models.DateTimeField(null=True)
 
-    screen_name = models.CharField(u'Screen name', max_length=50, unique=True)
+    screen_name = models.CharField(u'Screen name', max_length=50)
 
     name = models.CharField(u'Name', max_length=200)
     description = models.TextField(u'Description')

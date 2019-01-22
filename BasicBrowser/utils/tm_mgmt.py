@@ -661,50 +661,91 @@ def update_year_topic_scores(session):
         run_id=session
     else:
         run_id = find_run_id(session)
-    stats = RunStats.objects.get(run_id=run_id)
+
+    stat = RunStats.objects.get(run_id=run_id)
     #if "a" in "a":
-    if not stats.topic_year_scores_current:
-        if stats.get_method_display() == 'hlda':
-            yts = HDocTopic.objects.filter(doc__PY__gt=1989,run_id=run_id)
+    if not stat.topic_year_scores_current:
 
-            yts = yts.values('doc__PY').annotate(
-                yeartotal=Count('doc')
-            )
+        if stat.query:
+            if stat.get_method_display() == 'hlda':
+                yts = HDocTopic.objects.filter(doc__PY__gt=1989,run_id=run_id)
 
-            ytts = yts.values().values('topic','topic__title','doc__PY').annotate(
-                score=Count('doc')
-            )
-            HTopicYear.objects.filter(run_id=run_id).delete()
-            for ytt in ytts:
-                yttyear = ytt['doc__PY']
-                topic = HTopic.objects.get(topic=ytt['topic'])
-                for yt in yts:
-                    ytyear = yt['doc__PY']
-                    if yttyear==ytyear:
-                        yeartotal = yt['yeartotal']
-                try:
-                    topicyear = HTopicYear.objects.get(topic=topic,PY=yttyear, run_id=run_id)
-                except:
-                    topicyear = HTopicYear(topic=topic,PY=yttyear,run_id=run_id)
-                topicyear.score = ytt['score']
-                topicyear.count = yeartotal
-                topicyear.save()
-        else:
-            yts = DocTopic.objects.filter(doc__PY__gt=1989,run_id=run_id)
+                yts = yts.values('doc__PY').annotate(
+                    yeartotal=Count('doc')
+                )
 
-            yts = yts.values('doc__PY').annotate(
+                ytts = yts.values().values('topic','topic__title','doc__PY').annotate(
+                    score=Count('doc')
+                )
+                HTopicYear.objects.filter(run_id=run_id).delete()
+                for ytt in ytts:
+                    yttyear = ytt['doc__PY']
+                    topic = HTopic.objects.get(topic=ytt['topic'])
+                    for yt in yts:
+                        ytyear = yt['doc__PY']
+                        if yttyear==ytyear:
+                            yeartotal = yt['yeartotal']
+                    try:
+                        topicyear = HTopicYear.objects.get(topic=topic,PY=yttyear, run_id=run_id)
+                    except:
+                        topicyear = HTopicYear(topic=topic,PY=yttyear,run_id=run_id)
+                    topicyear.score = ytt['score']
+                    topicyear.count = yeartotal
+                    topicyear.save()
+                stat.topic_year_scores_current = True
+
+            else:
+                yts = DocTopic.objects.filter(doc__PY__gt=1989,run_id=run_id)
+
+                yts = yts.values('doc__PY').annotate(
+                    yeartotal=Sum('scaled_score')
+                )
+
+                ytts = yts.values().values('topic','topic__title','doc__PY').annotate(
+                    score=Sum('scaled_score')
+                )
+                TopicYear.objects.filter(run_id=run_id).delete()
+                for ytt in ytts:
+                    yttyear = ytt['doc__PY']
+                    topic = Topic.objects.get(pk=ytt['topic'])
+                    for yt in yts:
+                        ytyear = yt['doc__PY']
+                        if yttyear==ytyear:
+                            yeartotal = yt['yeartotal']
+
+                    topicyear, created = TopicYear.objects.get_or_create(
+                        topic=topic,PY=yttyear, run_id=run_id
+                    )
+                    topicyear.score = ytt['score']
+                    topicyear.count = yeartotal
+                    topicyear.save()
+                stat.topic_year_scores_current = True
+
+
+        elif stat.psearch:
+
+            if stat.psearch.search_object_type == 2:
+                year_identifier = 'ut__document__date__year'
+            else:
+                year_identifier = 'par__utterance__document__date__year'
+
+            yts = DocTopic.objects.filter(run_id=run_id)
+
+            yts = yts.values(year_identifier).annotate(
                 yeartotal=Sum('scaled_score')
             )
 
-            ytts = yts.values().values('topic','topic__title','doc__PY').annotate(
+            ytts = yts.values().values('topic', 'topic__title', year_identifier).annotate(
                 score=Sum('scaled_score')
             )
+
             TopicYear.objects.filter(run_id=run_id).delete()
+
             for ytt in ytts:
-                yttyear = ytt['doc__PY']
+                yttyear = ytt[year_identifier]
                 topic = Topic.objects.get(pk=ytt['topic'])
                 for yt in yts:
-                    ytyear = yt['doc__PY']
+                    ytyear = yt[year_identifier]
                     if yttyear==ytyear:
                         yeartotal = yt['yeartotal']
 
@@ -714,8 +755,10 @@ def update_year_topic_scores(session):
                 topicyear.score = ytt['score']
                 topicyear.count = yeartotal
                 topicyear.save()
+            stat.topic_year_scores_current = True
 
 
+        else:
+            print("warning: no TopicYear objects created")
 
-        stats.topic_year_scores_current = True
-        stats.save()
+        stat.save()

@@ -67,7 +67,7 @@ class Command(BaseCommand):
         c_count = citations.count()
 
         chunk_size = 100000
-        cores = 5
+        cores = 3
 
         for i in range(c_count//chunk_size+1):
             cdos = []
@@ -93,4 +93,3 @@ class Command(BaseCommand):
             gc.collect()
             t = time.time() - t0
             print("docs per second = {}".format(round(chunk_size/t,2)))
-            

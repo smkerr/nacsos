@@ -3,6 +3,7 @@ settings_local.py
 *~
 .Rproj.user
 BasicBrowser/queries/*
+BasicBrowser/static/*
 BasicBrowser/nohup.out
 *.httr.oauth
 BasicBrowser/worker*
@@ -18,3 +19,4 @@ env.bak/
 venv.bak/
 BasicBrowser/twitter/users.json
 BasicBrowser/twitter/tweets.json
+BasicBrowser/tweets/*

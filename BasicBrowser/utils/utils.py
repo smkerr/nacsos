@@ -42,6 +42,7 @@ def run_status(run_id):
 # and links citations and docs
 
 def doc_cites(doc):
+    from scoping.models import Citation, CDO
     django.db.connections.close_all()
     citations = doc.wosarticle.cr
     cdos = []
@@ -56,11 +57,31 @@ def doc_cites(doc):
             if created:
                 cobject.ftext = c
                 cobject.save()
+            else:
+                if cobject.ftext != c:
+                    if cobject.alt_text is None:
+                        cobject.alt_text = [c]
+                    else:
+                        cobject.alt_text = cobject.alt_text.append(c)
             #otherise append to alt text
         else:
-            cobject, created = Citation.objects.get_or_create(
-                ftext = c
-            )
+            try:
+                cobject = Citation.objects.get(
+                    ftext = c
+                )
+            except:
+                try:
+                    cobject = Citation.objects.get(
+                        alt_text = c
+                    )
+                except:
+                    try:
+                        cobject = Citation(ftext=c)
+                        cobject.save()
+                    except:
+                        print("!!ERROR saving!!")
+                        print(c)
+                        continue
 
         cdo = CDO(doc=doc,citation=cobject)
         cdos.append(cdo)
@@ -68,7 +89,7 @@ def doc_cites(doc):
 
 
 def shingle(text):
-    return set(s for s in ngrams(text.lower().split(),2))
+    return set(s for s in ngrams(text.lower().replace("-"," ").split(),2))
 
 def get(r, k):
     try:
@@ -112,6 +133,11 @@ def add_doc(r, q, update):
             pass
         r['kwp'] = get(r,'ID')
         r['iss'] = get(r,'IS')
+        # handle lists of emails
+        if get(r, "EM") is not None:
+            if "; " in get(r,'EM'):
+                r["EMS"] = get(r, "EM").split("; ")
+                r["EM"] = r["EMS"][0]
         for field in r:
             f = field.lower()
             try:
@@ -154,6 +180,8 @@ def add_doc(r, q, update):
                     if len(r['AU'])==1:
                         institute = inst
                         iauth = af
+                    else:
+                        institute = inst
                 else:
                     institute = inst[1]
                 if af in iauth:
@@ -169,6 +197,7 @@ def add_doc(r, q, update):
                         a_added=True
                     except:
                         doc.docauthinst_set.all().delete()
+                        print("{} {} {} {} {}".format(doc,au,af,institute,a+1))
                         dai,created = scoping.models.DocAuthInst.objects.get_or_create(
                             doc=doc,
                             AU = au,
@@ -180,13 +209,27 @@ def add_doc(r, q, update):
                         a_added=True
                         print("{} {} {} {} {}".format(doc,au,af,institute,a+1))
             if a_added == False: # i.e. if there is nothing in institution...
-                dai, created = scoping.models.DocAuthInst.objects.get_or_create(
-                    doc=doc,
-                    AU = au,
-                    AF = af,
-                    position = a+1
-                )
-                dai.save()
+                try:
+                    dai, created = scoping.models.DocAuthInst.objects.get_or_create(
+                        doc=doc,
+                        AU = au,
+                        AF = af,
+                        position = a+1
+                    )
+                    dai.save()
+                except:
+                    dais = scoping.models.DocAuthInst.objects.filter(
+                        doc=doc,
+                        AU = au,
+                        AF = af,
+                        position = a+1
+                    )
+                    if dais[0] != dais[1]:
+                        pass
+                    else:
+                        print(dais.values_list('institution',flat=True))
+
+
 
         doc.authors = ', '.join([x.AU for x in doc.docauthinst_set.all().order_by('position')])
         try:
@@ -259,6 +302,8 @@ def read_wos(res, q, update):
 
 def add_doc_text(r,q,update):
 
+    DEBUG=False
+
     scopus2WoSFields = {
         'M3': 'dt',
         'TI': 'ti',
@@ -295,9 +340,14 @@ def add_doc_text(r,q,update):
     mfields = ['au','AF','cr','C1']
     for line in r:
         if re.search("([A-Z][A-Z1-9])(\s{2}-\s*)",line):
+            if DEBUG: print("= IF / Key found! ============================================================")
+            if DEBUG: print(line)
             s = re.search("([A-Z][A-Z1-9])(\s{2}-\s*)(.*)",line)
+            if DEBUG: print(s)
             key = s.group(1).strip()
+            if DEBUG: print(key)
             value = s.group(3).strip()
+            if DEBUG: print(value)
             if re.search("(.*)([A-Z][A-Z1-9])(\ {2}-\s*)",value):
                 s = re.search("(.*)([A-Z][A-Z1-9])(\s*-\s*)(.*)",value)
                 value = s.group(1).strip()
@@ -314,38 +364,57 @@ def add_doc_text(r,q,update):
                 else:
                     record[nextkey] = nextvalue
 
-
+            if DEBUG: print("= N1 ============================================================")
             if key=="N1":
+                if DEBUG: print("= N1 ============================================================")
                 s = re.search("([a-zA-Z1-9 ]*): *(.*)",value)
+                if DEBUG: print(s)
                 try:
                     key = s.group(1).strip()
                     value = s.group(2).strip()
+                    if DEBUG: print(key)
+                    if DEBUG: print(value)
                 except:
                     print(key)
                     print(value)
 
+            if DEBUG: print("= scopus2WoSFields ============================================================")
             try:
                 key = scopus2WoSFields[key]
+                if DEBUG: print("try...")
+                if DEBUG: print(key)
             except:
+                if DEBUG: print("except...")
+                if DEBUG: print(key)
                 pass
 
 
-
+            if DEBUG: print("= key in mfields ============================================================")
             if key in mfields:
+                if DEBUG: print("  > True")
                 if key in record:
+                    if DEBUG: print("    > Key already in record. Appending...")
                     record[key].append(value)
                 else:
+                    if DEBUG: print("    > Key not in record. Adding...")
                     record[key] = [value]
             else:
+                if DEBUG: print("  > False")
                 if key in record:
+                    if DEBUG: print("    > Key already in record. Appending...")
                     record[key] += "; " + value
                 else:
+                    if DEBUG: print("    > Key not in record. Adding...")
                     record[key] = value
 
         elif len(line) > 1:
+            if DEBUG: print("= ELIF / Key not found! ============================================================")
+            if DEBUG: print(line)
             if key in mfields:
+                if DEBUG: print("  > Key in mfields. Appending...")
                 record[key].append(line.strip())
             else:
+                if DEBUG: print("  > Key not in mfields. Adding...")
                 record[key] += line.strip()
 
     try:
@@ -386,8 +455,11 @@ def add_scopus_doc(r,q,update):
     try:
         r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid'].strip()
     except:
-        if 'UT' not in r:
-            r['UT'] = str(uuid.uuid1())
+        if 'UT' not in r or r['UT'] is None:
+            if get(r, 'url') is not None:
+                r['UT'] = r['url']
+            else:
+                r['UT'] = str(uuid.uuid1())
         else:
             print(r['UT'])
         r['url'] = r['UT']
@@ -429,7 +501,6 @@ def add_scopus_doc(r,q,update):
             )
 
         if len(docs)==1:
-            docs.first().query.add(q)
             doc = docs.first()
         elif len(docs)>1: # if there are two, that's bad!
             print("more than one doc matching!!!!!")
@@ -458,7 +529,6 @@ def add_scopus_doc(r,q,update):
             for d in py_docs.iterator():
                 j = jaccard(s1,d.shingle())
                 if j > 0.51:
-                    d.query.add(q)
                     doc = d
                     break
 
@@ -482,6 +552,9 @@ def add_scopus_doc(r,q,update):
                 doc.save()
                 #print(doc)
     if doc is not None:
+        if doc.query.filter(pk=q.id).exists():
+            q.upload_log+=f"<p>This document ({doc.title}) is considered an internal duplicate of ({get(r,'ti')}) "
+            q.save()
         if r['UT'] is not None:
             doc.UT.sid = r['UT']
             doc.UT.save()
@@ -504,6 +577,7 @@ def add_scopus_doc(r,q,update):
             pass
         doc.save()
         article.save()
+
         doc.query.add(q)
         #doc.projects.add(q.project)
     if doc is not None and "WOS:" not in str(doc.UT.UT):
@@ -666,10 +740,16 @@ def read_ris(q, update):
         entries = readris(f,mapping=RIS_KEY_MAPPING)
         try:
             for e in entries:
+                if "py" in e:
+                    if type(e["py"] is str):
+                        e["py"] = int(e["py"][:4])
+                if "unknown_tag" in e:
+                    del e["unknown_tag"]
                 try:
                     add_scopus_doc(e,q,update)
                     r_count+=1
                 except:
+                    return e
                     print(f"couldn't add {e}")
         except:
             r_count = 0
@@ -688,6 +768,9 @@ def read_ris(q, update):
                                 e["tc"] = int(digits[0])
                             else:
                                 e["tc"] = None
+                    if "unknown_tag" in e:
+                        del e["unknown_tag"]
+
                     try:
                         add_scopus_doc(e,q,update)
                         r_count+=1

@@ -2,21 +2,24 @@
 
 {% block content %}
 
-<h1>Speech {{ut_id}}</h1>
-<h2>  from <a href="{% url 'parliament:document' document.id %}">{{document}}</a>
+<h1>Paragraph {{par_id}}</h1>
+<h2>
+    from <a href="{% url 'parliament:document' document.id %}">{{document}}</a>,
+    Speech <a href="{% url 'parliament:utterance' utterance.id %}">{{ utterance.id }}</a>
 </h2>
 
-{% for ut in uts %}
+
     <div class="utterance" id="utterance_{{ut.id}}">
-    <p class="speaker"><a href="{% url 'parliament:person' ut.speaker.id %}">{{ut.speaker.clean_name}}</a>
-        {% if ut.speaker.party %}
-        <a href="{% url 'parliament:party' ut.speaker.party.id %}"><span class="{{ut.speaker.party.name}}">[{{ut.speaker.party}}]</span></a>:</p>
+    <p class="speaker"><a href="{% url 'parliament:person' speaker.id %}">{{speaker.clean_name}}</a>
+        {% if speaker.party %}
+        <a href="{% url 'parliament:party' speaker.party.id %}"><span class="{{speaker.party.name}}">[{{speaker.party}}]</span></a>:</p>
         {% else %}
-            <span class="{{ut.speaker.party.name}}">[{{ut.speaker.party}}]</span>:</p>
+            <span class="{{speaker.party.name}}">[{{speaker.party}}]</span>:</p>
         {% endif %}
-    {% for p in ut.paragraph_set.all %}
-        <p class="paragraph">{{p.text}}</p>
-        {% for ij in p.interjection_set.all %}
+
+
+        <p class="paragraph">{{par.text}}</p>
+        {% for ij in par.interjection_set.all %}
             <p class="interjection">
             {% for party in ij.parties.all %}
                 <span class="party {{party.name}}">{{ party.name|upper }}</span>
@@ -33,8 +36,6 @@
                 {{ij.text}}
             {% endifequal %}
         {% endfor %}
-    {% endfor %}
     </div>
-{% endfor %}
 
 {% endblock %}

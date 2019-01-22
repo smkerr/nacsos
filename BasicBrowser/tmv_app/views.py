@@ -3,6 +3,7 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.template import Template, Context, RequestContext, loader
 from tmv_app.models import *
 from scoping.models import *
+import parliament.models as pm
 from django.db.models import Q, F, Sum, Count, FloatField, Case, When, Value, Max
 from django.shortcuts import *
 from django.forms import ModelForm
@@ -120,6 +121,12 @@ def institution_detail(request, run_id, institution_name):
     return HttpResponse(institution_template.render(institution_page_context))
 
 def network(request,run_id):
+
+    # check if network has already been calculated
+    if not (DynamicTopicCorr.objects.filter(run_id=run_id)
+            or TopicCorr.objects.filter(run_id=run_id)):
+        management.call_command('corr_topics', run_id)
+
     ar = -1
     stat = RunStats.objects.get(pk=run_id)
     if stat.method=="DT":
@@ -141,11 +148,18 @@ def network(request,run_id):
         target=F('topiccorr')
     )
     links = json.dumps(list(links.values('source','target','score')),indent=4,sort_keys=True)
+
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = 'parliament'
+
     context = {
         "nodes":nodes,
         "links":links,
         "run_id":run_id,
-        "stat": RunStats.objects.get(pk=run_id)
+        "stat": RunStats.objects.get(pk=run_id),
+        "project": project
     }
 
     return HttpResponse(template.render(context, request))
@@ -456,7 +470,8 @@ def dynamic_topic_detail(request,topic_id):
     if stat.query:
         project = stat.query.project
     else:
-        project = None
+        project = 'parliament'
+
     context = {
         'project': project,
         'stat': stat,
@@ -468,7 +483,8 @@ def dynamic_topic_detail(request,topic_id):
         'ysums': list(ysums.values('year','sum')),
         'docs': docs,
         'ytterms': ytterms,
-        'yscores': yscores
+        'yscores': yscores,
+        'user': request.user
     }
     return HttpResponse(template.render(request =request, context=context))
 
@@ -487,10 +503,21 @@ def dtopic_detail(request,topic_id):
     docs = Doc.objects.filter(doctopic__topic=topic) \
         .order_by('-doctopic__score')[:50]
 
+    run_id = topic.run_id.pk
+    stat = RunStats.objects.get(run_id=run_id)
+
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = 'parliament'
+
     context = {
+        "project": project,
+        "run_id": run_id,
         "topic":topic,
         "tterms": tterms,
-        "docs": docs
+        "docs": docs,
+        "user": request.user
     }
 
     return HttpResponse(template.render(context))
@@ -516,6 +543,11 @@ def topic_detail(request, topic_id, run_id=0):
         run_id = topic.run_id.pk
     stat = RunStats.objects.get(run_id=run_id)
 
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = 'parliament'
+
     topic_template = loader.get_template('tmv_app/topic.html')
 
     topic = Topic.objects.get(pk=topic_id,run_id=stat.parent_run_id)
@@ -534,11 +566,36 @@ def topic_detail(request, topic_id, run_id=0):
             doctopic__topic=topic, doctopic__run_id=run_id
         ).order_by('-doctopic__score')[:50]
 
-    ndocs = Doc.objects.filter(
-        doctopic__topic=topic,
-        doctopic__run_id=run_id,
-        doctopic__score__gt=stat.dt_threshold
-    ).count()
+    if stat.query:
+        ndocs = Doc.objects.filter(
+            doctopic__topic=topic,
+            doctopic__run_id=run_id,
+            doctopic__score__gt=stat.dt_threshold
+        ).count()
+
+        ### Journals
+        journals = JournalAbbrev.objects.filter(
+            doc__doctopic__topic=topic,
+            doc__journal__isnull=False,
+            doc__doctopic__score__gt=stat.dt_threshold
+        ).values('fulltext').annotate(
+            t=Count('doc__doctopic__score')
+        ).order_by('-t')[:10]
+
+    elif stat.psearch.search_object_type == 1:
+        ndocs = pm.Paragraph.objects.filter(
+            doctopic__topic=topic,
+            doctopic__run_id=run_id,
+            doctopic__score__gt=stat.dt_threshold
+        ).count()
+        journals = None
+    else:
+        ndocs = pm.Utterance.objects.filter(
+            doctopic__topic=topic,
+            doctopic__run_id=run_id,
+            doctopic__score__gt=stat.dt_threshold
+        ).count()
+        journals = None
 
     doctopics = doctopics.values('PY','title','pk','doctopic__score')
     terms = []
@@ -577,15 +634,6 @@ def topic_detail(request, topic_id, run_id=0):
         dynamictopic__run_id=run_id
     ).order_by('-score')[:10]
 
-    ### Journals
-    journals = JournalAbbrev.objects.filter(
-        doc__doctopic__topic=topic,
-        doc__journal__isnull=False,
-        doc__doctopic__score__gt=stat.dt_threshold
-    ).values('fulltext').annotate(
-        t = Count('doc__doctopic__score')
-    ).order_by('-t')[:10]
-
     topic_page_context = {
         'topic': topic,
         'terms': terms,
@@ -597,10 +645,13 @@ def topic_detail(request, topic_id, run_id=0):
         'run_id': run_id,
         'stat': stat,
         'journals': journals,
-        'ndocs': ndocs
+        'ndocs': ndocs,
+        'project': project,
+        'user': request.user
         }
 
     return HttpResponse(topic_template.render(topic_page_context))
+
 
 def get_topic_docs(request,topic_id):
 
@@ -618,30 +669,64 @@ def get_topic_docs(request,topic_id):
     svalue = request.GET.get('sort',None)
     sortcol = svalue.replace('-','')
 
+    if stat.query:
+
+        doctopics = Doc.objects.filter(
+            doctopic__topic=topic,doctopic__run_id=run_id,
+            doctopic__score__gt=dt_threshold
+        )
+
+        if sortcol != "doctopic__score":
+            doctopics = doctopics.filter(**{sortcol+'__isnull': False})
+        doctopics = doctopics.order_by(svalue)[:50]
 
 
-    doctopics = Doc.objects.filter(
-        doctopic__topic=topic,doctopic__run_id=run_id,
-        doctopic__score__gt=dt_threshold
-    )
-    if sortcol != "doctopic__score":
-        doctopics = doctopics.filter(**{sortcol+'__isnull': False})
-    doctopics = doctopics.order_by(svalue)[:50]
+        doctopics = doctopics.annotate(
+            svalue=F(sortcol)
+        )
+        doctopics = doctopics.values('PY','title','pk','doctopic__score','svalue')
 
+        d = decimal.Decimal(doctopics[0]['svalue'])
+        float = abs(d.as_tuple().exponent)
+        if float > 3:
+            float=4
 
-    doctopics = doctopics.annotate(
-        svalue=F(sortcol)
-    )
-    doctopics = doctopics.values('PY','title','pk','doctopic__score','svalue')
+    elif stat.psearch:
 
-    d = decimal.Decimal(doctopics[0]['svalue'])
-    float = abs(d.as_tuple().exponent)
-    if float > 3:
-        float=4
+        if stat.psearch.search_object_type == 1:
+            doctopics = pm.Paragraph.objects.filter(
+                doctopic__topic=topic,doctopic__run_id=run_id,
+                doctopic__score__gt=dt_threshold
+            )
+        else:
+            doctopics = pm.Utterance.objects.filter(
+                doctopic__topic=topic,doctopic__run_id=run_id,
+                doctopic__score__gt=dt_threshold
+            )
 
-    #x = y
+        if sortcol != "doctopic__score":
+            doctopics = doctopics.filter(**{sortcol+'__isnull': False})
+        doctopics = doctopics.order_by(svalue)[:50]
+
+        doctopics = doctopics.annotate(
+            svalue=F(sortcol)
+        )
+
+        if stat.psearch.search_object_type == 1:
+            doctopics = doctopics.values('pk','doctopic__score','svalue',
+                                         'utterance__speaker__clean_name', 'utterance__speaker__pk')
+        else:
+            doctopics = doctopics.values('pk', 'doctopic__score', 'svalue',
+                                         'speaker__clean_name', 'speaker__pk')
+
+        d = decimal.Decimal(doctopics[0]['svalue'])
+        float = abs(d.as_tuple().exponent)
+        if float > 3:
+            float=4
+
     context = {
         "docs": doctopics,
+        "stat": stat,
         "svalue": sortcol,
         "topic": topic,
         "float": float
@@ -918,7 +1003,6 @@ def doc_detail(request, doc_id, run_id):
 
     snowball_stemmer = SnowballStemmer("english")
 
-
     stat = RunStats.objects.get(run_id=run_id)
     if stat.get_method_display() == 'hlda':
         return(doc_detail_hlda(request, doc_id))
@@ -960,10 +1044,11 @@ def doc_detail(request, doc_id, run_id):
     topicwords = {}
     ntopic = 0
 
-    if dt_thresh_scaled:
-        doctopics = doctopics.filter(scaled_score__gte=dt_threshold/80)
-    else:
-        doctopics = doctopics.filter(score__gte=dt_threshold)
+    # if dt_thresh_scaled:
+    #     doctopics = doctopics.filter(scaled_score__gte=dt_threshold/80)
+    # else:
+    #     doctopics = doctopics.filter(score__gte=dt_threshold)
+    doctopics = doctopics.filter(score__gte=dt_threshold)
     for dt in doctopics:
         topic = Topic.objects.get(pk=dt.topic_id)
         ntopic+=1
@@ -1047,7 +1132,7 @@ def print_table(request,run_id):
         termlist= list(Term.objects.filter(
             topicterm__topic=t, run_id=run_id,
             topicterm__score__gt=0.00001
-        ).order_by('-topicterm__score')[:5].values_list('title',flat=True))
+        ).order_by('-topicterm__score')[:10].values_list('title',flat=True))
         t.terms = "; ".join(termlist)
         t.mtd = t.score/tsum['tsum']*100
 
@@ -1079,7 +1164,7 @@ def topic_presence_detail(request,run_id):
     if stat.query:
         project = stat.query.project
     else:
-        project = None
+        project = 'parliament'
 
     context = {
         'run_id': run_id,
@@ -1117,6 +1202,7 @@ def topic_presence_detail(request,run_id):
 
     return HttpResponse(template.render(context))
 
+
 def dtm_home(request, run_id):
     template = loader.get_template('tmv_app/dtm_home.html')
 
@@ -1148,13 +1234,20 @@ def dtm_home(request, run_id):
         share__isnull=False
     ).values('period__n','dtopic__id','dtopic__title','score','share'))
 
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = 'parliament'
+
     context = {
         'run_id': run_id,
         'wtopics': wtopics,
         'dtopics': dtopics,
         'periods': periods,
         'stat': stat,
-        'yts': yscores
+        'yts': yscores,
+        'project': project,
+        'user': request.user
     }
     return HttpResponse(template.render(context))
 
@@ -1241,15 +1334,28 @@ def stats(request,run_id):
     docs_seen = DocTopic.objects.filter(run_id=run_id).values('doc_id').order_by().distinct().count()
 
     stat.docs_seen = docs_seen
-    stat.num_docs = stat.query.doc_set.count()
+
+    if stat.query:
+        stat.num_docs = stat.query.doc_set.count()
+    elif stat.psearch:
+        if stat.psearch.search_object_type == 1:
+            stat.num_docs = stat.psearch.par_count
+        else:
+            stat.num_docs = stat.psearch.utterance_count
 
     stat.save()
+
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = 'parliament'
 
     context = {
         'run_id': run_id,
         'stat': stat,
         'num_topics': Topic.objects.filter(run_id=run_id).count(),
         'num_terms': Term.objects.filter(run_id=run_id).count(),
+        'project': project
     }
 
     return HttpResponse(template.render(context))

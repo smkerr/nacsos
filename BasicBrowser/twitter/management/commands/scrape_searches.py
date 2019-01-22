@@ -5,6 +5,7 @@ import csv
 import twint
 import json
 import os
+import sys
 from datetime import datetime, timedelta
 import django
 from django.utils import timezone
@@ -18,12 +19,16 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         def parse_tjson(tsearch):
-            with open("twitter/tweets.json") as f:
+            with open("tweets/tweets.json") as f:
                 for l in f:
                     tweet = json.loads(l)
-                    user, created = User.objects.get_or_create(
-                        id=tweet['user_id']
-                    )
+                    try:
+                        user, created = User.objects.get_or_create(
+                            id=tweet['user_id']
+                        )
+                    except:
+                        print(tweet)
+                        sys.exit()
                     if created:
                         try:
                             user.screen_name=tweet['username']
@@ -54,13 +59,13 @@ class Command(BaseCommand):
 
         now = datetime.now() + timedelta(days=1)
         for i in range(options['weeks']):
-            now = now - timedelta(days=7*i)
+            now = now - timedelta(days=7)
             then = now - timedelta(days=8)
             print(now.strftime("%Y-%m-%d"))
             print(then.strftime("%Y-%m-%d"))
             for ts in TwitterSearch.objects.all():
                 try:
-                    os.remove("twitter.json")
+                    os.remove("tweets.json")
                 except:
                     pass
                 c = twint.Config()
@@ -68,7 +73,7 @@ class Command(BaseCommand):
                 c.Since = then.strftime("%Y-%m-%d")
                 c.Until = now.strftime("%Y-%m-%d")
                 c.Store_json = True
-                c.Output = "twitter.json"
+                c.Output = "tweets.json"
                 twint.run.Search(c)
 
                 parse_tjson(ts)

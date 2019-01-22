@@ -26,7 +26,6 @@ class Command(BaseCommand):
 
         def correlate_topics(df,period,obj):
 
-
             df = df.pivot(
                 index=doc_id,
                 columns='topic_id',
@@ -50,7 +49,7 @@ class Command(BaseCommand):
                                 topic_id=topic, topiccorr_id=corrtopic, run_id=run_id,
                                 ar=period['n']
                             )
-                        elif type(period)==scoping.models.AR:
+                        elif type(period) == scoping.models.AR:
                             topiccorr, created = obj.objects.get_or_create(
                                 topic_id=topic, topiccorr_id=corrtopic, run_id=run_id,
                                 ar=period.n
@@ -62,7 +61,10 @@ class Command(BaseCommand):
                             )
                         topiccorr.score = corrscore
                         topiccorr.save()
+            # end def correlate_topics
 
+
+        # prepare for calculating topic correlation
         run_id = options['run_id']
         allys = True
         if allys:
@@ -97,7 +99,6 @@ class Command(BaseCommand):
                 obj = DynamicTopicCorr
 
             else:
-                periods = scoping.models.AR.objects.all()
                 dts = DocTopic.objects.filter(run_id=run_id).values(
                     doc_id,'topic_id','score'
                 )
@@ -105,6 +106,11 @@ class Command(BaseCommand):
 
                 tars = TopicARScores
                 obj = TopicCorr
+
+                if stat.query:
+                    periods = scoping.models.AR.objects.all()
+                else:
+                    periods = stat.periods.all()
 
             #df = df.pivot(index='topic_id',columns='doc_id',values='scaled_score')
 
@@ -127,11 +133,13 @@ class Command(BaseCommand):
 
             if stat.query:
                 ytopics = dts.filter(doc__PY__in=ys)
+
             elif stat.psearch:
-                if period.start_date:
-                    ytopics = dts.filter(ut__document__date__gte=period.start_date,
-                                         ut__document__date__lte=period.end_date)
-                elif period.ys:
+                if hasattr(period, 'start_date'):
+                    ytopics = ytopics.filter(ut__document__date__gte=period.start_date,
+                                             ut__document__date__lte=period.end_date)
+
+                elif hasattr(period, 'ys'):
                     ys = period.ys
                     #ytopics = dts.filter(ut__document__date__year__in=ys)
                     ytopics = dts.filter(ut__document__parlperiod__n__in=ys)

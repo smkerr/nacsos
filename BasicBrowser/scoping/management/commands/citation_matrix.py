@@ -9,6 +9,7 @@ import re, nltk
 from nltk.stem import SnowballStemmer
 
 from utils.utils import *# flatten
+from scoping.models import *
 
 class Command(BaseCommand):
     help = 'collect bigrams from a query'

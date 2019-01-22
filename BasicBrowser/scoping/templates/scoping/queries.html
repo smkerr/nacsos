@@ -44,7 +44,6 @@
 
 <!-- This gets new queries -->
 
-{% if queries|length > 0 %}
 
 <div>
 
@@ -59,12 +58,14 @@
     <div class="flex-row">
             <a href="{% url 'scoping:generate_query' project.id 5 %}"<label class="btn btn-secondary m-2">All unrated documents</label></a>
             <a href="{% url 'scoping:generate_query' project.id 4 %}"<label class="btn btn-secondary m-2">All conflicted / maybe documents</label></a>
+            <a href="{% url 'scoping:generate_query' project.id 6 %}"class="btn btn-secondary m-2">All Title-relevant docs</a>
+            <a href="{% url 'scoping:generate_query' project.id 7 %}"class="btn btn-secondary m-2">All Abstract-relevant docs</a>
     </div>
     <br>
 </div>
 <hr>
 
-{% endif %}
+
 
 
 

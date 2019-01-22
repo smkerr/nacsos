@@ -4,87 +4,123 @@
 
 {% block content %}
 
-<br>
-<h1> Scoping Review Helper</h1>
+
 
 
 <div class="container ">
     <br>
-    <h4> Query Sampler (<a href="{% url 'scoping:query' tag.query.id %}">Query no. {{tag.query.id}}</a>) - Welcome, {{user.username}}, your progress: </h4>
+    <h4> Query Screener (<a href="{% url 'scoping:query' tag.query.id %}">Query no. {{tag.query.id}}</a>) - Welcome, {{user.username}}, your progress: </h4>
 
-    <div class="progress m-5 position-sticky">
-      <div class="progress-bar" role="progressbar" style="width: {{pc}}%;" aria-valuenow="{{pc}}" aria-valuemin="0" aria-valuemax="100">{{pc}}%</div>
+    <div class="m-4" style="margin-bottom:-15px !important">
+        <div id="graphBox" style="width:100%; height:20px"></div>
+    </div>
+
+    <div class="progress m-4 position-sticky">
+        <div class="progress-bar" role="progressbar" style="width: {{pc}}%;" aria-valuenow="{{pc}}" aria-valuemin="0" aria-valuemax="100">{{pc}}%</div>
+    </div>
+
+    <div class="m-4" style="margin-bottom:-5px !important; margin-top:-25px !important">
+        <div class="d-flex justify-content-center">
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype 0 todo %}"><<</a></div>
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype prev todo %}"><</a></div>
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype next todo %}">></a></div>
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype last todo %}">>></a></div>
+        </div>
     </div>
 
 
 </div>
 
 <div class="row">
-<div class="col-3"></div>
-<div class="border rounded bg-white p-4 col-6 m-2 position-sticky sticky-top">
-    <h4>Query criteria</h4>
-    {{tag.query.criteria |safe }}
-</div>
-</div>
 
-<div class="row">
+    <div class="col-9">
+        <div class="row">
+            <div class="col-12">
+                <div class="border rounded bg-white p-3 m-2 position-sticky sticky-top">
+                    <div><h4>Query criteria</h4></div>
+                    <div style="column-count: 2;">
+                    {{criteria |safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <!--  NOTES -->
+            <div class="col-4">
+                <div class="border rounded bg-white my-3 p-2">
+                    Add a note to this document
+                    <hr>
+                    <form action="{% url 'scoping:add_note' %}" method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.path }}">
+                      <input type="hidden" name="docn" value="{{do.doc.id}}"></input>
+                      <input type="hidden" name="tag" value="{{tag.id}}"></input>
+                    <textarea class="form-control" name="note" rows=3>
+                    </textarea>
+                    <br>
+                    <p>
+                    <button type="submit" class="btn btn-primary">Add note</button>
+                    </form>
+                </div>
+                {% for note in notes %}
+                <div class="border rounded bg-white my-3 p-2 note">
+                  <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
+                  <hr>
+                  {{note.text}}
+                  <hr>
+                  <a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
+                  </a>
+                </div>
+                {% endfor %}
+            </div>
+            <!--  DOC -->
+            <div class="col-8">
+            {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+
+            </div>
+        </div>
+    </div>
 
     <div class="col-3">
-        <div class="border rounded bg-white my-3 p-2">
-            Add a note to this paragraph
-            <hr>
-            <form action="{% url 'scoping:add_note' %}" method="post">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{{ request.path }}">
-              <input type="hidden" name="docn" value="{{do.doc.id}}"></input>
-              <input type="hidden" name="tag" value="{{tag.id}}"></input>
-            <textarea class="form-control" name="note" rows=3>
-            </textarea>
-            <br>
-            <p>
-            <button type="submit" class="btn btn-primary">Add note</button>
-            </form>
-        </div>
-        {% for note in notes %}
-        <div class="border rounded bg-white my-3 p-2 note">
-          <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
-          <hr>
-          {{note.text}}
-          <hr>
-          <a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
-          </a>
-        </div>
-        {% endfor %}
-    </div>
-    <div class="col-6">
-    {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+    {% for l in levels %}
 
+        <div class="border rounded bg-white my-2 p-2">
+            Which level {{l.0.1.level}} categories is this paragraph relevant to?
+            (hover for more info)
+                    <hr>
+                {% for t in l %}
+                <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
+
+                {% endfor %}
+        </div>
+
+    {% endfor %}
     <div class="border rounded bg-white my-3 p-2">
        {% csrf_token %}
-       <p class="lead">Is this document relevant according the criteria shown? (Click buttons or use number keys)</p>
+       <p >Is this document relevant according the criteria shown? (Click buttons or use number keys)</p>
        <hr>
-          <a id="r-1" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}"<label class="btn btn-secondary m-1">Yes (1)</label></a>
-          <a id="r-2" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}"<label class="btn btn-secondary m-1">No (2)</label></a>
-          <a id="r-3" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}"<label class="btn btn-secondary m-1">Maybe (3)</label></a>
+
+          <a id="r-1" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}" class="btn btn-secondary m-1 b-yes {% if do.relevant == 1 %} True {% endif %}">Yes (1)</a>
+          <a id="r-2" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}" class="btn btn-secondary m-1 b-no {% if do.relevant == 2 %} True {% endif %}">No (2)</a>
+          <a id="r-3" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}" class="btn btn-secondary m-1 b-maybe {% if do.relevant == 3 %} True {% endif %}">Maybe (3)</a>
         <!-- </div> -->
     </div>
     </div>
+
+<!-- </div>
+<div class="row"> -->
+
+
+
+
     <div class="col-3">
 
 
         <br>
 
-        {% for l in levels %}
-            <div class="border rounded bg-white my-3 p-2">
-                Which level {{l.0.1.level}} categories is this paragraph relevant to?
-                (hover for more info)
-                        <hr>
-                    {% for t in l %}
-                    <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
 
-                    {% endfor %}
-            </div>
-        {% endfor %}
+
+
 
     </div>
 
@@ -132,6 +168,106 @@ $(document).keydown(function(e){
         review("3")
     }
 });
+
+width = "100%"
+height = 20
+
+var graph = d3.select("#graphBox")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var div = d3.select("#graphBox").node().getBoundingClientRect()
+var w = div.width;
+
+var div = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+console.log(w)
+var url = window.location.href + '/1'
+console.log(url)
+var cmap = {
+    1: "#91cf60", 2: "#fc8d59", 3: "#ffffbf", 0: "#F5F5F5"
+}
+
+d3.json(url, function(json) {
+    var urlparts = window.location.href.split("/")
+    var n = json.length
+    var h = 20
+    var rows = 1 + Math.floor(n/250)
+    var wn = (w*rows)/n
+    var hn = h/rows
+    var pos = {{pos|safe}}
+
+    console.log(wn)
+
+    var m = wn*0.1
+    if (m > 3) {
+        sw = 3
+    } else {
+        sw = m
+    }
+    if (wn > 5) {
+        m = 1.5
+    }
+    console.log(json)
+    graph.selectAll("rect")
+    .data(json)
+    .enter()
+    .append("rect")
+    .attr("x", function(d,i) {
+        return Math.floor(i/rows)*wn + m
+    })
+    .style("fill", function(d){
+        return cmap[d.relevant]
+    })
+    .style("stroke", function(d) {
+        if (d.order==pos) {
+            return "red"
+        } else {
+            return "lightgrey"
+        }
+    })
+    .on("mouseover", function(d) {
+        chars = d.doc__title.length
+        approx_lines = Math.ceil(chars/40)
+        div.transition()
+            .duration(200)
+            .style("opacity", .9);
+        div	.html(d.doc__title)
+            .style("left", (d3.event.pageX) + "px")
+            .style("height", 10+10*approx_lines + "px")
+            .style("top", (d3.event.pageY - 28) + "px");
+        })
+    .on("mouseout", function(d) {
+        div.transition()
+            .duration(500)
+            .style("opacity", 0);
+    })
+    .on("click", function(d) {
+        if (d.order <= pos) {
+            console.log(urlparts)
+            var link = urlparts.slice(0,3).join('/')
+            for (var i = 3; i < urlparts.length; i++) {
+                if (urlparts[i-3]=="screen_doc") {
+                    link+="/"+d.order
+                } else {
+                    link+="/"+urlparts[i]
+                }
+            }
+            window.location = link
+        }
+    })
+    .attr("y",function(d,i) {
+        return (i%rows)*hn
+    })
+    .attr("height",  hn*0.8)
+    .attr("width", wn - m*2)
+    .attr("class", "scoped-doc")
+    .attr("rx", sw + "px")
+    .attr("ry", sw + "px")
+    .style("stroke-width", sw + "px")
+})
 
 
 </script>

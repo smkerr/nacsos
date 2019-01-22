@@ -5,17 +5,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 
 
-<h2>{{topic.title}}</h2>
-<h3>{{topic.top_words}}</h3>
+<h2>Party proportions for Topic
+    <a href="{% url 'tmv_app:topic_detail' topic.id%}">{{topic.pk}}</a> from run {{stat.pk}}: {{topic.title}}</h2>
+<h3>Top words: {% for w in topic.top_words %} {{w}}, {% endfor %}</h3>
 
 <svg id="chartarea"></svg>
 
-{% render_table pars %}
+{% render_table texts %}
 
 <!-- <svg width="960" height="500"></svg> -->
-
-<p>Topic {{stat.pk}}:
-
 
 {% endblock %}
 
@@ -29,10 +27,17 @@ var data = {{graph|safe}};
 console.log(data)
 
 xs = []
-for (i=0;i<data.length;i++) {
-    data[i].n = i
-    xs.push(data[i].utterance__speaker__party__name)
-}
+{% if stat.psearch.search_object_type == 1 %}
+    for (i=0;i<data.length;i++) {
+        data[i].n = i
+        xs.push(data[i].utterance__speaker__party__name)
+    }
+{% else %}
+    for (i=0;i<data.length;i++) {
+        data[i].n = i
+        xs.push(data[i].speaker__party__name)
+    }
+{% endif %}
 
 var height = 400;
 var width = 1000;
@@ -52,12 +57,15 @@ var svg = d3.select("#chartarea")
 	.style('width', width + 'px')
 	.style('height', height + 'px');
 
+
+{% if stat.psearch.search_object_type == 1 %}
+
 svg.selectAll('rect')
 	.data(data)
 	.enter()
 	.append('rect')
 	.attr('class', 'bar')
-	.attr("x", function (d, i) {
+    .attr("x", function (d, i) {
 		return xScale(d.utterance__speaker__party__name);
 	})
 	.attr("y", function (d, i) {
@@ -91,6 +99,51 @@ svg.selectAll('rect')
 	.attr("height", function (d, i) {
 		return yScale(d.topic_proportion);
 	});
+
+{% else %}
+
+svg.selectAll('rect')
+	.data(data)
+	.enter()
+	.append('rect')
+	.attr('class', 'bar')
+    .attr("x", function (d, i) {
+		return xScale(d.speaker__party__name);
+	})
+	.attr("y", function (d, i) {
+		return height;
+	})
+	.attr("width", function (d, i) {
+		return xScale.rangeBand()
+	})
+    .on("click", function(d){
+        window.location = d.speaker__party__id
+    })
+    .on("mouseover", function(){
+        d3.select(this).classed("hovered",true)
+    })
+    .on("mouseout", function(){
+        d3.select(this).classed("hovered",false)
+    })
+	.attr("fill", function (d) {
+		return d.speaker__party__colour
+	})
+	.attr("height", 0)
+	.transition()
+	.duration(800)
+	.delay(function (d, i) {
+		return i * 50;
+	})
+
+	.attr("y", function (d, i) {
+		return height - yScale(d.topic_proportion);
+	})
+	.attr("height", function (d, i) {
+		return yScale(d.topic_proportion);
+	});
+
+{% endif %}
+
 
 svg.append("text")
     .attr("fill", "#000")

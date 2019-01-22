@@ -23,7 +23,7 @@ class Command(BaseCommand):
                 udata = u._json
                 user = User.objects.get(id=udata['id'])
                 for f in udata:
-                    if udata[f] != "none":
+                    if udata[f] != "none" and f not in ["is_translation_enabled","has_extended_profile","id_str"]:
                         try:
                             if f=="created_at":
                                 udata[f] = datetime.strptime(udata[f],tf)
@@ -36,7 +36,7 @@ class Command(BaseCommand):
                 user.save()
                 for p in range(0,160):
                     try:
-                        statuses = api.user_timeline(u.screen_name)
+                        statuses = api.user_timeline(u.screen_name,page=p,include_rts=True)
                         for s in statuses:
                             status, created = Status.objects.get_or_create(
                                 id=s.id

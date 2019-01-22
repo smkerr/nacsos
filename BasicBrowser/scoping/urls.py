@@ -131,6 +131,8 @@ urlpatterns = [
     url(r'^add_note', views.add_note, name='add_note'),
 
     path('screen_doc/<int:tid>/<int:ctype>/<int:pos>/<int:todo>', views.screen_doc, name='screen_doc'),
+    path('screen_doc/<int:tid>/<int:ctype>/<int:pos>/<int:todo>/<int:js>', views.screen_doc, name='screen_doc'),
+
     path('rate_doc/<int:tid>/<int:ctype>/<int:doid>/<int:pos>/<int:todo>/<int:rel>', views.rate_doc, name='rate_doc'),
     path('cat_doc/', views.cat_doc, name='cat_doc'),
 

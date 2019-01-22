@@ -305,6 +305,8 @@ class DocProject(models.Model):
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     relevant = models.IntegerField(default=0, choices=Relevance)
+    ti_relevant = models.IntegerField(default=0, choices=Relevance)
+    ab_relevant = models.IntegerField(default=0, choices=Relevance)
 
     class Meta:
         unique_together = ("doc","project")
@@ -362,7 +364,8 @@ class Query(models.Model):
         ('Scopus','Scopus'),
         ('intern','Internal'),
         ('pop','Publish or Perish'),
-        ('ebsco', 'EBSCO')
+        ('ebsco', 'EBSCO'),
+        ('jstor', 'JSTOR'),
     )
 
 
@@ -387,6 +390,7 @@ class Query(models.Model):
     innovation  = models.ForeignKey('Innovation', on_delete=models.CASCADE, null=True)
     query_file = models.FileField(upload_to='queries/',null=True)
     queries = models.ManyToManyField("self",symmetrical=False)
+    upload_log = models.TextField(null=True)
 
 
     def __str__(self):
@@ -416,6 +420,7 @@ class Query(models.Model):
                         category=self.category
                     )
                     dc.query_tagged=True
+                    dc.save()
 
                 pass
 
@@ -494,38 +499,39 @@ class Tag(models.Model):
         self.users = users.count()
         ## Measure scores
         ## start off with all docs
-        tdocs = Doc.objects.filter(docownership__tag=self).distinct()
-        scores = []
-        ## Filter out those ones which have been rated by more than one person
-        for u in users:
-            utdocs = tdocs.filter(
-                docownership__user=u,
-                docownership__relevant__gt=0,
-                docownership__tag=self
-            ).distinct()
-            if utdocs.count()>0:
-                scores.append([])
-                tdocs = utdocs
-                u.rated=True
-            else:
-                u.rated=False
-        i = 0
-        for u in users:
-            if u.rated:
-                l = tdocs.filter(
-                    docownership__user=u
-                ).order_by('pk').values_list(
-                    'docownership__relevant',flat=True
+        users = User.objects.filter(
+            docownership__tag=self,
+            docownership__relevant__gt=0
+        ).distinct()
+        if users.count()==2:
+            scores = []
+            coded = Doc.objects.filter(
+                docownership__tag=self,
+                docownership__relevant__gt=0
+            ).values('pk').annotate(users=Count('pk')).filter(
+                users=2
+            )
+
+            coded_ids = set(coded.values_list('pk',flat=True))
+
+            for u in users:
+                l = DocOwnership.objects.filter(
+                    doc__id__in=coded_ids,
+                    tag=self,
+                    user=u,
+                    relevant__gt=0
+                ).order_by('doc__pk').values_list(
+                    'relevant',flat=True
                 )
-                scores[i] = list(l)
-                i+=1
-        dscores = [None] + scores
-        if len(scores) == 2:
-            self.ratio = round(difflib.SequenceMatcher(*dscores).ratio(),2)
-            self.cohen_kappa = cohen_kappa_score(*scores)
-        else:
-            self.cohen_kappa = None
-            self.ratio = None
+                scores.append(list(l))
+
+            dscores = [None] + scores
+            if len(scores) == 2:
+                self.ratio = round(difflib.SequenceMatcher(*dscores).ratio(),2)
+                self.cohens_kappa = cohen_kappa_score(*scores)
+            else:
+                self.cohens_kappa = None
+                self.ratio = None
         self.save()
 
     def __str__(self):
@@ -728,7 +734,7 @@ class Doc(models.Model):
         return len(str(self.content).split())
 
     def shingle(self):
-        return set(s for s in ngrams(self.title.lower().split(),2))
+        return set(s for s in ngrams(self.title.lower().replace("-"," ").split(),2))
 
     def find_duplicates(self,ids,j_thresh,limit_y=False):
         comparison_docs = Doc.objects.filter(id__in=ids)
@@ -749,6 +755,8 @@ class Doc(models.Model):
         if q is not None:
             if q.__class__ == scoping.models.Project:
                 qs = q.query_set.exclude(database="intern")
+            elif "GENERATED" in q.text:
+                qs = q.project.query_set.exclude(database="intern")
             elif q.queries.exists():
                 qs = []
                 for q1 in q.queries.all():
@@ -1097,14 +1105,47 @@ def update_docproj(sender, instance, **kwargs):
         print(instance.id)
     if p is None:
         return
+    if instance.relevant==0:
+        return
     dp, created = DocProject.objects.get_or_create(project=p,doc=d)
     if dp.relevant == 0:
         dp.relevant=instance.relevant
         dp.save()
     elif dp.relevant != instance.relevant:
-        dp.relevant = 3
+        ratings = set(DocOwnership.objects.filter(
+            doc=d,tag__query__project=p
+        ).values_list('relevant', flat=True))
+        if len(ratings) < 2:
+            dp.relevant = instance.relevant
+        else:
+            dp.relevant = 3
         dp.save()
-
+    if instance.title_only:
+        if dp.ti_relevant == 0:
+            dp.ti_relevant=instance.relevant
+            dp.save()
+        elif dp.ti_relevant != instance.relevant:
+            ratings = set(DocOwnership.objects.filter(
+                doc=d,tag__query__project=p,title_only=True
+            ).values_list('relevant', flat=True))
+            if len(ratings) < 2:
+                dp.ti_relevant = instance.relevant
+            else:
+                dp.ti_relevant = 3
+            dp.save()
+    else:
+        if dp.ab_relevant == 0:
+            dp.ab_relevant=instance.relevant
+            dp.save()
+        elif dp.ab_relevant != instance.relevant:
+            ratings = set(DocOwnership.objects.filter(
+                doc=d,tag__query__project=p,title_only=False
+            ).values_list('relevant', flat=True))
+            if len(ratings) < 2:
+                dp.ab_relevant = instance.relevant
+            else:
+                dp.ab_relevant = 3
+            dp.save()
 
 class DocAuthInst(models.Model):
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE,null=True, verbose_name="Author - Document")
@@ -1172,6 +1213,7 @@ class WoSArticle(models.Model):
     di = models.CharField(null=True, db_index=True, max_length=250, verbose_name="DOI") # DOI
     dt = models.CharField(null=True, max_length=50, verbose_name="Document Type") # doctype
     em = models.TextField(null=True, verbose_name="E-mail Address",db_index=True) #email
+    ems = ArrayField(models.TextField(), verbose_name="Email List", null=True)
     ep = models.CharField(null=True, max_length=50, verbose_name="Ending Page") # last page
     fn = models.CharField(null=True, max_length=250, verbose_name="File Name") # filename?
     fu = models.TextField(null=True, verbose_name="Funding Agency and Grant Number") #funding agency + grant number

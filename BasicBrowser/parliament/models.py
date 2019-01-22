@@ -145,6 +145,10 @@ class Utterance(models.Model):
     speaker_role = models.ForeignKey(SpeakerRole, null=True, on_delete=models.SET_NULL)
     search_matches = models.ManyToManyField('Search')
 
+    @property
+    def paragraph_texts(self):
+        return ' '.join([x.text for x in self.paragraph_set.all()])
+
 class Paragraph(models.Model):
     utterance = models.ForeignKey(Utterance, on_delete=models.CASCADE)
     text = models.TextField()

@@ -1,3 +1,5 @@
+{% if not stat.psearch %}
+
 <table class="light" id="doc_table">
 <tr class="title">
   <td>PY</td>
@@ -14,3 +16,35 @@
       {% endfor %}
     {% endif %}
 </table>
+
+{% else %}
+
+<table class="light" id="doc_table">
+<tr class="title">
+  <td>
+      {% if stat.search.search_object_type == 1 %}
+      Paragraph ID
+      {% else %}
+      Speech ID
+      {% endif %}
+  </td>
+  <td>Speaker</td>
+  <td>{{svalue}}</td>
+</tr>
+    {% if docs %}
+      {% for doc in docs %}
+      <tr id="{{ doc.title }}" class="list">
+            {% if stat.psearch.search_object_type == 1 %}
+                <td><a href="{% url 'parliament:paragraph' doc.pk %}">{{ doc.pk }}</a></td>
+                <td><a href="{% url 'parliament:person' doc.utterance__speaker__pk %}">{{ doc.utterance__speaker__clean_name }}</a></td>
+            {% else %}
+                <td><a href="{% url 'parliament:utterance' doc.pk %}">{{ doc.pk }}</a></td>
+                <td><a href="{% url 'parliament:person' doc.speaker__pk %}">{{ doc.speaker__clean_name }}</a></td>
+            {% endif %}
+            <td>{{doc.svalue|floatformat:float}}</td>
+        <tr>
+      {% endfor %}
+    {% endif %}
+</table>
+
+{% endif %}

@@ -50,7 +50,8 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm
         max_df=max_df,
         min_freq=min_df,
         method='BD', # BD = Blei dynamic topic model
-        max_features=max_features
+        max_features=max_features,
+        status=1
     )
     stat.save()
     run_id = stat.run_id
@@ -313,7 +314,8 @@ def run_dynamic_nmf(s_id, K, language="german", verbosity=1, max_features=20000,
         max_df=max_df,
         min_freq=min_df,
         method='DT',  # DT = dynamic NMF
-        max_features=max_features
+        max_features=max_features,
+        status=1
     )
     stat.save()
     run_id = stat.run_id

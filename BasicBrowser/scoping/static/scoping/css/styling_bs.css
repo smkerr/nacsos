@@ -35,6 +35,21 @@ html, body {
     height: 100%;
 }
 
+
+
+div.tooltip {
+    position: absolute;
+    text-align: center;
+    width: 260px;
+    height: 44px;
+    padding: 2px;
+    font: 10px sans-serif;
+    background: lightsteelblue;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
 #main {
     min-height: 100%;
     overflow-y: hidden;
@@ -335,3 +350,21 @@ button.btntag{
 button.True {
     background-color: #ccebc5;
 }
+
+a.True.b-yes {
+    border-color: #91cf60;
+    border-width: 5px;
+}
+
+a.True.b-no {
+    border-color: #fc8d59;
+    border-width: 5px;
+}
+
+a.True.b-maybe {
+    border-color: #FFC30B;
+    border-width: 5px;
+}
+
+
+"#91cf60", 2: "#fc8d59", 3: "#ffffbf", 0: "#F5F5F5"

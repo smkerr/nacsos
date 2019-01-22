@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 import operator
 from django.forms.models import model_to_dict
 from collections import OrderedDict
+import markdown
 
 from cities.models import *
 from tmv_app.models import *
@@ -96,20 +97,31 @@ class QueryCreate(CreateView):
             fname = '{}/results{}'.format(dname, file_extension)
             fpath = '{}/results{}'.format(d, file_extension)
 
-            with open(fpath,'w', encoding='utf-8') as res:
-                for f in files:
-                    for line in f:
-                        line = line.decode('utf-8')
-                        if re.match("EF",line) or re.match(".*FN Clarivate.*",line):
-                            r = line
-                        else:
-                            try:
-                                r = line # utf8
-                                if line is not None and line != "null":
-                                    res.write(str(line))
-                            except:
-                                pass
-                res.write("EF")
+            if file_extension.lower()==".xml":
+                with open(fpath,'w', encoding='utf-8') as res:
+                    res.write('<?xml version="1.0" encoding="UTF-8"?>')
+                    res.write('<articlelist>')
+                    for f in files:
+                        for line in f:
+                            if "<?xml" not in str(line):
+                                res.write(line.decode('utf-8'))
+                    res.write('</articlelist>')
+
+            else:
+                with open(fpath,'w', encoding='utf-8') as res:
+                    for f in files:
+                        for line in f:
+                            line = line.decode('utf-8')
+                            if re.match("EF",line) or re.match(".*FN Clarivate.*",line):
+                                r = line
+                            else:
+                                try:
+                                    r = line # utf8
+                                    if line is not None and line != "null":
+                                        res.write(str(line))
+                                except:
+                                    pass
+                    res.write("EF")
 
             self.object.query_file.name = fname
             self.object.save()
@@ -245,15 +257,9 @@ def project(request, pid):
     queries = Query.objects.filter(
         project=p
     )
-    if not queries.exists() == 0:
-        queries = Query.objects.all()
 
-    if queries.exists():
-        query = queries.last()
-        qid = query.id
-    else:
-        query = None
-        qid = None
+
+    qid = None
 
     p.mixed_docs = p.docproject_set.filter(relevant=3).count()
     p.unrated_docs = p.docproject_set.filter(relevant=0).count()
@@ -433,10 +439,7 @@ def queries(request, pid):
             project=p
         )
 
-    query = queries.last()
-
-    if query is None:
-        query = Query.objects.last()
+    query = None
 
     for q in queries:
         q.tech = q.category
@@ -500,13 +503,37 @@ def generate_query(request,pid,t):
         docs = Doc.objects.filter(
             docproject__project=project,docproject__relevant=0
         )
-
+    elif t==6:
+        q.title=project.title+" - all title-relevant docs"
+        docs = Doc.objects.filter(
+            docownership__query__project=project,
+            docownership__relevant=1,
+            docownership__title_only=True
+        )
+    elif t==7:
+        q.title=project.title+" - all abstract-relevant docs"
+        docs = Doc.objects.filter(
+            docownership__query__project=project,
+            docownership__relevant=1,
+            docownership__title_only=False
+        )
     dids = set(docs.values_list('pk',flat=True))
     Through = Doc.query.through
     dqs = [Through(doc_id=d,query=q) for d in dids]
     Through.objects.bulk_create(dqs)
     q.r_count = q.doc_set.count()
     q.save()
+
+    t = Tag(
+        title="all",
+        text="all",
+        query=q
+    )
+    t.save()
+    Through = Doc.tag.through
+    dts = [Through(doc_id=d,tag=t) for d in dids]
+    Through.objects.bulk_create(dts)
+    t.update_tag()
 
     return HttpResponseRedirect(reverse(
         'scoping:queries',
@@ -1804,8 +1831,8 @@ def userpage(request, pid):
         query__project=project
     ).values('query__id','query__type','id').order_by('-id')
 
-    # if project.id==1:
-    #     queries = queries.filter(id__gt=731)
+    if project.id==1 and project.title=='Sustainability':
+         queries = queries.filter(id__gt=731)
 
     query_list = []
 
@@ -1848,7 +1875,7 @@ def userpage(request, pid):
                 'docstats': docstats
             })
 
-    query = Query.objects.filter(project=project).last()#.query
+    query = None # Query.objects.filter(project=project).last()#.query
 
     codings = DocMetaCoding.objects.filter(project=project,user=request.user)
 
@@ -2306,6 +2333,8 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
     relevance_fields.append({"path": "docfile__id", "name": "PDF"})
     relevance_fields.append({"path": "category__name", "name": "Category"})
     relevance_fields.append({"path": "docproject__relevant", "name": "Project relevant"})
+    relevance_fields.append({"path": "docproject__ti_relevant", "name": "Project relevant (title)"})
+    relevance_fields.append({"path": "docproject__ab_relevant", "name": "Project relevant (abstract)"})
     relevance_fields.append({"path": "note__text", "name": "Notes"})
     relevance_fields.append({"path": "relevance_time", "name": "Time of Rating"})
 
@@ -2932,7 +2961,7 @@ def sortdocs(request):
 
     tech = query.category
 
-    if "docproject__relevant" in fields:
+    if "docproject__relevant" in fields or "docproject__ti_relevant" in fields or "docproject__ab_relevant" in fields:
         filt_docs = filt_docs.filter(
             docproject__project=query.project
         )
@@ -2960,16 +2989,20 @@ def sortdocs(request):
 
 
     print(len(filt_docs))
+
     # filter documents with user ratings
     if len(users) > 0:
         uname = users[0].split("__")[1]
         user = User.objects.get(username=uname)
+        all_users = User.objects.filter(
+            username__in=[x.split('__')[1] for x in users]
+        )
         if "relevance_time" in rfields:
             filt_docs = filt_docs.annotate(
                 relevance_time = models.Max(
                     models.Case(
-                        models.When(docownership__user=user,
-                            then=F('docownership__date')
+                        models.When(docownership__user__in=all_users,
+                            then=F('docownership__finish')
                         )#,
                         #default=datetime.date(2000,1,2)
                     )
@@ -3022,6 +3055,18 @@ def sortdocs(request):
                     )
                 })
 
+    else:
+        if "relevance_time" in rfields:
+            filt_docs = filt_docs.annotate(
+                relevance_time = models.Max(
+                    models.Case(
+                        models.When(docownership__query=query,
+                            then=F('docownership__finish')
+                        )#,
+                        #default=datetime.date(2000,1,2)
+                    )
+                )
+            )
     all_docs = filt_docs
 
     fids = []
@@ -3068,12 +3113,17 @@ def sortdocs(request):
                 if "docownership__" in f_fields[i]:
                     f_text[i] = getattr(DocOwnership,f_text[i].upper())
                     print(f_text[i])
+                if "relevance_time" in f_fields[i]:
+                    import dateutil.parser as parser
+                    f_text[i] = parser.parse(f_text[i], dayfirst=True)
                 kwargs = {
                     '{0}__{1}'.format(f_fields[i],op): f_text[i]
                 }
-                if "docproject__relevant" in f_fields[i]:
+                if "docproject__relevant" in f_fields[i] or "docproject__ti_relevant" in f_fields[i]:
                     kwargs['docproject__project'] = query.project
                 if joiner=="AND":
+
+                    bla = filt_docs.count()
                     if exclude:
                         filt_docs = filt_docs.exclude(**kwargs)
                     else:
@@ -3092,7 +3142,6 @@ def sortdocs(request):
                 tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
         except:
             break
-
 
     if tag_title is not None:
         t = Tag(title=tag_title)
@@ -4513,8 +4562,9 @@ def rate_par(request,tid,ctype,doid,todo,done):
         }
     ))
 
+
 @login_required
-def screen_doc(request,tid,ctype,pos,todo):
+def screen_doc(request,tid,ctype,pos,todo, js=0):
     tag = Tag.objects.get(pk=tid)
     dois = DocOwnership.objects.filter(
         order__isnull=False,
@@ -4522,15 +4572,21 @@ def screen_doc(request,tid,ctype,pos,todo):
         user=request.user
     ).order_by('order')
 
+    if js==1:
+        if pos==0:
+            time.sleep(3)
+        dois = dois.values('order','doc__title','relevant')
+        return HttpResponse(json.dumps(list(dois)), content_type="application/json")
+
     s = 0
-    while s < 5:
+    while s < 15:
         try:
             do = dois[pos]
-            s = 10
+            s = 20
         except:
             s+=1
-            time.sleep(1)
-    if s == 5:
+            time.sleep(1.5)
+    if s == 15:
         return HttpResponseRedirect(reverse(
             'scoping:userpage',
             kwargs={"pid":tag.query.project.id}
@@ -4565,10 +4621,26 @@ def screen_doc(request,tid,ctype,pos,todo):
             lcats.append((e,t))
         levels.append(lcats)
 
+    last = dois.filter(relevant__gt=0).count()
+    if pos==last:
+        next=last
+    else:
+        next=pos+1
+
+    if pos==0:
+        prev=0
+    else:
+        prev=pos-1
+
+    try:
+        criteria = markdown.markdown(tag.query.criteria)
+    except:
+        criteria = tag.query.criteria
 
     context = {
         'project':tag.query.project,
         'tag': tag,
+        'criteria': criteria,
         'do': do,
         'pc': round(pos/todo*100),
         'doc': doc,
@@ -4576,7 +4648,10 @@ def screen_doc(request,tid,ctype,pos,todo):
         'todo': todo,
         'ctype': ctype,
         'notes': notes,
-        'levels': levels
+        'levels': levels,
+        'prev': prev,
+        'next': pos+1,
+        'last': last
     }
 
     return render(request, 'scoping/screen_doc.html', context)

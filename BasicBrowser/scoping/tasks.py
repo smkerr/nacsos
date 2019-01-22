@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 from celery import shared_task
 from .models import *
 from utils.utils import *
+from scoping.utils import utils
 import os
 from django.db import connection, transaction
 from psycopg2.extras import *
@@ -70,6 +71,9 @@ def update_techs(pid):
 @shared_task
 def upload_docs(qid, update):
     q = Query.objects.get(pk=qid)
+    q.doc_set.clear()
+    q.upload_log = ""
+    q.save()
 
     title = str(q.id)
 
@@ -80,7 +84,10 @@ def upload_docs(qid, update):
 
     print(q.title)
 
-    if ".RIS" in q.query_file.name or ".ris" in q.query_file.name:
+    if ".xml" in q.query_file.name.lower():
+        r_count = utils.read_xml(q,update)
+
+    elif ".RIS" in q.query_file.name or ".ris" in q.query_file.name:
         r_count = read_ris(q,update)
 
     elif q.database =="WoS":
@@ -208,13 +215,13 @@ def do_query(qid, background=True):
         time.sleep(1)
         # run "scrapeQuery.py" on the text file in the background
         if background:
-            if q.creator.username=="galm":
-                subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", q.database, fname])
+            if q.creator.username in ["galm","khat","hilj"]:
+                subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","2000000","-s", q.database, fname])
             else:
                 subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", q.database, fname])
         else:
-            if q.creator.username=="galm":
-                subprocess.call(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","200000","-s", q.database, fname])
+            if q.creator.username in ["galm","khat","hilj"]:
+                subprocess.call(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","2000000","-s", q.database, fname])
             else:
                 subprocess.call(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", q.database, fname])
 
