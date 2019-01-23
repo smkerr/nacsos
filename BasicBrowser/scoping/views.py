@@ -4609,12 +4609,12 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
         doc = do.doc
     )
 
-    cats = Category.objects.filter(project=tag.query.project)
+    cats = Category.objects.filter(project=tag.query.project)#.order_by('name')
 
     levels = []
     for l in cats.values_list('level',flat=True).distinct():
         lcats = []
-        for t in cats.filter(level=l):
+        for t in cats.filter(level=l).order_by('name'):
             dcus = cats.filter(
                 pk=t.pk,
                 docusercat__user=request.user,
@@ -4672,6 +4672,12 @@ def rate_doc(request,tid,ctype,doid,pos,todo,rel):
     do.finish = timezone.now()
     do.save()
     pos+=1
+    if pos==todo:
+        return HttpResponseRedirect(reverse(
+            'scoping:userpage',
+            kwargs={'pid':tag.query.project.id}
+        ))
+
 
     return HttpResponseRedirect(reverse(
         'scoping:screen_doc',
