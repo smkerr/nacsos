@@ -3125,7 +3125,7 @@ def sortdocs(request):
                 kwargs = {
                     '{0}__{1}'.format(f_fields[i],op): f_text[i]
                 }
-                if "docproject__relevant" in f_fields[i] or "docproject__ti_relevant" in f_fields[i]:
+                if "docproject__relevant" in f_fields[i] or "docproject__ti_relevant" in f_fields[i] or "docproject__ab_relevant" in f_fields[i]:
                     kwargs['docproject__project'] = query.project
                 if joiner=="AND":
 

@@ -1146,8 +1146,10 @@ def update_docproj(sender, instance, **kwargs):
             ).values_list('relevant', flat=True))
             if len(ratings) < 2:
                 dp.ab_relevant = instance.relevant
+                dp.relevant = instance.relevant
             else:
                 dp.ab_relevant = 3
+                dp.relevant = 3
             dp.save()
 
 class DocAuthInst(models.Model):
