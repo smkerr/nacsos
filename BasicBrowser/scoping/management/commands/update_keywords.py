@@ -22,7 +22,7 @@ class Command(BaseCommand):
             )
             print(docs.count())
 
-        docs = Doc.objects.filter(
+        docs = docs.filter(
             kw__isnull=True,
             wosarticle__isnull=False
         )
