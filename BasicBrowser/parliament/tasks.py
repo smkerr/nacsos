@@ -159,6 +159,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         method=method.upper()[0:2],
         max_features=max_features,
         max_iter=5,
+        alpha = alpha,
         status=1
     )
 
