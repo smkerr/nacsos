@@ -198,7 +198,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         print("Language not recognized.")
         return 1
 
-    stopword_list = set(stopword_list) | extra_stopwords
+    stopword_list = list(set(stopword_list) | extra_stopwords)
 
     if method in ["NM", "nmf"]:
         if verbosity > 0:
