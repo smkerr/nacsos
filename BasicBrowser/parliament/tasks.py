@@ -134,7 +134,7 @@ def do_search(s_id):
 # ===================================================================================================================
 
 @shared_task
-def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha = 0.01, **kwargs):
+def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha = 0.01, extra_stopwords = set(), **kwargs):
 
     if method in ['DT', 'dnmf', 'BT', 'BleiDTM'] and max_features == 0:
         max_features = 20000
@@ -197,6 +197,8 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
     else:
         print("Language not recognized.")
         return 1
+
+    stopword_list = set(stopword_list) | extra_stopwords
 
     if method in ["NM", "nmf"]:
         if verbosity > 0:
