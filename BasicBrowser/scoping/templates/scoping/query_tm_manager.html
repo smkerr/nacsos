@@ -1,4 +1,4 @@
-{% extends "scoping/base.html" %}
+{% extends "scoping/base_bs.html" %}
 
 {% load render_table from django_tables2 %}
 
@@ -13,11 +13,14 @@
 
 <div class="explanation">
 
-    <h3> View topic models for the query {{ query.title }} </h3>
+    <h3> View topic models for the query <i>{{ query.title }}</i> </h3>
+
+    <p>
 
     {% render_table table %}
 
     <p>
+        <br>
         Create a new topic model: <a href="{% url 'scoping:query_tm' query.id %}">here</a>
 
 </div>

@@ -1104,7 +1104,8 @@ def doc_detail(request, doc_id, run_id):
         'dt_threshold': dt_threshold,
         'ipccrefs': ipccrefs,
         'de': de,
-        'kwp': kwp
+        'kwp': kwp,
+        'project': stat.query.project
 
     }
 

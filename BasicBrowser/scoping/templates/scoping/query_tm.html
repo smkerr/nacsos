@@ -1,4 +1,4 @@
-{% extends "scoping/base.html" %}
+{% extends "scoping/base_bs.html" %}
 
 {% load render_table from django_tables2 %}
 
@@ -6,7 +6,7 @@
 
 <h1> Scoping Review Helper</h1>
 <br>
-<h2> Homepage </h2>
+<h2> New Topic Model </h2>
 <br>
 
 
@@ -30,11 +30,11 @@
             </table>
             <table>
                 <td width="50%">
-                <p class="formheader">Document and Text filtering:
+                <p class="lead">Document and Text filtering:
                 </p>
                 {% include "scoping/snippets/form_table.html" with form=form fields=fields_1 %}
             <td width="50%">
-                <p class="formheader">Model Parameters:
+                <p class="lead">Model Parameters:
                 </p>
                 {% include "scoping/snippets/form_table.html" with form=form fields=fields_2 %}
         </table>

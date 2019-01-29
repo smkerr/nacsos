@@ -291,7 +291,7 @@ class RunStats(models.Model):
     fancy_tokenization = models.BooleanField(default=False, help_text='tokenize so that multiple word keywords remain whole')
 
     K = models.IntegerField(null=True, help_text='Number of topics')
-    alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter')
+    alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter (try higher values in LDA, including > 1). Low (high) values indicate that documents should be composed of few (many) topics.')
     max_iter  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
     fulltext  = models.BooleanField(default=False, help_text='do analysis on fullText? (dependent on availability)')
     citations = models.BooleanField(default=False, help_text='scale term scores by citations?')
