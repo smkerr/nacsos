@@ -21,6 +21,7 @@ from celery import current_app
 from scoping.utils import utils
 import re
 from django.db.models import Count, Sum
+import parliament.models as pms
 # Create your models here.
 
 def get_notnull_fields(model):
@@ -468,6 +469,7 @@ class Tag(models.Model):
     text = models.TextField(null=True, verbose_name="Tag Text")
     query = models.ForeignKey('Query',null=True, on_delete=models.CASCADE, verbose_name="TagQuery")
     document_linked = models.BooleanField(default=True)
+    utterance_linked = models.BooleanField(default=False)
 
     all_docs = models.IntegerField(default=0, verbose_name="all docs")
     a_docs = models.IntegerField(default=0, verbose_name="assigned docs")
@@ -1061,7 +1063,10 @@ class DocOwnership(models.Model):
 
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True)
     docpar = models.ForeignKey(DocPar, on_delete=models.CASCADE, null=True)
+    utterance = models.ForeignKey(pms.Utterance, on_delete=models.CASCADE, null=True)
     document_linked = models.BooleanField(default=True)
+    utterance_linked = models.BooleanField(default=True)
+
     title_only = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Reviewer")
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
@@ -1103,8 +1108,10 @@ def update_docproj(sender, instance, **kwargs):
     p = instance.query.project
     if instance.doc is not None:
         d = instance.doc
-    else:
+    elif instance.docpar is not None:
         d = instance.docpar.doc
+    else:
+        return
     if d is None:
         print(instance.id)
     if p is None:

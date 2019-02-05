@@ -1,0 +1,30 @@
+
+
+<div class="utterance" id="utterance_{{ut.id}}">
+<p class="speaker"><a href="{% url 'parliament:person' ut.speaker.id %}">{{ut.speaker.clean_name}}</a>
+    {% if ut.speaker.party %}
+    <a href="{% url 'parliament:party' ut.speaker.party.id %}"><span class="{{ut.speaker.party.name}}">[{{ut.speaker.party}}]</span></a>:</p>
+    {% else %}
+        <span class="{{ut.speaker.party.name}}">[{{ut.speaker.party}}]</span>:</p>
+    {% endif %}
+{% for p in ut.paragraph_set.all %}
+    <p class="paragraph">{{p.text}}</p>
+    {% for ij in p.interjection_set.all %}
+        <p class="interjection">
+        {% for party in ij.parties.all %}
+            <span class="party {{party.name}}">{{ party.name|upper }}</span>
+        {% endfor %}
+        {% for person in ij.persons.all %}
+            <span class="speaker">
+                <a href="{% url 'parliament:person' person.id %}">
+                    {{ person.clean_name }}
+                </a>
+            </span>
+        {% endfor %}            -
+        <i class="em {{ ij.emoji }}"></i>
+        {% ifequal ij.type 2 %}
+            {{ij.text}}
+        {% endifequal %}
+    {% endfor %}
+{% endfor %}
+</div>

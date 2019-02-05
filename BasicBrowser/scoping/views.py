@@ -4570,6 +4570,14 @@ def rate_par(request,tid,ctype,doid,todo,done):
         }
     ))
 
+@login_required
+def screen_parl(request, tid, ctype, pos, todo, js=0):
+    tag = Tag.objects.get(pk=tid)
+    dois = DocOwnership.objects.filter(
+        order__isnull=False,
+        tag=tag,
+        user=request.user
+    ).order_by('order')
 
 @login_required
 def screen_doc(request,tid,ctype,pos,todo, js=0):
@@ -4583,7 +4591,12 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
     if js==1:
         if pos==0:
             time.sleep(3)
-        dois = dois.values('order','doc__title','relevant')
+        if tag.utterance_linked:
+            dois = dois.values('order','utterance__speaker__clean_name','relevant').annotate(
+                doc__title=F('utterance__speaker__clean_name')
+            )
+        else:
+            dois = dois.values('order','doc__title','relevant')
         return HttpResponse(json.dumps(list(dois)), content_type="application/json")
 
     s = 0
@@ -4599,35 +4612,41 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
             'scoping:userpage',
             kwargs={"pid":tag.query.project.id}
         ))
-    if do.title_only:
-        doc = do.doc.highlight_fields(tag.query,["title","id","wosarticle__di"])
+
+    if do.utterance_linked:
+        doc = do.utterance
+        notes = None
+        levels = None
     else:
-        doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
+        if do.title_only:
+            doc = do.doc.highlight_fields(tag.query,["title","id","wosarticle__di"])
+        else:
+            doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
 
-    notes = Note.objects.filter(
-        project=tag.query.project,
-        doc = do.doc
-    )
+        notes = Note.objects.filter(
+            project=tag.query.project,
+            doc = do.doc
+        )
 
-    cats = Category.objects.filter(project=tag.query.project)#.order_by('name')
+        cats = Category.objects.filter(project=tag.query.project)#.order_by('name')
 
-    levels = []
-    for l in cats.values_list('level',flat=True).distinct():
-        lcats = []
-        for t in cats.filter(level=l).order_by('name'):
-            dcus = cats.filter(
-                pk=t.pk,
-                docusercat__user=request.user,
-                docusercat__doc=do.doc
-            )
-            dcs = cats.filter(
-                doccat__category=t,
-                doccat__doc=do.doc,
-                doccat__query_tagged=True
-            )
-            e = dcus.exists() or dcs.exists()
-            lcats.append((e,t))
-        levels.append(lcats)
+        levels = []
+        for l in cats.values_list('level',flat=True).distinct():
+            lcats = []
+            for t in cats.filter(level=l).order_by('name'):
+                dcus = cats.filter(
+                    pk=t.pk,
+                    docusercat__user=request.user,
+                    docusercat__doc=do.doc
+                )
+                dcs = cats.filter(
+                    doccat__category=t,
+                    doccat__doc=do.doc,
+                    doccat__query_tagged=True
+                )
+                e = dcus.exists() or dcs.exists()
+                lcats.append((e,t))
+            levels.append(lcats)
 
     last = dois.filter(relevant__gt=0).count()
     if pos==last:
@@ -4723,20 +4742,7 @@ def screen(request,qid,tid,ctype,d=0):
         dois = dois.filter(relevant=ctype)
     dois = dois.order_by('date')
 
-    if not tag.document_linked:
-        d = dois.order_by('date').first()
-        return HttpResponseRedirect(reverse(
-            'scoping:screen_par',
-            kwargs={
-                'tid': tid,
-                'ctype': ctype,
-                'doid': d.id,
-                'todo': dois.count(),
-                'done': 0,
-                'last_doid': 0
-            }
-        ))
-    else:
+    if tag.document_linked or tag.utterance_linked:
         # do in background
         doids = dois.values_list('id',flat=True)
         order_dos.delay(list(doids))
@@ -4747,6 +4753,31 @@ def screen(request,qid,tid,ctype,d=0):
                 'ctype': ctype,
                 'pos': 0,
                 'todo': dois.count()
+            }
+        ))
+    # elif tag.utterance_linked:
+    #     doids = dois.values_list('id',flat=True)
+    #     order_dos.delay(list(doids))
+    #     return HttpResponseRedirect(reverse(
+    #         'scoping:screen_doc',
+    #         kwargs={
+    #             'tid': tid,
+    #             'ctype': ctype,
+    #             'pos': 0,
+    #             'todo': dois.count()
+    #         }
+    #     ))
+    else:
+        d = dois.order_by('date').first()
+        return HttpResponseRedirect(reverse(
+            'scoping:screen_par',
+            kwargs={
+                'tid': tid,
+                'ctype': ctype,
+                'doid': d.id,
+                'todo': dois.count(),
+                'done': 0,
+                'last_doid': 0
             }
         ))
 

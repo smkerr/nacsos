@@ -75,7 +75,15 @@
             </div>
             <!--  DOC -->
             <div class="col-8">
-            {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+
+            {% if do.utterance_linked %}
+                <link href="https://afeld.github.io/emoji-css/emoji.css" rel="stylesheet">
+                <div id="docbox"
+                {% include "parliament/snippets/ut_info.html" with ut=doc %}
+                </div>
+            {% else %}
+                {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+            {% endif %}
 
             </div>
         </div>
