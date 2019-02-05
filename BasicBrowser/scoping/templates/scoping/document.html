@@ -21,6 +21,8 @@
     {% endfor %}
     <p><b>Journal:</b> {{ doc.wosarticle.so }}
     <p><b>DOI</b> <a target="_blank" href="http://dx.doi.org/{{ doc.wosarticle.di }}">{{ doc.wosarticle.di}}</a>
+    <p><b>Document type:</b> {{ doc.wosarticle.dt }}
+    <p><b>Pages:</b> {{ doc.wosarticle.bp }}
     <p><b>Abstract:</b> {{doc.content}} <a id="edit">[Edit]</a></p>
     <div class="hidden edit">
       <form action="{% url 'scoping:editdoc' %}" method="post">

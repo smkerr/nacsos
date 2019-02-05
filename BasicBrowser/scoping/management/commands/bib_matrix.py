@@ -104,7 +104,8 @@ class Command(BaseCommand):
         Cmat = S*St
 
         if sample < 1000:
-            Cmat = Cmat > sample
+            Cmat.data *= Cmat.data>=sample
+            Cmat.eliminate_zeros()
 
         del S
         del St
