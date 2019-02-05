@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from time import time
 import numpy as np
 import random
+import math
 
 plt.rc('font',size=7)
 plt.rc('axes',titlesize=7)
@@ -121,15 +122,17 @@ def plot_tsne(
             edgecolor='black'
         )
 
-    for i in range(5):
+    splits = 10
+    for i in range(splits):
         for c in cats:
-            ids = np.array_split(c["dis"],5)[i]
+            ids = np.array_split(c["dis"],splits)[i]
             if hdoc is not False:
                 hdocs = ids[np.isin(ids,hdoc)]
                 ids = ids[np.isin(ids,hdoc,invert=True)]
             ax.scatter(
                 tsne_results[ids,0],
                 tsne_results[ids,1],
+                #zorder = [math.ceil(random.random()*1) for i in range(len(ids))],
                 c=c['color'],
                 s=psize,
                 alpha=0.7,

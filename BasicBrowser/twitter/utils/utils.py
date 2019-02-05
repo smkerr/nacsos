@@ -15,6 +15,8 @@ def parse_status(s, ts=None):
     status, created = Status.objects.get_or_create(
         id=sdata['id']
     )
+    if "full_text" in sdata:
+        sdata["text"] = sdata["full_text"]
     try:
         user = User.objects.get(
             id = udata['id']

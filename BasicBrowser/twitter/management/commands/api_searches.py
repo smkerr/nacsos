@@ -42,10 +42,21 @@ class Command(BaseCommand):
                     last = db_statuses.last()
 
                     if first is None:
-                        statuses = api.search(ts.string, count=100,result_type="recent")
+                        statuses = api.search(
+                            ts.string,
+                            count=100,
+                            result_type="recent",
+                            tweet_mode="extended"
+                        )
                     else:
                         print(first.created_at)
-                        statuses = api.search(ts.string, max_id=first.id, count=100,result_type="recent")
+                        statuses = api.search(
+                            ts.string,
+                            max_id=first.id,
+                            count=100,
+                            result_type="recent",
+                            tweet_mode="extended"
+                        )
                     if len(statuses) == 0 or db_statuses.count()==n_statuses:
                         results=False
                     n_statuses = db_statuses.count()
@@ -62,7 +73,18 @@ class Command(BaseCommand):
                 ).order_by('created_at')
                 first = statuses.first()
                 last = statuses.last()
-                statuses = api.search(ts.string, since_id=last.id, count=100,result_type="recent")
+                if last is None:
+                    statuses = api.search(
+                        ts.string,
+                        count=100,result_type="recent",
+                        tweet_mode="extended"
+                    )
+                else:
+                    statuses = api.search(
+                        ts.string, since_id=last.id,
+                        count=100,result_type="recent",
+                        tweet_mode="extended"
+                    )
                 if len(statuses) == 0:
                     results=False
 

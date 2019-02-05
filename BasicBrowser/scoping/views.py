@@ -4602,7 +4602,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
     if do.title_only:
         doc = do.doc.highlight_fields(tag.query,["title","id","wosarticle__di"])
     else:
-        doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
+        doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
 
     notes = Note.objects.filter(
         project=tag.query.project,

@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import django
 from django.utils import timezone
 import time
+from pathlib import Path
 
 class Command(BaseCommand):
     help = 'redoes searches'
@@ -18,8 +19,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        def parse_tjson(tsearch):
-            with open("tweets/tweets.json") as f:
+        def parse_tjson(tsearch,fname):
+            with open(fname) as f:
                 for l in f:
                     tweet = json.loads(l)
                     try:
@@ -57,26 +58,36 @@ class Command(BaseCommand):
                         status.save()
 
 
-        now = datetime.now() + timedelta(days=1)
+        now = datetime.now() - timedelta(days=77)
         for i in range(options['weeks']):
             now = now - timedelta(days=7)
             then = now - timedelta(days=8)
             print(now.strftime("%Y-%m-%d"))
             print(then.strftime("%Y-%m-%d"))
-            for ts in TwitterSearch.objects.all():
+            for ts in TwitterSearch.objects.all().order_by('id'):
                 try:
-                    os.remove("tweets.json")
+                    os.remove("tweets/tweets.json")
                 except:
                     pass
+                folder = f"tweets/tweets_{ts.string}_{now.strftime('%Y-%m-%d')}"
+                fname = f"{folder}/tweets.json"
                 c = twint.Config()
                 c.Search = ts.string
                 c.Since = then.strftime("%Y-%m-%d")
                 c.Until = now.strftime("%Y-%m-%d")
                 c.Store_json = True
-                c.Output = "tweets.json"
+                c.Output = folder
                 twint.run.Search(c)
 
-                parse_tjson(ts)
+                path = Path(fname)
+
+                if path.exists():
+                    parse_tjson(ts,fname)
+                    try:
+                        os.remove(fname)
+                        os.rmdir(folder)
+                    except:
+                        pass
                 ts.scrape_fetched=django.utils.timezone.make_aware(now)
                 if ts.since is None or ts.since > django.utils.timezone.make_aware(then):
                     ts.since = django.utils.timezone.make_aware(then)

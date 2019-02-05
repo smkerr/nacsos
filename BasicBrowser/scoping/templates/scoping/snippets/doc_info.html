@@ -8,8 +8,14 @@
     {% if doc.wosarticle__py %}
         ({{ doc.wosarticle__py }})
     {% endif %}
+    {% if doc.wosarticle__bp %}
+        {{ doc.wosarticle__bp }} - {{ doc.wosarticle__ep }}
+    {% endif %}
     {% if doc.wosarticle__di %}
     <a target="_blank" href="http://dx.doi.org/{{ doc.wosarticle__di | safe }}">{{ doc.wosarticle__di | safe}}</a>
+    {% endif %}
+    {% if doc.wosarticle__dt %}
+    Document type: {{doc.wosarticle__dt}}
     {% endif %}
 <p style="text-align:left">
 {% for au in doc.authors %}

@@ -2,6 +2,8 @@ from django.db import models
 import parliament.models as pmodels
 from django.contrib.postgres.fields import JSONField
 
+import scoping.models as smodels
+
 # Create your models here.
 
 class TwitterBaseModel(models.Model):
@@ -120,3 +122,4 @@ class TwitterSearch(models.Model):
     scrape_fetched = models.DateTimeField(u'Fetched', null=True, blank=True)
     until = models.DateTimeField(null=True)
     since = models.DateTimeField(null=True)
+    project = models.ForeignKey(smodels.Project, on_delete=models.CASCADE, null=True)

@@ -25,11 +25,44 @@ print(docs.count())
 
 aut = list(Doc.objects.filter(UT__UT__contains='WOS:').values_list('UT',flat=True))
 
+broken_1s = ["EDUCATION & EDUCATIONAL","HOSPITALITY, LEISURE, SPORT &"]
+broken_2s = ["RESEARCH","TOURISM"]
+
+for d in docs:
+    print(d.wosarticle.wc)
+    kw_list = []
+    kws = list(flatten([x.split(";") for x in d.wosarticle.wc]))
+    for j,kw in enumerate(kws):
+        # Get the last or next keyword, or set to None
+        if j > 0:
+            lkw = kws[j-1].strip().upper()
+        else:
+            lkw = None
+        if j < len(kws)-1:
+            nkw = kws[j+1].strip().upper()
+        else:
+            nkw = None
+
+        kw = kw.strip().upper()
+        if kw=="":
+            continue
+        elif kw in broken_1s and nkw in broken_2s:
+            kw_list.append(f"{kw} {nkw}")
+        elif kw in broken_2s and lkw in broken_1s:
+            continue
+        else:
+            kw_list.append(kw)
+    d.wosarticle.wc = kw_list
+    d.wosarticle.save()
+
+
 for d in docs:
     for k in d.wosarticle.wc:
         kws = k.split(";")
         for kw in kws:
             kw = kw.strip()
+            if kw=="":
+                continue
             try:
                 okw = owtable[kw.upper()]
             except:

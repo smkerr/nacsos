@@ -245,7 +245,7 @@ d3.json(url, function(json) {
             .style("opacity", 0);
     })
     .on("click", function(d) {
-        if (d.order <= pos) {
+        //if (d.order <= pos) {
             console.log(urlparts)
             var link = urlparts.slice(0,3).join('/')
             for (var i = 3; i < urlparts.length; i++) {
@@ -256,7 +256,7 @@ d3.json(url, function(json) {
                 }
             }
             window.location = link
-        }
+        //}
     })
     .attr("y",function(d,i) {
         return (i%rows)*hn

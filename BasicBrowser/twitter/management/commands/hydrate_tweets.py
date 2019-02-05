@@ -17,7 +17,7 @@ class Command(BaseCommand):
 
         def lookup_statuses(api, slookup):
             tf = "%a %b %d %H:%M:%S %z %Y"
-            tstatuses = api.statuses_lookup(slookup)
+            tstatuses = api.statuses_lookup(slookup,tweet_mode="extended")
             print(len(tstatuses))
             for s in tstatuses:
                 try:
@@ -32,10 +32,11 @@ class Command(BaseCommand):
         auth.set_access_token(settings.ACCESS_TOKEN, settings.ACCESS_SECRET)
         api = tweepy.API(auth,wait_on_rate_limit=True)
         dry_statuses = Status.objects.filter(
-            api_got=False
+            api_got=False,
+            text__icontains="…"
         ).order_by('fetched')
         slookup = []
-        for s in dry_statuses:
+        for s in dry_statuses.iterator():
             slookup.append(s.id)
             if len(slookup) == 100:
                 lookup_statuses(api, slookup)

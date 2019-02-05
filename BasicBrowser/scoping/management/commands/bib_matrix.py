@@ -8,6 +8,9 @@ import numpy as np
 import re, nltk
 from nltk.stem import SnowballStemmer
 import networkx as nx
+import pickle
+import random
+import scipy
 
 from utils.utils import *# flatten
 from scoping.models import *
@@ -17,6 +20,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('qid',type=int)
+        parser.add_argument('sample',type=int, default=0)
+        parser.add_argument('path',type=str, default='/tmp')
 
     def handle(self, *args, **options):
         qid = options['qid']
@@ -25,7 +30,17 @@ class Command(BaseCommand):
 
         cdos = CDO.objects.filter(
             doc__query=q
-        )[:2000000]
+        )#[:2000000]
+
+        print(cdos.count())
+
+        sample = options['sample']
+        path = options['path']
+
+        cdo_ids = cdos.values_list('pk',flat=True)
+
+        if sample > 1000:
+            cdos = CDO.objects.filter(pk__in=random.sample(list(cdo_ids),sample))
 
         doc_ids = set(cdos.values_list('doc__id',flat=True))
 
@@ -88,16 +103,22 @@ class Command(BaseCommand):
         print("multiply")
         Cmat = S*St
 
+        if sample < 1000:
+            Cmat = Cmat > sample
+
         del S
         del St
         gc.collect()
 
-        # Create a network from the lower triangle of the bibcouple matrix
-        ltri = tril(Cmat,k=-1)
-        G = nx.from_scipy_sparse_matrix(ltri)
+        scipy.sparse.save_npz(f"{path}/bibCouple_q_{qid}_{sample}.npz", Cmat)
 
-        nx.write_gpickle(G, f"/tmp/bibCouple_q_{qid}.pickle")
-        with open(f"/tmp/docnet_dict_q_{qid}.pickle", "wb") as f:
+        # Create a network from the lower triangle of the bibcouple matrix
+        #ltri = tril(Cmat,k=-1)
+        #G = nx.from_scipy_sparse_matrix(ltri)
+
+        #nx.write_gpickle(G, f"/tmp/bibCouple_q_{qid}_{sample}.pickle")
+        #nx.write_graph6(G, f"{path}/bibCouple_q_{qid}_{sample}.graph6")
+        with open(f"{path}/docnet_dict_q_{qid}_{sample}.pickle", "wb") as f:
             pickle.dump(m_dict, f)
-        with open(f"/tmp/docnet_revdict_q_{qid}.pickle", "wb") as f:
+        with open(f"{path}/docnet_revdict_q_{qid}_{sample}.pickle", "wb") as f:
             pickle.dump(rev_m_dict, f)

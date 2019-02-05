@@ -20,6 +20,7 @@ from django.db import transaction
 from celery import current_app
 from scoping.utils import utils
 import re
+from django.db.models import Count, Sum
 # Create your models here.
 
 def get_notnull_fields(model):

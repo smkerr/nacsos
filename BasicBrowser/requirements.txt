@@ -115,8 +115,7 @@ toolz==0.8.2
 tornado==4.5.2
 tqdm==4.19.4
 traitlets==4.3.2
-tweepy==3.6.0
-typing==3.6.1
+tweepy==3.7.0
 git+https://github.com/twintproject/twint.git
 ujson==1.35
 unicodecsv==0.14.1
