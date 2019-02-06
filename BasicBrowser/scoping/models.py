@@ -1020,6 +1020,7 @@ class NoteManager(models.Manager):
 
 class Note(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE,null=True)
+    utterance = models.ForeignKey(pms.Utterance, on_delete=models.CASCADE, null=True)
     par = models.ForeignKey(DocPar, on_delete=models.CASCADE, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Notemaker")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)

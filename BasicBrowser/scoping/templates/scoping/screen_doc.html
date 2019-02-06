@@ -53,7 +53,12 @@
                     <form action="{% url 'scoping:add_note' %}" method="post">
                       {% csrf_token %}
                       <input type="hidden" name="next" value="{{ request.path }}">
-                      <input type="hidden" name="docn" value="{{do.doc.id}}"></input>
+                      {% if do.utterance_linked %}
+                        <input type="hidden" name="ut_id" value="{{do.utterance.id}}"></input>
+                      {% else %}
+                        <input type="hidden" name="docn" value="{{do.doc.id}}"></input>
+                      {% endif %}
+
                       <input type="hidden" name="tag" value="{{tag.id}}"></input>
                     <textarea class="form-control" name="note" rows=3>
                     </textarea>

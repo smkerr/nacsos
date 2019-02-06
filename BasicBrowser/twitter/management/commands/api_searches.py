@@ -25,6 +25,7 @@ class Command(BaseCommand):
         api = tweepy.API(auth,wait_on_rate_limit=True)
 
         for ts in TwitterSearch.objects.all():
+            print(ts.string)
             for d in range(1,15):
                 then = datetime.now() - timedelta(days=d)
                 then = django.utils.timezone.make_aware(then)
@@ -74,11 +75,12 @@ class Command(BaseCommand):
                 first = statuses.first()
                 last = statuses.last()
                 if last is None:
-                    statuses = api.search(
-                        ts.string,
-                        count=100,result_type="recent",
-                        tweet_mode="extended"
-                    )
+                    results = False
+                    # statuses = api.search(
+                    #     ts.string,
+                    #     count=100,result_type="recent",
+                    #     tweet_mode="extended"
+                    # )
                 else:
                     statuses = api.search(
                         ts.string, since_id=last.id,

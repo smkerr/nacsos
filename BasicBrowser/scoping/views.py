@@ -18,6 +18,7 @@ import markdown
 
 from cities.models import *
 from tmv_app.models import *
+import parliament.models as pms
 # Create your views here.
 
 from django.utils import formats
@@ -4615,8 +4616,12 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
 
     if do.utterance_linked:
         doc = do.utterance
-        notes = None
         levels = None
+        notes = Note.objects.filter(
+            project=tag.query.project,
+            utterance = do.utterance
+        )
+
     else:
         if do.title_only:
             doc = do.doc.highlight_fields(tag.query,["title","id","wosarticle__di"])
@@ -4862,6 +4867,7 @@ def remove_tech(request,doc_id,tid,thing='Category'):
 @login_required
 def add_note(request):
     doc_id = request.POST.get('docn',None)
+    ut_id = request.POST.get('ut_id', None)
     tid = request.POST.get('tag',None)
     qid = request.POST.get('qid',None)
     ctype = request.POST.get('ctype',None)
@@ -4872,32 +4878,24 @@ def add_note(request):
     if tid is not None:
         tag = Tag.objects.get(pk=tid)
 
-        if not tag.document_linked:
-            par = DocPar.objects.get(pk=doc_id)
-            note = Note(
-                par=par,
-                tag=tag,
-                user=request.user,
-                date=timezone.now(),
-                project=tag.query.project,
-                text=text
-            )
-            note.save()
-            next = request.POST.get('next', '/')
-            return HttpResponseRedirect(next)
-        else:
+        note = Note(
+            tag=tag,
+            user=request.user,
+            date=timezone.now(),
+            project=tag.query.project,
+            text=text
+        )
+
+        if tag.document_linked:
             doc = Doc.objects.get(pk=doc_id)
-            note = Note(
-                doc=doc,
-                tag=tag,
-                user=request.user,
-                date=timezone.now(),
-                project=tag.query.project,
-                text=text
-            )
-            note.save()
-            next = request.POST.get('next', '/')
-            return HttpResponseRedirect(next)
+            note.doc = doc
+        elif ut_id:
+            ut = pms.Utterance.objects.get(pk=ut_id)
+            note.utterance = ut
+        else:
+            par = DocPar.objects.get(pk=doc_id)
+            note.par=par
+
     else:
         doc = Doc.objects.get(pk=doc_id)
         note = Note(
@@ -4907,9 +4905,10 @@ def add_note(request):
             project_id=pid,
             text=text
         )
-        note.save()
-        next = request.POST.get('next', '/')
-        return HttpResponseRedirect(next)
+
+    note.save()
+    next = request.POST.get('next', '/')
+    return HttpResponseRedirect(next)
 
 
 
