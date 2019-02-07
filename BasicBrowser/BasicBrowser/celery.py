@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import os
 from celery import Celery
+from kombu import Exchange, Queue, binding
 from django.conf import settings
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'BasicBrowser.settings')
@@ -15,6 +16,20 @@ app = Celery(
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.autodiscover_tasks()
+
+default_exchange = Exchange('default', type='direct')
+medium_exchange = Exchange('medium', type='direct')
+long_exchange = Exchange('long', type='direct')
+
+app.conf.task_queues = (
+    Queue('default', default_exchange, routing_key='default'),
+    Queue('medium', medium_exchange, routing_key='long'),
+    Queue('long', long_exchange, routing_key='long'),
+)
+
+app.conf.task_default_queue = 'default'
+app.conf.task_default_exchange = 'default'
+app.conf.task_default_routing_key = 'default'
 
 @app.task(bind=True)
 def debug_task(self):
