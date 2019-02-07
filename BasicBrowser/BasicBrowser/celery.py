@@ -34,3 +34,5 @@ app.conf.task_default_routing_key = 'default'
 @app.task(bind=True)
 def debug_task(self):
     print('Request: {0!r}'.format(self.request))
+
+# celery multi start -A BasicBrowser worker -l info -Q default --concurrency=4; celery multi start -A BasicBrowser longworker -l info -Q long --concurrency=2; celery multi start -A BasicBrowser mediumworker -l info -Q medium --concurrency=2

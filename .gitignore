@@ -6,7 +6,7 @@ BasicBrowser/queries/*
 BasicBrowser/static/*
 BasicBrowser/nohup.out
 *.httr.oauth
-BasicBrowser/worker*
+BasicBrowser/*worker*
 dump.rdb
 BasicBrowser/media/*
 # Environments

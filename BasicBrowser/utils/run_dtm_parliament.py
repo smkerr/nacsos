@@ -59,8 +59,8 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm
     ##########################
     ## create input and output folder
 
-    input_path = './dtm-input-sid{}'.format(s_id)
-    output_path = './dtm-output-sid{}'.format(s_id)
+    input_path = './dtm-input-sid{}_{}'.format(s_id,stat.pk)
+    output_path = './dtm-output-sid{}_{}'.format(s_id, stat.pk)
 
     if os.path.isdir(input_path):
         if call_to_blei_algorithm:
