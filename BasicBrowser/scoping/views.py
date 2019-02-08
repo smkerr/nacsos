@@ -3079,8 +3079,13 @@ def sortdocs(request):
     fids = []
     tag_text = ""
 
+    if f_fields == ['']:
+        f_fields = []
+
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
+        if f_text[i]=="":
+            continue
         if i==0:
             joiner = "AND"
             text_joiner = ""
@@ -3096,7 +3101,8 @@ def sortdocs(request):
         else:
             op =  f_operators[i]
             exclude = False
-        try:
+        #try:
+        if "a" == "a":
             if "tag__title" in f_fields[i]:
                 if q2id != '0':
                     filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i]) | filt_docs.filter(tag__query__id=q2id,tag__title__icontains=f_text[i])
@@ -3117,20 +3123,25 @@ def sortdocs(request):
                 tag_filter = f_text[i]
 
             else:
+                kwargs = {}
                 if "docownership__" in f_fields[i]:
-                    f_text[i] = getattr(DocOwnership,f_text[i].upper())
-                    print(f_text[i])
+                    kwargs["docownership__user__username"] = f_fields[i].split('__')[-1]
+                    kwargs["docownership__query"] = query
+                    f_fields[i] = "docownership__relevant"
+                    try:
+                        int_f = int(f_text[i])
+                    except:
+                        f_text[i] = getattr(DocOwnership,f_text[i].upper())
                 if "relevance_time" in f_fields[i]:
                     import dateutil.parser as parser
                     f_text[i] = parser.parse(f_text[i], dayfirst=True)
-                kwargs = {
-                    '{0}__{1}'.format(f_fields[i],op): f_text[i]
-                }
+                kwargs[f"{f_fields[i]}__{op}"] = f_text[i]
+                # kwargs = {
+                #     '{0}__{1}'.format(f_fields[i],op): f_text[i]
+                # }
                 if "docproject__relevant" in f_fields[i] or "docproject__ti_relevant" in f_fields[i] or "docproject__ab_relevant" in f_fields[i]:
                     kwargs['docproject__project'] = query.project
                 if joiner=="AND":
-
-                    bla = filt_docs.count()
                     if exclude:
                         filt_docs = filt_docs.exclude(**kwargs)
                     else:
@@ -3147,8 +3158,10 @@ def sortdocs(request):
                         filt_docs = all_docs.filter(id__in=set(fids))
 
                 tag_text+= '{0} {1} {2} {3}'.format(text_joiner, f_fields[i], f_operators[i], f_text[i])
-        except:
-            break
+        #except:
+        #    print("failing")
+        #    break
+
 
     if tag_title is not None:
         t = Tag(title=tag_title)
