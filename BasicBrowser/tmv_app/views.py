@@ -488,17 +488,29 @@ def dynamic_topic_detail(request,topic_id):
     }
     return HttpResponse(template.render(request =request, context=context))
 
+# Topic page for Blei dynamic topics
 def dtopic_detail(request,topic_id):
     template = loader.get_template('tmv_app/dtopic.html')
 
     topic = Topic.objects.get(pk=topic_id)
+    stat = topic.run_id
 
     tterms = []
     tts = TopicTerm.objects.filter(topic=topic)
-    for py in tts.distinct('PY') \
-        .order_by('PY').values_list('PY',flat=True):
-        ytts = tts.filter(PY=py).order_by('-score')[:10]
-        tterms.append(ytts)
+    tdts = list(TopicTimePeriodScores.objects.filter(
+        topic=topic
+    ).order_by('period__n'))
+    for i, p in enumerate(stat.periods.all().order_by('n')):
+        ytts = tts.filter(
+            PY=p.n+1
+        ).order_by('-score')[:10].select_related('term')
+        tdt = tdts[i]
+        tdt.share = tdt.share*100
+        tterms.append({
+            "ytts": ytts,
+            "tdt": tdt,
+            "period": p
+        })
 
     docs = Doc.objects.filter(doctopic__topic=topic) \
         .order_by('-doctopic__score')[:50]
@@ -511,13 +523,26 @@ def dtopic_detail(request,topic_id):
     else:
         project = 'parliament'
 
+    ytarray = None
+
+    yts = TopicTimePeriodScores.objects.filter(
+        topic__run_id=topic.run_id
+    ).order_by('period__n')
+    ytarray = list(yts.values(
+        'period__n','share','score','topic_id','topic__title'
+    ))
+
+    ytarray0 = [y for y in ytarray if y['topic_id'] != topic.id]
+    ytarray = ytarray0 + [y for y in ytarray if y['topic_id'] == topic.id]
+
     context = {
         "project": project,
         "run_id": run_id,
         "topic":topic,
         "tterms": tterms,
         "docs": docs,
-        "user": request.user
+        "user": request.user,
+        "yts": ytarray
     }
 
     return HttpResponse(template.render(context))

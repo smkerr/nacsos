@@ -85,6 +85,7 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm
         tc = ps.order_by().values('utterance__document__parlperiod__n'
                                   ).annotate(count = models.Count('utterance__document__parlperiod__n'))
         time_counts = {item['utterance__document__parlperiod__n']: item['count'] for item in tc}
+        pps = ParlPeriod.objects.filter(document__utterance__in=uts).distinct()
         wps = ParlPeriod.objects.filter(document__utterance__paragraph__in=ps).distinct().values('n')
 
     elif s.search_object_type == 2:
@@ -93,10 +94,20 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, call_to_blei_algorithm
         tc = uts.order_by().values('document__parlperiod__n'
                                    ).annotate(count = models.Count('document__parlperiod__n'))
         time_counts = {item['document__parlperiod__n']: item['count'] for item in tc}
+        pps = ParlPeriod.objects.filter(document__utterance__in=uts).distinct()
         wps = ParlPeriod.objects.filter(document__utterance__in=uts).distinct().values('n')
     else:
         print("search object type invalid")
         return 1
+
+    for i,pp in enumerate(pps.order_by('n')):
+        tp, created = TimePeriod.objects.get_or_create(
+            parlperiod=pp,
+            n = i,
+            ys = pp.years,
+            title = str(pp)
+        )
+        stat.periods.add(tp)
 
     time_range = sorted([wp['n'] for wp in wps])
 

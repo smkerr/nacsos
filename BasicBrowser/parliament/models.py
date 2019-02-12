@@ -299,6 +299,7 @@ class Post(models.Model):
 class Search(models.Model):
     title = models.TextField()
     text = models.TextField()
+    parliament = models.ForeignKey(Parl, on_delete=models.CASCADE, null=True)
     party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
     speaker_regions = models.ManyToManyField(cities.models.Region)
     start_date = models.DateField(null=True,verbose_name="Earliest date for search")

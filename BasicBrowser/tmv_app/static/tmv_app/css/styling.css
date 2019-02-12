@@ -759,6 +759,7 @@ table.sep {
 path.other_topic {
 	stroke: #f2f2f2;
 	z-index: -1;
+    stroke-opacity: 0.5;
 	stroke-width: 2;
 }
 

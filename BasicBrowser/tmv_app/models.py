@@ -92,8 +92,9 @@ class DynamicTopic(models.Model):
 
 class TimePeriod(models.Model):
     title = models.CharField(null=True, max_length=80)
+    parlperiod = models.ForeignKey('parliament.ParlPeriod', null=True, on_delete=models.CASCADE)
     n = models.IntegerField()
-    ys = ArrayField(models.IntegerField())
+    ys = ArrayField(models.IntegerField(),null=True)
     start_date = models.DateField(null=True)
     end_date = models.DateField(null=True)
 
