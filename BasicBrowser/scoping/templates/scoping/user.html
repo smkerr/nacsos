@@ -135,8 +135,8 @@
       {% endif %}
 
     {% endif %}
-      <p><button onclick="location.href='/accounts/logout'">Log Out</button>
-      <p><button onclick="location.href='/admin/password_change'">Change Password</button>
+      <p><a href='/accounts/logout'>Log out</button>
+      <p><a href="{% url 'password_change' %}">Change password</button>
 
     </div>
   </div>

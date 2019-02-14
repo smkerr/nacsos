@@ -15,6 +15,7 @@ urlpatterns = [
     path('lotto', include('lotto.urls')),
     url(r'^admin/', admin.site.urls),
 	url(r'^$', site_views.index),
+    path('accounts/password_change', auth_views.PasswordChangeView.as_view(success_url="/scoping"), name="password_change"),
  	path('accounts/login/', auth_views.LoginView.as_view(), {'template_name': 'scoping/login.html'}),
  	url(r'^accounts/logout/$', views.logout_view, name='logout_view'),
 ]

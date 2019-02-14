@@ -34,3 +34,4 @@ class Command(BaseCommand):
                     s.save()
                     t.retweeted_by.add(s.author)
                     t.save()
+            time.sleep(1)
