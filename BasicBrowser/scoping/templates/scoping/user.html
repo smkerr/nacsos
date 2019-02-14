@@ -62,12 +62,25 @@
 
       {% else %}
 
-
       <h1> Scoping Review Helper</h1>
       <br/>
 
       <!-- Query manager -->
       <h2> User <span class="username">{{ user.username }}</span> Overview</h2>
+
+      {% if '@mcc-berlin.net' in request.user.email %}
+
+          <h3> User Credentials </h4>
+              <p> Enter credentials here that can be used when submitting queries. N.B Must be UK Federation, only tested for University of Leeds.
+                  Security implications vague... At your own risk.
+              <p><b>Organisation:</b> <input type="text" name="cred_org" value="{{user.profile.cred_org }}" autocomplete="off"></input>
+                  <button class="btn updater">Update</button>
+              <p><b>Username:</b> <input type="text" name="cred_uname "value="{{ user.profile.cred_uname }}" autocomplete="off"></input>
+                  <button class="btn updater">Update</button>
+              <p><b>Password:</b> <input type="password" name="cred_pwd" value="{{ user.profile.cred_pwd }}" autocomplete="off"></input>
+                  <button class="btn updater">Update</button>
+
+      {% endif %}
 
       <h4>Scoping queries</h4>
 
@@ -154,6 +167,60 @@
   $('.sbsheader').click(function(){
      $(this).nextUntil('tr.sbsheader').toggle();
   });
+
+  vals = {
+      "cred_org": "{{user.profile.cred_org}}",
+      "cred_pwd": "{{user.profile.cred_pwd}}",
+      "cred_uname": "{{user.profile.cred_uname}}"
+  }
+
+  $('input').on('input', function() {
+      v = $(this).val()
+      orig = vals[$(this).attr('name')]
+      if (v!=orig) {
+          $(this).addClass('changed')
+          $(this).next().addClass('changed')
+      } else {
+          $(this).removeClass('changed')
+          $(this).next().removeClass('changed')
+      }
+  })
+
+  $('button.updater').click(function(){
+      t = $(this)
+      $.ajax({
+          url: "{% url 'scoping:update_thing' %}",
+          data: {
+              "thing1": "Profile",
+              "id1": {{user.profile.id}},
+              "thing2": $(this).prev().attr('name'),
+              "id2": $(this).prev().val(),
+              "method": "update"
+          },
+          success: function(data) {
+              console.log("SUCCESS")
+              console.log(t)
+              t.removeClass('changed')
+              t.prev().removeClass('changed')
+              vals[t.prev().attr('name')] = t.prev().val()
+          }
+      })
+  })
+
+    //   $.ajax({
+    //       url: "{% url 'scoping:update_thing' %}",
+    //       data: {
+    //         "thing1": "DocStatement",
+    //         "id1": statementid,
+    //         'thing2': 'Technology',
+    //         'id2': tid,
+    //         "method": method
+    //       },
+    //       success: function(data) {
+    //          // Do nothing
+    //       }
+    //   });
+
 </script>
 
 {% endblock %}

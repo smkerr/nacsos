@@ -36,6 +36,7 @@ import difflib
 from sklearn.metrics import cohen_kappa_score
 from django.core import management
 from django.shortcuts import render
+import base64
 
 from django_tables2 import RequestConfig
 
@@ -683,7 +684,10 @@ def update_thing(request):
     if method=="remove":
         getattr(t1,thing2.lower()).remove(t2)
     if method=="update":
-        setattr(t1,thing2.lower(),t2)
+        if thing2 == "cred_pwd":
+            t2 = base64.b64encode(t2.encode("utf-8")).decode()
+        setattr(t1,thing2.lower().strip(),t2)
+        t1.save()
         if thing1 == "Query" and thing2 == "Category":
             pass
             #query_doc_category.delay(id1,id2)
@@ -776,6 +780,10 @@ def create_query(request, pid):
     qtype  = request.POST['qtype']
     qtext  = request.POST['qtext']
 
+    cred = request.POST.get('credentials',None)
+    if cred:
+        cred = True
+
     p = Project.objects.get(pk=pid)
 
     pr = ProjectRoles.objects.get(project=p,user=request.user).role
@@ -786,6 +794,8 @@ def create_query(request, pid):
         admin = False
         return HttpResponseRedirect(reverse('scoping:queries', kwargs={'pid': pid}))
 
+
+
     #  create a new query record in the database
     q = Query(
         title=qtitle,
@@ -794,7 +804,8 @@ def create_query(request, pid):
         project=p,
         creator = request.user,
         date = timezone.now(),
-        database = qdb
+        database = qdb,
+        credentials = cred
     )
     q.save()
 
@@ -1894,7 +1905,6 @@ def userpage(request, pid):
 
         coding_table = CodingTable(filter.qs)
         RequestConfig(request).configure(coding_table)
-
 
     context = {
         'user': request.user,

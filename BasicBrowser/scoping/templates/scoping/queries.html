@@ -100,6 +100,15 @@ Use this form to submit a new query, which will be run in the background. Be awa
         <option value="intern">Internal</option>
     </select>
 
+
+    {% if '@mcc-berlin.net' in request.user.email %}
+  <h4> Use my credentials? </h4>
+  <div class="form-check">
+    <input type="checkbox" id="credential_check" name="credentials">
+    <label class="form-check-label" for="credential_check">Tick to use the credentials saved on your <a href="{% url 'scoping:userpage' project.id %}">user page</a></label>
+  </div>
+
+    {% endif %}
   <h4> Query Text </h4>
   <textarea rows=3 cols=50 name="qtext"></textarea>
   <br/><br/>

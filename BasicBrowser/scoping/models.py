@@ -22,6 +22,7 @@ from scoping.utils import utils
 import re
 from django.db.models import Count, Sum
 import parliament.models as pms
+import base64
 # Create your models here.
 
 def get_notnull_fields(model):
@@ -370,7 +371,7 @@ class Query(models.Model):
         ('jstor', 'JSTOR'),
     )
 
-
+    credentials = models.NullBooleanField()
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     qtype       = models.CharField(max_length=2, choices=TYPE_CHOICES, default='DE')
     type        = models.TextField(null=True, verbose_name="Query Type", default="default")
@@ -593,6 +594,10 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     type = models.TextField(null=True,default="default")
     institution = models.ForeignKey('Institution', on_delete=models.CASCADE, null=True)
+    cred_org = models.TextField(null=True)
+    cred_uname = models.TextField(null=True)
+    cred_pwd = models.TextField(null=True)
+
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

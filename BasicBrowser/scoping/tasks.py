@@ -213,16 +213,32 @@ def do_query(qid, background=True):
             qfile.write(q.text.encode("utf-8").decode("utf-8"))
 
         time.sleep(1)
+
+        args = [
+            "python3",
+            "/home/galm/software/scrapewos/bin/scrapeQuery.py",
+            "-s",
+            q.database
+        ]
+
+        if q.creator.username in ["galm","khat","hilj"]:
+            args += ["-lim", 2000000]
+        if q.credentials:
+            args += [
+                "-cred_uname",q.creator.profile.cred_uname,
+                "-cred_pwd", q.creator.profile.cred_pwd,
+                "-cred_org", q.creator.profile.cred_org,
+                "-credentials", "True"
+            ]
+
+        args+=[fname]
+
+        print(args)
+
         # run "scrapeQuery.py" on the text file in the background
         if background:
-            if q.creator.username in ["galm","khat","hilj"]:
-                subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","2000000","-s", q.database, fname])
-            else:
-                subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", q.database, fname])
+            subprocess.Popen(args)
         else:
-            if q.creator.username in ["galm","khat","hilj"]:
-                subprocess.call(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-lim","2000000","-s", q.database, fname])
-            else:
-                subprocess.call(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", q.database, fname])
+            subprocess.call(args)
 
     return qid
