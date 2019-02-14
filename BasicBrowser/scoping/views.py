@@ -1834,7 +1834,7 @@ def userpage(request, pid):
     project = Project.objects.get(pk=pid)
     # Queries
     queries = Tag.objects.filter(
-        query__users=request.user,
+        #query__users=request.user,
         query__project=project
     ).values('query__id','query__type','id').order_by('-id')
 

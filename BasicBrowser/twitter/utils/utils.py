@@ -72,3 +72,4 @@ def parse_status(s, ts=None):
     if ts is not None:
         status.searches.add(ts)
     status.save()
+    return status
