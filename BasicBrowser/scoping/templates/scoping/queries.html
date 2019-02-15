@@ -92,7 +92,7 @@ Use this form to submit a new query, which will be run in the background. Be awa
   <h4> Query Source </h4>
 
 
-    <select name="qdb">
+    <select name="qdb" id="databaseSelect">
         {% if '@mcc-berlin.net' in request.user.email %}
         <option value="WoS">Web of Science</option>
         <option value="scopus">Scopus</option>
@@ -102,8 +102,9 @@ Use this form to submit a new query, which will be run in the background. Be awa
 
 
     {% if '@mcc-berlin.net' in request.user.email %}
-  <h4> Use my credentials? </h4>
-  <div class="form-check">
+
+  <div >
+      <h4> Use my credentials? </h4>
     <input type="checkbox" id="credential_check" name="credentials">
     <label class="form-check-label" for="credential_check">Tick to use the credentials saved on your <a href="{% url 'scoping:userpage' project.id %}">user page</a></label>
   </div>
@@ -140,6 +141,19 @@ Use this form to submit a new query, which will be run in the background. Be awa
 {% block script %}
 
 <script>
+
+$("#databaseSelect").change(function(){
+    v = $(this).val()
+    cc = $("#credential_check")
+    if (cc.length > 0) {
+        if (v != "WoS"){
+            cc.prop('checked', false)
+            cc.parent().hide()
+        } else {
+            cc.parent().show()
+        }
+    }
+})
 
 $(".field_name").click(function() {
     $("body").css("cursor", "progress");
