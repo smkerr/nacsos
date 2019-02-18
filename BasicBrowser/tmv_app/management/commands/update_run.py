@@ -67,7 +67,9 @@ class Command(BaseCommand):
 
             yearly_topic_term_scores(run_id)
             #management.call_command('corr_topics',run_id)
-            update_ipcc_coverage(run_id)
+            if stat.query:
+                if stat.query.project.id == 23:
+                    update_ipcc_coverage(run_id)
             normalise_tdts(run_id)
 
         elif stat.method == "BD":
@@ -78,5 +80,10 @@ class Command(BaseCommand):
             update_topic_scores(run_id)
             update_topic_titles(run_id)
             update_ar_scores(run_id)
-            update_ipcc_coverage(run_id)
+            if stat.query:
+                if stat.query.project.id == 23:
+                    update_ipcc_coverage(run_id)
             update_primary_topic(run_id)
+
+        stat.status = 3
+        stat.save()

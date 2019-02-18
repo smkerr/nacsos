@@ -84,7 +84,7 @@ class Status(TwitterBaseModel):
 
     author = models.ForeignKey('User', related_name='statuses', on_delete=models.SET_NULL, null=True)
 
-    text = models.TextField(null=True)
+    text = models.TextField(null=True, db_index=True)
 
     favorited = models.BooleanField(default=False)
     retweeted = models.BooleanField(default=False)

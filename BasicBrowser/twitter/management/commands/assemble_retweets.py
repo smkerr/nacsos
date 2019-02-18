@@ -11,12 +11,14 @@ import django
 from django.utils import timezone
 import time
 from pathlib import Path
+import re
 
 class Command(BaseCommand):
     help = 'redoes searches'
 
     def handle(self, *args, **options):
         rts = Status.objects.filter(
+            text__icontains="kohle",
             text__regex="^RT @",
             retweeted_status__isnull=True
         )
@@ -27,10 +29,14 @@ class Command(BaseCommand):
             trts = Status.objects.filter(text=t)
             # The original text is that which comes after the first colon
             otext = ":".join(t.split(':')[1:]).strip()
+            ltext = "^"+re.sub('(\S*…)','',otext).strip()
             try:
                 ostatus = Status.objects.get(text=otext)
             except:
-                continue
+                try:
+                    ostatus = Status.objects.get(text__regex=ltext)
+                except:
+                    continue
             ostatus.retweeted=True
             for s in trts:
                 ostatus.retweeted_by.add(s.author)
