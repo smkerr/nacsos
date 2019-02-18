@@ -222,7 +222,7 @@ def do_query(qid, background=True):
         ]
 
         if q.creator.username in ["galm","khat","hilj"]:
-            args += ["-lim", 2000000]
+            args += ["-lim", "2000000"]
         if q.credentials:
             args += [
                 "-cred_uname",q.creator.profile.cred_uname,
