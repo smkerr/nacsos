@@ -221,7 +221,7 @@ def do_query(qid, background=True):
             q.database
         ]
 
-        if q.creator.username in ["galm","khat","hilj"]:
+        if q.creator.username in ["galm","khat","hilj","lamw"]:
             args += ["-lim", "2000000"]
         if q.credentials:
             args += [
@@ -234,6 +234,8 @@ def do_query(qid, background=True):
         args+=[fname]
 
         print(args)
+
+        print(" ".join(args))
 
         # run "scrapeQuery.py" on the text file in the background
         if background:
