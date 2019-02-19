@@ -92,7 +92,7 @@ Use this form to submit a new query, which will be run in the background. Be awa
   <h4> Query Source </h4>
 
 
-    <select name="qdb" id="databaseSelect">
+    <select name="qdb" id="databaseSelect" autocomplete="off">
         {% if '@mcc-berlin.net' in request.user.email %}
         <option value="WoS">Web of Science</option>
         <option value="scopus">Scopus</option>
@@ -107,6 +107,26 @@ Use this form to submit a new query, which will be run in the background. Be awa
       <h4> Use my credentials? </h4>
     <input type="checkbox" id="credential_check" name="credentials">
     <label class="form-check-label" for="credential_check">Tick to use the credentials saved on your <a href="{% url 'scoping:userpage' project.id %}">user page</a></label>
+  </div>
+
+  <div>
+      <h4> Web of Science Database </h4>
+      <input type="text" id="wos_db_input" name="wos_db">
+      <label class="form-text-label" for="wos_db_input">Enter the web of science
+      database you would like to search (availability
+      may depend on your credentials). Leave blank for default (usually Web of Science Core Collection).
+      N.B. anything other than WoS Core may result in more results but with less information about them.
+  </label>
+
+  </div>
+
+  <div>
+      <h4> Collection list </h4>
+      <input type="text" id="collection_list" name="collections">
+      <label class="form-text-label" for="collection_list">Enter a comma separated
+          list e.g. "SSCI, A&HCI" of web of science indexes (availability
+          may depend on your credentials). Leave blank to include all collections</label>
+
   </div>
 
     {% endif %}
@@ -145,12 +165,18 @@ Use this form to submit a new query, which will be run in the background. Be awa
 $("#databaseSelect").change(function(){
     v = $(this).val()
     cc = $("#credential_check")
+    cl = $("#collection_list")
+    dl = $("#wos_db_input")
     if (cc.length > 0) {
         if (v != "WoS"){
             cc.prop('checked', false)
+            cl.parent().hide()
             cc.parent().hide()
+            dl.parent().hide()
         } else {
             cc.parent().show()
+            cl.parent().show()
+            dl.parent().show()
         }
     }
 })

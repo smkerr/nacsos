@@ -781,6 +781,8 @@ def create_query(request, pid):
     qtext  = request.POST['qtext']
 
     cred = request.POST.get('credentials',None)
+    collections = request.POST.get('collections', None)
+    wos_db = request.POST.get('wos_db', None)
     if cred:
         cred = True
 
@@ -805,7 +807,9 @@ def create_query(request, pid):
         creator = request.user,
         date = timezone.now(),
         database = qdb,
-        credentials = cred
+        credentials = cred,
+        collections = collections,
+        wos_db = wos_db
     )
     q.save()
 

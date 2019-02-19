@@ -41,7 +41,7 @@
 <!-- Scoping review -->
                     <p>Looks like download is complete!</p>
                     {% if doclength == 0 %}
-                        <p id="doc_adder1">{{doclength}} of these documents are in the database. Would you like to add them now? [Please wait a while and refresh before clicking multiple times]
+                        <p id="doc_adder1">These documents haven't been uploaded to the database yet. Would you like to add them now? [Please wait a while and refresh before clicking multiple times]
                         <br/>
                         <a href="{% url 'scoping:dodocadd' query.id %}"><button>Add Documents</button></a>
                     {% elif query.r_count %}

@@ -372,6 +372,8 @@ class Query(models.Model):
     )
 
     credentials = models.NullBooleanField()
+    collections = models.TextField(null=True)
+    wos_db = models.TextField(null=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     qtype       = models.CharField(max_length=2, choices=TYPE_CHOICES, default='DE')
     type        = models.TextField(null=True, verbose_name="Query Type", default="default")
