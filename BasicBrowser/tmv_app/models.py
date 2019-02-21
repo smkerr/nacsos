@@ -4,6 +4,9 @@ import scoping, parliament
 
 
 class MinMaxFloat(models.FloatField):
+    """
+    A float field with a minimum and a maximum
+    """
     def __init__(self, min_value=None, max_value=None, *args, **kwargs):
         self.min_value, self.max_value = min_value, max_value
         super(MinMaxFloat, self).__init__(*args, **kwargs)
@@ -18,6 +21,9 @@ class MinMaxFloat(models.FloatField):
 ## method
 
 class HTopic(models.Model):
+    """
+    A model for hierarchical topics
+    """
     topic = models.AutoField(primary_key=True)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True)
     title = models.CharField(max_length=80, null=True)
@@ -27,6 +33,9 @@ class HTopic(models.Model):
     run_id = models.IntegerField(null=True, db_index=True)
 
 class HTopicTerm(models.Model):
+    """
+    Links hierarchical topics to terms
+    """
     topic = models.ForeignKey('HTopic', on_delete=models.CASCADE)
     term = models.ForeignKey('Term', on_delete=models.CASCADE)
     count = models.IntegerField()

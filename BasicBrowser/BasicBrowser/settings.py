@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'scoping.apps.ScopingConfig',
     'tmv_app.apps.TmvAppConfig',
     'django.contrib.admin',
+    'django.contrib.admindocs',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

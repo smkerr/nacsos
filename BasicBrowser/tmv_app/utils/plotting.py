@@ -3,6 +3,9 @@ from time import time
 import numpy as np
 import random
 import math
+from scipy import interpolate
+from matplotlib import cm, patches
+
 
 plt.rc('font',size=7)
 plt.rc('axes',titlesize=7)
@@ -84,7 +87,7 @@ def plot_tsne_2(r_ind,tsne_results,cats,verbose=False):
 def plot_tsne(
     r_ind,tsne_results,cats,nocatids,
     ax=None,verbose=False,hdoc=False,
-    legend=True
+    legend=True, sc=None, heat_var=None, cmapname=None
     ):
     cs = []
     sizes = []
@@ -176,6 +179,22 @@ def plot_tsne(
                     'pad': 3
                 }
             )
+
+    if heat_var:
+        cmap = cm.get_cmap(cmapname)
+        ys = [getattr(cs,heat_var) for cs in sc.objects if getattr(cs,heat_var) is not None]
+        X = np.interp(ys, (np.min(ys), np.max(ys)), (0, +1))
+        f = interpolate.interp1d(ys, X)
+        for cs in sc.objects:
+            if getattr(cs, heat_var):
+                col = cmap(f(getattr(cs, heat_var)).max())
+                rect = patches.Rectangle(
+                    (cs.x1,cs.y1),cs.x2-cs.x1,cs.y2-cs.y1,
+                    linewidth=1,edgecolor='r',
+                    facecolor=col,alpha=0.3
+                )
+
+                ax.add_patch(rect)
     # plt.tick_params(
     #     axis='both',
     #     which='both',

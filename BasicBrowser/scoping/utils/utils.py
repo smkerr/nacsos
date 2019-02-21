@@ -13,11 +13,16 @@ XML_TRANS_TABLE = {
     'volume': 'vl',
     'issue': 'iss',
     'fpage': 'bp',
-    'lpage': 'ep'
+    'lpage': 'ep',
+    'abstract': 'AB'
 }
 
 
-
+def element_text_contents(element):
+    s = element.text or ""
+    for sub_element in element:
+        s += sub_element.text
+    return s.strip()
 
 def read_xml(q, update):
     '''parse a jstor like xml'''
@@ -25,14 +30,35 @@ def read_xml(q, update):
     import xml.etree.ElementTree as ET
     tree = ET.parse("{}/{}".format(settings.MEDIA_ROOT,q.query_file.name))
     root = tree.getroot()
-    for article in root:
+    if root.tag=="article":
+        articles = [root]
+    else:
+        articles = [x for x in root]
+    for article in articles:
+        if article.find('front'):
+            article = article.find('front')
         article_dict = {}
         for field in article.iter():
             if field.tag in XML_TRANS_TABLE:
                 f = XML_TRANS_TABLE[field.tag]
-                article_dict[f] = field.text
+                article_dict[f] = element_text_contents(field)
                 if f == "UT":
                     article_dict[f] = "JSTOR_ID:"+article_dict[f]
+        authors = list(article.iter('contrib'))
+        if len(authors) > 0:
+            article_dict['au'] = []
+            article_dict['af'] = []
+            for author in authors:
+                surname = author.find('string-name').find('surname')
+                if surname is not None:
+                    first_names = author.find('string-name').find('given-names')
+                    if first_names is not None:
+                        AU = f"{surname.text}, {first_names.text[0]}."
+                        article_dict['af'].append(f"{surname.text}, {first_names.text}")
+                    else:
+                        print(surname.text)
+                        AU = surname.text
+                    article_dict['au'].append(AU)
         try:
             add_scopus_doc(article_dict,q,update)
             r_count+=1
