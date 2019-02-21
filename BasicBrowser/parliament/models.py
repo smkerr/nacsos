@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth.models import User
 import cities.models
+import scoping
 
 
 ##########################
@@ -325,3 +326,5 @@ class Search(models.Model):
                     (UTTERANCE, 'Utterance'))
 
     search_object_type = models.IntegerField(choices=OBJECT_TYPES, default=PARAGRAPH)
+    project = models.ForeignKey('scoping.Project', on_delete=models.CASCADE, null=True)
+

@@ -1399,6 +1399,9 @@ def runs(request,pid=0):
     if pid > 0:
         stats = stats.filter(query__project_id=pid)
 
+        if stats.count() <= 0:
+            stats = RunStats.objects.all().order_by('-start').filter(search__project_id=pid)
+
 
     stats = stats.annotate(
         dtopics = models.Count('dynamictopic', distinct=True),
