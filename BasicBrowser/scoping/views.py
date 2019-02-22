@@ -873,7 +873,7 @@ def start_snowballing(request):
         print("start_snowballing: New backward query #"+str(q.id)+" successfully created.")
 
     # write the query into a text file
-    fname = "/queries/"+str(q.id)+".txt"
+    fname = f"{settings.QUERY_DIR}{q.id}.txt"
     with open(fname,"w") as qfile:
         qfile.write(qtext)
 
@@ -901,7 +901,7 @@ def start_snowballing(request):
         print("start_snowballing: New forward query #"+str(q2.id)+" successfully created.")
 
     # write the query into a text file
-    fname = "/queries/"+str(q2.id)+".txt"
+    fname = f"{settings.QUERY_DIR}{q2.id}.txt"
     with open(fname,"w") as qfile:
         qfile.write(qtext)
 
@@ -965,7 +965,7 @@ def do_snowballing(request,qid,q2id):
         qid = q_b.id
 
         # write the query into a text file
-        fname = "/queries/"+str(q_b.id)+".txt"
+        fname = f"{settings.QUERY_DIR}{q_b.id}.txt"
         with open(fname,"w") as qfile:
             qfile.write(qtext)
 
@@ -1022,7 +1022,7 @@ def do_snowballing(request,qid,q2id):
 
 
         # write the query into a text file
-        fname = "/queries/"+str(q_f.id)+".txt"
+        fname = f"{settings.QUERY_DIR}{q_f.id}.txt"
         with open(fname,"w") as qfile:
             qfile.write(qtext)
 
@@ -1052,12 +1052,15 @@ def delete_query(request, qid):
         q = Query.objects.get(pk=qid)
         q.delete()
         title = str(qid.id)
-        shutil.rmtree("/queries/"+title)
-        os.remove("/queries/"+title+".txt")
-        os.remove("/queries/"+title+".log")
+        shutil.rmtree(f"{settings.QUERY_DIR}{title}")
+        os.remove(f"{settings.QUERY_DIR}{q.id}.txt")
+        os.remove(f"{settings.QUERY_DIR}{q.id}.log")
     except:
         pass
-    return HttpResponseRedirect(reverse('scoping:index'))
+    if request:
+        return HttpResponseRedirect(reverse('scoping:index'))
+    else:
+        return
 
 #########################################################
 ## Delete the query
@@ -1087,12 +1090,7 @@ def delete_sbs(request, sbsid):
         #TODO: Could be better handled by cascade function in postgres DB
         for qid in qs :
             q = Query.objects.get(pk=qid)
-            q.delete()
-
-            title = str(qid)
-            shutil.rmtree("/queries/"+title)
-            os.remove("/queries/"+title+".txt")
-            os.remove("/queries/"+title+".log")
+            delete_query(q)
     except:
         pass
     return HttpResponseRedirect(reverse('scoping:snowball'))
@@ -1123,7 +1121,7 @@ def querying(request, qid, substep=0, docadded=0, q2id=0):
     doclength = Doc.objects.filter(query__id=qid).count()
 
     if doclength == 0: # if we've already added the docs, we don't need to show the log
-        logfile = "/queries/"+str(query.id)+".log"
+        logfile = query.logfile()
 
         wait = True
         # wait up to 15 seconds for the log file, then go to a page which displays its contents
@@ -1175,8 +1173,8 @@ def snowball_progress(request,sbs):
             rfile = "s_results.txt"
         do_backward_query = True
 
-        logfile_b = "/queries/"+str(query_b.id)+".log"
-        rstfile_b = "/queries/"+str(query_b.id)+"/"+rfile
+        logfile_b = query_b.logfile()
+        rstfile_b = settings.QUERY_DIR+str(query_b.id)+"/"+rfile
         if request.session['DEBUG']:
             print("querying: (backward query) logfile -> "+str(logfile_b)+", result file -> "+str(rstfile_b))
     except:
@@ -1187,8 +1185,8 @@ def snowball_progress(request,sbs):
         query_f = sqs.filter(type='forward').last()
         do_forward_query  = True
 
-        logfile_f = "/queries/"+str(query_f.id)+".log"
-        rstfile_f = "/queries/"+str(query_f.id)+"/results.txt"
+        logfile_f = query_f.logfile()
+        rstfile_f = settings.QUERY_DIR+str(query_f.id)+"/results.txt"
         if request.session['DEBUG']:
             print("querying: (forward query) logfile -> "+str(logfile_f)+", result file -> "+str(rstfile_f))
     except:
@@ -1297,7 +1295,7 @@ def snowball_progress(request,sbs):
                 sbs.save()
 
 
-        if query_b.text !='' and sbs.working == True and os.path.isfile("/queries/"+str(query_b.id)+"/s_results.txt") and query_b.doc_set.all().count() == 0: # if we have scraped all the refs
+        if query_b.text !='' and sbs.working == True and os.path.isfile(settings.QUERY_DIR+str(query_b.id)+"/s_results.txt") and query_b.doc_set.all().count() == 0: # if we have scraped all the refs
             log_b = ["Busy checking the references of {} against the database and keywords".format(query_b.title)]
             background = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','proc_docrefs_scopus.py'))
             subprocess.Popen(["python3", background, str(seed_query.id), str(query_b.id), str(0)])
@@ -1345,12 +1343,12 @@ def snowball_progress(request,sbs):
     if sqs.count() == 3:
         query_b2 = query_b
         if query_b2.text != '': # if the text has been written
-            if not os.path.isfile("/queries/"+str(query_b2.id)+"/s_results.txt"): # and there's no file
+            if not os.path.isfile(settings.QUERY_DIR+str(query_b2.id)+"/s_results.txt"): # and there's no file
                 log_b = ["Downloading the references from {}".format(query_b2.title)]
                 if not sbs.working: # And we're not doing something in the background
                     sbs.working = True
                     sbs.save()
-                    fname = "/queries/"+str(query_b2.id)+".txt"
+                    fname = query_b2.txtfile()
                     with open(fname,encoding='utf-8',mode='w') as qfile:
                         qfile.write(query_b2.text)
                         subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", "-s", query_b2.database, fname])

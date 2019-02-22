@@ -23,6 +23,7 @@ import re
 from django.db.models import Count, Sum
 import parliament.models as pms
 import base64
+from django.conf import settings
 # Create your models here.
 
 def get_notnull_fields(model):
@@ -397,6 +398,11 @@ class Query(models.Model):
     queries = models.ManyToManyField("self",symmetrical=False)
     upload_log = models.TextField(null=True)
 
+    def logfile(self):
+        return f"{settings.QUERY_DIR}{self.id}.log"
+
+    def txtfile(self):
+        return f"{settings.QUERY_DIR}{self.id}.txt"
 
     def __str__(self):
       return self.title

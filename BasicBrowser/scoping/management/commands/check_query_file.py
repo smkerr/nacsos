@@ -21,7 +21,7 @@ class Command(BaseCommand):
                 fname = 's_results.txt'
             else:
                 fname = 'results.txt'
-            fpath = '/queries/{}/{}'.format(qid,fname)
+            fpath = f'{settings.QUERY_DIR}/{qid}/{fname}'
             with open(fpath, 'r') as f:
                 c = f.read().count(p)
 
