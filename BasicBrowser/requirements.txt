@@ -96,7 +96,6 @@ redis==2.10.5
 regex==2017.4.5
 requests==2.20.0
 git+https://github.com/mcallaghan/RISparser
-rpy2==2.9.2
 s3transfer==0.1.12
 scikit-learn==0.19.1
 scipy==0.19.1
