@@ -5,15 +5,17 @@ from django.contrib.auth import views as auth_views
 from scoping import views
 import BasicBrowser.views as site_views
 from django.urls import include, path
+from django.views.defaults import page_not_found
 
 urlpatterns = [
     #path('lotto/', include('lotto.urls')),
     path('admin/doc/', include('django.contrib.admindocs.urls')),
-    url(r'^tmv_app/', include('tmv_app.urls')),
-    url(r'^scoping/', include('scoping.urls')),
-    url(r'^parliament/', include('parliament.urls')),
-    path('twitter/', include('twitter.urls')),
-    path('lotto', include('lotto.urls')),
+    path('404', page_not_found, {'exception': Exception()}),
+    #url(r'^tmv_app/', include('tmv_app.urls')),
+    #url(r'^scoping/', include('scoping.urls')),
+    #url(r'^parliament/', include('parliament.urls')),
+    #path('twitter/', include('twitter.urls')),
+    #path('lotto', include('lotto.urls')),
     url(r'^admin/', admin.site.urls),
 	url(r'^$', site_views.index),
     path('accounts/password_change', auth_views.PasswordChangeView.as_view(success_url="/scoping"), name="password_change"),
