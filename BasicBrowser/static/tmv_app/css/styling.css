@@ -6,8 +6,67 @@ body {
 	padding: 0;
 }
 
-a {
-	color: #000;
+div.tooltip {
+  position: absolute;
+  text-align: center;
+  width: 120px;
+  height: 72px;
+  padding: 2px;
+  font: 12px sans-serif;
+  background: lightsteelblue;
+  border: 0px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+p.formheader {
+    font-weight: bold;
+}
+
+body.waiting, body.waiting * {
+	cursor:progress !important;
+}
+
+table.scroll thead {
+    display: block;
+}
+
+table.scroll > tbody {
+    display: block;
+    height: 1000px;       /* Just for the demo          */
+    overflow-y: scroll;    /* Trigger vertical scroll    */
+    overflow-x: hidden;  /* Hide the horizontal scroll */
+}
+
+div.explanation {
+    width:60%;
+	margin-left: auto;
+    margin-right: auto;
+    border: 3px solid #FFE5CC;
+    border-radius: 5px;
+    background-color: white;
+    padding: 10px;
+}
+
+.wtopic {
+    background-color: white;
+		outline: 3px solid #FFE5CC;
+        cursor: pointer;
+}
+
+tr.wtopic td {
+	padding: 5px 10px !important;
+}
+
+.rotate {
+	-ms-transform: rotate(270deg); /* IE 9 */
+	-webkit-transform: rotate(270deg); /* Chrome, Safari, Opera */
+	transform: rotate(270deg);
+}
+
+
+a.nodec {
+	color: black;
 	text-decoration: none;
 }
 
@@ -24,7 +83,7 @@ h1 {
 }
 
 h2 {
-    line-height: 0em;
+
     font-size: 16px;
     font-style: italic;
 }
@@ -380,6 +439,14 @@ border-spacing: 2px 2px;*/
     cursor: pointer;
 }
 
+td.high-contrast a {
+    color:black;
+}
+
+td.word_list_item a {
+    color:black;
+}
+
 #topics td:active {
     color: #0050FF;
 }
@@ -497,7 +564,7 @@ canvas {
 #navigation td.searchbar input {
     background-image: url('/static/img/search.png');
     background-repeat: no-repeat;
-    padding-right:15px; 
+    padding-right:15px;
     background-position: right center;
     line-height: 1.2;
 }
@@ -636,10 +703,26 @@ table#xscale {
 	width: 100%;
 }
 
+table.sep {
+    border-collapse: separate !important;
+}
+
+.word {
+    border-style: inset !important;
+    border-color: transparent !important;
+    border-width: 8px 5px !important;
+}
+
+.word.selected {
+    border-color: black !important;
+}
+
 
 .t1 {
 	background-color: #fbb4ae;
 }
+
+
 
 .t2 {
 	background-color: #b3cde3;
@@ -676,6 +759,7 @@ table#xscale {
 path.other_topic {
 	stroke: #f2f2f2;
 	z-index: -1;
+    stroke-opacity: 0.5;
 	stroke-width: 2;
 }
 
@@ -688,14 +772,14 @@ circle.other_topic {
 
 path.hovered {
 	stroke: #b3cde3;
-	stroke-width: 2
-	z-index: 1;
+	stroke-width: 2;
+	z-index: 99;
 }
 
 circle.hovered {
 	stroke: #b3cde3;
-	stroke-width: 2
-	z-index: 1;
+	stroke-width: 2;
+	z-index: 99;
 }
 
 circle.current_topic {
@@ -742,5 +826,3 @@ tr.active_run {
 .doc_box {
     font-size: 12px ;
 }
-
-

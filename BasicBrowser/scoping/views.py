@@ -54,6 +54,9 @@ import time
 def super_check(user):
     return user.groups.filter(name__in=['superuser'])
 
+def handler404(request):
+    return render(request, '404.html')
+
 
 @login_required
 def switch_mode(request):
