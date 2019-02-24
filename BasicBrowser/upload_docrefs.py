@@ -291,7 +291,7 @@ def main():
     title = str(q.id)
 
     # Open results file and loop over lines
-    with open("/queries/"+title+"/results.txt", encoding="utf-8") as res:
+    with open(settings.QUERY_DIR+title+"/results.txt", encoding="utf-8") as res:
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue
@@ -328,9 +328,9 @@ def main():
 
     ############ When happy with the script we can uncomment and delete the files again
 
-    #shutil.rmtree("/queries/"+title)
-    #os.remove("/queries/"+title+".txt")
-    #os.remove("/queries/"+title+".log")
+    #shutil.rmtree(settings.QUERY_DIR+title)
+    #os.remove(settings.QUERY_DIR+title+".txt")
+    #os.remove(settings.QUERY_DIR+title+".log")
 
     print("  > Total Number of references processed    : "+str(totnbrefs))
     print("  > Total Number of references in DB (%)    : "+str(totnbrefsindb)+" ("+str(totnbrefsindb/totnbrefs*100)+"%)")
@@ -372,7 +372,7 @@ def main():
 
         ## Now we can write this to a text file and continue......
         # write the query into a text file
-        fname = "/queries/"+str(q2id)+".txt"
+        fname = settings.QUERY_DIR+str(q2id)+".txt"
         with open(fname,"w") as qfile:
             qfile.write(newquery+query)
 

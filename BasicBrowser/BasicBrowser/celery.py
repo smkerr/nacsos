@@ -9,8 +9,9 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'BasicBrowser.settings')
 
 app = Celery(
     'BasicBrowser',
-    backend='redis://localhost:6379/0',
-    broker='redis://localhost:6379/0'
+    #backend='redis://localhost:6379/0',
+    #broker='redis://localhost:6379/0'
+    broker=settings.BROKER_URL
 )
 
 app.config_from_object('django.conf:settings', namespace='CELERY')

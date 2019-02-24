@@ -55,7 +55,7 @@ def main():
 
     title = str(q.id)
 
-    with open("/queries/"+title+"/results.txt", encoding="utf-8") as res:
+    with open(settings.QUERY_DIR+title+"/results.txt", encoding="utf-8") as res:
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue
@@ -103,9 +103,9 @@ def main():
     q.save()
 
     # if q.type == "default":
-    #     shutil.rmtree("/queries/"+title)
-    #     os.remove("/queries/"+title+".txt")
-    #     os.remove("/queries/"+title+".log")
+    #     shutil.rmtree(settings.QUERY_DIR+title)
+    #     os.remove(settings.QUERY_DIR+title+".txt")
+    #     os.remove(settings.QUERY_DIR+title+".log")
 
 
 if __name__ == '__main__':

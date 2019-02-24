@@ -9,6 +9,7 @@ import subprocess
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "BasicBrowser.settings")
 django.setup()
 
+from django.conf import settings
 from scoping.models import *
 from scoping.views import *
 
@@ -41,7 +42,7 @@ def main():
         technology=tobj
     )
     q.save()
-    fname = "/queries/"+str(q.id)+".txt"
+    fname = f"{settings.QUERY_DIR}{q.id}.txt"
     with open(fname,"w") as qfile:
         qfile.write(qtext)
 
@@ -69,7 +70,7 @@ def main():
 
     query_b2 = Query.objects.get(pk=query_b2.pk)
 
-    fname = "/queries/"+str(query_b2.id)+".txt"
+    fname = settings.QUERY_DIR+str(query_b2.id)+".txt"
     with open(fname,"w") as qfile:
         qfile.write(query_b2.text)
 

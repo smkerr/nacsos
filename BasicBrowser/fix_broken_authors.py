@@ -116,7 +116,7 @@ def main():
 
     title = str(q.id)
 
-    with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
+    with open(settings.QUERY_DIR+title+"/s_results.txt", encoding="utf-8") as res:
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue

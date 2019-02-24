@@ -554,7 +554,7 @@ def main():
     dorefs = True
     record = []
     # Open results file and loop over lines
-    with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
+    with open(settings.QUERY_DIR+title+"/s_results.txt", encoding="utf-8") as res:
         for line in res:
             if '\ufeff' in line: # BOM on first line
                 continue
@@ -667,7 +667,7 @@ def main():
             dorefs = False
             record = []
             # Open results file and loop over lines
-            with open("/queries/"+title+"/s_results.txt", encoding="utf-8") as res:
+            with open(settings.QUERY_DIR+title+"/s_results.txt", encoding="utf-8") as res:
                 for line in res:
                     if '\ufeff' in line: # BOM on first line
                         continue

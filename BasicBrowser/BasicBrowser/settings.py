@@ -154,6 +154,7 @@ STATIC_ROOT = '/var/www/tmv/BasicBrowser/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_ROOT = '/var/www/tmv/BasicBrowser/media'
+QUERY_DIR = '/usr/local/apsis/queries/'
 
 CACHES = {
     'default': {

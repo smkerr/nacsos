@@ -8,6 +8,7 @@ from django.db import connection, transaction
 from psycopg2.extras import *
 import time
 import subprocess
+from django.conf import settings
 #import scoping
 
 
@@ -78,7 +79,7 @@ def upload_docs(qid, update):
     title = str(q.id)
 
     if q.query_file.name is '':
-        fname = "/queries/"+title+"/results.txt"
+        fname = settings.QUERY_DIR+title+"/results.txt"
     else:
         fname = q.query_file.path
 
@@ -208,7 +209,7 @@ def do_query(qid, background=True):
 
     else:
         # write the query into a text file
-        fname = "/queries/"+str(q.id)+".txt"
+        fname = q.txtfile()
         with open(fname,encoding='utf-8',mode="w") as qfile:
             qfile.write(q.text.encode("utf-8").decode("utf-8"))
 
