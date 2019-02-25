@@ -216,7 +216,7 @@ def do_query(qid, background=True):
         time.sleep(1)
 
         args = [
-            "python3",
+            "/home/galm/software/django/tmv/venv/bin/python3",
             "/home/galm/software/scrapewos/bin/scrapeQuery.py",
             "-s",
             q.database
