@@ -10,10 +10,8 @@ from django.conf import settings
 
 import scoping
 
-handler404 = scoping.views.handler404
+#handler404 = scoping.views.handler404
 
-x = settings.DEBUG
-y = dir(settings)
 
 if settings.MAINTENANCE:
     urlpatterns = [
