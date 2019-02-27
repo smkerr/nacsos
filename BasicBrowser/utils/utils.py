@@ -716,7 +716,8 @@ RIS_KEY_MAPPING = {
     'Funding text': 'fx',
     'Correspondence Address': 'em',
     'Cited By ': 'tc',
-    'Cited By': 'tc'
+    'Cited By': 'tc',
+    'Link to the Ovid Full Text or citation': 'ol'
  }
 
 RIS_TY_MAPPING = {
@@ -734,9 +735,23 @@ RIS_TY_MAPPING = {
 
 def read_ris(q, update):
     r_count = 0
+    changed = False
     with open(
         "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name
     ),'r') as f:
+        with open(
+            "{}/{}_tmp".format(settings.MEDIA_ROOT,q.query_file.name), "w"
+        ) as ftmp:
+            for l in f:
+                if "Link to the Ovid Full Text or citation:" in l:
+                    changed=True
+                else:
+                    ftmp.write(l)
+    if changed:
+        fpath = "{}/{}_tmp".format(settings.MEDIA_ROOT,q.query_file.name)
+    else:
+        fpath = "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name)
+    with open(fpath, "r") as f:
         entries = readris(f,mapping=RIS_KEY_MAPPING)
         try:
             for e in entries:
@@ -753,9 +768,7 @@ def read_ris(q, update):
                     print(f"couldn't add {e}")
         except:
             r_count = 0
-            with open(
-                "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name
-            ),'r',encoding='utf-8-sig') as f:
+            with open(fpath,'r',encoding='utf-8-sig') as f:
                 entries = readris(f,mapping=RIS_KEY_MAPPING)
                 for e in entries:
                     if "py" in e:
