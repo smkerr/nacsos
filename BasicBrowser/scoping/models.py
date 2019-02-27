@@ -1241,7 +1241,7 @@ class WoSArticle(models.Model):
     dt = models.CharField(null=True, max_length=50, verbose_name="Document Type") # doctype
     em = models.TextField(null=True, verbose_name="E-mail Address",db_index=True) #email
     ems = ArrayField(models.TextField(), verbose_name="Email List", null=True)
-    ep = models.CharField(null=True, max_length=50, verbose_name="Ending Page") # last page
+    ep = models.CharField(null=True, max_length=200, verbose_name="Ending Page") # last page
     fn = models.CharField(null=True, max_length=250, verbose_name="File Name") # filename?
     fu = models.TextField(null=True, verbose_name="Funding Agency and Grant Number") #funding agency + grant number
     fx = models.TextField(null=True, verbose_name="Funding Text") # funding text

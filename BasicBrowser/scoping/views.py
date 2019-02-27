@@ -4617,6 +4617,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
         user=request.user
     ).order_by('order')
 
+    # Don't load the bar on the first go
     if js==1:
         if pos==0:
             time.sleep(3)
@@ -4629,6 +4630,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
         return HttpResponse(json.dumps(list(dois)), content_type="application/json")
 
     s = 0
+    # Sometimes the task takes some time to complete, if so wait a while
     while s < 15:
         try:
             do = dois[pos]
@@ -4636,15 +4638,16 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
         except:
             s+=1
             time.sleep(1.5)
-    if s == 15:
+    if s == 15: #if it takes too long go back
         return HttpResponseRedirect(reverse(
             'scoping:userpage',
             kwargs={"pid":tag.query.project.id}
         ))
 
+
     if do.utterance_linked:
         doc = do.utterance
-        levels = None
+        levels = None # would be categories
         notes = Note.objects.filter(
             project=tag.query.project,
             utterance = do.utterance
@@ -4680,6 +4683,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
                 e = dcus.exists() or dcs.exists()
                 lcats.append((e,t))
             levels.append(lcats)
+
 
     last = dois.filter(relevant__gt=0).count()
     if pos==last:

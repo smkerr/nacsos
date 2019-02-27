@@ -280,7 +280,7 @@ def read_wos(res, q, update):
                 pool.terminate()
             #done!
             break
-        if re.match("(^[A-Z][A-Z1-9])",line):
+        if re.match("(^[A-Z][A-Z1-9]) (.*)",line):
             s = re.search("(^[A-Z][A-Z1-9]) (.*)",line)
             key = s.group(1).strip()
             value = s.group(2).strip()
