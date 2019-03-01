@@ -370,6 +370,7 @@ class Query(models.Model):
         ('pop','Publish or Perish'),
         ('ebsco', 'EBSCO'),
         ('jstor', 'JSTOR'),
+        ('ovid', 'OVID'),
     )
 
     credentials = models.NullBooleanField()
