@@ -6,6 +6,7 @@ from utils.utils import *
 
 XML_TRANS_TABLE = {
     'journal-title': 'so',
+    'book-title': 'ti',
     'publisher': 'pu',
     'article-id': 'UT',
     'article-title': 'ti',
@@ -30,13 +31,21 @@ def read_xml(q, update):
     import xml.etree.ElementTree as ET
     tree = ET.parse("{}/{}".format(settings.MEDIA_ROOT,q.query_file.name))
     root = tree.getroot()
-    if root.tag=="article":
+    types = ["article","book"]
+    if root.tag in types:
         articles = [root]
     else:
         articles = [x for x in root]
     for article in articles:
-        if article.find('front'):
-            article = article.find('front')
+        rtype = article.tag
+        if rtype=="article":
+            matter = "front"
+        elif rtype=="book":
+            matter = "book-meta"
+        else:
+            print(f"!!!!\n I don't know the record type: {rtype}")
+        if article.find(matter):
+            article = article.find(matter)
         article_dict = {}
         for field in article.iter():
             if field.tag in XML_TRANS_TABLE:
@@ -49,9 +58,14 @@ def read_xml(q, update):
             article_dict['au'] = []
             article_dict['af'] = []
             for author in authors:
-                surname = author.find('string-name').find('surname')
+                nameid = 'string-name'
+                name = author.find(nameid)
+                if name is None:
+                    nameid = 'name'
+                    name = author.find(nameid)
+                surname = name.find('surname')
                 if surname is not None:
-                    first_names = author.find('string-name').find('given-names')
+                    first_names = name.find('given-names')
                     if first_names is not None:
                         AU = f"{surname.text}, {first_names.text[0]}."
                         article_dict['af'].append(f"{surname.text}, {first_names.text}")

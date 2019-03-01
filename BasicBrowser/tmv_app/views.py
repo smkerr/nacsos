@@ -1031,7 +1031,7 @@ def doc_detail(request, doc_id, run_id):
     stat = RunStats.objects.get(run_id=run_id)
     if stat.get_method_display() == 'hlda':
         return(doc_detail_hlda(request, doc_id))
-    update_topic_titles(int(run_id))
+    #update_topic_titles(int(run_id))
     response = ''
     template = loader.get_template('tmv_app/doc.html')
 
@@ -1182,7 +1182,7 @@ def topic_presence_detail(request,run_id):
         return(topic_presence_hlda(request))
 
     if stat.method == "DT":
-        update_dtopics(run_id)
+        #update_dtopics(run_id)
         return dtm_home(request,run_id)
     if stat.method == "BD":
         update_bdtopics(run_id)
@@ -1202,8 +1202,8 @@ def topic_presence_detail(request,run_id):
     if stat.status==3:
         run_id = int(run_id)
 
-        update_topic_titles(run_id)
-        update_topic_scores(run_id)
+        #update_topic_titles(run_id)
+        #update_topic_scores(run_id)
 
 
         response = ''

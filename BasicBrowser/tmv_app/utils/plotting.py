@@ -5,7 +5,8 @@ import random
 import math
 from scipy import interpolate
 from matplotlib import cm, patches
-
+from scoping.models import *
+from scipy.spatial import ConvexHull
 
 plt.rc('font',size=7)
 plt.rc('axes',titlesize=7)
@@ -87,7 +88,8 @@ def plot_tsne_2(r_ind,tsne_results,cats,verbose=False):
 def plot_tsne(
     r_ind,tsne_results,cats,nocatids,
     ax=None,verbose=False,hdoc=False,
-    legend=True, sc=None, heat_var=None, cmapname=None
+    legend=True, sc=None, heat_var=None, cmapname=None,
+    topics=None
     ):
     cs = []
     sizes = []
@@ -114,6 +116,8 @@ def plot_tsne(
         linewidth=0.1,
         edgecolor='#a39c9c66'
     )
+
+    # Draw docs to be highlighted separately
     if hdoc is not False:
         ax.scatter(
             tsne_results[hdocs,0],
@@ -125,6 +129,7 @@ def plot_tsne(
             edgecolor='black'
         )
 
+    # split the data and add layer by layer to prevent top layer overwriting all
     splits = 10
     for i in range(splits):
         for c in cats:
@@ -195,6 +200,55 @@ def plot_tsne(
                 )
 
                 ax.add_patch(rect)
+
+    if topics:
+        for t in topics:
+
+            atdocscores = Doc.objects.filter(
+                docdynamictopic__topic=t,
+            ).values_list('docdynamictopic__score',flat=True)
+
+            thresh = np.quantile(atdocscores,0.99)
+
+            tdocs = Doc.objects.filter(
+                docdynamictopic__topic=t,
+                docdynamictopic__score__gt=thresh
+            ).order_by('-docdynamictopic__score').values_list('id',flat=True)
+
+            highlight_docs = np.argwhere(np.isin(r_ind,tdocs))[:,0]
+
+            if len(highlight_docs) == 0:
+                continue
+
+            print(len(highlight_docs))
+            #points = np.array([tsne_results[v] for i,v in enumerate(highlight_docs)]
+            points = tsne_results[highlight_docs]
+            hull = ConvexHull(points)
+            for i, simplex in enumerate(hull.simplices):
+                plt.plot(
+                    points[simplex, 0],
+                    points[simplex, 1],
+                    'k-',
+                    linewidth=0.5
+                )
+                for j in range(len(points[simplex,0])):
+                    if i==0 and j==0:
+                        px = points[simplex,0][j]
+                        py = points[simplex,1][j]
+                    else:
+                        if points[simplex,0][j] < px:
+                            px = points[simplex,0][j]
+                            py = points[simplex,1][j]
+            plt.text(
+                px-1,
+                py,
+                t.title,
+                va="center",
+                ha="right",
+                fontsize=5
+            )
+
+
     # plt.tick_params(
     #     axis='both',
     #     which='both',

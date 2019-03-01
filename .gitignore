@@ -23,3 +23,4 @@ BasicBrowser/twitter/tweets.json
 BasicBrowser/tweets/*
 */dtm-input*
 */dtm-output*
+*nohup.out

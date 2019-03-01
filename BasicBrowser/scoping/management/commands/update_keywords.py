@@ -5,7 +5,7 @@ import re, nltk
 from nltk.stem import SnowballStemmer
 
 class Command(BaseCommand):
-    help = 'collect bigrams from a query'
+    help = 'update kwps'
 
     def add_arguments(self, parser):
         parser.add_argument('--qid',type=int, default=0)
