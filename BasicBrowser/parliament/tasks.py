@@ -16,7 +16,7 @@ from multiprocess import Pool
 from functools import partial
 from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
-import time
+import time, datetime
 import django.db
 
 
@@ -134,18 +134,26 @@ def do_search(s_id):
 # ===================================================================================================================
 
 @shared_task
-def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha = 0.01, extra_stopwords = set(), **kwargs):
+def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha=0.01,
+           extra_stopwords=set(), **kwargs):
+
+    print("starting topic model with method = {}, K = {}, language = {}, max_df = {}, min_df = {}, alpha = {}".format(
+            method, K, language, max_df, min_df, alpha))
+    print("extra stopwords: ".format(extra_stopwords))
+
 
     if method in ['DT', 'dnmf', 'BT', 'BleiDTM'] and max_features == 0:
         max_features = 20000
 
     if method in ['DT', 'dnmf']:
         print("Running dynamic NMF algorithm")
-        run_dynamic_nmf(s_id, K, language=language, max_features=max_features, max_df=max_df, min_df=min_df, **kwargs)
+        run_dynamic_nmf(s_id, K, language=language, max_features=max_features, extra_stopwords=extra_stopwords,
+                        max_df=max_df, min_df=min_df, **kwargs)
         return 0
     elif method in ['BT', 'BleiDTM']:
         print("Running Blei DTM algorithm")
-        run_blei_dtm(s_id, K, language=language, max_features=max_features, max_df=max_df, min_df=min_df, **kwargs)
+        run_blei_dtm(s_id, K, language=language, max_features=max_features, extra_stopwords=extra_stopwords,
+                     max_df=max_df, min_df=min_df, **kwargs)
         return 0
 
     start_time = time.time()
@@ -376,6 +384,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
 
     stat.iterations = model.n_iter_
     stat.status = 3  # 3 = finished
+    stat.last_update = datetime.now()
     stat.save()
     update_topic_titles(run_id)
     update_topic_scores(run_id)
