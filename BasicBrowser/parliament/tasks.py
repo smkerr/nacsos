@@ -16,8 +16,9 @@ from multiprocess import Pool
 from functools import partial
 from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
-import time, datetime
+import time
 import django.db
+from django.utils import timezone
 
 
 from utils.run_dtm_parliament import run_dynamic_nmf, run_blei_dtm
@@ -139,7 +140,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
 
     print("starting topic model with method = {}, K = {}, language = {}, max_df = {}, min_df = {}, alpha = {}".format(
             method, K, language, max_df, min_df, alpha))
-    print("extra stopwords: ".format(extra_stopwords))
+    print("extra stopwords: {}".format(extra_stopwords))
 
 
     if method in ['DT', 'dnmf', 'BT', 'BleiDTM'] and max_features == 0:
@@ -384,7 +385,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
 
     stat.iterations = model.n_iter_
     stat.status = 3  # 3 = finished
-    stat.last_update = datetime.now()
+    stat.last_update = timezone.now()
     stat.save()
     update_topic_titles(run_id)
     update_topic_scores(run_id)
