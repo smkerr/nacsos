@@ -497,15 +497,19 @@ def dtopic_detail(request,topic_id):
 
     tterms = []
     tts = TopicTerm.objects.filter(topic=topic)
-    tdts = list(TopicTimePeriodScores.objects.filter(
+    tdts = TopicTimePeriodScores.objects.filter(
         topic=topic
-    ).order_by('period__n'))
+    ).order_by('period__n')
     for i, p in enumerate(stat.periods.all().order_by('n')):
         ytts = tts.filter(
-            PY=p.n+1
+            PY=p.n#+1
         ).order_by('-score')[:10].select_related('term')
-        tdt = tdts[i]
-        tdt.share = tdt.share*100
+        #tdt = tdts[i]
+        try:
+            tdt = tdts.get(period=p)
+            tdt.share = tdt.share*100
+        except:
+            tdt = None
         tterms.append({
             "ytts": ytts,
             "tdt": tdt,
@@ -1185,7 +1189,8 @@ def topic_presence_detail(request,run_id):
         #update_dtopics(run_id)
         return dtm_home(request,run_id)
     if stat.method == "BD":
-        update_bdtopics(run_id)
+        pass
+        #update_bdtopics(run_id)
 
     if stat.query:
         project = stat.query.project

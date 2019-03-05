@@ -210,6 +210,16 @@ def update_bdtopics(run_id):
             new_topic_title+='}'
             topic.title = new_topic_title
             topic.save()
+
+    dts = DocTopic.objects.filter(
+        run_id=stats.run_id
+    ).values('topic').annotate(
+        score = Sum('score')
+    )
+    for dt in dts:
+        t = Topic.objects.get(pk=dt['topic'])
+        t.score = dt['score']
+        t.save()
     if stats.psearch:
         if stats.psearch.search_object_type == 2:
             doctype = 'ut'
@@ -246,6 +256,34 @@ def update_bdtopics(run_id):
             topic_time_period_scores.score = tpt['score']
             topic_time_period_scores.share = tpt['score'] / time_doc_total.dt_score
             topic_time_period_scores.save()
+    else:
+        for tp in stats.periods.all():
+            dts = DocTopic.objects.filter(
+                run_id=stats.run_id,
+                doc__PY__in=tp.ys
+            )
+            dt_totals = dts.aggregate(
+                score=Sum('score')
+            )
+            tdt, created = TimeDocTotal.objects.get_or_create(
+                period=tp,
+                run=stats
+            )
+            tdt.dt_score = dt_totals['score']
+            tdt.save()
+
+            topic_period_totals = dts.values('topic').annotate(
+                score = Sum('score')
+            )
+            for tpt in topic_period_totals:
+                topic = Topic.objects.get(pk=tpt['topic'])
+                topic_time_period_scores, created = TopicTimePeriodScores.objects.get_or_create(
+                    topic = topic,
+                    period = tp
+                )
+                topic_time_period_scores.score = tpt['score']
+                topic_time_period_scores.share = tpt['score'] / tdt.dt_score
+                topic_time_period_scores.save()
 
 def yearly_topic_term_scores(run_id):
 

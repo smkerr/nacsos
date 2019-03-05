@@ -7,6 +7,10 @@ from scipy import interpolate
 from matplotlib import cm, patches
 from scoping.models import *
 from scipy.spatial import ConvexHull
+from sklearn.cluster import DBSCAN
+from adjustText import adjust_text, get_renderer, get_bboxes
+
+
 
 plt.rc('font',size=7)
 plt.rc('axes',titlesize=7)
@@ -84,12 +88,18 @@ def plot_tsne_2(r_ind,tsne_results,cats,verbose=False):
         labelleft=False
     )
 
+def extend_points(p1,p2,length=0.8):
+    p3 = [None,None]
+    lenAB = np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+    p3[0] = p2[0] + (p2[0] - p1[0]) / lenAB*length
+    p3[1] = p2[1] + (p2[1] - p1[1]) / lenAB*length
+    return p3
 
 def plot_tsne(
     r_ind,tsne_results,cats,nocatids,
     ax=None,verbose=False,hdoc=False,
     legend=True, sc=None, heat_var=None, cmapname=None,
-    topics=None
+    topics=None, min_cluster = 100
     ):
     cs = []
     sizes = []
@@ -208,7 +218,7 @@ def plot_tsne(
                 docdynamictopic__topic=t,
             ).values_list('docdynamictopic__score',flat=True)
 
-            thresh = np.quantile(atdocscores,0.99)
+            thresh = np.quantile(atdocscores,0.8)
 
             tdocs = Doc.objects.filter(
                 docdynamictopic__topic=t,
@@ -220,33 +230,97 @@ def plot_tsne(
             if len(highlight_docs) == 0:
                 continue
 
-            print(len(highlight_docs))
+            #print(f"{t.title}: {t.id}")
+            #print(len(highlight_docs))
             #points = np.array([tsne_results[v] for i,v in enumerate(highlight_docs)]
             points = tsne_results[highlight_docs]
-            hull = ConvexHull(points)
-            for i, simplex in enumerate(hull.simplices):
-                plt.plot(
-                    points[simplex, 0],
-                    points[simplex, 1],
-                    'k-',
-                    linewidth=0.5
-                )
-                for j in range(len(points[simplex,0])):
-                    if i==0 and j==0:
-                        px = points[simplex,0][j]
-                        py = points[simplex,1][j]
-                    else:
-                        if points[simplex,0][j] < px:
-                            px = points[simplex,0][j]
-                            py = points[simplex,1][j]
-            plt.text(
-                px-1,
-                py,
-                t.title,
-                va="center",
-                ha="right",
-                fontsize=5
-            )
+
+            db = DBSCAN(eps=1,min_samples=min_cluster).fit(points)
+            labels = db.labels_
+            texts = []
+            bboxes = []
+            r = get_renderer(ax.get_figure())
+            for l in set(labels):
+                text_set = False
+                if l==-1:
+                    continue
+                ind = np.argwhere(labels==l)[:,0]
+                #print("\n##\nlabel: {}, {} documents".format(l,len(ind)))
+                lpoints = points[ind]
+                if len(ind) > min_cluster:
+                    try:
+                        hull = ConvexHull(lpoints)
+                    except:
+                        continue
+                    cx = np.mean(hull.points[hull.vertices,0])
+                    cy = np.mean(hull.points[hull.vertices,1])
+                    c = [cx,cy]
+
+
+
+                    for i, simplex in enumerate(hull.simplices):
+                        p1 = extend_points(c,lpoints[simplex,:][0])
+                        p2 = extend_points(c,lpoints[simplex,:][1])
+                        # if i==0:
+                        #     px[0] = p1[0]
+                        #     p
+                        #     py = p1[1]
+                        # elif p1[0] < px[0]:
+                        #     px = p1[0]
+                        #     py = p1[1]
+                        plt.plot(
+                            [p1[0],p2[0]],
+                            [p1[1],p2[1]],
+                            'k-',
+                            linewidth=0.5
+                        )
+                        if not text_set:
+                            if p1[0] > cx:
+                                ha = "left"
+                            else:
+                                ha = "right"
+                            pl = extend_points(c,p1)
+                            texts.append(ax.annotate(
+                                t.title,
+                                p1,
+                                xytext=pl,
+                                #t.title,
+                                va="center",
+                                ha=ha,
+                                fontsize=8,
+                                arrowprops=dict(width=0.2,headwidth=0.1)
+                            ))
+                            #print(get_bboxes(texts,r,expand=(1.,1.),ax=ax))
+                            text_set = True
+
+                    break
+                    #adjust_text(texts,arrowprops=dict(arrowstyle='->', color='red'))
+
+
+            # hull = ConvexHull(points)
+            # for i, simplex in enumerate(hull.simplices):
+            #     plt.plot(
+            #         points[simplex, 0],
+            #         points[simplex, 1],
+            #         'k-',
+            #         linewidth=0.5
+            #     )
+            #     for j in range(len(points[simplex,0])):
+            #         if i==0 and j==0:
+            #             px = points[simplex,0][j]
+            #             py = points[simplex,1][j]
+            #         else:
+            #             if points[simplex,0][j] < px:
+            #                 px = points[simplex,0][j]
+            #                 py = points[simplex,1][j]
+            # plt.text(
+            #     px-1,
+            #     py,
+            #     t.title,
+            #     va="center",
+            #     ha="right",
+            #     fontsize=5
+            # )
 
 
     # plt.tick_params(
