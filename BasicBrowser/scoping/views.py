@@ -4783,6 +4783,9 @@ def screen(request,qid,tid,ctype,d=0):
     else:
         dois = dois.filter(relevant=ctype)
     dois = dois.order_by('date')
+    q = Query.objects.get(pk=qid)
+    if q.project_id in [119, 113]:
+        dois = dois.order_by('doc__title')
 
     if tag.document_linked or tag.utterance_linked:
         # do in background

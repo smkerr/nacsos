@@ -326,6 +326,11 @@ td.tagtools{
   padding: 5px 10px 5px 10px;
 }
 
+.btn.cat {
+  padding: 4px;
+  font-size: 10pt;
+}
+
 button.btntagimg{
   background-color: #fff;
   border: 0px;
