@@ -2936,6 +2936,8 @@ def sortdocs(request):
     download = request.GET.get('download',None)
     ris = request.GET.get('ris',None)
 
+    html = False
+
     print(fields)
     print(f_fields)
 
@@ -2992,9 +2994,10 @@ def sortdocs(request):
     if "category__name" in fields:
         filt_docs = filt_docs.filter(
             category__project=query.project
-        ) | filt_docs.filter(
-            category__isnull=True
         )
+        # ) | filt_docs.filter(
+        #     category__isnull=True
+        # )
         filt_docs = filt_docs.annotate(
             category__name=StringAgg('category__name','; ',distinct=True),
         )
@@ -3193,8 +3196,6 @@ def sortdocs(request):
         sortdir=""
 
 
-    n_docs = len(filt_docs)
-
     if sort_dirs is not None:
         order_by = ('-PY','pk')
         if len(sort_dirs) > 0:
@@ -3210,6 +3211,9 @@ def sortdocs(request):
 
         docs = filt_docs.order_by(*order_by).values(*single_fields)
         n_docs = len(docs)
+
+    else:
+        n_docs = len(filt_docs)
 
     if download != "true":
         docs = docs[:100]
@@ -3343,9 +3347,10 @@ def sortdocs(request):
         'n_docs': n_docs
     }
 
-    template = loader.get_template('scoping/base.html')
-    context = response
-    #return HttpResponse(template.render(context, request))
+    if html:
+        template = loader.get_template('scoping/base.html')
+        context = response
+        return HttpResponse(template.render(context, request))
 
     #x = y
     return JsonResponse(response,safe=False)

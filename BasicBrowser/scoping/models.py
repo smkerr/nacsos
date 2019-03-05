@@ -439,7 +439,7 @@ class Query(models.Model):
 
 
 class Category(models.Model):
-    name = models.TextField(null = True, verbose_name="Category Name")
+    name = models.TextField(null = True, verbose_name="Category Name", db_index=True)
     level = models.IntegerField(default=1)
     description = models.TextField(null=True, verbose_name="Category Description")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
