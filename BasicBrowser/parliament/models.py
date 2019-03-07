@@ -180,6 +180,7 @@ class Interjection(models.Model):
         (OUTCRY, 'Outcry'),
         (OTHER, 'Other')
     )
+
     paragraph = models.ForeignKey(Paragraph, on_delete=models.CASCADE)
     parties = models.ManyToManyField(Party)
     persons = models.ManyToManyField(Person)
@@ -192,8 +193,8 @@ class Interjection(models.Model):
         OBJECTION:'em-raised_hand_with_fingers_splayed',
         AMUSEMENT:'em-grinning',
         LAUGHTER:'em-laughing',
-        OUTCRY: '',
-        OTHER: ''
+        OUTCRY: 'em-loudspeaker',
+        OTHER: 'em em-grey_question'
     }
     @property
     def emoji(self):
