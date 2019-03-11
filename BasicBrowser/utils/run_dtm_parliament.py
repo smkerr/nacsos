@@ -31,14 +31,7 @@ from nltk.corpus import stopwords
 
 # run the dynamic topic model with the algorithm by Blei
 def run_blei_dtm(s_id, K, language="german", verbosity=1, extra_stopwords=set(), call_to_blei_algorithm=True,
-                 max_features=20000, max_df=0.95, min_df=5,):
-
-    # set blei algorithm path
-    if platform.node() == "mcc-apsis":
-        dtm_path = "/home/galm/software/dtm/dtm/main"
-    else:
-        dtm_path = "/home/finn/dtm/dtm/main"
-
+                 max_features=20000, max_df=0.95, min_df=5, dtm_path="/home/galm/software/dtm/dtm/main"):
 
     t0 = time()
 
