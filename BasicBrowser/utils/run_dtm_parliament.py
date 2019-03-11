@@ -1,5 +1,6 @@
 import sys, resource, os, shutil, re, string, gc, subprocess
 import django
+from django.core.exceptions import MultipleObjectsReturned
 import nltk
 from multiprocess import Pool
 from nltk.stem import SnowballStemmer
@@ -94,12 +95,19 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, extra_stopwords=set(),
         return 1
 
     for i,pp in enumerate(pps.order_by('n')):
-        tp, created = TimePeriod.objects.get_or_create(
-            parlperiod=pp,
-            n = i,
-            ys = pp.years,
-            title = str(pp)
-        )
+        try:
+            tp, created = TimePeriod.objects.get_or_create(
+                parlperiod=pp,
+                n = i,
+                ys = pp.years,
+                title = str(pp)
+            )
+        except MultipleObjectsReturned:
+            tp = TimePeriod.objects.filter(
+                parlperiod=pp,
+                n = i,
+                ys = pp.years,
+                title = str(pp)).order_by('id').first()
         stat.periods.add(tp)
 
     time_range = sorted([wp['n'] for wp in wps])
