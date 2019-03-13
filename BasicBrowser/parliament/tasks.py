@@ -131,6 +131,43 @@ def do_search(s_id):
         print("search_object_type not valid ({})".format(s.search_object_type))
         return
 
+@shared_task
+def combine_searches(s_ids):
+
+    searches = Search.objects.filter(pk__in=s_ids)
+
+    # check whether search object are of the same type
+    object_types = set(list(searches.values_list('search_object_type')))
+    if len(object_types) > 1:
+        print("search object type does not match, did not merge")
+        return
+    else:
+        print("all search object types identical")
+
+    # create new search object
+
+    search_object_type = list(object_types)[0][0]
+    s = Search(title='Searches {} combined'.format(", ".join([str(s_id) for s_id in s_ids])))
+    s.search_object_type = search_object_type
+    s.save()
+    if search_object_type == 2:
+        ut = Utterance.objects.filter(search_matches__in=searches).distinct()
+        Through = Utterance.search_matches.through
+        tms = [Through(utterance=u, search=s) for u in ut]
+        Through.objects.bulk_create(tms)
+        s.utterance_count = ut.count()
+    elif search_object_type == 1:
+        pars = Paragraph.objects.filter(search_matches__in=searches).distinct()
+        Through = Paragraph.search_matches.through
+        tms = [Through(par=p, search=s) for p in pars]
+        Through.objects.bulk_create(tms)
+        s.par_count = pars.count()
+    s.save()
+
+    print("Created combined search: id = {}".format(s.id))
+
+    return
+
 # ==================================================================================================================
 # ===================================================================================================================
 

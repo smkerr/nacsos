@@ -24,7 +24,7 @@ long_exchange = Exchange('long', type='direct')
 
 app.conf.task_queues = (
     Queue('default', default_exchange, routing_key='default'),
-    Queue('medium', medium_exchange, routing_key='long'),
+    Queue('medium', medium_exchange, routing_key='medium'),
     Queue('long', long_exchange, routing_key='long'),
 )
 
