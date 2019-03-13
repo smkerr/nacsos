@@ -24,6 +24,10 @@ from django.db.models import Count, Sum
 import parliament.models as pms
 import base64
 from django.conf import settings
+import numpy as np
+import random
+
+import tmv_app.models as tm
 # Create your models here.
 
 def get_notnull_fields(model):
@@ -205,6 +209,7 @@ class DocMetaCoding(models.Model):
     finish_time = models.DateTimeField(null=True)
 
     coded = models.BooleanField(default=False)
+
 
 
 class Controls(models.Model):
@@ -822,6 +827,32 @@ class Doc(models.Model):
         self.UT.delete()
         return super(self.__class__, self).delete(*args, **kwargs)
 
+    def create_topicintrusion(self, user, run_id):
+        real_topics = self.doctopic_set.filter(run_id=run_id).order_by('-score')[:5]
+
+        scores = np.array(tm.DocTopic.objects.filter(topic__run_id=run_id).values_list('score', flat=True))
+        q99 = np.quantile(scores, 0.99)
+        q50 = np.quantile(scores, 0.5)
+        intruders = tm.Topic.objects.filter(
+            doctopic__run_id = run_id,
+            doctopic__score__lt=q50,
+            doctopic__doc=self
+        )
+        if intruders.exists():
+            intruder = intruders[random.randint(0,intruders.count()-1)]
+        else:
+            intruder = tm.Topic.objects.filter(
+                doctopic__run_id=run_id,doctopic__doc=self
+            ).order_by('doctopic__score')[0]
+        topic_intrusion = tm.TopicIntrusion(
+            doc=self,
+            user=user,
+            intruded_topic=intruder
+        )
+        topic_intrusion.save()
+        for r in real_topics:
+            topic_intrusion.real_topics.add(r.topic)
+
 class DocSection(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)
     title = models.TextField()
@@ -1134,12 +1165,12 @@ def update_docproj(sender, instance, **kwargs):
     if instance.relevant==0:
         return
     dp, created = DocProject.objects.get_or_create(project=p,doc=d)
-    if dp.relevant == 0:
+    if dp.relevant == 0 or dp.relevant == instance.relevant:
         dp.relevant=instance.relevant
         dp.save()
     elif dp.relevant != instance.relevant:
         ratings = set(DocOwnership.objects.filter(
-            doc=d,tag__query__project=p
+            doc=d,tag__query__project=p, relevant__gt=0
         ).values_list('relevant', flat=True))
         if len(ratings) < 2:
             dp.relevant = instance.relevant

@@ -58,7 +58,7 @@ class Command(BaseCommand):
                         status.save()
 
 
-        now = datetime.now() - timedelta(days=77)
+        now = datetime.now() #- timedelta(days=77)
         for i in range(options['weeks']):
             now = now - timedelta(days=7)
             then = now - timedelta(days=8)

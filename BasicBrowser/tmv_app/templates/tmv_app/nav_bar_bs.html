@@ -34,7 +34,7 @@
              <a class="nav-link" href="{% url 'tmv_app:stats' run_id %}">Stats</a>
            </li>
            <li class="nav-item">
-             <a class="nav-link" href="{% url 'scoping:userpage' user.id %}">{{user.username}}</a>
+             <a class="nav-link" href="{% url 'scoping:userpage' project.id %}">{{user.username}}</a>
            </li>
          {% endif %}
 

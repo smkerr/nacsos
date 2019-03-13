@@ -1,0 +1,30 @@
+{% extends "scoping/base_bs.html" %}
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% block content %}
+
+<div class="d-flex justify-content-center">
+  <h1> Topic assessment</h1>
+  <p>
+</div>
+
+<div class="d-flex justify-content-center">
+
+  <div class="card" >
+    <div class="card-body">
+      <h5 class="card-title"> Which word is the odd one out?</h5>
+
+      <p class="card-text" width=80%>
+
+  {% for w in words %}
+    <a class="btn p-2" href="{% url 'scoping:proc_word_intrusion' wi.id w.id %}">
+    <button class="btn btn-secondary p-2">
+    {{w}}
+    </button>
+    </a>
+  {% endfor %}
+
+  </div>
+</div>
+
+{% endblock %}

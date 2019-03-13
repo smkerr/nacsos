@@ -10,6 +10,34 @@ import pandas as pd
 from multiprocess import Pool
 
 
+def tagify_topic(tid, threshold=None, n=None):
+    '''
+    adds a tag with the name of the topic, and adds documents from the topic
+    to that tag.
+    '''
+    t = Topic.objects.get(pk=tid)
+    stat = t.run_id
+    if n:
+        docs = Doc.objects.filter(doctopic__topic=t).order_by('doctopic__score')[:n]
+        name=f"run_{stat.run_id}_topic_{t.title}_n={n}"
+    else:
+        if not threshold:
+            threshold = stat.dt_threshold
+        docs = Doc.objects.filter(doctopic__topic=t,doctopic__score__gt=threshold)
+        name=f"run_{stat.run_id}_topic_{t.title}_threshold={threshold}"
+
+    tag, created = Tag.objects.get_or_create(
+        title = name,
+        query = stat.query
+    )
+    tag.doc_set.clear()
+    Through = Doc.tag.through
+    tds = [Through(doc=d,tag=tag) for d in docs]
+    Through.objects.bulk_create(tds)
+    tag.update_tag()
+
+
+
 def compare_topic_queryset(runs):
 
     col1s = []

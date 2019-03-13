@@ -19,6 +19,7 @@ from celery import group
 from utils.tm_mgmt import *
 import pandas as pd
 from sklearn.preprocessing import normalize
+from .forms import *
 
 # the following line will need to be updated to launch the browser on a web server
 TEMPLATE_DIR = sys.path[0] + '/templates/'
@@ -1362,6 +1363,11 @@ def stats(request,run_id):
 
     stat = RunStats.objects.get(run_id=run_id)
 
+    if stat.query:
+        project = stat.query.project
+    else:
+        project = 'parliament'
+
     docs_seen = DocTopic.objects.filter(run_id=run_id).values('doc_id').order_by().distinct().count()
 
     stat.docs_seen = docs_seen
@@ -1381,15 +1387,39 @@ def stats(request,run_id):
     else:
         project = 'parliament'
 
+    if request.method == "POST":
+        topic_assessment=topicAssessmentForm(request.POST or None, max_value = stat.docs_seen)
+        if topic_assessment.is_valid():
+            x = topic_assessment.cleaned_data
+            docs = set(DocTopic.objects.filter(run_id=run_id).values_list('doc__pk',flat=True))
+            docs = random.sample(docs,x["docs"])
+            for d in docs:
+                doc = Doc.objects.get(pk=d)
+                for u in x['users']:
+                    doc.create_topicintrusion(u, run_id)
+            for t in stat.topic_set.all():
+                for u in x['users']:
+                    t.create_wordintrusion(u)
+        else:
+            e = topic_assessment.errors
+    else:
+        topic_assessment=topicAssessmentForm(max_value = stat.docs_seen)
+
+    topic_assessment.fields["users"].queryset = User.objects.filter(projectroles__project=project)
+    topic_assessment.fields["docs"].min_value = 1
+    #topic_assessment.fields["docs"].max_value = stat.docs_seen
+
     context = {
         'run_id': run_id,
         'stat': stat,
         'num_topics': Topic.objects.filter(run_id=run_id).count(),
         'num_terms': Term.objects.filter(run_id=run_id).count(),
-        'project': project
+        'project': project,
+        'user': request.user,
+        'topic_assessment': topic_assessment,
     }
 
-    return HttpResponse(template.render(context))
+    return HttpResponse(template.render(context, request))
 
 
 def runs(request,pid=0):

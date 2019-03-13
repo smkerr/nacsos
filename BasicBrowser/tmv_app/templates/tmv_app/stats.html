@@ -3,17 +3,17 @@
 
 {% block content %}
 
-<h1 id="header">
-    <table><tr>
-        <td id="title">Topic Modelling Stats </td>
-    </tr></table>
+<div id="main" class="container bg-light col-md-10">
+    <div class="row-fluid columns content">
 
-    <hr noshade>
-</h1>
+    <h1 id="header">
+        <table><tr>
+            <td id="title">Topic Modelling Stats </td>
+        </tr></table>
 
-<div id="main">
-    <table>
-        <tr><td width="210px">
+        <hr noshade>
+    </h1>
+
         {{stat.get_method_display}} model running on
           {% if stat.query %}
             <a href="{% url 'scoping:query' stat.query.id %}">{{stat.query}}</a>
@@ -31,13 +31,24 @@
         <br>Model started running at {{ stat.start }}, and has run {{ stats_start|timesince:stat.last_update }}.
         <br>Last update at {{ stat.last_update }}, or {{ stat.last_update|timesince}} ago.
         <br>{{ num_batches }} Batches Completed
-        </td></tr>
-    </table>
+        <p>
+        <h2>Model Assesment</h2>
+        Generate word intrusion and topic intrusion tests for:
+
+        <form class="form" action="" method="post">
+            {% csrf_token %}
+            {% bootstrap_form topic_assessment layout='horizontal' %}
+            {% bootstrap_button 'Save' %}
+        </form>
+
+        <div id="footer">
+            <br>
+            <hr noshade>
+        </div>
+</div>
 </div>
 
-<div id="footer">
-    <br>
-    <hr noshade>
-</div>
+
+
 
 {% endblock %}

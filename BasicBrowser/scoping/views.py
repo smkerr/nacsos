@@ -1863,7 +1863,8 @@ def userpage(request, pid):
         docstats = {}
         q = Query.objects.get(pk=qt['query__id'])
         tag = Tag.objects.get(pk=qt['id'])
-        docstats['ndocs'] = Doc.objects.filter(tag=tag).distinct().count()
+        docstats['ndocs'] = tag.all_docs
+        #docstats['ndocs'] = Doc.objects.filter(tag=tag).distinct().count()
         dos = DocOwnership.objects.filter(query=q,user=request.user,tag=tag)
         docstats['revdocs']         = dos.count()
         docstats['reviewed_docs']   = dos.filter(relevant__gt=0).count()
@@ -1900,9 +1901,52 @@ def userpage(request, pid):
 
     query = None # Query.objects.filter(project=project).last()#.query
 
+    wis = WordIntrusion.objects.filter(
+        user=request.user,
+        topic__run_id__query__project=project
+    )
+
+    tis = TopicIntrusion.objects.filter(
+        user=request.user,
+        intruded_topic__run_id__query__project=project
+    )
+
+    if wis.exists():
+        wis = wis.values('topic__run_id').annotate(
+            n=Count('pk'),
+            tr=Sum(
+                models.Case(
+                    models.When(
+                        score__isnull=True,
+                        then=1
+                    ),
+                    default=0,
+                    output_field=models.IntegerField()
+                )
+            ),
+            reviewed = F('n') - F('tr')
+        )
+    if tis.exists():
+        tis = tis.values('intruded_topic__run_id').annotate(
+            n=Count('pk'),
+            tr=Sum(
+                models.Case(
+                    models.When(
+                        score__isnull=True,
+                        then=1
+                    ),
+                    default=0,
+                    output_field=models.IntegerField()
+                )
+            ),
+            reviewed = F('n') - F('tr')
+        )
+
+        #x = y
+
     codings = DocMetaCoding.objects.filter(project=project,user=request.user)
 
-    if codings.count()==0:
+    if not codings.exists():
         coding_table=False
         filter=None
     else:
@@ -1912,6 +1956,8 @@ def userpage(request, pid):
         RequestConfig(request).configure(coding_table)
 
     context = {
+        'wis': wis,
+        'tis': tis,
         'user': request.user,
         'queries': query_list,
         'query': query,
@@ -1920,6 +1966,94 @@ def userpage(request, pid):
         'filter': filter
     }
     return HttpResponse(template.render(context, request))
+
+@login_required
+def word_intrusion(request, run_id):
+    template = loader.get_template('scoping/word_intrusion.html')
+    stat = RunStats.objects.get(pk=run_id)
+    project = stat.query.project
+    word_intrusions = WordIntrusion.objects.filter(
+        user=request.user,
+        topic__run_id=run_id,
+        score__isnull=True
+    )
+
+    if not word_intrusions.exists():
+        return HttpResponseRedirect(reverse(
+            'scoping:userpage', kwargs={"pid": project.id}
+        ))
+
+
+    wi = word_intrusions[random.randint(0,word_intrusions.count()-1)]
+
+    words = list(wi.real_words.all()) + [wi.intruded_word]
+
+    random.shuffle(words)
+
+    context = {
+        'project': project,
+        'wi': wi,
+        'words': words
+    }
+
+    return HttpResponse(template.render(context, request))
+
+@login_required
+def proc_word_intrusion(request,wid,tid):
+    wi = WordIntrusion.objects.get(pk=wid)
+    if tid == wi.intruded_word_id:
+        wi.score=0
+    else:
+        wi.score=1
+    wi.save()
+    return HttpResponseRedirect(reverse(
+        'scoping:word_intrusion',
+        kwargs={"run_id": wi.topic.run_id.run_id}
+    ))
+
+@login_required
+def topic_intrusion(request, run_id):
+    template = loader.get_template('scoping/topic_intrusion.html')
+    stat = RunStats.objects.get(pk=run_id)
+    project = stat.query.project
+    intrusions = TopicIntrusion.objects.filter(
+        user=request.user,
+        intruded_topic__run_id=run_id,
+        score__isnull=True
+    )
+
+    if not intrusions.exists():
+        return HttpResponseRedirect(reverse(
+            'scoping:userpage', kwargs={"pid": project.id}
+        ))
+
+
+    ti = intrusions[random.randint(0,intrusions.count()-1)]
+
+    topics = list(ti.real_topics.all()) + [ti.intruded_topic]
+
+    random.shuffle(topics)
+
+    context = {
+        'project': project,
+        'ti': ti,
+        'topics': topics
+    }
+
+    return HttpResponse(template.render(context, request))
+
+@login_required
+def proc_topic_intrusion(request,tid,top_id):
+    ti = TopicIntrusion.objects.get(pk=tid)
+    if top_id == ti.intruded_topic_id:
+        ti.score=0
+    else:
+        ti.score=1
+    ti.save()
+    return HttpResponseRedirect(reverse(
+        'scoping:topic_intrusion',
+        kwargs={"run_id": ti.intruded_topic.run_id.run_id}
+    ))
 
 
 @login_required

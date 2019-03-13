@@ -1,0 +1,33 @@
+{% extends "scoping/base_bs.html" %}
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% block content %}
+
+<div class="d-flex justify-content-center">
+  <h1> Topic assessment</h1>
+  <p>
+</div>
+
+<div class="d-flex justify-content-center">
+
+  <div class="card" >
+    <div class="card-body">
+      <h5 class="card-title"> Which topic is the odd one out?</h5>
+
+      <p class="card-text" width=80%>
+
+        <p>{{ti.doc.content}}
+        <p>
+
+  {% for t in topics %}
+    <a class="btn p-2" href="{% url 'scoping:proc_topic_intrusion' ti.id t.id %}">
+    <button class="btn btn-secondary p-2">
+      {{t}}
+    </button>
+    </a>
+  {% endfor %}
+
+  </div>
+</div>
+
+{% endblock %}

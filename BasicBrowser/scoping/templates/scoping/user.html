@@ -134,6 +134,47 @@
         {% endfor %}
       </table>
 
+
+      {% if wis %}
+        <h4>Word-Topic intrusions</h4>
+        <table class="table" style="width:80%">
+          <tr>
+            <th>Run ID</th>
+            <th>! To review</th>
+            <th>Reviewed</th>
+          </tr>
+        {% for w in wis %}
+          <tr>
+            <td><a href="{% url 'tmv_app:topics' w.topic__run_id %}">{{w.topic__run_id}}</a></td>
+            <td><a href="{% url 'scoping:word_intrusion' w.topic__run_id %}">{{w.tr}}</a>
+            <td>{{w.reviewed}}</td>
+          </tr>
+
+        {% endfor %}
+        </table>
+      {% endif %}
+
+      {% if tis %}
+        <h4>Topic-Doc intrusions</h4>
+        <table class="table" style="width:80%">
+          <tr>
+            <th>Run ID</th>
+            <th>! To review</th>
+            <th>Reviewed</th>
+          </tr>
+        {% for t in tis %}
+          <tr>
+            <td><a href="{% url 'tmv_app:topics' t.intruded_topic__run_id %}">{{t.intruded_topic__run_id}}</a></td>
+            <td><a href="{% url 'scoping:topic_intrusion' t.intruded_topic__run_id %}">{{t.tr}}</a>
+            <td>{{t.reviewed}}</td>
+          </tr>
+
+        {% endfor %}
+        </table>
+
+
+      {% endif %}
+
       {% if codings %}
 
       <h4> Meta-Analysis codings</h4>

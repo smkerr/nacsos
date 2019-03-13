@@ -48,6 +48,8 @@ urlpatterns = [
     path('rate_par/<int:tid>/<int:ctype>/<int:doid>/<int:todo>/<int:done>', views.rate_par, name="rate_par"),
 
 
+
+
     ### Meta-analysis stuff
     path('meta-setup/<int:pid>', views.meta_setup, name="meta_setup"),
     path('code-document/<int:docmetaid>',views.code_document,name='code_document'),
@@ -77,6 +79,13 @@ urlpatterns = [
     url(r'^query-tm-manager/(?P<qid>[0-9]+)/$', views.query_tm_manager, name='query_tm_manager'),
     url(r'^query-tm/(?P<qid>[0-9]+)/$', views.query_tm, name='query_tm'),
     url(r'^run_model-tm/(?P<run_id>[0-9]+)/$', views.run_model, name='run_model'),
+
+    ### Topic model checking
+    path('word_intrusion/<int:run_id>', views.word_intrusion, name="word_intrusion"),
+    path('proc_word_intrusion/<int:wid>/<int:tid>', views.proc_word_intrusion, name="proc_word_intrusion"),
+
+    path('topic_intrusion/<int:run_id>', views.topic_intrusion, name="topic_intrusion"),
+    path('proc_topic_intrusion/<int:tid>/<int:top_id>', views.proc_topic_intrusion, name="proc_topic_intrusion"),
 
     #### Manage SBS
     url(r'^sbs_allocateDocsToUser/(?P<qid>[0-9]+)/(?P<q2id>[0-9]+)$', views.sbs_allocateDocsToUser, name='sbs_allocateDocsToUser'),

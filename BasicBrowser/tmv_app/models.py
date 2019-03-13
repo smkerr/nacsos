@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 import scoping, parliament
+from django.contrib.auth.models import User
+import numpy as np
+import random
 
 
 class MinMaxFloat(models.FloatField):
@@ -47,7 +50,7 @@ class HTopicTerm(models.Model):
 class Topic(models.Model):
     """
     The default topic object. The title is usually set according to the top words
-    It is linked to 
+    It is linked to
     """
     title = models.CharField(max_length=80)
     score = models.FloatField(null=True)
@@ -67,12 +70,60 @@ class Topic(models.Model):
     wg_3 = models.FloatField(null=True)
 
 
+    def create_wordintrusion(self,user):
+        real_words = self.topicterm_set.order_by('-score')[:5]
+
+        scores = np.array(TopicTerm.objects.filter(topic__run_id=self.run_id).values_list('score', flat=True))
+        q99 = np.quantile(scores, 0.99)
+        q50 = np.quantile(scores, 0.5)
+        terms = set(Term.objects.filter(
+            topicterm__score__gt=q99,topicterm__topic__run_id=self.run_id
+        ).values_list('pk',flat=True))
+        bad_terms = Term.objects.filter(
+            pk__in=terms,
+            topicterm__score__lt=q50,
+            topicterm__topic=self
+        )
+        if bad_terms.exists():
+            bad_term = bad_terms[random.randint(0,bad_terms.count()-1)]
+        else:
+            bad_term = Term.objects.filter(topicterm__topic=self).order_by('topicterm__score')[0]
+        word_intrusion = WordIntrusion(
+            topic=self,
+            user=user,
+            intruded_word=bad_term
+        )
+        word_intrusion.save()
+        for w in real_words:
+            word_intrusion.real_words.add(w.term)
+
     def __unicode__(self):
         return str(self.title)
 
-
     def __str__(self):
         return str(self.title)
+
+class WordIntrusion(models.Model):
+    """
+    Used to assess topic quality, in a given topic, can a user identify the
+    intruding word
+    """
+    topic = models.ForeignKey('Topic', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    real_words = models.ManyToManyField('Term')
+    intruded_word = models.ForeignKey('Term', on_delete=models.CASCADE, related_name="intruding_topic")
+    score = models.IntegerField(null=True)
+
+class TopicIntrusion(models.Model):
+    """
+    Used to assess topic quality, in a given document, can a user identify the
+    intruding topic
+    """
+    doc = models.ForeignKey('scoping.Doc', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    real_topics = models.ManyToManyField('Topic')
+    intruded_topic = models.ForeignKey('Topic', on_delete=models.CASCADE, related_name="intruding_doc")
+    score = models.IntegerField(null=True)
 
 
 class DynamicTopic(models.Model):
@@ -167,6 +218,8 @@ class Term(models.Model):
     run_id = models.ManyToManyField('RunStats')
 
     def __unicode__(self):
+        return str(self.title)
+    def __str__(self):
         return str(self.title)
 
 #################################################
@@ -306,6 +359,7 @@ class RunStats(models.Model):
 
     K = models.IntegerField(null=True, help_text='Number of topics')
     alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter (try higher values in LDA, including > 1). Low (high) values indicate that documents should be composed of few (many) topics.')
+    top_chain_var = models.FloatField(null=True, default=0.05, help_text='Chain var parameter for dtm')
     max_iter  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
     fulltext  = models.BooleanField(default=False, help_text='do analysis on fullText? (dependent on availability)')
     citations = models.BooleanField(default=False, help_text='scale term scores by citations?')
