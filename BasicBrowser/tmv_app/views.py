@@ -334,7 +334,7 @@ def topics_time(request, run_id, stype):
     return HttpResponse(template.render(request =request, context=context))
 
 #######################################################################
-## DynamicTopic View
+## DynamicTopic View (for dynamic NMF)
 def dynamic_topic_detail(request,topic_id):
     template = loader.get_template('tmv_app/dynamic_topic.html')
 
@@ -394,8 +394,8 @@ def dynamic_topic_detail(request,topic_id):
     ).distinct().order_by('year')
 
     for t in wtopics:
-        #if t.top_words is not None:
-        if "x" is "y":
+        if t.top_words is not None:
+        #if "x" is "y":
             t.tts = t.top_words
         else:
             t.tts = Term.objects.filter(
@@ -489,6 +489,7 @@ def dynamic_topic_detail(request,topic_id):
     }
     return HttpResponse(template.render(request =request, context=context))
 
+
 # Topic page for Blei dynamic topics
 def dtopic_detail(request,topic_id):
     template = loader.get_template('tmv_app/dtopic.html')
@@ -510,12 +511,14 @@ def dtopic_detail(request,topic_id):
             tdt = tdts.get(period=p)
             tdt.share = tdt.share*100
         except:
+            print("failed to retrieve share")
             tdt = None
         tterms.append({
             "ytts": ytts,
             "tdt": tdt,
             "period": p
         })
+        x = y
 
     docs = Doc.objects.filter(doctopic__topic=topic) \
         .order_by('-doctopic__score')[:50]

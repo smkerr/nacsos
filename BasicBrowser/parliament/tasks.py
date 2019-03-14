@@ -19,9 +19,11 @@ from nltk.corpus import stopwords
 import time
 import django.db
 from django.utils import timezone
+from parliament.utils import merge_utterance_paragraphs
 
+from parliament.run_dynamic_nmf import run_dynamic_nmf
+from parliament.run_blei_dtm import run_blei_dtm
 
-from utils.run_dtm_parliament import run_dynamic_nmf, run_blei_dtm
 
 # ===================================================================================================================
 # ===================================================================================================================
@@ -432,22 +434,3 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
 
     return 0
 
-
-# ===================================================================================================================
-
-
-def merge_utterance_paragraphs(uts, include_interjections=False):
-
-    doc_texts = []
-    for ut in uts.iterator():
-        pars = Paragraph.objects.filter(utterance=ut)
-        if include_interjections:
-            interjections = Interjection.objects.filter(utterance=ut)
-        doc_text = "\n".join([par.text for par in pars])
-
-        doc_texts.append(doc_text)
-
-    ids = [x.pk for x in uts.iterator()]
-    docsizes = [len(x) for x in doc_texts]
-
-    return [doc_texts, docsizes, ids]
