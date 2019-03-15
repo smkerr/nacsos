@@ -109,10 +109,6 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, extra_stopwords=set(),
         stat.periods.add(tp)
 
     time_range = [s.n for s in stat.periods.all().order_by('n')]
-<<<<<<< HEAD:BasicBrowser/utils/run_dtm_parliament.py
-    time_range = sorted([wp['n'] for wp in wps])
-=======
->>>>>>> ddfb5d5165d168f93609a3e48c6bf7f67fbed2eb:BasicBrowser/parliament/run_blei_dtm.py
 
     #########################
     ## Get the features now
@@ -349,4 +345,3 @@ def dtm_topic(topic_n,info,topic_ids,vocab_ids,ys,run_id, output_path):
                 tt.save()
                 #db.add_topic_term(topic_n+info['first_topic'], t+info['first_word'], py, score)
     django.db.connections.close_all()
-
