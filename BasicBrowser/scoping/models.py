@@ -828,7 +828,7 @@ class Doc(models.Model):
         return super(self.__class__, self).delete(*args, **kwargs)
 
     def create_topicintrusion(self, user, run_id):
-        real_topics = self.doctopic_set.filter(run_id=run_id).order_by('-score')[:5]
+        real_topics = self.doctopic_set.filter(run_id=run_id).order_by('-score')[:3]
 
         intruders = tm.Topic.objects.filter(
             doctopic__run_id = run_id,
