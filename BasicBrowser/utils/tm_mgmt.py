@@ -252,6 +252,9 @@ def update_bdtopics(run_id):
         if stats.psearch.search_object_type == 2:
             doctype = 'ut'
             aggregator = 'ut__document__parlperiod__id'
+        else:
+            doctype = 'par'
+            aggregator = 'par__document__parlperiod__id'
 
         # Get total scores for each period
         dts = DocTopic.objects.filter(run_id=run_id)
