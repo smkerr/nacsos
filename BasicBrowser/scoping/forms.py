@@ -22,6 +22,13 @@ class QueryForm(forms.ModelForm):
         }
 
 class CategoryForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        qs = kwargs.pop('qs',Category.objects.all())
+        super(CategoryForm, self).__init__(*args, **kwargs)
+        self.fields["parent_category"] = forms.ModelChoiceField(
+                required=False,
+                queryset=qs
+            )
     level = forms.IntegerField(
         min_value=1, max_value=9
     )

@@ -33,6 +33,15 @@
         <br>{{ num_batches }} Batches Completed
         <p>
         <h2>Model Assesment</h2>
+
+        {% for intr in intr_dict %}
+          <h3>{{intr.title}}</h3>
+            {% for s in intr.intrusion %}
+              <p><b>Score {{s.score}}</b> - {{s.n}}
+            {% endfor %}
+        {% endfor %}
+
+        <h3>Generate new</h3>
         Generate word intrusion and topic intrusion tests for:
 
         <form class="form" action="" method="post">

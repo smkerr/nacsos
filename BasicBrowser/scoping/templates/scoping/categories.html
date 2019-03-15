@@ -111,10 +111,6 @@ function changeLevel(pref,val) {
     }
 }
 
-$('*[id*="level"]').each(function() {
-    var pref = $(this).attr('id').split(/[_-]/)[1]
-    changeLevel(pref,$(this).val())
-})
 
 </script>
 

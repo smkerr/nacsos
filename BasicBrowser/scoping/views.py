@@ -635,7 +635,8 @@ def categories(request, pid):
             t.save()
         else:
             t.docs = t.ndocs
-        t.form = CategoryForm(instance=t,prefix=t.id)
+        possible_parents = Category.objects.filter(level=t.level-1)
+        t.form = CategoryForm(instance=t,prefix=t.id,qs=possible_parents)
 
     catform = CategoryForm(prefix="add")
 
@@ -1911,38 +1912,39 @@ def userpage(request, pid):
         intruded_topic__run_id__query__project=project
     )
 
-    if wis.exists():
-        wis = wis.values('topic__run_id').annotate(
-            n=Count('pk'),
-            tr=Sum(
-                models.Case(
-                    models.When(
-                        score__isnull=True,
-                        then=1
-                    ),
-                    default=0,
-                    output_field=models.IntegerField()
-                )
-            ),
-            reviewed = F('n') - F('tr')
-        )
-    if tis.exists():
-        tis = tis.values('intruded_topic__run_id').annotate(
-            n=Count('pk'),
-            tr=Sum(
-                models.Case(
-                    models.When(
-                        score__isnull=True,
-                        then=1
-                    ),
-                    default=0,
-                    output_field=models.IntegerField()
-                )
-            ),
-            reviewed = F('n') - F('tr')
-        )
+    intr_dict = [
+        {
+            "intrusion": wis,
+            "run_identifier": "topic__run_id",
+            "title": "Word-Topic intrusions",
+            "url": "scoping:word_intrusion"
+        },
+        {
+            "intrusion": tis,
+            "run_identifier": "intruded_topic__run_id",
+            "title": "Topic-Doc intrusions",
+            "url": "scoping:topic_intrusion"
+        }
+    ]
 
-        #x = y
+    for intr in intr_dict:
+        if intr["intrusion"].exists():
+            intr["intrusion"] = intr["intrusion"].values(intr["run_identifier"]).annotate(
+                n=Count('pk'),
+                tr=Sum(
+                    models.Case(
+                        models.When(
+                            score__isnull=True,
+                            then=1
+                        ),
+                        default=0,
+                        output_field=models.IntegerField()
+                    )
+                ),
+                reviewed = F('n') - F('tr'),
+                run_id = F(intr["run_identifier"])
+            )
+            #intr["run_id"] = run_id
 
     codings = DocMetaCoding.objects.filter(project=project,user=request.user)
 
@@ -1956,8 +1958,7 @@ def userpage(request, pid):
         RequestConfig(request).configure(coding_table)
 
     context = {
-        'wis': wis,
-        'tis': tis,
+        'intr_dict': intr_dict,
         'user': request.user,
         'queries': query_list,
         'query': query,

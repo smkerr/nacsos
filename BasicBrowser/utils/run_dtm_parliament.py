@@ -110,6 +110,7 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, extra_stopwords=set(),
                 title = str(pp)).order_by('id').first()
         stat.periods.add(tp)
 
+    time_range = [s.n for s in stat.periods.all().order_by('n')]
     time_range = sorted([wp['n'] for wp in wps])
 
     #########################

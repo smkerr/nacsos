@@ -134,6 +134,29 @@
         {% endfor %}
       </table>
 
+      {% for intr in intr_dict %}
+        {% if intr.intrusion %}
+          <h4>{{intr.title}}</h4>
+          <table class="table" style="width:80%">
+            <tr>
+              <th>Run ID</th>
+              <th>! To review</th>
+              <th>Reviewed</th>
+            </tr>
+          {% for w in intr.intrusion %}
+            <tr>
+              <td><a href="{% url 'tmv_app:topics' w.run_id %}">{{w.run_id}}</a></td>
+              {% ifequal intr.title "Word-Topic intrusions" %}
+                <td><a href="{% url 'scoping:word_intrusion' w.run_id %}">{{w.tr}}</a>
+              {% else %}
+                <td><a href="{% url 'scoping:topic_intrusion' w.run_id %}">{{w.tr}}</a>
+              {% endifequal %}
+              <td>{{w.reviewed}}</td>
+            </tr>
+        {% endfor %}
+        </table>
+        {% endif %}
+      {% endfor %}
 
       {% if wis %}
         <h4>Word-Topic intrusions</h4>

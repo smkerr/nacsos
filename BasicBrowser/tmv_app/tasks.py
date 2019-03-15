@@ -27,6 +27,28 @@ from django.db import connection, transaction
 from psycopg2.extras import *
 
 @shared_task
+def create_topic_assessments(run_id, uids, n_docs):
+    '''
+    Create WordIntrusions and TopicIntrusions for the users
+    in uids and the number of docs n_docs
+    '''
+    # Get a unique docs that have a doctopic in this model and take a random sample
+    docs = set(DocTopic.objects.filter(
+        run_id=run_id
+    ).values_list('doc__pk', flat=True))
+    docs = random.sample(docs, n_docs)
+    stat = RunStats.objects.get(pk=run_id)
+    users = User.objects.filter(pk__in=uids)
+    for u in users:
+        for d in docs:
+            doc = Doc.objects.get(pk=d)
+            doc.create_topicintrusion(u, run_id)
+        for t in stat.topic_set.all():
+            t.create_wordintrusion(u)
+    return
+
+
+@shared_task
 def update_dtopic(topic_id, parent_run_id):
     topic = DynamicTopic.objects.get(pk=topic_id)
     ## Write the title from the top terms
