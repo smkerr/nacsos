@@ -32,25 +32,14 @@ from parliament.utils import merge_utterance_paragraphs
 
 
 # run dynamic nmf
-def run_dynamic_nmf(s_id, K, language="german", verbosity=1, extra_stopwords=set(),
-                    max_features=20000, max_df=0.95, min_df=5):
+def run_dynamic_nmf(stat,  extra_stopwords=set()):
 
     t0 = time()
 
-    s = Search.objects.get(pk=s_id)
+    s = Search.objects.get(pk=stat.psearch.id)
 
     n_samples = 1000
 
-    stat = RunStats(
-        psearch=s,
-        K=K,
-        max_df=max_df,
-        min_freq=min_df,
-        method='DT',  # DT = dynamic NMF
-        max_features=max_features,
-        status=1
-    )
-    stat.save()
     run_id = stat.run_id
 
     # load time range
@@ -66,12 +55,12 @@ def run_dynamic_nmf(s_id, K, language="german", verbosity=1, extra_stopwords=set
         return 1
 
     # language specific settings
-    if language is "german":
+    if stat.language is "german":
         stemmer = SnowballStemmer("german")
         tokenizer = german_stemmer()
         stopword_list = [stemmer.stem(t) for t in stopwords.words("german")]
 
-    elif language is "english":
+    elif stat.language is "english":
         stemmer = SnowballStemmer("english")
         stopword_list = [stemmer.stem(t) for t in stopwords.words("english")]
         tokenizer = snowball_stemmer()
@@ -239,13 +228,13 @@ def run_dynamic_nmf(s_id, K, language="german", verbosity=1, extra_stopwords=set
     B = B[:, vocab_ids]
 
     nmf = NMF(
-        n_components=K, random_state=1,
+        n_components=stat.K, random_state=1,
         alpha=.1, l1_ratio=.5
     ).fit(B)
 
     ## Add dynamic topics
     dtopics = []
-    for k in range(K):
+    for k in range(stat.K):
         dtopic = DynamicTopic(
             run_id=RunStats.objects.get(pk=run_id)
         )

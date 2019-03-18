@@ -29,30 +29,18 @@ from parliament.utils import merge_utterance_paragraphs
 
 
 # run the dynamic topic model with the algorithm by Blei
-def run_blei_dtm(s_id, K, language="german", verbosity=1, extra_stopwords=set(), call_to_blei_algorithm=True,
-                 max_features=20000, max_df=0.95, min_df=5, dtm_path="/home/galm/software/dtm/dtm/main"):
+def run_blei_dtm(stat, extra_stopwords=set(), call_to_blei_algorithm=True,
+                 dtm_path="/home/galm/software/dtm/dtm/main"):
 
     t0 = time()
 
-    s = Search.objects.get(pk=s_id)
-
-    stat = RunStats(
-        psearch=s,
-        K=K,
-        max_df=max_df,
-        min_freq=min_df,
-        method='BD', # BD = Blei dynamic topic model
-        max_features=max_features,
-        status=1
-    )
-    stat.save()
     run_id = stat.run_id
 
     ##########################
     ## create input and output folder
 
-    input_path = './dtm-input-sid{}_{}'.format(s_id,stat.pk)
-    output_path = './dtm-output-sid{}_{}'.format(s_id, stat.pk)
+    input_path = './dtm-input-sid{}_{}'.format(stat.psearch.id,stat.pk)
+    output_path = './dtm-output-sid{}_{}'.format(stat.psearch.id, stat.pk)
 
     if os.path.isdir(input_path):
         if call_to_blei_algorithm:
@@ -114,12 +102,12 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, extra_stopwords=set(),
     ## Get the features now
     print("Extracting word features...")
 
-    if language is "german":
+    if stat.language is "german":
         stemmer = SnowballStemmer("german")
         tokenizer = german_stemmer()
         stopword_list = [stemmer.stem(t) for t in stopwords.words("german")]
 
-    elif language is "english":
+    elif stat.language is "english":
         stemmer = SnowballStemmer("english")
         stopword_list = [stemmer.stem(t) for t in stopwords.words("english")]
         tokenizer = snowball_stemmer()
@@ -199,7 +187,7 @@ def run_blei_dtm(s_id, K, language="german", verbosity=1, extra_stopwords=set(),
         print("Calling Blei algorithm")
         subprocess.Popen([
             dtm_path,
-            "--ntopics={}".format(K),
+            "--ntopics={}".format(stat.K),
             "--mode=fit",
             "--rng_seed=0",
             "--initialize_lda=true",
