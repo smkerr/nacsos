@@ -35,6 +35,7 @@ def run_blei_dtm(stat, extra_stopwords=set(), call_to_blei_algorithm=True,
     t0 = time()
 
     run_id = stat.run_id
+    s = Search.objects.get(pk=stat.psearch.id)
 
     ##########################
     ## create input and output folder
