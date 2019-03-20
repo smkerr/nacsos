@@ -52,15 +52,23 @@ from tmv_app.tasks import *
 import time
 
 def super_check(user):
+    '''check if user is a superuser
+
+    Todo:
+        * Move to utils
+    '''
     return user.groups.filter(name__in=['superuser'])
 
 def handler404(request):
+    '''Returns 404 page on 404 request
+    '''
     return render(request, '404.html')
 
 
 @login_required
 def switch_mode(request):
-
+    '''Switch from normal scoping to snowballing and vice versa
+    '''
     if request.session['appmode']=='scoping':
         request.session['appmode']='snowballing'
         return HttpResponseRedirect(reverse('scoping:snowball'))
@@ -72,7 +80,11 @@ def switch_mode(request):
 
 
 class QueryCreate(CreateView):
-    ''' Create a new query by uploading a file '''
+    '''Create a new query by uploading a file
+
+    Processes and saves the file in the MEDIA_ROOT directory,
+    then uploads the documents into the database
+    '''
     model=Query
     form_class = QueryForm
 
@@ -139,7 +151,14 @@ class QueryCreate(CreateView):
 
 @login_required
 def index(request):
+    '''Homepage
 
+* Shows a list of projects that the authenticated user has access to
+* A form for adding a new project
+* Updates stats on my projects
+    '''
+
+    # Process addproject form
     if request.method == "POST":
         newproj=ProjectForm(request.POST)
         if newproj.is_valid():
@@ -150,8 +169,10 @@ def index(request):
             obj.role = "OW"
             obj.save()
 
+
     template = loader.get_template('scoping/index.html')
 
+    # Get my projects
     myproj = Project.objects.filter(users=request.user,projectroles__role="OW").annotate(
         role=Case(
             When(projectroles__role="OW",then=V('Owner')),
@@ -159,15 +180,14 @@ def index(request):
             output_field=models.CharField(),
         )
     )
-
-
-
+    # Put them in a table
     myproj = ProjectTable(myproj, order_by="id")
     RequestConfig(request).configure(myproj)
 
-
+    # A blank form to add a project
     newproj= ProjectForm()
 
+    # Get projects I have access to
     acproj = Project.objects.filter(projectroles__user=request.user).annotate(
         role=Case(
             When(projectroles__role="OW",then=V('Owner')),
@@ -178,9 +198,9 @@ def index(request):
             output_field=models.CharField(),
         )
     )
-
     pids = acproj.values_list('id',flat=True)
 
+    # Update stats on projects
     update_projs.delay(list(pids))
 
     acproj = ProjectTable(acproj, order_by="id")
@@ -196,6 +216,13 @@ def index(request):
 
 @login_required
 def project(request, pid):
+    '''Project homepage
+
+Shows menu linking to
+    * Query manager :view:`scoping.queries`,
+    * Topic model manager :view:`tmv_app.runs`,
+
+    '''
     deleteForm = ValidatePasswordForm(user=request.user)
     delete = "hidden"
     p = Project.objects.get(pk=pid)
@@ -285,6 +312,15 @@ def project(request, pid):
 
 @login_required
 def manage_duplicates(request, pid):
+    '''Duplicate manager
+
+Args:
+    pid (int): The ID of the project
+
+Opens the duplicate manager, from where, within a project, you can identify
+documents more similar than a given threshold, and identify these as duplicates
+
+    '''
 
     template = loader.get_template('scoping/duplicates.html')
     project = Project.objects.get(pk=pid)
@@ -300,6 +336,16 @@ def manage_duplicates(request, pid):
 
 @login_required
 def doc_info(request,did,did2):
+    '''Shows 2x basic document info for identifying duplication
+
+Args:
+    * did (int): The id of the first document
+    * did2 (int): The id of the second document
+
+Gets 2 documents, puts them in boxes side by side, for the user to choose
+which to keep and which to throw, if any
+
+    '''
     d = Doc.objects.get(pk=did)
     template = loader.get_template('scoping/snippets/doc_info.html')
     context = {
@@ -315,7 +361,25 @@ def doc_info(request,did,did2):
     return HttpResponse(template.render(context, request))
 
 @login_required
-def doc_merge(request,pid,d1,d2):
+def doc_merge(request,pid: int, d1: int, d2: int) -> HttpResponse:
+    """Merge duplicated documents
+
+Ajax function
+
+Adds all the info from the given project from the document 2 to document 1,
+removing it from all queries
+
+Args:
+    * pid (int): Project ID
+    * d1 (int): ID of Document to keep
+    * d2 (int): ID of Document to throw
+
+Todos:
+    * Remove docproject object?
+
+..
+
+    """
     p = Project.objects.get(pk=pid)
     keep = Doc.objects.get(pk=d1)
     throw = Doc.objects.get(pk=d2)
@@ -362,10 +426,28 @@ def doc_merge(request,pid,d1,d2):
             except django.db.utils.IntegrityError:
                 print("already exists")
             i.delete()
+    # Return a message saying "merged"
     return HttpResponse("merged")
 
 @login_required
 def find_duplicates(request, pid):
+    '''Find duplicate documents in a project
+
+An AJAX function to go out and find documents
+within a project that may be duplicates.
+
+Searches for pairs that have a jaccard similarity
+above the given threshold
+
+Args:
+    * pid (int): The ID of the project
+
+Returns JSON response with:
+    * The first pair of matching documents
+    * The percentage of documents searched
+    * matches False when there are no matches and everything has been searched
+
+    '''
     def doc_dict(d):
         return {k:v for k,v in d.__dict__.items() if k!="_state"}
     did = request.GET.get('did',None)
@@ -416,6 +498,13 @@ def find_duplicates(request, pid):
 
 @login_required
 def queries(request, pid):
+    ''' Query list
+
+Queries page for the given project
+    * Gets a table of queries in the project (through ajax function)
+    * Shows the query getter / uploader, depending on user credentials
+
+    '''
     ## Try a table with gets, use django filter?
     request.session['DEBUG'] = False
     request.session['appmode']='scoping'
@@ -423,22 +512,11 @@ def queries(request, pid):
     template = loader.get_template('scoping/queries.html')
 
     if int(pid) == 0:
-        queries = Query.objects.filter(
-            project__isnull=True
-        ).order_by('-id')
-
         users = User.objects.all().order_by('username')
-
         technologies  = Category.objects.all()
         p = None
-
     else:
         p = Project.objects.get(pk=pid)
-
-        queries = Query.objects.filter(
-            project=p,
-            creator=request.user
-        ).order_by('-id')
         users = User.objects.filter(
             projectroles__project=p
         ).order_by('username')
@@ -447,27 +525,13 @@ def queries(request, pid):
             project=p
         )
 
-    query = None
-
-    for q in queries:
-        q.tech = q.category
-        if q.category==None:
-            q.tech="None"
-        else:
-            q.tech=q.category.name
-        #print(q.tech)
-
     if request.user.username in ["galm","rogers","nemet"]:
         extended=True
     else:
         extended=False
 
-
     context = {
-      'queries'      : queries,
-      'query'        : query,
       'users'        : users,
-      'active_users' : users.filter(username=request.user.username),
       'techs'        : technologies,
       'appmode'      : request.session['appmode'],
       'extended'     : extended,
@@ -479,6 +543,12 @@ def queries(request, pid):
 
 @login_required
 def generate_query(request,pid,t):
+    '''Generate query of type
+
+Generates an internal query from a list of certain types
+related to the documents' ratings
+
+    '''
     project=Project.objects.get(pk=pid)
     q = Query(
         project=project,
@@ -550,6 +620,19 @@ def generate_query(request,pid,t):
 
 @login_required
 def query_table(request, pid):
+    '''Gets a table of queries
+
+An AJAX function to get the table of queries which are part of the
+:model:`scoping.Project` given in args and associated
+with the :model:`auth.User` and :model:`scoping.Category` objects
+passed as GET arguments
+
+Args:
+    pid (int): Project ID
+
+.. 
+
+    '''
     template = loader.get_template('scoping/snippets/query_table.html')
     p = Project.objects.get(pk=pid)
 
@@ -574,9 +657,6 @@ def query_table(request, pid):
         project=p
     )
 
-
-
-
     context = {
       'queries': queries,
       'project': p,
@@ -585,12 +665,20 @@ def query_table(request, pid):
 
     return HttpResponse(template.render(context, request))
 
-
-########################################################
-## Tech Homepage - list the technologies, form for adding new ones
-
 @login_required
 def categories(request, pid):
+    """ Category Homepage
+
+Lists the Categories part of the project. These can be edited here.
+
+A form for adding new categories
+
+Args:
+    pid (int): Project ID
+
+..
+
+    """
 
     template = loader.get_template('scoping/categories.html')
 
@@ -616,13 +704,13 @@ def categories(request, pid):
         except:
             pass
 
-    technologies = Category.objects.filter(project=pid).order_by('id')
+    categories = Category.objects.filter(project=pid).order_by('id')
 
     users = User.objects.all()
     refresh = False
     update_techs.delay(project.id)
     #subprocess.Popen(["python3", "/home/galm/software/tmv/BasicBrowser/update_techs.py"], stdout=subprocess.PIPE)
-    for t in technologies:
+    for t in categories:
         t.queries = t.query_set.count()
         tdocs = Doc.objects.filter(category=t)
         if refresh==True:
@@ -641,7 +729,7 @@ def categories(request, pid):
     catform = CategoryForm(prefix="add")
 
     context = {
-      'techs'    : technologies,
+      'techs'    : categories,
       'users'    : users,
       'project'  : project,
       'form'     :  catform
@@ -650,6 +738,11 @@ def categories(request, pid):
     return HttpResponse(template.render(context, request))
 
 def filter_categories(request,pid,level):
+    """Filter Categories
+
+Filter the categories in the project of the given level
+
+    """
     cats = Category.objects.filter(
         project_id=pid,level=level
     ).values('id','name')
@@ -660,6 +753,19 @@ def filter_categories(request,pid,level):
 ## edit query category or innovation
 @login_required
 def update_thing(request):
+    """Flexible update function
+
+Update an attribute or relationship
+
+GET Args:
+    * thing1 (string): The name of the model of the thing to be updated
+    * thing2 (string): The name of the attribute to be updated, or the name of a model, the relationship of which with the first thing is to be changed
+    * id1 (string): The ID of the thing to be updated
+    * id2 (string): Either the ID of the model of the relationship to be changed, or the value the attribute should be set to
+    * method (string): What to do, either "add", "remove", or "update"
+
+..
+    """
     thing1 = request.GET.get('thing1', None)
     thing2 = request.GET.get('thing2', None)
     id1 = request.GET.get('id1', None)

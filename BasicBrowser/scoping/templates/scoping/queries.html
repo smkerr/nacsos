@@ -17,7 +17,7 @@
           <p id="field_container">
           {% for u in users %}
               {% if u == user %}
-                <span class="field_name user active" name="{{u.id}}">{{ u.username }}</span>
+                <span id="thisuser" class="field_name user" name="{{u.id}}">{{ u.username }}</span>
               {% else %}
                 <span class="field_name user technology" name="{{u.id}}">{{ u.username }}</span>
               {% endif %}
@@ -181,33 +181,36 @@ $("#databaseSelect").change(function(){
     }
 })
 
-$(".field_name").click(function() {
-    $("body").css("cursor", "progress");
-    $(this).toggleClass('active')
-    users = []
-    techs = []
-    $(".field_name.user.active").each(function(){
-        users.push($(this).attr('name'))
-    })
-    $(".field_name.tech.active").each(function(){
-        techs.push($(this).attr('name'))
-    })
-    console.log(users)
-    console.log(techs)
+$(".field_name").click(get_table)
 
-    $.ajax({
-        url: "{% url 'scoping:query_table' project.id %}",
-        data: {
-            'users': users,
-            'techs': techs
-        },
-        success: function(res) {
-            $("#query_table").html(res)
-            $("body").css("cursor", "default");
-        }
-    })
-})
+function get_table() {
+  $("body").css("cursor", "progress");
+  $(this).toggleClass('active')
+  users = []
+  techs = []
+  $(".field_name.user.active").each(function(){
+      users.push($(this).attr('name'))
+  })
+  $(".field_name.tech.active").each(function(){
+      techs.push($(this).attr('name'))
+  })
+  console.log(users)
+  console.log(techs)
 
+  $.ajax({
+      url: "{% url 'scoping:query_table' project.id %}",
+      data: {
+          'users': users,
+          'techs': techs
+      },
+      success: function(res) {
+          $("#query_table").html(res)
+          $("body").css("cursor", "default");
+      }
+  })
+}
+
+$('#thisuser').click()
 
 
 $(".qtag").change(function() {
