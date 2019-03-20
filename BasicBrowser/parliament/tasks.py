@@ -201,6 +201,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         status=1
     )
     stat.save()
+    django.db.connections.close_all()
 
     if method in ['DT', 'dnmf']:
         print("Running dynamic NMF algorithm")
