@@ -51,6 +51,9 @@ class Topic(models.Model):
     """
     The default topic object. The title is usually set according to the top words
     It is linked to
+
+    Todo:
+        * blabla
     """
     title = models.CharField(max_length=80)
     score = models.FloatField(null=True)
