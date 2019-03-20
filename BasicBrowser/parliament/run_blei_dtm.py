@@ -113,7 +113,7 @@ def run_blei_dtm(stat, extra_stopwords=set(), call_to_blei_algorithm=True,
         stopword_list = [stemmer.stem(t) for t in stopwords.words("english")]
         tokenizer = snowball_stemmer()
     else:
-        print("Language not recognized.")
+        print("Language not recognized: {}".format(stat.language))
         return 1
 
     stopword_list = list(set(stopword_list) | set(extra_stopwords))
