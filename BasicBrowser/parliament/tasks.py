@@ -200,6 +200,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         top_chain_var=top_chain_var,
         status=1
     )
+    stat.save()
 
     if method in ['DT', 'dnmf']:
         print("Running dynamic NMF algorithm")
