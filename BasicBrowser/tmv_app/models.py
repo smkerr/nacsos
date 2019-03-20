@@ -130,6 +130,9 @@ class TopicIntrusion(models.Model):
 
 
 class DynamicTopic(models.Model):
+    """
+    Holds the title, score and other information about dynamic topic models (dynamic nmf).
+    """
     title = models.CharField(null=True, max_length=80)
     score = models.FloatField(null=True)
     share = models.FloatField(null=True)
@@ -152,12 +155,14 @@ class DynamicTopic(models.Model):
     def __unicode__(self):
         return str(self.title)
 
-
     def __str__(self):
         return str(self.title)
 
 
 class TimePeriod(models.Model):
+    """
+    Model for a general time period (could be related to a parliamentary period with start and end date)
+    """
     title = models.CharField(null=True, max_length=80)
     parlperiod = models.ForeignKey('parliament.ParlPeriod', null=True, on_delete=models.CASCADE)
     n = models.IntegerField()
@@ -170,6 +175,9 @@ class TimePeriod(models.Model):
 
 
 class TimeDocTotal(models.Model):
+    """
+
+    """
     period = models.ForeignKey(TimePeriod, on_delete=models.CASCADE)
     run = models.ForeignKey('RunStats', on_delete=models.CASCADE)
     n_docs = models.IntegerField(null=True)
