@@ -9,6 +9,9 @@ import scoping
 ## Political Structure
 
 class Parl(models.Model):
+    """
+    Describes parliaments
+    """
     LEVEL_CHOICES = (
         ('N','National'),
         ('R','Regional')
@@ -21,6 +24,9 @@ class Parl(models.Model):
       return self.country.name + " - " + self.get_level_display()
 
 class ParlPeriod(models.Model):
+    """
+    Describes parliamentary periods
+    """
     parliament = models.ForeignKey(Parl, on_delete=models.CASCADE)
     n = models.IntegerField()
     years = ArrayField(models.IntegerField(),null=True)
@@ -33,6 +39,9 @@ class ParlPeriod(models.Model):
 
 
 class Party(models.Model):
+    """
+    Describes political parties
+    """
     name = models.TextField()
     alt_names = ArrayField(models.TextField(),null=True)
     parliament = models.ForeignKey(Parl, on_delete=models.CASCADE,null=True)
@@ -44,6 +53,9 @@ class Party(models.Model):
         return self.name.upper()
 
 class Person(models.Model):
+    """
+    Describes a speaker in parliament, including information on names, active parliamentary periods and biographical details
+    """
     FEMALE = 1
     MALE = 2
 
@@ -120,6 +132,9 @@ class Person(models.Model):
         super(Person, self).save(*args, **kwargs)
 
 class SpeakerRole(models.Model):
+    """
+    Describes role of the speaker :model:`parliament.Person` in parliament
+    """
     name = models.TextField()
     alt_names = ArrayField(models.TextField(), null=True)
 
@@ -128,6 +143,9 @@ class SpeakerRole(models.Model):
 ## Texts
 
 class Document(models.Model):
+    """
+    A model for parliamentary plenary sessions
+    """
     parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE )
     sitting = models.IntegerField(null=True)
     date = models.DateField(null=True)
@@ -141,6 +159,9 @@ class Document(models.Model):
         return "{}, {}/{}, {}".format(self.doc_type, self.parlperiod.n, self.sitting, self.date)
 
 class Utterance(models.Model):
+    """
+    A model for speeches in parliament, associated with one :model:`parliament.Person`
+    """
     document = models.ForeignKey(Document, on_delete=models.CASCADE)
     speaker = models.ForeignKey(Person, on_delete=models.CASCADE)
     speaker_role = models.ForeignKey(SpeakerRole, null=True, on_delete=models.SET_NULL)
@@ -151,6 +172,9 @@ class Utterance(models.Model):
         return ' '.join([x.text for x in self.paragraph_set.all()])
 
 class Paragraph(models.Model):
+    """
+    A model for paragraphs within an utterance
+    """
     utterance = models.ForeignKey(Utterance, on_delete=models.CASCADE)
     text = models.TextField()
     search_matches = models.ManyToManyField('Search')
@@ -161,6 +185,9 @@ class Paragraph(models.Model):
         ordering = ['id']
 
 class Interjection(models.Model):
+    """
+    A model for interjections by others to a speech, associated with a :model:`parliament.Paragraph`
+    """
 
     APPLAUSE = 1
     SPEECH = 2
@@ -208,6 +235,9 @@ class Interjection(models.Model):
 
 
 class Constituency(models.Model):
+    """
+    A model describing the constituency of a :model:`parliament.Person`, or which area they represent
+    """
     name = models.TextField(null=True)
     number = models.IntegerField(null=True)
     region = models.ForeignKey(cities.models.Region, on_delete=models.CASCADE, null=True)
@@ -217,6 +247,11 @@ class Constituency(models.Model):
         return "Wahlkreis {}: {} ({})".format(self.number, self.name, self.region)
 
 class PartyList(models.Model):
+    """
+    A model describing members on the party list of each political party for each parliamentary period
+
+    Specific to German parliamentary electoral process
+    """
     name = models.TextField(null=True)
     region = models.ForeignKey(cities.models.Region, on_delete=models.CASCADE,null=True)
     parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
@@ -230,11 +265,21 @@ class PartyList(models.Model):
     #     return self.name
 
 class ListMembership(models.Model):
+    """
+    A model linking a :model:`parliament.Person` to membership on :model:`parliament.PartyList`
+    """
     person = models.ForeignKey(Person, on_delete=models.CASCADE)
     list = models.ForeignKey(PartyList, on_delete=models.CASCADE)
-    position = models
+    # position = models
 
 class Seat(models.Model):
+    """
+    A model describing how a :model:`Person` is elected into parliament
+
+    Specific to German parliamentary electoral process
+
+    Election can be through direct mandate from a :model:`parliament.Constituency`, via the :model:`parliament.PartyList`, or the Volksammer, an artefact from German reunificiation that is no longer in use today.
+    """
 
     DIRECT = 1
     LIST = 2
@@ -257,6 +302,14 @@ class Seat(models.Model):
 
 
 class ConstituencyVote1(models.Model):
+    """
+    A model describing the voting results for the elector's first vote in a federal election
+
+    The first vote allows the elector to directly elect a :model:`parliament.Person`
+    into a :model:`parliament.Constituency` for a :model:`parliament.ParlPeriod`
+
+    Specific to German parliamentary electoral process
+    """
     parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
     person = models.ForeignKey(Person, on_delete=models.CASCADE)
     constituency = models.ForeignKey(Constituency, on_delete=models.CASCADE)
@@ -267,6 +320,13 @@ class ConstituencyVote1(models.Model):
     proportion = models.FloatField(null=True)
 
 class ConstituencyVote2(models.Model):
+    """
+    A model describing the voting results for the elector's second vote in a federal election
+
+    The second vote allows the elector to vote for a political party for a :model:`parliament.ParlPeriod`, whose candidates are put together through the :model:`parliament.PartyList`. This determines who is elected into parliament from :model:`parliament.ListMembership`
+
+    Specific to German parliamentary electoral process
+    """
     parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
     party = models.ForeignKey(Party, on_delete=models.CASCADE)
     constituency = models.ForeignKey(Constituency, on_delete=models.CASCADE)
@@ -278,6 +338,9 @@ class ConstituencyVote2(models.Model):
 
 
 class SeatSum(models.Model):
+    """
+    A model describing the total sum of seats held by a :model:`parliament.Party` for a :model:`parliament.ParlPeriod`
+    """
     parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
     party = models.ForeignKey(Party, on_delete=models.CASCADE)
     seats = models.IntegerField()
@@ -285,6 +348,9 @@ class SeatSum(models.Model):
     majority = models.BooleanField()
 
 class Post(models.Model):
+    """
+    A model describing the position that a :model:`parliament.Person` holds in parliament
+    """
     title = models.TextField()
     person = models.ForeignKey(Person, on_delete=models.CASCADE)
     party = models.ForeignKey(Party, on_delete=models.CASCADE)
@@ -299,6 +365,9 @@ class Post(models.Model):
 ################################
 ## Data interpretation
 class Search(models.Model):
+    """
+    A model containing the results of a keyword search for either :model:`parliament.Utterance` or :model:`parliament.Paragraph` objects that contain the keyword
+    """
     title = models.TextField()
     text = models.TextField()
     parliament = models.ForeignKey(Parl, on_delete=models.CASCADE, null=True)
@@ -328,4 +397,3 @@ class Search(models.Model):
 
     search_object_type = models.IntegerField(choices=OBJECT_TYPES, default=PARAGRAPH)
     project = models.ForeignKey('scoping.Project', on_delete=models.CASCADE, null=True)
-

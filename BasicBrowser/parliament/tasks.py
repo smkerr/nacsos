@@ -198,8 +198,11 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         alpha=alpha,
         extra_stopwords=list(extra_stopwords),
         top_chain_var=top_chain_var,
-        status=1
+        status=1,
+        language=language
     )
+    stat.save()
+    django.db.connections.close_all()
 
     if method in ['DT', 'dnmf']:
         print("Running dynamic NMF algorithm")
@@ -234,12 +237,12 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
     else:
         n_features = stat.max_features
 
-    if language is "german":
+    if stat.language is "german":
         stemmer = SnowballStemmer("german")
         tokenizer = german_stemmer()
         stopword_list = [stemmer.stem(t) for t in stopwords.words("german")]
 
-    elif language is "english":
+    elif stat.language is "english":
         stemmer = SnowballStemmer("english")
         stopword_list = [stemmer.stem(t) for t in stopwords.words("english")]
         tokenizer = snowball_stemmer()
