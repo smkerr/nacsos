@@ -367,6 +367,9 @@ class RunStats(models.Model):
     fulltext  = models.BooleanField(default=False, help_text='do analysis on fullText? (dependent on availability)')
     citations = models.BooleanField(default=False, help_text='scale term scores by citations?')
 
+    # Additional information
+    language=models.TextField(null=True)
+    extra_stopwords = ArrayField(models.TextField(), null=True)
 
     query = models.ForeignKey('scoping.Query', null=True, on_delete=models.CASCADE)
     psearch = models.ForeignKey('parliament.Search',null=True, on_delete=models.CASCADE)
@@ -379,7 +382,6 @@ class RunStats(models.Model):
     topic_titles_current = models.NullBooleanField(default=False)
     topic_scores_current = models.NullBooleanField(default=False)
     topic_year_scores_current = models.NullBooleanField(default=False)
-
 
     ## Time spent
     nmf_time = models.FloatField(default=0)

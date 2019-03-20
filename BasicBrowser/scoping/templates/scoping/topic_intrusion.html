@@ -18,14 +18,22 @@
 
         <p>{{ti.doc.content}}
         <p>
-
+  <table class="table">
   {% for t in topics %}
-    <a class="btn p-2" href="{% url 'scoping:proc_topic_intrusion' ti.id t.id %}">
-    <button class="btn btn-secondary p-2">
-      {{t}}
-    </button>
-    </a>
+
+    <!-- <button class="btn btn-secondary p-2"> -->
+      <tr>
+        <td >
+          <a class="btn p-2" href="{% url 'scoping:proc_topic_intrusion' ti.id t.id %}">
+        <!-- <button class="btn btn-secondary p-0 m-0">select</button> -->
+        Select
+        </a>
+        {% for w in t.top_words %}
+          <td style="vertical-align:middle">{{w}}</td>
+        {% endfor %}
+
   {% endfor %}
+  </table>
 
   </div>
 </div>

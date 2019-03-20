@@ -2003,9 +2003,9 @@ def word_intrusion(request, run_id):
 def proc_word_intrusion(request,wid,tid):
     wi = WordIntrusion.objects.get(pk=wid)
     if tid == wi.intruded_word_id:
-        wi.score=0
-    else:
         wi.score=1
+    else:
+        wi.score=0
     wi.save()
     return HttpResponseRedirect(reverse(
         'scoping:word_intrusion',
@@ -2047,9 +2047,9 @@ def topic_intrusion(request, run_id):
 def proc_topic_intrusion(request,tid,top_id):
     ti = TopicIntrusion.objects.get(pk=tid)
     if top_id == ti.intruded_topic_id:
-        ti.score=0
-    else:
         ti.score=1
+    else:
+        ti.score=0
     ti.save()
     return HttpResponseRedirect(reverse(
         'scoping:topic_intrusion',

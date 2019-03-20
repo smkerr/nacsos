@@ -828,14 +828,11 @@ class Doc(models.Model):
         return super(self.__class__, self).delete(*args, **kwargs)
 
     def create_topicintrusion(self, user, run_id):
-        real_topics = self.doctopic_set.filter(run_id=run_id).order_by('-score')[:5]
+        real_topics = self.doctopic_set.filter(run_id=run_id).order_by('-score')[:3]
 
-        scores = np.array(tm.DocTopic.objects.filter(topic__run_id=run_id).values_list('score', flat=True))
-        q99 = np.quantile(scores, 0.99)
-        q50 = np.quantile(scores, 0.5)
         intruders = tm.Topic.objects.filter(
             doctopic__run_id = run_id,
-            doctopic__score__lt=q50,
+        ).exclude(
             doctopic__doc=self
         )
         if intruders.exists():
