@@ -132,6 +132,7 @@ class TopicIntrusion(models.Model):
 class DynamicTopic(models.Model):
     """
     Holds the title, score and other information about dynamic topic models (dynamic nmf).
+    todo: is this used only for dynamic nmf?
     """
     title = models.CharField(null=True, max_length=80)
     score = models.FloatField(null=True)
@@ -161,7 +162,7 @@ class DynamicTopic(models.Model):
 
 class TimePeriod(models.Model):
     """
-    Model for a general time period (could be related to a parliamentary period with start and end date)
+    Model for a general time period (can be related to a parliamentary period with start and end date)
     """
     title = models.CharField(null=True, max_length=80)
     parlperiod = models.ForeignKey('parliament.ParlPeriod', null=True, on_delete=models.CASCADE)
@@ -176,7 +177,7 @@ class TimePeriod(models.Model):
 
 class TimeDocTotal(models.Model):
     """
-
+    Aggregates scores from a :model:`tmv_app.TimePeriod`
     """
     period = models.ForeignKey(TimePeriod, on_delete=models.CASCADE)
     run = models.ForeignKey('RunStats', on_delete=models.CASCADE)
@@ -185,6 +186,9 @@ class TimeDocTotal(models.Model):
 
 
 class TimeDTopic(models.Model):
+    """
+    Holds the score of a :model:`tmv_app.DynamicTopic` within a :model:`tmv_app.TimePeriod`
+    """
     period = models.ForeignKey(TimePeriod, on_delete=models.CASCADE)
     dtopic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE)
     score = models.FloatField(default=0)
@@ -197,11 +201,18 @@ class TimeDTopic(models.Model):
 
 
 class TopicDTopic(models.Model):
+    """
+    Holds the score of a :model:`tmv_app.Topic` within a :model:`tmv_app.DynamicTopic`
+    """
     topic = models.ForeignKey('Topic', on_delete=models.CASCADE, null=True)
     dynamictopic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
     score = models.FloatField(null=True)
 
 class TopicCorr(models.Model):
+    """
+    Holds the correlation between two :model:`tmv_app.Topic` s
+    todo: specify which type of correlation?
+    """
     topic = models.ForeignKey('Topic', on_delete=models.CASCADE,null=True)
     topiccorr = models.ForeignKey('Topic', on_delete=models.CASCADE ,null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
@@ -213,6 +224,9 @@ class TopicCorr(models.Model):
         return str(self.title)
 
 class DynamicTopicCorr(models.Model):
+    """
+    Holds the correlation between two :model:`tmv_app.DynamicTopic` s
+    """
     topic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
     topiccorr = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
@@ -225,6 +239,9 @@ class DynamicTopicCorr(models.Model):
 
 
 class Term(models.Model):
+    """
+    Terms (tokens) of topic models
+    """
     title = models.CharField(max_length=100, db_index=True)
     run_id = models.ManyToManyField('RunStats')
 
@@ -235,10 +252,14 @@ class Term(models.Model):
 
 #################################################
 ## Docs are all in scoping now!
+## todo: think about how to link specific document types to a generalized document model
 
 #################################################
-## TopicYear holds per year topic totals
+
 class TopicYear(models.Model):
+    """
+    Holds total scores of topics per year
+    """
     topic = models.ForeignKey('Topic', on_delete=models.CASCADE,null=True)
     PY = models.IntegerField()
     score = models.FloatField(null=True)
@@ -248,6 +269,11 @@ class TopicYear(models.Model):
 
 
 class TopicARScores(models.Model):
+    """
+    Holds total scores of topics per Assessment period (:model:`scoping:AR`)
+
+    todo: could this be replaced by linking the general TimePeriod to AR?
+    """
     topic = models.ForeignKey('Topic', on_delete=models.CASCADE,null=True)
     ar = models.ForeignKey('scoping.AR', on_delete=models.CASCADE,null=True)
     score = models.FloatField(null=True)
@@ -255,8 +281,11 @@ class TopicARScores(models.Model):
     pgrowth = models.FloatField(null=True)
     pgrowthn = models.FloatField(null=True)
 
-# connecting topic with time periods
+
 class TopicTimePeriodScores(models.Model):
+    """
+    Holds scores of a :model:`tmv_app.Topic` from a :model:`tmv_app.TimePeriod`
+    """
     topic = models.ForeignKey('Topic', on_delete=models.CASCADE,null=True)
     period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE,null=True)
     score = models.FloatField(null=True)
@@ -266,6 +295,9 @@ class TopicTimePeriodScores(models.Model):
 
 
 class DynamicTopicARScores(models.Model):
+    """
+    Holds scores of a :model:`tmv_app.DynamicTopic` from an Assessment Period (:model:`scoping.AR`)
+    """
     topic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
     ar = models.ForeignKey('scoping.AR', on_delete=models.CASCADE,null=True)
     score = models.FloatField(null=True)
@@ -275,6 +307,9 @@ class DynamicTopicARScores(models.Model):
 
 
 class DynamicTopicTimePeriodScores(models.Model):
+    """
+    Holds scores of a :model:`tmv_app.DynamicTopic` from a :model:`TimePeriod`
+    """
     topic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
     period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE,null=True)
     score = models.FloatField(null=True)
@@ -286,6 +321,9 @@ class DynamicTopicTimePeriodScores(models.Model):
 #################################################
 ## Separate topicyear for htopic
 class HTopicYear(models.Model):
+    """
+    todo
+    """
     topic = models.ForeignKey('HTopic', on_delete=models.CASCADE,null=True)
     PY = models.IntegerField()
     score = models.FloatField()
@@ -298,7 +336,9 @@ class HTopicYear(models.Model):
 
 
 class DocTopic(models.Model):
-    #doc = models.ForeignKey(Doc, null=True)
+    """
+    Relates :model:`scoping.Doc` or objects from parliament (paragraphs, speeches) with :model:`tmv_app.Topics` and holds the corresponding topic scores
+    """
     doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.CASCADE)
     par = models.ForeignKey('parliament.Paragraph',null=True, on_delete=models.CASCADE)
     ut = models.ForeignKey('parliament.Utterance',null=True, on_delete=models.CASCADE)
@@ -308,6 +348,9 @@ class DocTopic(models.Model):
     run_id = models.IntegerField(db_index=True)
 
 class DocDynamicTopic(models.Model):
+    """
+    Relates :model:`scoping.Doc` with :model:`tmv_app.Topic` and holds the corresponding topic score
+    """
     doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.CASCADE)
     topic = models.ForeignKey('DynamicTopic',null=True, on_delete=models.CASCADE)
     score = models.FloatField()
@@ -315,6 +358,9 @@ class DocDynamicTopic(models.Model):
 
 
 class TopicTerm(models.Model):
+    """
+    Relates :model:`tmv_app.Topic` with :model:`tmv_app.Term` and holds the corresponding term score
+    """
     topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
     term = models.ForeignKey('Term', on_delete=models.CASCADE,null=True)
     PY = models.IntegerField(db_index=True,null=True)
@@ -322,39 +368,40 @@ class TopicTerm(models.Model):
     run_id = models.IntegerField(db_index=True)
 
 class DynamicTopicTerm(models.Model):
+    """
+    Relates :model:`tmv_app.DynamicTopic` with :model:`tmv_app.Term` and holds the corresponding term score
+    """
     topic = models.ForeignKey('DynamicTopic', null=True, on_delete=models.CASCADE)
     term = models.ForeignKey('Term', on_delete=models.CASCADE, null=True)
     PY = models.IntegerField(db_index=True, null=True)
     score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
 
-
-
-#################################################
-## Not sure what this does???????? not actually used,
-## but should it be? Yes this is useful
-class DocTerm(models.Model):
-    doc = models.IntegerField()
-    term = models.IntegerField()
-    score = models.FloatField()
-
-
 class KFold(models.Model):
+    """
+    Stores information from K-fold model validation (see tasks.py: function k_fold)
+    """
     model = models.ForeignKey('RunStats', on_delete=models.CASCADE)
     K = models.IntegerField()
     error = models.FloatField(null=True)
 
 
 class TermPolarity(models.Model):
+    """
+    Records the polarity of :model:`tmv_app:Term` (for sentiment analysis using a dictionary approach)
+    """
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
     polarity = models.FloatField(null=True)
-    POS = models.TextField(null=True)
+    POS = models.TextField(null=True, verbose_name="part of speech")
     source = models.TextField()
 
 
 #################################################
 ## RunStats and Settings....
 class RunStats(models.Model):
+    """
+    Hold all meta-information on topic model runs
+    """
     run_id = models.AutoField(primary_key=True)
 
     ##Inputs
@@ -376,11 +423,11 @@ class RunStats(models.Model):
     citations = models.BooleanField(default=False, help_text='scale term scores by citations?')
 
     # Additional information
-    language=models.TextField(null=True)
-    extra_stopwords = ArrayField(models.TextField(), null=True)
+    language=models.TextField(null=True, help_text='language of the documents that have been analyzed (also used for stopword identification)')
+    extra_stopwords = ArrayField(models.TextField(), null=True, help_text='list of stopwords that are used additionally to the standard ones')
 
-    query = models.ForeignKey('scoping.Query', null=True, on_delete=models.CASCADE)
-    psearch = models.ForeignKey('parliament.Search',null=True, on_delete=models.CASCADE)
+    query = models.ForeignKey('scoping.Query', null=True, on_delete=models.CASCADE, help_text='relation to the scoping search object')
+    psearch = models.ForeignKey('parliament.Search',null=True, on_delete=models.CASCADE, help_text='relation to the parliamentary search object')
 
     ## Progress
     process_id = models.IntegerField(null=True)
@@ -404,11 +451,11 @@ class RunStats(models.Model):
     )
     status = models.IntegerField(
         choices = status_choices,
-        default = 0
+        default = 0,
+        help_text='status of the model execution'
     )
 
-
-    parent_run_id = models.IntegerField(null=True)
+    parent_run_id = models.IntegerField(null=True, help_text='')
 
     docs_seen = models.IntegerField(null=True)
     notes = models.TextField(null=True)
@@ -453,6 +500,10 @@ class RunStats(models.Model):
 
 
 class Settings(models.Model):
+    """
+    todo: what is this?
+    used in utils/db.py and BasisBrowser/db.py
+    """
     run_id = models.IntegerField()
     doc_topic_score_threshold = models.FloatField()
     doc_topic_scaled_score = models.BooleanField()
