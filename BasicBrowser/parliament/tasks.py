@@ -175,7 +175,7 @@ def combine_searches(s_ids):
 
 @shared_task
 def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha=0.01,
-           extra_stopwords=set(), **kwargs):
+           extra_stopwords=set(), top_chain_var=None, **kwargs):
 
     print("starting topic model with method = {}, K = {}, language = {}, max_df = {}, min_df = {}, alpha = {}".format(
             method, K, language, max_df, min_df, alpha))
@@ -183,7 +183,8 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
 
     if method in ['DT', 'dnmf', 'BT', 'BleiDTM'] and max_features == 0:
         max_features = 20000
-
+    if method in ['BT', 'BleiDTM'] and top_chain_var is None:
+        top_chain_var = 0.005
 
     s = Search.objects.get(pk=s_id)
     stat = RunStats(
@@ -196,6 +197,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         max_iter=5,
         alpha=alpha,
         extra_stopwords=list(extra_stopwords),
+        top_chain_var=top_chain_var,
         status=1
     )
 
