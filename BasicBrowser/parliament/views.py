@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django_tables2.config import RequestConfig
 from django.db.models import Q, Count, Func, F, Sum, Value, Case, When, IntegerField
-from parliament.models import *
+from .models import *
 import twitter.models as tm
 from .tables import *
 from .forms import *
@@ -17,6 +17,13 @@ import datetime
 # Create your views here.
 @login_required
 def index(request):
+    """
+    Displays all available parliaments
+
+    **Template:**
+
+    :template:`parliament/index.html`
+    """
 
     template = loader.get_template('parliament/index.html')
 
@@ -34,6 +41,12 @@ def index(request):
 
 
 def person_table(persons):
+    """
+    Summarises actions of :model:`parliament.Person` in a parliament
+
+Todo:
+    * Move to utils
+    """
     persons = persons.annotate(
         contributions=Count('utterance'),
         words=Sum('utterance__paragraph__word_count'),
@@ -52,6 +65,29 @@ def person_table(persons):
 
 @login_required
 def parliament(request,pid):
+    """
+    Displays Parliament information
+
+    Displays information on :model:`parliament.ParlPeriod`, :model:`parliament.Party`, and :model:`parliament.Person` for each parliament :model:`parliament.Parl`
+
+    **Context**
+
+    ``ps``
+        A table displaying all parliamentary periods and associated documents
+
+    ``parl``
+        An instance of :model:`parliament.Parl`
+
+    ``persons``
+        A table displaying all parliamentarians in :model:`parliament.Parl`
+
+    ``parties``
+        A table displaying all political parties in :model:`parliament.Parl` and number of parliamentarians in each party
+
+    **Template:**
+
+    :template:`parliament/parliament.html`
+    """
 
     template = loader.get_template('parliament/parliament.html')
 
@@ -88,6 +124,21 @@ def parliament(request,pid):
 
 @login_required
 def parlperiod(request,pid):
+    """
+    Displays documents from one parliamentary period
+
+    **Context**
+
+    ``ps``
+        An instance of :model:`parliament.ParlPeriod`
+
+    ``docs``
+        A table displaying the documents in :model:`parliament.ParlPeriod`
+
+    **Template:**
+
+    :template:`parliament/parlperiod.html`
+    """
 
     template = loader.get_template('parliament/parlperiod.html')
 
@@ -107,6 +158,21 @@ def parlperiod(request,pid):
 
 @login_required
 def document(request,did,page=1):
+    """
+    Displays content of document, comprising speeches in parliament
+
+    **Context**
+
+    ``uts``
+        Displays all :model:`parliament.Utterance` objects associated with one document
+
+    ``document``
+        An instance of :model:`parliament.Document`
+
+    **Template:**
+
+    :template:`parliament/document.html`
+    """
 
     template = loader.get_template('parliament/document.html')
 
@@ -130,6 +196,25 @@ def document(request,did,page=1):
 
 @login_required
 def utterance(request, ut_id):
+    """
+    Displays utterance (speech) from one document
+
+    **Context**
+
+    ``uts``
+        Displays all :model:`parliament.Paragraph` objects associated with one utterance
+
+    ``document``
+        An instance of :model:`parliament.Document`
+
+    ``ut_id``
+        Identification number associated with utterance
+
+    **Template:**
+
+    :template:`parliament/document.html`
+    """
+
     template = loader.get_template('parliament/utterance.html')
 
     uts = Utterance.objects.filter(id=ut_id)
@@ -151,6 +236,28 @@ def utterance(request, ut_id):
 
 @login_required
 def paragraph(request, par_id):
+    """
+    Displays paragraph from one utterance (speech)
+
+    **Context**
+
+    ``par``
+        An instance of :model:`parliament.Paragraph`
+
+    ``speaker``
+        Associated speaker, :model:`parliament.Person` with paragraph
+
+    ``document``
+        Associated document, :model:`parliament.Document` with paragraph
+
+    ``utterance``
+        Associated utterance, :model:`parliament.Utterance` with paragraph
+
+    **Template:**
+
+    :template:`parliament/paragraph.html`
+    """
+
     template = loader.get_template('parliament/paragraph.html')
 
     par = Paragraph.objects.get(id=par_id)
@@ -169,7 +276,21 @@ def paragraph(request, par_id):
 # list of all searches
 @login_required
 def search(request):
+    """
+    Displays all searches made
 
+    **Context**
+
+    ``searchform``
+        An search form where the search results can be queried by either their title or the search text used
+
+    ``searches``
+        A table displaying all the searches made
+
+    **Template:**
+
+    :template:`parliament/search.html`
+    """
     template = loader.get_template('parliament/search.html')
 
     if request.method=="POST":
@@ -210,9 +331,41 @@ def search_pars(request,sid):
     return HttpResponse(template.render(context, request))
 
 
-# page for listing all models for a given search
 @login_required
 def search_home(request, sid):
+    """
+    Displays all models for a given search
+
+    **Context**
+
+    ``search``
+        Identification number associated with search object
+
+    ``search_title``
+        Title associated with search object
+
+    ``tm_table``
+        A table displaying all topic models associated with search object
+
+    ``count``
+        Number of occurrences of utterances or paragraphs associated with search object
+
+    ``graph``
+        A list of number of utterances or paragraphs associated with search object in each month
+
+    ``s``
+        An instance of :model:`parliament.Search`
+
+    ``stat``
+        An instance of :model:`tmv_app.RunStats` associated with search
+
+    ``topics``
+        All topics associated with ``stat``
+
+    **Template:**
+
+    :template:`parliament/search-home.html`
+    """
 
     template = loader.get_template('parliament/search-home.html')
 
