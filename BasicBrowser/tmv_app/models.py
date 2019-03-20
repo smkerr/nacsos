@@ -380,7 +380,6 @@ class RunStats(models.Model):
     topic_scores_current = models.NullBooleanField(default=False)
     topic_year_scores_current = models.NullBooleanField(default=False)
 
-
     ## Time spent
     nmf_time = models.FloatField(default=0)
     tfidf_time = models.FloatField(default=0)

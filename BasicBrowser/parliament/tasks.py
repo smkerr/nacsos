@@ -195,7 +195,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         max_features=max_features,
         max_iter=5,
         alpha=alpha,
-        extra_stopwords=extra_stopwords,
+        extra_stopwords=list(extra_stopwords),
         status=1
     )
 
