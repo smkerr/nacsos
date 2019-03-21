@@ -136,7 +136,7 @@ class Command(BaseCommand):
 
             elif stat.psearch:
                 if hasattr(period, 'start_date'):
-                    ytopics = ytopics.filter(ut__document__date__gte=period.start_date,
+                    ytopics = dts.filter(ut__document__date__gte=period.start_date,
                                              ut__document__date__lte=period.end_date)
 
                 elif hasattr(period, 'ys'):
