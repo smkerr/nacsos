@@ -135,11 +135,11 @@ class Command(BaseCommand):
                 ytopics = dts.filter(doc__PY__in=ys)
 
             elif stat.psearch:
-                if hasattr(period, 'start_date'):
-                    ytopics = dts.filter(ut__document__date__gte=period.start_date,
+                if period.start_date is not None:
+                        ytopics = dts.filter(ut__document__date__gte=period.start_date,
                                              ut__document__date__lte=period.end_date)
 
-                elif hasattr(period, 'ys'):
+                elif period.ys is not None:
                     ys = period.ys
                     #ytopics = dts.filter(ut__document__date__year__in=ys)
                     ytopics = dts.filter(ut__document__parlperiod__n__in=ys)
