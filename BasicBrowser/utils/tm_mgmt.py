@@ -282,7 +282,7 @@ def update_bdtopics(run_id):
                 topic = topic,
                 period = tp
             )
-            print(created)
+            # print(created)
             time_doc_total = TimeDocTotal.objects.get(period=tp,run=stats)
             topic_time_period_scores.score = tpt['score']
             topic_time_period_scores.share = tpt['score'] / time_doc_total.dt_score
