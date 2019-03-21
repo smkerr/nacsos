@@ -438,3 +438,30 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
 
     return 0
 
+
+def add_dates_to_parlperiods():
+    """
+    adds the dates of the first and last documents related to a ParlPeriod to the ParlPeriod object
+    """
+    pps = ParlPeriod.objects.all()
+
+    for pp in pps:
+        print(pp)
+        try:
+            doc_date_first = Document.objects.filter(parlperiod=pp).order_by('date').first().date
+            print(doc_date_first)
+            pp.start_date = doc_date_first
+            pp.save()
+        except:
+            print("start date attribution did not work")
+            pass
+        try:
+            doc_date_last = Document.objects.filter(parlperiod=pp).order_by('date').last().date
+            print(doc_date_last)
+            pp.end_date = doc_date_last
+            pp.save()
+        except:
+            print("stop date attribution did not work")
+            pass
+
+    return 0
