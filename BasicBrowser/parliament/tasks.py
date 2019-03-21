@@ -208,7 +208,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         print("Running dynamic NMF algorithm")
         run_dynamic_nmf(stat, **kwargs)
         return 0
-    elif method in ['BT', 'BleiDTM']:
+    elif method in ['BD', 'BleiDTM']:
         print("Running Blei DTM algorithm")
         run_blei_dtm(stat, **kwargs)
         return 0
