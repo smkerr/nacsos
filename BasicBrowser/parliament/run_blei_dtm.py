@@ -40,9 +40,9 @@ def run_blei_dtm(stat, call_to_blei_algorithm=True,
     :return: 0 if successful, 1 otherwise
     """
 
-    print("starting topic model with method = {}, K = {}, language = {}, max_df = {}, min_df = {}, alpha = {}".format(
-            stat.method, stat.K, stat.language, stat.max_df, stat.min_df, stat.alpha))
-    print("extra stopwords: {}".format(stat.extra_stopwords))
+    print("starting topic model for runstat with settings:")
+    for field in stat._meta.fields:
+        print("{}: {}".format(field.name, getattr(stat, field.name)))
 
     run_id = stat.run_id
     s = Search.objects.get(pk=stat.psearch.id)

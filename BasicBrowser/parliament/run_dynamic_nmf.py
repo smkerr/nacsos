@@ -40,9 +40,9 @@ def run_dynamic_nmf(stat):
     :return: 0 if successful, 1 otherwise
     """
 
-    print("starting topic model with method = {}, K = {}, language = {}, max_df = {}, min_df = {}, alpha = {}".format(
-            stat.method, stat.K, stat.language, stat.max_df, stat.min_df, stat.alpha))
-    print("extra stopwords: {}".format(stat.extra_stopwords))
+    print("starting topic model for runstat with settings:")
+    for field in stat._meta.fields:
+        print("{}: {}".format(field.name, getattr(stat, field.name)))
 
     t0 = time()
 

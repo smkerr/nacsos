@@ -209,9 +209,9 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         run_blei_dtm(stat, **kwargs)
         return 0
 
-    print("starting topic model with method = {}, K = {}, language = {}, max_df = {}, min_df = {}, alpha = {}".format(
-            stat.method, stat.K, stat.language, stat.max_df, stat.min_df, stat.alpha))
-    print("extra stopwords: {}".format(stat.extra_stopwords))
+    print("starting topic model for runstat with settings:")
+    for field in stat._meta.fields:
+        print("{}: {}".format(field.name, getattr(stat, field.name)))
 
     start_time = time.time()
 
