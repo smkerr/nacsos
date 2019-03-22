@@ -218,17 +218,30 @@ def yearly_topic_term(topic_id, run_id):
 @shared_task
 def get_coherence(run_id):
     stat = RunStats.objects.get(run_id=run_id)
-    qid = stat.query.id
     K = stat.K
 
-    if stat.fulltext:
-        docs = Doc.objects.filter(query=qid,fulltext__iregex='\w')
-    else:
-        docs = Doc.objects.filter(query=qid,content__iregex='\w')
+    if stat.query != None:
+        qid = stat.query.id
 
-    abstracts, docsizes, ids = proc_docs(docs, stoplist, stat.fulltext)
+        if stat.fulltext:
+            docs = Doc.objects.filter(query=qid,fulltext__iregex='\w')
+        else:
+            docs = Doc.objects.filter(query=qid,content__iregex='\w')
 
-    sentences = [get_sentence(x) for x in abstracts]
+        abstracts, docsizes, ids = proc_docs(docs, stoplist, stat.fulltext)
+
+        sentences = [get_sentence(x) for x in abstracts]
+
+    elif stat.psearch != None:
+        sid = stat.psearch.id
+        uts = pm.Utterance.objects.filter(search_matches=sid)
+        texts = []
+        for ut in uts:
+            pars = ut.paragraph_set.all()
+            texts.append(" ".join([x.text for x in pars]))
+
+        sentences = [get_sentence_g(x) for x in texts]
+
     model = gensim.models.Word2Vec(sentences)
     validation_measure = WithinTopicMeasure(
         ModelSimilarity(model)
