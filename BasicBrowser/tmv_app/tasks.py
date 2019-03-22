@@ -269,6 +269,61 @@ def get_coherence(run_id):
     return
 
 @shared_task
+def get_exclusivity(run_id, word_num=10, frex_w=.7):
+    """
+    Calculates exclusivity for a topic model based on the association between word and topic
+
+    Adapted from exclusivity function from stm package in R
+    """
+    stat = RunStats.objects.get(run_id=run_id)
+    K = stat.K
+    w = frex_w
+
+    # create a dataframe from run_id
+    tts = TopicTerm.objects.filter(run_id=run_id)
+
+    tts_n = tts.values('topic__id').annotate(
+        n = Sum('score'),
+        term = F('term__title')
+    ).order_by('topic', '-n')
+
+    df = pd.DataFrame.from_dict(list(tts_n))
+
+    df_p = df.pivot(index='topic__id', columns='term', values='n')
+    df_p2 = df.pivot(index='term', columns='topic__id', values='n')
+
+    # normalise by sum of terms across topics
+    df_p_sum = df_p.sum(axis=0)
+    mat = df_p/df_p_sum
+    mat = mat.transpose()
+
+    # find exclusivity by dividing individual TopicTerm score by sum of score of Term across all topics
+    ex = mat.rank(axis=1)/mat.count(axis=0)
+    fr = df_p2.rank(axis=1)/df_p2.count(axis=0)
+
+    # calculate frex using formula specified
+    frex = 1/((w/ex)+((1-w)/fr))
+
+    # sort frex results by descending values in each column, and extract n results based on pre-defined number
+    frex_sort = -np.sort(-frex.values, axis=0)[1:word_num]
+    frex_sort0 = np.nan_to_num(frex_sort)
+
+    # return as sum of frex scores for top 10 terms in all topics
+    out = [None]*K
+
+    for i in range(0,K):
+        out[i] = sum(frex_sort0[:,i])
+
+    out_sum = sum(out)
+
+    # normalise by topic number
+    exclusivity = out_sum/K
+
+    stat.exclusivity = exclusivity
+    stat.save()
+
+
+@shared_task
 def k_fold(run_id,k_folds):
     stat = RunStats.objects.get(run_id=run_id)
     qid = stat.query.id
