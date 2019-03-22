@@ -4,6 +4,7 @@ from .models import *
 from django.db.models import Q, F, Sum, Count, FloatField, Case, When
 
 import numpy as np
+import pandas as pd
 from sklearn.decomposition import NMF, LatentDirichletAllocation as LDA
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from scipy.sparse import csr_matrix, find
