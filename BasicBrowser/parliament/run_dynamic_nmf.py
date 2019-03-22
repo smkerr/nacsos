@@ -33,6 +33,16 @@ from parliament.utils import merge_utterance_paragraphs
 
 # run dynamic nmf
 def run_dynamic_nmf(stat):
+    """
+    Run dynamic NMF model on utterances (speeches) or paragraphs from the parliament data
+
+    :param stat: RunStats object with the parameters to run the model with
+    :return: 0 if successful, 1 otherwise
+    """
+
+    print("starting topic model with method = {}, K = {}, language = {}, max_df = {}, min_df = {}, alpha = {}".format(
+            stat.method, stat.K, stat.language, stat.max_df, stat.min_df, stat.alpha))
+    print("extra stopwords: {}".format(stat.extra_stopwords))
 
     t0 = time()
 

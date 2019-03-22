@@ -177,10 +177,6 @@ def combine_searches(s_ids):
 def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha=0.01,
            extra_stopwords=set(), top_chain_var=None, **kwargs):
 
-    print("starting topic model with method = {}, K = {}, language = {}, max_df = {}, min_df = {}, alpha = {}".format(
-            method, K, language, max_df, min_df, alpha))
-    print("extra stopwords: {}".format(extra_stopwords))
-
     if method in ['DT', 'dnmf', 'BD', 'BleiDTM'] and max_features == 0:
         max_features = 20000
     if method in ['BD', 'BleiDTM'] and top_chain_var is None:
@@ -212,6 +208,10 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         print("Running Blei DTM algorithm")
         run_blei_dtm(stat, **kwargs)
         return 0
+
+    print("starting topic model with method = {}, K = {}, language = {}, max_df = {}, min_df = {}, alpha = {}".format(
+            stat.method, stat.K, stat.language, stat.max_df, stat.min_df, stat.alpha))
+    print("extra stopwords: {}".format(stat.extra_stopwords))
 
     start_time = time.time()
 
@@ -250,7 +250,8 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         print("Language not recognized.")
         return 1
 
-    stopword_list = list(set(stopword_list) | set(extra_stopwords))
+    if stat.extra_stopwords:
+        stopword_list = list(set(stopword_list) | set(stat.extra_stopwords))
 
     if method in ["NM", "nmf"]:
         if verbosity > 0:
