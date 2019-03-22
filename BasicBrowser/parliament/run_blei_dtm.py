@@ -29,7 +29,7 @@ from parliament.utils import merge_utterance_paragraphs
 
 
 # run the dynamic topic model with the algorithm by Blei
-def run_blei_dtm(stat, extra_stopwords=set(), call_to_blei_algorithm=True,
+def run_blei_dtm(stat, call_to_blei_algorithm=True,
                  dtm_path="/home/galm/software/dtm/dtm/main"):
 
     t0 = time()
@@ -116,7 +116,8 @@ def run_blei_dtm(stat, extra_stopwords=set(), call_to_blei_algorithm=True,
         print("Language not recognized: {}".format(stat.language))
         return 1
 
-    stopword_list = list(set(stopword_list) | set(extra_stopwords))
+    if stat.extra_stopwords:
+        stopword_list = list(set(stopword_list) | set(stat.extra_stopwords))
 
     vectorizer = CountVectorizer(max_df=stat.max_df,
                                  min_df=stat.min_freq,

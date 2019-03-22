@@ -32,7 +32,7 @@ from parliament.utils import merge_utterance_paragraphs
 
 
 # run dynamic nmf
-def run_dynamic_nmf(stat,  extra_stopwords=set()):
+def run_dynamic_nmf(stat):
 
     t0 = time()
 
@@ -68,7 +68,8 @@ def run_dynamic_nmf(stat,  extra_stopwords=set()):
         print("Language not recognized.")
         return 1
 
-    stopword_list = list(set(stopword_list) | set(extra_stopwords))
+    if stat.extra_stopwords:
+        stopword_list = list(set(stopword_list) | set(stat.extra_stopwords))
 
 
     time_range = sorted([wp['n'] for wp in wps])
