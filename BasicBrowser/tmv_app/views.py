@@ -394,17 +394,13 @@ def dynamic_topic_detail(request,topic_id):
     ).distinct().order_by('year')
 
     for t in wtopics:
-        if t.top_words is not None:
-        #if "x" is "y":
-            t.tts = t.top_words
-        else:
-            t.tts = Term.objects.filter(
-                topicterm__topic=t,
-                #run_id=run_id,
-                topicterm__score__gt=0.00001
-            ).order_by('-topicterm__score')[:10].annotate(
-                score=F('topicterm__score')
-            )
+        t.tts = Term.objects.filter(
+            topicterm__topic=t,
+            #run_id=run_id,
+            topicterm__score__gt=0.00001
+        ).order_by('-topicterm__score')[:10].annotate(
+            score=F('topicterm__score')
+        )
 
         score = TopicDTopic.objects.get(
             topic=t,dynamictopic=topic
