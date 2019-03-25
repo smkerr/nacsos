@@ -29,10 +29,20 @@ from parliament.utils import merge_utterance_paragraphs
 
 
 # run the dynamic topic model with the algorithm by Blei
-def run_blei_dtm(stat, extra_stopwords=set(), call_to_blei_algorithm=True,
+def run_blei_dtm(stat, call_to_blei_algorithm=True,
                  dtm_path="/home/galm/software/dtm/dtm/main"):
+    """
+    Run dynamic NMF model on utterances (speeches) or paragraphs from the parliament data
 
-    t0 = time()
+    :param stat:  RunStats object with the parameters to run the model with
+    :param call_to_blei_algorithm: boolean whether to call the blei algorithm or not
+    :param dtm_path: path to the dtm binary
+    :return: 0 if successful, 1 otherwise
+    """
+
+    print("starting topic model for runstat with settings:")
+    for field in stat._meta.fields:
+        print("{}: {}".format(field.name, getattr(stat, field.name)))
 
     run_id = stat.run_id
     s = Search.objects.get(pk=stat.psearch.id)
@@ -116,7 +126,8 @@ def run_blei_dtm(stat, extra_stopwords=set(), call_to_blei_algorithm=True,
         print("Language not recognized: {}".format(stat.language))
         return 1
 
-    stopword_list = list(set(stopword_list) | set(extra_stopwords))
+    if stat.extra_stopwords:
+        stopword_list = list(set(stopword_list) | set(stat.extra_stopwords))
 
     vectorizer = CountVectorizer(max_df=stat.max_df,
                                  min_df=stat.min_freq,
@@ -186,6 +197,8 @@ def run_blei_dtm(stat, extra_stopwords=set(), call_to_blei_algorithm=True,
 
     if call_to_blei_algorithm:
         print("Calling Blei algorithm")
+
+        process_output = open(os.path.join(output_path, 'blei_dtm_algorithm.log'), 'w')
         subprocess.Popen([
             dtm_path,
             "--ntopics={}".format(stat.K),
@@ -197,9 +210,9 @@ def run_blei_dtm(stat, extra_stopwords=set(), call_to_blei_algorithm=True,
             "--top_chain_var={}".format(stat.top_chain_var),
             "--alpha={}".format(stat.alpha),
             "--lda_sequence_min_iter=10",
-            "--lda_sequence_max_iter=20",
+            "--lda_sequence_max_iter={}".format(stat.max_iter),
             "--lda_max_em_iter=20"
-        ]).wait()
+        ], stdout=process_output, stderr=process_output).wait()
         print("Blei algorithm done")
 
     ##########################

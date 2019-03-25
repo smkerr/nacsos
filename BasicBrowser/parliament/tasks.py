@@ -177,13 +177,9 @@ def combine_searches(s_ids):
 def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha=0.01,
            extra_stopwords=set(), top_chain_var=None, **kwargs):
 
-    print("starting topic model with method = {}, K = {}, language = {}, max_df = {}, min_df = {}, alpha = {}".format(
-            method, K, language, max_df, min_df, alpha))
-    print("extra stopwords: {}".format(extra_stopwords))
-
-    if method in ['DT', 'dnmf', 'BT', 'BleiDTM'] and max_features == 0:
+    if method in ['DT', 'dnmf', 'BD', 'BleiDTM'] and max_features == 0:
         max_features = 20000
-    if method in ['BT', 'BleiDTM'] and top_chain_var is None:
+    if method in ['BD', 'BleiDTM'] and top_chain_var is None:
         top_chain_var = 0.005
 
     s = Search.objects.get(pk=s_id)
@@ -208,10 +204,14 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         print("Running dynamic NMF algorithm")
         run_dynamic_nmf(stat, **kwargs)
         return 0
-    elif method in ['BT', 'BleiDTM']:
+    elif method in ['BD', 'BleiDTM']:
         print("Running Blei DTM algorithm")
         run_blei_dtm(stat, **kwargs)
         return 0
+
+    print("starting topic model for runstat with settings:")
+    for field in stat._meta.fields:
+        print("{}: {}".format(field.name, getattr(stat, field.name)))
 
     start_time = time.time()
 
@@ -250,7 +250,8 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         print("Language not recognized.")
         return 1
 
-    stopword_list = list(set(stopword_list) | set(extra_stopwords))
+    if stat.extra_stopwords:
+        stopword_list = list(set(stopword_list) | set(stat.extra_stopwords))
 
     if method in ["NM", "nmf"]:
         if verbosity > 0:
@@ -438,3 +439,30 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
 
     return 0
 
+
+def add_dates_to_parlperiods():
+    """
+    adds the dates of the first and last documents related to a ParlPeriod to the ParlPeriod object
+    """
+    pps = ParlPeriod.objects.all()
+
+    for pp in pps:
+        print(pp)
+        try:
+            doc_date_first = Document.objects.filter(parlperiod=pp).order_by('date').first().date
+            print(doc_date_first)
+            pp.start_date = doc_date_first
+            pp.save()
+        except:
+            print("start date attribution did not work")
+            pass
+        try:
+            doc_date_last = Document.objects.filter(parlperiod=pp).order_by('date').last().date
+            print(doc_date_last)
+            pp.end_date = doc_date_last
+            pp.save()
+        except:
+            print("stop date attribution did not work")
+            pass
+
+    return 0

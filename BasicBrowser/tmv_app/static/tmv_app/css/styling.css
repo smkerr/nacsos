@@ -326,6 +326,10 @@ border-spacing: 2px 2px;*/
     text-align: center;
 }
 
+#graph table td {
+    text-align: center;
+}
+
 #graph table table {
     margin-left: auto;
     margin-right: auto;
@@ -440,6 +444,10 @@ border-spacing: 2px 2px;*/
 }
 
 td.high-contrast a {
+    color:black;
+}
+
+#graph td a {
     color:black;
 }
 

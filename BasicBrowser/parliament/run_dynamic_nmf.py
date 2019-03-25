@@ -32,7 +32,17 @@ from parliament.utils import merge_utterance_paragraphs
 
 
 # run dynamic nmf
-def run_dynamic_nmf(stat,  extra_stopwords=set()):
+def run_dynamic_nmf(stat):
+    """
+    Run dynamic NMF model on utterances (speeches) or paragraphs from the parliament data
+
+    :param stat: RunStats object with the parameters to run the model with
+    :return: 0 if successful, 1 otherwise
+    """
+
+    print("starting topic model for runstat with settings:")
+    for field in stat._meta.fields:
+        print("{}: {}".format(field.name, getattr(stat, field.name)))
 
     t0 = time()
 
@@ -68,7 +78,8 @@ def run_dynamic_nmf(stat,  extra_stopwords=set()):
         print("Language not recognized.")
         return 1
 
-    stopword_list = list(set(stopword_list) | set(extra_stopwords))
+    if stat.extra_stopwords:
+        stopword_list = list(set(stopword_list) | set(stat.extra_stopwords))
 
 
     time_range = sorted([wp['n'] for wp in wps])
