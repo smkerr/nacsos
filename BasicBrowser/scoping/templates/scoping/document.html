@@ -8,8 +8,27 @@
 <h2> Document Homepage: {{ doc.title }} </h2>
   <div class="explanation" style="text-align:left">
     <p><b>ID:</b> {{doc.pk}}</p>
-    <p><b>Title:</b> {{doc.title}}</p>
-    <p><b>Year:</b> {{doc.PY}}</p>
+    <p><b>Title:</b> {{doc.title}}<a id="edit">[Edit]</a></p>
+    <div class="hidden edit">
+      <form action="{% url 'scoping:editdoc' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="doc" value="{{doc.pk}}"></input>
+        <input type="hidden" name="field" value="title"></input>
+        <textarea name="value">{{doc.title}}</textarea>
+        <input type="submit" value="Save changes" />
+      </form>
+    </div>
+    <p><b>Year:</b> {{doc.PY}} <a id="edit">[Edit]</a></p>
+    <div class="hidden edit">
+      <form action="{% url 'scoping:editdoc' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="doc" value="{{doc.pk}}"></input>
+        <input type="hidden" name="field" value="PY"></input>
+        <input type="number" name="value" value="{{doc.PY}}"></input>
+        <input type="submit" value="Save changes" />
+      </form>
+    </div>
+    <p/>
     <p><b>Authors:</b>
     {% for au in authors %}
       <span>{% if au.AF %}
@@ -52,20 +71,11 @@
           <button type="submit" class="save btn btn-default"  style="border:solid orange 3px; border-radius: 20px; background:orange; color: white; font-weight: bolder;">{{uf.action}}</button>
         </form>
     <p>Show: </p>
-    {% if extended %}
-    <table style="text-align:center">
-      <td class="hboxselect" width=25%>Queries</td>
-      <td class="hboxselect" width=25%>Technologies</td>
-      <td class="hboxselect" width=25%>Innovations</td>
-      <td class="hboxselect" width=25%>Ratings</td>
-    </table>
-    {% else %}
     <table style="text-align:center">
       <td class="hboxselect" width=33%>Queries</td>
       <td class="hboxselect" width=33%>Technologies</td>
       <td class="hboxselect" width=33%>Ratings</td>
     </table>
-    {% endif %}
 
   </div>
 <br>
@@ -76,9 +86,6 @@
         <th>Title</th>
         <th>Documents</th>
         <th>Technology</th>
-        {% if extended %}
-        <th>Innovation</th>
-        {% endif %}
         <th>User</th>
         <th>Date</th>
       </tr>
@@ -128,19 +135,6 @@
   </div>
 
 
-    <div class="explanation hbox hidden" data-type="innovations" style="text-align:left">
-      <table>
-      {% for t in innovations %}
-      <tr>
-        <td width="50%" style="text-align:left">{{t.name}}</td>
-        <td width="50%" style="text-align:right">
-          <a href="{% url 'scoping:remove_tech' doc.pk t.pk 'Innovation' %}">Remove technology association</a>
-        </td>
-
-      {% endfor %}
-    </table>
-    </div>
-
   <div class="explanation hbox hidden"
   data-type="ratings" style="text-align:left"
   >
@@ -151,6 +145,7 @@
       <th>Query</th>
       <th>Tag</th>
       <th>Time</th>
+      <th>Go</th>
     </tr>
       {% for r in ratings %}
     <tr>
@@ -159,6 +154,7 @@
       <td>{{r.query.id}}</td>
       <td>{{r.tag.title}}</td>
       <td>{{r.date}}</td>
+      <td><a href="{% url 'scoping:screen_doc_id' r.id %}">go</a></td>
     </tr>
     {% endfor %}
 

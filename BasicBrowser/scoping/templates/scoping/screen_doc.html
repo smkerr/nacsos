@@ -20,12 +20,14 @@
     </div>
 
     <div class="m-4" style="margin-bottom:-5px !important; margin-top:-25px !important">
+      {% if ctype %}
         <div class="d-flex justify-content-center">
             <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype 0 todo %}"><<</a></div>
             <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype prev todo %}"><</a></div>
             <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype next todo %}">></a></div>
             <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype last todo %}">>></a></div>
         </div>
+      {% endif %}
     </div>
 
 
