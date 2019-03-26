@@ -26,6 +26,8 @@ import base64
 from django.conf import settings
 import numpy as np
 import random
+from gensim.models import Doc2Vec
+import gensim
 
 import tmv_app.models as tm
 # Create your models here.
@@ -415,6 +417,18 @@ class Query(models.Model):
 
     def get_absolute_url(self):
         return reverse('scoping:doclist', kwargs={'pid':self.project.pk, 'qid': self.pk})
+
+    def save_doc2vec_model(self):
+        docs = self.doc_set.filter(content__iregex='\w')
+        def read_docs(fname, tokens_only=False):
+            for i, doc in enumerate(docs.iterator()):
+                yield gensim.models.doc2vec.TaggedDocument(gensim.utils.simple_preprocess(doc.title), [doc.pk])
+
+        titles = list(read_docs(docs))
+        model = Doc2Vec(vector_size=150, min_count=4, epochs=20)
+        model.build_vocab(titles)
+        model.train(titles, total_examples=model.corpus_count, epochs=model.epochs)
+        model.save(f"/var/www/files/w2v_{self.id}.model")
 
     def save(self, *args, **kw):
         old = type(self).objects.get(pk=self.pk) if self.pk else None
@@ -983,6 +997,7 @@ class IPCCRef(models.Model):
     wg = models.ManyToManyField('WG')
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True)
     chapter = models.TextField(null=True)
+    checked_count = models.IntegerField(default=0)
 
     def shingle(self):
         return set(s for s in ngrams(self.text.lower().split(".")[0].split(),2))

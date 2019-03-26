@@ -139,6 +139,7 @@ urlpatterns = [
     url(r'^do_review$', views.do_review, name='do_review'),
     url(r'^add_note', views.add_note, name='add_note'),
 
+    path('screen_doc/<int:doid>', views.screen_doc_id, name='screen_doc_id'),
     path('screen_doc/<int:tid>/<int:ctype>/<int:pos>/<int:todo>', views.screen_doc, name='screen_doc'),
     path('screen_doc/<int:tid>/<int:ctype>/<int:pos>/<int:todo>/<int:js>', views.screen_doc, name='screen_doc'),
 

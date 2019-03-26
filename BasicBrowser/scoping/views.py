@@ -630,7 +630,7 @@ passed as GET arguments
 Args:
     pid (int): Project ID
 
-.. 
+..
 
     '''
     template = loader.get_template('scoping/snippets/query_table.html')
@@ -4855,40 +4855,70 @@ def screen_parl(request, tid, ctype, pos, todo, js=0):
     ).order_by('order')
 
 @login_required
-def screen_doc(request,tid,ctype,pos,todo, js=0):
-    tag = Tag.objects.get(pk=tid)
-    dois = DocOwnership.objects.filter(
-        order__isnull=False,
-        tag=tag,
-        user=request.user
-    ).order_by('order')
+def screen_doc_id(request,doid):
+    do = DocOwnership.objects.get(pk=doid)
+    return screen_doc(request, 0, 0, 0, 0, do=do)
 
-    # Don't load the bar on the first go
-    if js==1:
-        if pos==0:
-            time.sleep(3)
-        if tag.utterance_linked:
-            dois = dois.values('order','utterance__speaker__clean_name','relevant').annotate(
-                doc__title=F('utterance__speaker__clean_name')
-            )
+
+
+
+
+@login_required
+def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
+    if do:
+        tag = do.tag
+        pc = 0
+        prev = 0
+        next = 0
+        last = 0
+    else:
+        tag = Tag.objects.get(pk=tid)
+        dois = DocOwnership.objects.filter(
+            order__isnull=False,
+            tag=tag,
+            user=request.user
+        ).order_by('order')
+
+        # Don't load the bar on the first go
+        if js==1:
+            if pos==0:
+                time.sleep(3)
+            if tag.utterance_linked:
+                dois = dois.values('order','utterance__speaker__clean_name','relevant').annotate(
+                    doc__title=F('utterance__speaker__clean_name')
+                )
+            else:
+                dois = dois.values('order','doc__title','relevant')
+            return HttpResponse(json.dumps(list(dois)), content_type="application/json")
+
+        s = 0
+        # Sometimes the task takes some time to complete, if so wait a while
+        while s < 15:
+            try:
+                do = dois[pos]
+                s = 20
+            except:
+                s+=1
+                time.sleep(1.5)
+        if s == 15: #if it takes too long go back
+            return HttpResponseRedirect(reverse(
+                'scoping:userpage',
+                kwargs={"pid":tag.query.project.id}
+            ))
+
+        last = dois.filter(relevant__gt=0).count()
+        if pos==last:
+            next=last
         else:
-            dois = dois.values('order','doc__title','relevant')
-        return HttpResponse(json.dumps(list(dois)), content_type="application/json")
+            next=pos+1
 
-    s = 0
-    # Sometimes the task takes some time to complete, if so wait a while
-    while s < 15:
-        try:
-            do = dois[pos]
-            s = 20
-        except:
-            s+=1
-            time.sleep(1.5)
-    if s == 15: #if it takes too long go back
-        return HttpResponseRedirect(reverse(
-            'scoping:userpage',
-            kwargs={"pid":tag.query.project.id}
-        ))
+        if pos==0:
+            prev=0
+        else:
+            prev=pos-1
+
+        pc = round(pos/todo*100)
+        next = pos+1
 
 
     if do.utterance_linked:
@@ -4931,16 +4961,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
             levels.append(lcats)
 
 
-    last = dois.filter(relevant__gt=0).count()
-    if pos==last:
-        next=last
-    else:
-        next=pos+1
 
-    if pos==0:
-        prev=0
-    else:
-        prev=pos-1
 
     try:
         criteria = markdown.markdown(tag.query.criteria)
@@ -4952,7 +4973,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
         'tag': tag,
         'criteria': criteria,
         'do': do,
-        'pc': round(pos/todo*100),
+        'pc': pc,
         'doc': doc,
         'pos': pos,
         'todo': todo,
@@ -4960,7 +4981,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0):
         'notes': notes,
         'levels': levels,
         'prev': prev,
-        'next': pos+1,
+        'next': next,
         'last': last
     }
 
@@ -4974,7 +4995,7 @@ def rate_doc(request,tid,ctype,doid,pos,todo,rel):
     do.finish = timezone.now()
     do.save()
     pos+=1
-    if pos==todo:
+    if pos==todo or todo==0:
         return HttpResponseRedirect(reverse(
             'scoping:userpage',
             kwargs={'pid':tag.query.project.id}
@@ -5124,10 +5145,21 @@ def editdoc(request):
     field = request.POST.get('field',None)
     value = request.POST.get('value',None)
 
+    if value=="":
+        value=None
+
     doc = Doc.objects.get(pk=doc_id)
     if field == "content":
         doc.content=value
         doc.wosarticle.ab=value
+        doc.save()
+    elif field == "PY":
+        doc.PY=value
+        doc.wosarticle__py=value
+        doc.save()
+    elif field == "title":
+        doc.title = value
+        doc.wosartice__ti = value
         doc.save()
 
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
