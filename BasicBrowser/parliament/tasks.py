@@ -175,7 +175,7 @@ def combine_searches(s_ids):
 
 @shared_task
 def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha=0.01,
-           extra_stopwords=set(), top_chain_var=None, **kwargs):
+           extra_stopwords=set(), top_chain_var=None, rng_seed=None, **kwargs):
 
     if method in ['DT', 'dnmf', 'BD', 'BleiDTM'] and max_features == 0:
         max_features = 20000
@@ -206,7 +206,10 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         return 0
     elif method in ['BD', 'BleiDTM']:
         print("Running Blei DTM algorithm")
-        stat.rng_seed = 1
+        if rng_seed:
+            stat.rng_seed = rng_seed
+        else:
+            stat.rng_seed = 1
         stat.save()
         run_blei_dtm(stat, **kwargs)
         return 0
