@@ -419,6 +419,7 @@ class RunStats(models.Model):
     alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter (try higher values in LDA, including > 1). Low (high) values indicate that documents should be composed of few (many) topics.')
     top_chain_var = models.FloatField(null=True, default=0.05, help_text='Chain var parameter for dtm')
     max_iter  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
+    rng_seed = models.IntegerField(null=True, default=1, help_text="seed for random number generator for stochastic estimation of topic model (blei dtm)")
     fulltext  = models.BooleanField(default=False, help_text='do analysis on fullText? (dependent on availability)')
     citations = models.BooleanField(default=False, help_text='scale term scores by citations?')
 
