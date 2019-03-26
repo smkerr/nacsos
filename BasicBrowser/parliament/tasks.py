@@ -206,6 +206,8 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         return 0
     elif method in ['BD', 'BleiDTM']:
         print("Running Blei DTM algorithm")
+        stat.rng_seed = 1
+        stat.save()
         run_blei_dtm(stat, **kwargs)
         return 0
 
