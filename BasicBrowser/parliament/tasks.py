@@ -175,7 +175,7 @@ def combine_searches(s_ids):
 
 @shared_task
 def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha=0.01,
-           extra_stopwords=set(), top_chain_var=None, rng_seed=None, **kwargs):
+           extra_stopwords=set(), top_chain_var=None, rng_seed=None, max_iter=200, **kwargs):
 
     if method in ['DT', 'dnmf', 'BD', 'BleiDTM'] and max_features == 0:
         max_features = 20000
@@ -190,7 +190,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         max_df=max_df,
         method=method.upper()[0:2],
         max_features=max_features,
-        max_iter=5,
+        max_iter=max_iter,
         alpha=alpha,
         extra_stopwords=list(extra_stopwords),
         top_chain_var=top_chain_var,
