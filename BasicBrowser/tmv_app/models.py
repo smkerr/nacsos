@@ -421,12 +421,13 @@ class RunStats(models.Model):
     K = models.IntegerField(null=True, help_text='Number of topics')
     alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter (try higher values in LDA, including > 1). Low (high) values indicate that documents should be composed of few (many) topics.')
     top_chain_var = models.FloatField(null=True, default=0.05, help_text='Chain var parameter for dtm')
-    max_iter  = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
-    fulltext  = models.BooleanField(default=False, help_text='do analysis on fullText? (dependent on availability)')
+    max_iter = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
+    rng_seed = models.IntegerField(null=True, help_text="seed for random number generator for stochastic estimation of topic model (blei dtm)")
+    fulltext = models.BooleanField(default=False, help_text='do analysis on fullText? (dependent on availability)')
     citations = models.BooleanField(default=False, help_text='scale term scores by citations?')
 
     # Additional information
-    language=models.TextField(null=True, help_text='language of the documents that have been analyzed (also used for stopword identification)')
+    language = models.TextField(null=True, help_text='language of the documents that have been analyzed (also used for stopword identification)')
     extra_stopwords = ArrayField(models.TextField(), null=True, help_text='list of stopwords that are used additionally to the standard ones')
 
     query = models.ForeignKey('scoping.Query', null=True, on_delete=models.CASCADE, help_text='relation to the scoping search object')
