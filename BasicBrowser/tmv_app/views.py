@@ -1518,10 +1518,12 @@ def runs(request,pid=0):
 
 
     if pid > 0:
-        stats = stats.filter(query__project_id=pid)
+        stats_filtered = stats.filter(query__project_id=pid)
 
-        if stats.count() <= 0:
+        if stats_filtered.count() <= 0:
             stats = stats.filter(psearch__project_id=pid)
+        else:
+            stats = stats_filtered
 
 
     stats = stats.annotate(
