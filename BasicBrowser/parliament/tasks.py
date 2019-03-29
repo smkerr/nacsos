@@ -151,6 +151,7 @@ def combine_searches(s_ids):
     search_object_type = list(object_types)[0][0]
     s = Search(title='Searches {} combined'.format(", ".join([str(s_id) for s_id in s_ids])))
     s.search_object_type = search_object_type
+    s.project = searches[0].project
     s.save()
     if search_object_type == 2:
         ut = Utterance.objects.filter(search_matches__in=searches).distinct()
