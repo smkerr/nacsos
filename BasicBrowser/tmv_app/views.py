@@ -333,9 +333,12 @@ def topics_time(request, run_id, stype):
 
     return HttpResponse(template.render(request =request, context=context))
 
+
 #######################################################################
-## DynamicTopic View (for dynamic NMF)
+
 def dynamic_topic_detail(request,topic_id):
+    """ Dynamic Topic view (for dynamic NMF) """
+
     template = loader.get_template('tmv_app/dynamic_topic.html')
 
     topic = DynamicTopic.objects.get(pk=topic_id)
@@ -488,9 +491,14 @@ def dynamic_topic_detail(request,topic_id):
 
 # Topic page for Blei dynamic topics
 def dtopic_detail(request,topic_id):
-    '''
-    View for Blei Dynamic topics
-    '''
+    """
+    View for dynamic topics from Blei dtm
+
+    :param request:
+    :param topic_id:
+    :return:
+    """
+
     template = loader.get_template('tmv_app/dtopic.html')
 
     topic = Topic.objects.get(pk=topic_id)
@@ -558,8 +566,15 @@ def dtopic_detail(request,topic_id):
 
 
 ###########################################################################
-## Topic View
 def topic_detail(request, topic_id, run_id=0):
+    """
+    Topic view
+
+    :param request:
+    :param topic_id:
+    :param run_id:
+    :return:
+    """
 
     template = loader.get_template('tmv_app/topic.html')
 
@@ -815,6 +830,14 @@ def multi_topic(request):
 ##############################################################
 
 def term_detail(request, run_id, term_id):
+    """
+    View for details of a topic term
+
+    :param request:
+    :param run_id:
+    :param term_id:
+    :return:
+    """
 
     allnodes = []
     alllinks = []
@@ -900,6 +923,16 @@ def term_detail(request, run_id, term_id):
 
 
 def network_wg(request, run_id, t=5, f=100,top=0):
+    """
+    View of topic network
+
+    :param request:
+    :param run_id:
+    :param t:
+    :param f:
+    :param top:
+    :return:
+    """
     ar = -1
     force = int(f) * -1
     t = int(t) / 100
@@ -1029,9 +1062,16 @@ def network_wg(request, run_id, t=5, f=100,top=0):
     return HttpResponse(template.render(context))
 
 #######################################################################
-## Doc view
 
 def doc_detail(request, doc_id, run_id):
+    """
+    View of document details
+
+    :param request:
+    :param doc_id:
+    :param run_id:
+    :return:
+    """
 
     snowball_stemmer = SnowballStemmer("english")
 
@@ -1181,8 +1221,17 @@ def print_table(request,run_id):
     return response
 
 #################################################################
-### Main page!
+
+
 def topic_presence_detail(request,run_id):
+    """
+    Main page of topic models
+
+    :param request:
+    :param run_id:
+    :return:
+    """
+
     stat = RunStats.objects.get(run_id=run_id)
     template = loader.get_template('tmv_app/topic_presence.html')
     if stat.get_method_display() == 'hlda':
@@ -1210,10 +1259,6 @@ def topic_presence_detail(request,run_id):
     if stat.status==3:
         run_id = int(run_id)
 
-        #update_topic_titles(run_id)
-        #update_topic_scores(run_id)
-
-
         response = ''
 
         get_year_filter(request)
@@ -1238,6 +1283,13 @@ def topic_presence_detail(request,run_id):
 
 
 def dtm_home(request, run_id):
+    """
+    Main page of dynamic topic model (dynamic NMF)
+
+    :param request:
+    :param run_id:
+    :return:
+    """
     template = loader.get_template('tmv_app/dtm_home.html')
 
     stat=RunStats.objects.get(pk=run_id)
@@ -1450,6 +1502,13 @@ def stats(request,run_id):
 
 
 def runs(request,pid=0):
+    """
+    View with list of all topic model runs
+
+    :param request:
+    :param pid:
+    :return:
+    """
 
     pid = int(pid)
 
