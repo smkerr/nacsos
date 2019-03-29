@@ -526,11 +526,22 @@ class RunStats(models.Model):
         else:
             dts = DocTopic.objects
 
+        if self.query:
+            doc_id_var = 'doc__id'
+        elif self.psearch:
+            if self.psearch.search_object_type==parliament.models.Search.PARAGRAPH:
+                doc_id_var = 'ut__id'
+            elif self.psearch.search_object_type==parliament.models.Search.UTTERANCE:
+                doc_id_var = 'par__id'
+        else:
+            print("I don't know what type of document I have...")
+            return
+
         db_matrix = dts.filter(
             run_id=self.pk,
             score__gt=self.dt_threshold
         )
-        docs = set(db_matrix.values_list('doc__id',flat=True))
+        docs = set(db_matrix.values_list(doc_id_var,flat=True))
 
         if s_size >0:
             s_docs = random.sample(docs,s_size)
@@ -539,10 +550,10 @@ class RunStats(models.Model):
                 score__gt=0.01,
                 doc__id__in=s_docs
             )
-        vs = list(db_matrix.values('score','doc_id','topic_id'))
+        vs = list(db_matrix.values('score',doc_id_var,'topic_id'))
 
-        c_ind = np.array(list(set(db_matrix.values_list('topic_id',flat=True).order_by('doc_id'))))
-        r_ind = np.array(list(set(db_matrix.values_list('doc_id',flat=True).order_by('doc_id'))))
+        c_ind = np.array(list(set(db_matrix.values_list('topic_id',flat=True).order_by(doc_id_var))))
+        r_ind = np.array(list(set(db_matrix.values_list(doc_id_var,flat=True).order_by(doc_id_var))))
 
         d = [x['score'] for x in vs]
         c = [int(np.where(c_ind==x['topic_id'])[0]) for x in vs]
