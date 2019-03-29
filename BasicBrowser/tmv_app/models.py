@@ -528,7 +528,7 @@ class RunStats(models.Model):
 
         if self.query:
             doc_id_var = 'doc__id'
-        elif self.psearch
+        elif self.psearch:
             if self.psearch.search_object_type=parliament.models.Search.PARAGRAPH:
                 doc_id_var = 'ut__id'
             elif self.psearch.search_object_type=parliament.models.Search.UTTERANCE:
