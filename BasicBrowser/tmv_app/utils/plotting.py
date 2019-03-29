@@ -20,6 +20,92 @@ plt.rc('ytick',labelsize=7)
 plt.rc('legend',fontsize=7)
 plt.rc('figure',titlesize=7)
 
+class SquareCollection:
+    def __init__(self):
+        self.objects = []
+
+    def add(self, o):
+        self.objects.append(o)
+
+    def get(self,**kwargs):
+        matches = []
+        for o in self.objects:
+            match = True
+            for k,v in kwargs.items():
+                if getattr(o,k)!=v:
+                    match=False
+            if match:
+                matches.append(o)
+        if len(matches) > 0:
+            return matches[0]
+        else:
+            return None
+
+class CoordSquare:
+    def __init__(self,x1,x2,y1,y2,r_ind,tsne_results,ar=None):
+        self.x1 = x1
+        self.x2 = x2
+        self.y1 = y1
+        self.y2 = y2
+        self.r_ind = r_ind
+        self.tsne_results = tsne_results
+        self.ar = ar
+        self.size = self.r_ind.shape[0]
+        self.share = None
+        self.av_y = None
+        self.H = None
+
+    def get_points(self):
+        r = self.tsne_results#[self.r_ind[:,0],:]
+        conditions = (r[:,0]>self.x1) & (r[:,0]<self.x2) & (r[:,1]>self.y1) & (r[:,1]<self.y2)
+        self.r = r[conditions]
+        self.r_ind = self.r_ind[conditions]
+
+        self.share = self.r.shape[0] / self.size
+
+        return self.r.shape[0] / self.size
+    def summarise_topics(self,run_id):
+        stat = RunStats.objects.get(pk=run_id)
+        docs = Doc.objects.filter(id__in=self.r_ind)
+        if stat.method=="DT":
+            dt_string = 'docdynamictopic'
+            DTO = DocDynamicTopic.objects
+        else:
+            dt_string = 'doctopic'
+            DTO = DocTopic.objects
+
+        if docs.count()<100:
+            self.av_y = None
+            self.H = None
+        else:
+            self.av_y = np.mean(list(docs.values_list('PY',flat=True)))
+            H = 0
+            ts = DTO.filter(
+                run_id=run_id,
+                score__gt=stat.dt_threshold,
+                doc__id__in=self.r_ind
+            ).values('topic').annotate(
+                pzc = Sum('score')
+            )
+            for t in ts:
+                H+=t['pzc']*np.log(t['pzc'])
+            self.H = -1*H
+
+        topics = docs.filter(
+            **{f'{dt_string}__run_id': run_id}
+        ).values(f'{dt_string}__topic__title').annotate(
+            tscore=Sum(f'{dt_string}__score')
+        ).order_by('-tscore')
+        total = topics.aggregate(tsum = Sum('tscore'))
+        df = pd.DataFrame.from_dict(list(topics))
+        df['x1'] = self.x1
+        df['x2'] = self.x2
+        df['y1'] = self.y1
+        df['y2'] = self.y2
+        df['proportion'] = df['tscore'] / total['tsum']
+        df = df[df['proportion']>0.001]
+        return df
+
 def plot_tsne_2(r_ind,tsne_results,cats,verbose=False):
     cs = []
     sizes = []
@@ -95,11 +181,66 @@ def extend_points(p1,p2,length=0.8):
     p3[1] = p2[1] + (p2[1] - p1[1]) / lenAB*length
     return p3
 
+def cluster_label_points(title, points, ax, eps, min_cluster, n_clusters, clabel_size):
+    db = DBSCAN(eps=eps,min_samples=min_cluster).fit(points)
+    labels = db.labels_
+    texts = []
+    bboxes = []
+    r = get_renderer(ax.get_figure())
+    for l in set(labels):
+        text_set = False
+        if l==-1:
+            continue
+        ind = np.argwhere(labels==l)[:,0]
+        #print("\n##\nlabel: {}, {} documents".format(l,len(ind)))
+        lpoints = points[ind]
+        if len(ind) > min_cluster:
+            try:
+                hull = ConvexHull(lpoints)
+            except:
+                continue
+            cx = np.mean(hull.points[hull.vertices,0])
+            cy = np.mean(hull.points[hull.vertices,1])
+            c = [cx,cy]
+
+
+
+            for i, simplex in enumerate(hull.simplices):
+                p1 = extend_points(c,lpoints[simplex,:][0])
+                p2 = extend_points(c,lpoints[simplex,:][1])
+                plt.plot(
+                    [p1[0],p2[0]],
+                    [p1[1],p2[1]],
+                    'k-',
+                    linewidth=0.5
+                )
+                if not text_set:
+                    if p1[0] > cx:
+                        ha = "left"
+                    else:
+                        ha = "right"
+                    pl = extend_points(c,p1)
+                    texts.append(ax.annotate(
+                        title,
+                        p1,
+                        xytext=pl,
+                        va="center",
+                        ha=ha,
+                        fontsize=clabel_size,
+                        arrowprops=dict(width=0.2,headwidth=0.1),
+                        bbox={'facecolor':"white", 'alpha':0.4, 'pad':0.4, 'boxstyle': 'round'}
+                    ))
+                    text_set = True
+            # break here, just do the biggest cluster
+            break
+
 def plot_tsne(
     r_ind,tsne_results,cats,nocatids,
     ax=None,verbose=False,hdoc=False,
     legend=True, sc=None, heat_var=None, cmapname=None,
-    topics=None, min_cluster = 100
+    topics=None, min_cluster = 100, psize=1,
+    t_thresh=0.8, eps=1, n_clusters=1,
+    doc_sets=None, clabel_size=8
     ):
     cs = []
     sizes = []
@@ -112,7 +253,6 @@ def plot_tsne(
 
     nocatids = np.argwhere(np.isin(r_ind,nocatids))
 
-    psize = 1
 
     if hdoc is not False:
         hdocs = nocatids[np.isin(nocatids,hdoc)]
@@ -135,7 +275,7 @@ def plot_tsne(
             c='#F0F0F026',
             s=psize,
             alpha=1,
-            linewidth=0.2,
+            linewidth=0.5,
             edgecolor='black'
         )
 
@@ -164,7 +304,7 @@ def plot_tsne(
                     c=c["color"],
                     s=psize,
                     alpha=1,
-                    linewidth=0.2,
+                    linewidth=0.5,
                     edgecolor='black'
                 )
 
@@ -213,122 +353,58 @@ def plot_tsne(
 
     if topics:
         for t in topics:
+            if t.run_id.method=="DT":
+                atdocscores = Doc.objects.filter(
+                    docdynamictopic__topic=t,
+                ).values_list('docdynamictopic__score',flat=True)
 
-            atdocscores = Doc.objects.filter(
-                docdynamictopic__topic=t,
-            ).values_list('docdynamictopic__score',flat=True)
+                thresh = np.quantile(atdocscores,t_thresh)
 
-            thresh = np.quantile(atdocscores,0.8)
+                tdocs = Doc.objects.filter(
+                    docdynamictopic__topic=t,
+                    docdynamictopic__score__gt=thresh
+                ).order_by('-docdynamictopic__score').values_list('id',flat=True)
+            else:
+                atdocscores = Doc.objects.filter(
+                    doctopic__topic=t,
+                ).values_list('doctopic__score',flat=True)
 
-            tdocs = Doc.objects.filter(
-                docdynamictopic__topic=t,
-                docdynamictopic__score__gt=thresh
-            ).order_by('-docdynamictopic__score').values_list('id',flat=True)
+                thresh = np.quantile(atdocscores,t_thresh)
 
+                tdocs = Doc.objects.filter(
+                    doctopic__topic=t,
+                    doctopic__score__gt=thresh
+                ).order_by('-doctopic__score').values_list('id',flat=True)
             highlight_docs = np.argwhere(np.isin(r_ind,tdocs))[:,0]
 
             if len(highlight_docs) == 0:
                 continue
 
-            #print(f"{t.title}: {t.id}")
-            #print(len(highlight_docs))
-            #points = np.array([tsne_results[v] for i,v in enumerate(highlight_docs)]
             points = tsne_results[highlight_docs]
 
-            db = DBSCAN(eps=1,min_samples=min_cluster).fit(points)
-            labels = db.labels_
-            texts = []
-            bboxes = []
-            r = get_renderer(ax.get_figure())
-            for l in set(labels):
-                text_set = False
-                if l==-1:
-                    continue
-                ind = np.argwhere(labels==l)[:,0]
-                #print("\n##\nlabel: {}, {} documents".format(l,len(ind)))
-                lpoints = points[ind]
-                if len(ind) > min_cluster:
-                    try:
-                        hull = ConvexHull(lpoints)
-                    except:
-                        continue
-                    cx = np.mean(hull.points[hull.vertices,0])
-                    cy = np.mean(hull.points[hull.vertices,1])
-                    c = [cx,cy]
+            cluster_label_points(
+                t.title,
+                points,
+                ax,
+                eps,
+                min_cluster,
+                n_clusters,
+                clabel_size
+            )
+    if doc_sets:
+        for d in doc_sets:
+            highlight_docs = np.argwhere(np.isin(r_ind,d['docs']))[:,0]
+            points = tsne_results[highlight_docs]
+
+            cluster_label_points(
+                d['title'],
+                points,
+                ax,
+                eps,
+                min_cluster,
+                n_clusters,
+                clabel_size
+            )
 
 
-
-                    for i, simplex in enumerate(hull.simplices):
-                        p1 = extend_points(c,lpoints[simplex,:][0])
-                        p2 = extend_points(c,lpoints[simplex,:][1])
-                        # if i==0:
-                        #     px[0] = p1[0]
-                        #     p
-                        #     py = p1[1]
-                        # elif p1[0] < px[0]:
-                        #     px = p1[0]
-                        #     py = p1[1]
-                        plt.plot(
-                            [p1[0],p2[0]],
-                            [p1[1],p2[1]],
-                            'k-',
-                            linewidth=0.5
-                        )
-                        if not text_set:
-                            if p1[0] > cx:
-                                ha = "left"
-                            else:
-                                ha = "right"
-                            pl = extend_points(c,p1)
-                            texts.append(ax.annotate(
-                                t.title,
-                                p1,
-                                xytext=pl,
-                                #t.title,
-                                va="center",
-                                ha=ha,
-                                fontsize=8,
-                                arrowprops=dict(width=0.2,headwidth=0.1)
-                            ))
-                            #print(get_bboxes(texts,r,expand=(1.,1.),ax=ax))
-                            text_set = True
-
-                    break
                     #adjust_text(texts,arrowprops=dict(arrowstyle='->', color='red'))
-
-
-            # hull = ConvexHull(points)
-            # for i, simplex in enumerate(hull.simplices):
-            #     plt.plot(
-            #         points[simplex, 0],
-            #         points[simplex, 1],
-            #         'k-',
-            #         linewidth=0.5
-            #     )
-            #     for j in range(len(points[simplex,0])):
-            #         if i==0 and j==0:
-            #             px = points[simplex,0][j]
-            #             py = points[simplex,1][j]
-            #         else:
-            #             if points[simplex,0][j] < px:
-            #                 px = points[simplex,0][j]
-            #                 py = points[simplex,1][j]
-            # plt.text(
-            #     px-1,
-            #     py,
-            #     t.title,
-            #     va="center",
-            #     ha="right",
-            #     fontsize=5
-            # )
-
-
-    # plt.tick_params(
-    #     axis='both',
-    #     which='both',
-    #     bottom=False,
-    #     top=False,
-    #     labelbottom=False,
-    #     left=False,
-    #     labelleft=False
-    # )

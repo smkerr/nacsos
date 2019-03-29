@@ -500,6 +500,9 @@ and {} topics\n'.format(qid, docs.count(),K))
         from nltk.corpus import wordnet as wn
         stopwords = set(sw.words('english'))
 
+        if stat.extra_stopwords:
+            stopwords = stopwords | set(stat.extra_stopwords)
+
         def lemmatize(token, tag):
                 tag = {
                     'N': wn.NOUN,

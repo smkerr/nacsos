@@ -25,17 +25,16 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         qid = options['qid']
+        sample = options['sample']
+        path = options['path']
 
         q = Query.objects.get(pk=qid)
 
         cdos = CDO.objects.filter(
             doc__query=q
-        )#[:2000000]
+        ).order_by('id')#[:2000000]
 
         print(cdos.count())
-
-        sample = options['sample']
-        path = options['path']
 
         cdo_ids = cdos.values_list('pk',flat=True)
 
@@ -43,10 +42,13 @@ class Command(BaseCommand):
             cdos = CDO.objects.filter(pk__in=random.sample(list(cdo_ids),sample))
 
         doc_ids = set(cdos.values_list('doc__id',flat=True))
+        c_ids = set(cdos.values_list('citation__id',flat=True))
+        cits = Citation.objects.filter(id__in=c_ids)
+        c_ids = list(cits.values_list('pk',flat=True))
 
         mdocs = Doc.objects.filter(
             id__in=doc_ids
-        )
+        ).order_by('id')
         m = mdocs.count()
 
         # Create a dictionary mapping doc ids to row indices
@@ -62,11 +64,16 @@ class Command(BaseCommand):
 
         del mdocs
 
-        n = Citation.objects.count()
+        n = len(c_ids)
         # Create a dictionary mapping citation ids to column indices
         n_dict = dict(zip(
-            list(Citation.objects.all().values_list('id',flat=True)),
+            list(c_ids),
             list(range(n))
+        ))
+
+        rev_n_dict = dict(zip(
+            list(range(n)),
+            list(c_ids)
         ))
 
         # Put a 1 in all the row column positions implied by the cdo objects
@@ -79,7 +86,7 @@ class Command(BaseCommand):
         print("data")
         data = np.array([1]*cdos.count())
         print("matrix")
-        Scoo = coo_matrix((data, (rows,cols)),shape=(m,n))
+        Scoo = coo_matrix((data, (rows,cols)))
 
         # We don't need these anymore but they use a lot of memory
         del cdos
