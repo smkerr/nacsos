@@ -12,7 +12,7 @@ from utils.utils import *# flatten
 from scoping.models import *
 
 class Command(BaseCommand):
-    help = 'collect bigrams from a query'
+    help = 'gets citations from a query'
 
     def add_arguments(self, parser):
         parser.add_argument('qid',type=int)

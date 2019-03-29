@@ -35,8 +35,30 @@ class Command(BaseCommand):
             for row in reader:
                 owtable[row[2]] = {"OECD": row[3],"OECD_FOS":row[0],"OECD_FOS_TEXT":row[1]}
 
-        broken_1s = ["EDUCATION & EDUCATIONAL","HOSPITALITY, LEISURE, SPORT &"]
-        broken_2s = ["RESEARCH","TOURISM"]
+        broken_1s = [
+            "EDUCATION & EDUCATIONAL",
+            "HOSPITALITY, LEISURE, SPORT &",
+            "REGIONAL &",
+            "REGIONAL",
+            "COMPUTER SCIENCE, INFORMATION",
+            "ENGINEERING,",
+            "MARINE &",
+            "ENGINEERING, ELECTRICAL &",
+            "TRANSPORTATION SCIENCE &",
+            "OPERATIONS RESEARCH &"
+        ]
+        broken_2s = [
+            "RESEARCH",
+            "TOURISM",
+            "URBAN PLANNING",
+            "& URBAN PLANNING",
+            "SYSTEMS",
+            "ELECTRICAL & ELECTRONIC",
+            "FRESHWATER BIOLOGY",
+            "ELECTRONIC",
+            "TECHNOLOGY",
+            "MANAGEMENT SCIENCE"
+        ]
 
         for d in docs:
             print(d.wosarticle.wc)

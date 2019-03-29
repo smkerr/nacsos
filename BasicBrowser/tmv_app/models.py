@@ -4,6 +4,9 @@ import scoping, parliament
 from django.contrib.auth.models import User
 import numpy as np
 import random
+from scipy.sparse import csr_matrix, coo_matrix
+from MulticoreTSNE import MulticoreTSNE as mTSNE
+import os
 
 
 class MinMaxFloat(models.FloatField):
@@ -499,6 +502,72 @@ class RunStats(models.Model):
         if not self.parent_run_id:
             self.parent_run_id=self.run_id
         super(RunStats, self).save(*args, **kwargs)
+
+    def dt_matrix(self, path, s_size=0, force_overwrite=False):
+        '''
+        Return a sparse doctopic matrix and its row and column ids
+        '''
+        # see if the required objects already exist
+        mpath = f"{path}/run_{self.pk}_s_{s_size}_m.npy"
+        rpath = f"{path}/run_{self.pk}_s_{s_size}_r_ind.npy"
+        cpath = f"{path}/run_{self.pk}_s_{s_size}_c_ind.npy"
+        if os.path.exists(mpath):
+            m = np.load(mpath)
+            if os.path.exists(rpath):
+                r_ind = np.load(rpath)
+                if os.path.exists(cpath):
+                    c_ind = np.load(cpath)
+                    if not force_overwrite:
+                        print("We've already calculated the required matrices!")
+                        return(m,c_ind,r_ind)
+
+        if self.method=="DT":
+            dts = DocDynamicTopic.objects
+        else:
+            dts = DocTopic.objects
+
+        db_matrix = dts.filter(
+            run_id=self.pk,
+            score__gt=self.dt_threshold
+        )
+        docs = set(db_matrix.values_list('doc__id',flat=True))
+
+        if s_size >0:
+            s_docs = random.sample(docs,s_size)
+            db_matrix = dts.filter(
+                run_id=stat.pk,
+                score__gt=0.01,
+                doc__id__in=s_docs
+            )
+        vs = list(db_matrix.values('score','doc_id','topic_id'))
+
+        c_ind = np.array(list(set(db_matrix.values_list('topic_id',flat=True).order_by('doc_id'))))
+        r_ind = np.array(list(set(db_matrix.values_list('doc_id',flat=True).order_by('doc_id'))))
+
+        d = [x['score'] for x in vs]
+        c = [int(np.where(c_ind==x['topic_id'])[0]) for x in vs]
+        r = [int(np.where(r_ind==x['doc_id'])[0]) for x in vs]
+
+        m = coo_matrix((d,(r,c)),shape=(len(r_ind),len(c_ind)))
+
+        np.save(mpath, m)
+        np.save(rpath, r_ind)
+        np.save(cpath, c_ind)
+
+        return(m,c_ind,r_ind)
+
+    def calculate_tsne(self, path, p, s_size=0, force_overwrite=False):
+        m, c_ind, r_ind = self.dt_matrix(path, s_size)
+        results_path =  f"{path}/run_{self.pk}_s_{s_size}_p_{p}_results.npy"
+        if os.path.exists(results_path):
+            tsne_results = np.load(results_path)
+            if not force_overwrite:
+                print("We've already calculated the tsne positions")
+                return tsne_results, r_ind
+        tsne = mTSNE(n_components=2, verbose=0, perplexity=p,n_jobs=4)
+        tsne_results = tsne.fit_transform(m.toarray())
+        np.save(results_path, tsne_results)
+        return tsne_results, r_ind
 
 
 class Settings(models.Model):
