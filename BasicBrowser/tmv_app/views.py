@@ -625,7 +625,8 @@ def topic_detail(request, topic_id, run_id=0):
             doc__journal__isnull=False,
             doc__doctopic__score__gt=stat.dt_threshold
         ).values('fulltext').annotate(
-            score=Sum('doc__doctopic__score')
+            score=Sum('doc__doctopic__score'),
+            no_docs=Count('doc__doctopic__score')
         ).order_by('-score')[:10]
 
     elif stat.psearch.search_object_type == 1:
