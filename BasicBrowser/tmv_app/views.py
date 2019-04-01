@@ -562,10 +562,9 @@ def dtopic_detail(request,topic_id):
 
     return HttpResponse(template.render(context))
 
-
-
-
 ###########################################################################
+
+
 def topic_detail(request, topic_id, run_id=0):
     """
     Topic view
@@ -626,8 +625,8 @@ def topic_detail(request, topic_id, run_id=0):
             doc__journal__isnull=False,
             doc__doctopic__score__gt=stat.dt_threshold
         ).values('fulltext').annotate(
-            t=Count('doc__doctopic__score')
-        ).order_by('-t')[:10]
+            score=Sum('doc__doctopic__score')
+        ).order_by('-score')[:10]
 
     elif stat.psearch.search_object_type == 1:
         ndocs = pm.Paragraph.objects.filter(
@@ -780,6 +779,7 @@ def get_topic_docs(request,topic_id):
     }
 
     return HttpResponse(template.render(context))
+
 
 def multi_topic(request):
 
@@ -1360,10 +1360,18 @@ def highlight_dtm_w(request):
 
 
     return HttpResponse(json.dumps(list(wts)))
+
+
 ##################################################################
-## Alt Main page for hlda
 
 def topic_presence_hlda(request):
+    """
+    View of main topic model page for hlda
+
+    :param request:
+    :return:
+    """
+
     run_id = find_run_id(request.session)
     update_topic_titles_hlda(request.session)
     update_topic_scores(request.session)
@@ -1412,6 +1420,13 @@ def topic_presence_hlda(request):
 
 
 def stats(request,run_id):
+    """
+    View with statistics of a model run
+
+    :param request:
+    :param run_id:
+    :return:
+    """
 
     template = loader.get_template('tmv_app/stats.html')
 
@@ -1566,6 +1581,13 @@ def update_run(request, run_id):
     return HttpResponseRedirect(reverse('tmv_app:runs'))
 
 def delete_run(request,new_run_id):
+    """
+    Function to delete a run and its associated topic objects
+
+    :param request:
+    :param new_run_id:
+    :return:
+    """
     stat = RunStats.objects.get(run_id=new_run_id)
 
     if stat.query:
