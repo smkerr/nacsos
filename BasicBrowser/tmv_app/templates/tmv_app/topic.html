@@ -99,7 +99,7 @@
 	<tr>
         <!-- id="{{ corrtop.title }}" class="list" onclick="window.location.href='/tmv_app/topic/{{ corrtop.topiccorr.pk }}'"> -->
         <td width="75%">{{ j.fulltext }}</td>
-        <td width="25%">{{ j.score }} </td>
+        <td width="25%">{{ j.score |floatformat:4 }} </td>
     <tr>
 	{% endfor %}
   </table>
