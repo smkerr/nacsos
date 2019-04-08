@@ -19,13 +19,16 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 default_exchange = Exchange('default', type='direct')
-medium_exchange = Exchange('medium', type='direct')
 long_exchange = Exchange('long', type='direct')
+leey_exchange = Exchange('leey', type='direct')
+muef_exchange = Exchange('muef', type='direct')
+
 
 app.conf.task_queues = (
     Queue('default', default_exchange, routing_key='default'),
-    Queue('medium', medium_exchange, routing_key='medium'),
     Queue('long', long_exchange, routing_key='long'),
+    Queue('leey', leey_exchange, routing_key='leey'),
+    Queue('muef', muef_exchange, routing_key='muef')
 )
 
 app.conf.task_default_queue = 'default'
