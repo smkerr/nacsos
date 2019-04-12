@@ -36,7 +36,7 @@ app.conf.task_default_exchange = 'default'
 app.conf.task_default_routing_key = 'default'
 
 # increase visibility timeout such that long tasks are not scheduled multiple times
-app.conf.broker_transport_options = {'visibility_timeout': 43200} # 43200 s = 12 h
+app.conf.broker_transport_options = {'visibility_timeout': 129600}  # 43200 s = 12 h, 129600 s = 36 h
 
 @app.task(bind=True)
 def debug_task(self):
