@@ -7,7 +7,7 @@ import random
 from scipy.sparse import csr_matrix, coo_matrix
 from MulticoreTSNE import MulticoreTSNE as mTSNE
 import os
-
+from datetime import timedelta
 
 class MinMaxFloat(models.FloatField):
     """
@@ -439,7 +439,7 @@ class RunStats(models.Model):
     topic_year_scores_current = models.NullBooleanField(default=False)
 
     ## Time spent
-    runtime = models.DurationField(default=0)
+    runtime = models.DurationField(null=True)
     nmf_time = models.FloatField(default=0)
     tfidf_time = models.FloatField(default=0)
     db_time = models.FloatField(default=0)
