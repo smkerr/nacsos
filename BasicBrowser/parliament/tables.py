@@ -83,10 +83,12 @@ class ModelsTable(tables.Table):
         fields = (
             'run_id','method',
             'start','status',
-            'K','alpha',
-            'min_freq','max_df',
-            'error','coherence',
-            'psearch'
+            'K', 'alpha',
+            'top_chain_var',
+            'min_freq', 'max_df',
+            'rng_seed', 'max_iter',
+            'runtime',
+            'error','coherence'
             )
 
 class SearchParTable(tables.Table):
