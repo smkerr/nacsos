@@ -3177,6 +3177,8 @@ def sortdocs(request):
     download = request.GET.get('download',None)
     ris = request.GET.get('ris',None)
 
+    # x = y
+
     html = False
 
     print(fields)
@@ -3341,6 +3343,17 @@ def sortdocs(request):
     if f_fields == ['']:
         f_fields = []
 
+    # Get the tag queries we need for filtering docownership objects
+    tag_queries = []
+    for i in range(len(f_fields)):
+        if i==0:
+            joiner = "AND"
+        else:
+            joiner = f_join[i-1]
+        if joiner=="AND":
+            if "tag__title" in f_fields[i]:
+                tag_queries.append(f_text[i])
+
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
         if f_text[i]=="":
@@ -3386,6 +3399,8 @@ def sortdocs(request):
                 if "docownership__" in f_fields[i]:
                     kwargs["docownership__user__username"] = f_fields[i].split('__')[-1]
                     kwargs["docownership__query"] = query
+                    for t in tag_queries:
+                        kwargs["docownership__tag__title__icontains"] = t
                     f_fields[i] = "docownership__relevant"
                     try:
                         int_f = int(f_text[i])
