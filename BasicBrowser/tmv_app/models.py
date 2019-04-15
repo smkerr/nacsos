@@ -7,7 +7,7 @@ import random
 from scipy.sparse import csr_matrix, coo_matrix
 from MulticoreTSNE import MulticoreTSNE as mTSNE
 import os
-
+from datetime import timedelta
 
 class MinMaxFloat(models.FloatField):
     """
@@ -53,10 +53,6 @@ class HTopicTerm(models.Model):
 class Topic(models.Model):
     """
     The default topic object. The title is usually set according to the top words
-    It is linked to
-
-    Todo:
-        * blabla
     """
     title = models.CharField(max_length=80)
     score = models.FloatField(null=True)
@@ -64,7 +60,7 @@ class Topic(models.Model):
     growth = models.FloatField(null=True)
     run_id = models.ForeignKey('RunStats',db_index=True, on_delete=models.CASCADE)
     year = models.IntegerField(null=True)
-    period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE,null=True)
+    period = models.ForeignKey('TimePeriod', on_delete=models.SET_NULL, null=True)
     primary_dtopic = models.ManyToManyField('DynamicTopic')
     top_words = ArrayField(models.TextField(),null=True)
     primary_wg = models.IntegerField(null=True)
@@ -168,7 +164,7 @@ class TimePeriod(models.Model):
     Model for a general time period (can be related to a parliamentary period with start and end date)
     """
     title = models.CharField(null=True, max_length=80)
-    parlperiod = models.ForeignKey('parliament.ParlPeriod', null=True, on_delete=models.CASCADE)
+    parlperiod = models.ForeignKey('parliament.ParlPeriod', null=True, on_delete=models.SET_NULL)
     n = models.IntegerField()
     ys = ArrayField(models.IntegerField(),null=True)
     start_date = models.DateField(null=True)
@@ -182,7 +178,7 @@ class TimeDocTotal(models.Model):
     """
     Aggregates scores from a :model:`tmv_app.TimePeriod`
     """
-    period = models.ForeignKey(TimePeriod, on_delete=models.CASCADE)
+    period = models.ForeignKey(TimePeriod, on_delete=models.PROTECT)
     run = models.ForeignKey('RunStats', on_delete=models.CASCADE)
     n_docs = models.IntegerField(null=True)
     dt_score = models.FloatField(null=True)
@@ -192,7 +188,7 @@ class TimeDTopic(models.Model):
     """
     Holds the score of a :model:`tmv_app.DynamicTopic` within a :model:`tmv_app.TimePeriod`
     """
-    period = models.ForeignKey(TimePeriod, on_delete=models.CASCADE)
+    period = models.ForeignKey(TimePeriod, on_delete=models.PROTECT)
     dtopic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE)
     score = models.FloatField(default=0)
     share = models.FloatField(default=0)
@@ -220,7 +216,7 @@ class TopicCorr(models.Model):
     topiccorr = models.ForeignKey('Topic', on_delete=models.CASCADE ,null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
     ar = models.IntegerField(default=-1)
-    period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE, null=True)
+    period = models.ForeignKey('TimePeriod', on_delete=models.SET_NULL, null=True)
     run_id = models.IntegerField(db_index=True)
 
     def __unicode__(self):
@@ -234,7 +230,7 @@ class DynamicTopicCorr(models.Model):
     topiccorr = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True, related_name='Topiccorr')
     score = models.FloatField(null=True)
     ar = models.IntegerField(default=-1)
-    period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE, null=True)
+    period = models.ForeignKey('TimePeriod', on_delete=models.SET_NULL, null=True)
     run_id = models.IntegerField(db_index=True)
 
     def __unicode__(self):
@@ -289,8 +285,8 @@ class TopicTimePeriodScores(models.Model):
     """
     Holds scores of a :model:`tmv_app.Topic` from a :model:`tmv_app.TimePeriod`
     """
-    topic = models.ForeignKey('Topic', on_delete=models.CASCADE,null=True)
-    period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE,null=True)
+    topic = models.ForeignKey('Topic', on_delete=models.CASCADE, null=True)
+    period = models.ForeignKey('TimePeriod', on_delete=models.SET_NULL, null=True)
     score = models.FloatField(null=True)
     share = models.FloatField(null=True)
     pgrowth = models.FloatField(null=True)
@@ -301,8 +297,8 @@ class DynamicTopicARScores(models.Model):
     """
     Holds scores of a :model:`tmv_app.DynamicTopic` from an Assessment Period (:model:`scoping.AR`)
     """
-    topic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
-    ar = models.ForeignKey('scoping.AR', on_delete=models.CASCADE,null=True)
+    topic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE, null=True)
+    ar = models.ForeignKey('scoping.AR', on_delete=models.SET_NULL, null=True)
     score = models.FloatField(null=True)
     share = models.FloatField(null=True)
     pgrowth = models.FloatField(null=True)
@@ -314,7 +310,7 @@ class DynamicTopicTimePeriodScores(models.Model):
     Holds scores of a :model:`tmv_app.DynamicTopic` from a :model:`TimePeriod`
     """
     topic = models.ForeignKey('DynamicTopic', on_delete=models.CASCADE,null=True)
-    period = models.ForeignKey('TimePeriod', on_delete=models.CASCADE,null=True)
+    period = models.ForeignKey('TimePeriod', on_delete=models.SET_NULL, null=True)
     score = models.FloatField(null=True)
     share = models.FloatField(null=True)
     pgrowth = models.FloatField(null=True)
@@ -327,7 +323,7 @@ class HTopicYear(models.Model):
     """
     todo
     """
-    topic = models.ForeignKey('HTopic', on_delete=models.CASCADE,null=True)
+    topic = models.ForeignKey('HTopic', on_delete=models.CASCADE, null=True)
     PY = models.IntegerField()
     score = models.FloatField()
     count = models.FloatField()
@@ -342,9 +338,9 @@ class DocTopic(models.Model):
     """
     Relates :model:`scoping.Doc` or objects from parliament (paragraphs, speeches) with :model:`tmv_app.Topics` and holds the corresponding topic scores
     """
-    doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.CASCADE)
-    par = models.ForeignKey('parliament.Paragraph',null=True, on_delete=models.CASCADE)
-    ut = models.ForeignKey('parliament.Utterance',null=True, on_delete=models.CASCADE)
+    doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.SET_NULL)
+    par = models.ForeignKey('parliament.Paragraph',null=True, on_delete=models.SET_NULL)
+    ut = models.ForeignKey('parliament.Utterance',null=True, on_delete=models.SET_NULL)
     topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
     score = models.FloatField()
     scaled_score = models.FloatField()
@@ -354,7 +350,7 @@ class DocDynamicTopic(models.Model):
     """
     Relates :model:`scoping.Doc` with :model:`tmv_app.Topic` and holds the corresponding topic score
     """
-    doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.CASCADE)
+    doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.SET_NULL)
     topic = models.ForeignKey('DynamicTopic',null=True, on_delete=models.CASCADE)
     score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
@@ -365,7 +361,7 @@ class TopicTerm(models.Model):
     Relates :model:`tmv_app.Topic` with :model:`tmv_app.Term` and holds the corresponding term score
     """
     topic = models.ForeignKey('Topic',null=True, on_delete=models.CASCADE)
-    term = models.ForeignKey('Term', on_delete=models.CASCADE,null=True)
+    term = models.ForeignKey('Term', on_delete=models.SET_NULL, null=True)
     PY = models.IntegerField(db_index=True,null=True)
     score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
@@ -375,7 +371,7 @@ class DynamicTopicTerm(models.Model):
     Relates :model:`tmv_app.DynamicTopic` with :model:`tmv_app.Term` and holds the corresponding term score
     """
     topic = models.ForeignKey('DynamicTopic', null=True, on_delete=models.CASCADE)
-    term = models.ForeignKey('Term', on_delete=models.CASCADE, null=True)
+    term = models.ForeignKey('Term', on_delete=models.SET_NULL, null=True)
     PY = models.IntegerField(db_index=True, null=True)
     score = models.FloatField()
     run_id = models.IntegerField(db_index=True)
@@ -443,6 +439,7 @@ class RunStats(models.Model):
     topic_year_scores_current = models.NullBooleanField(default=False)
 
     ## Time spent
+    runtime = models.DurationField(null=True)
     nmf_time = models.FloatField(default=0)
     tfidf_time = models.FloatField(default=0)
     db_time = models.FloatField(default=0)
@@ -568,6 +565,15 @@ class RunStats(models.Model):
         return(m,c_ind,r_ind)
 
     def calculate_tsne(self, path, p, s_size=0, force_overwrite=False):
+        """
+        Function applied to RunStats object to calculate dimensionality reduction using TSNE
+
+        :param path: Results path
+        :param p:
+        :param s_size:
+        :param force_overwrite: (default: False) Overrides already existing results
+        :return:
+        """
         m, c_ind, r_ind = self.dt_matrix(path, s_size)
         results_path =  f"{path}/run_{self.pk}_s_{s_size}_p_{p}_results.npy"
         if os.path.exists(results_path):

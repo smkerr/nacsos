@@ -19,13 +19,16 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 default_exchange = Exchange('default', type='direct')
-medium_exchange = Exchange('medium', type='direct')
 long_exchange = Exchange('long', type='direct')
+leey_exchange = Exchange('leey', type='direct')
+muef_exchange = Exchange('muef', type='direct')
+
 
 app.conf.task_queues = (
     Queue('default', default_exchange, routing_key='default'),
-    Queue('medium', medium_exchange, routing_key='medium'),
     Queue('long', long_exchange, routing_key='long'),
+    Queue('leey', leey_exchange, routing_key='leey'),
+    Queue('muef', muef_exchange, routing_key='muef')
 )
 
 app.conf.task_default_queue = 'default'
@@ -33,7 +36,7 @@ app.conf.task_default_exchange = 'default'
 app.conf.task_default_routing_key = 'default'
 
 # increase visibility timeout such that long tasks are not scheduled multiple times
-app.conf.broker_transport_options = {'visibility_timeout': 43200} # 43200 s = 12 h
+app.conf.broker_transport_options = {'visibility_timeout': 129600}  # 43200 s = 12 h, 129600 s = 36 h
 
 @app.task(bind=True)
 def debug_task(self):

@@ -79,7 +79,7 @@ class Person(models.Model):
 
     ## Parliamentary periods
     in_parlperiod = ArrayField(models.IntegerField(), null=True)
-    active_country = models.ForeignKey(cities.models.Country,on_delete=models.CASCADE, related_name='person_active',
+    active_country = models.ForeignKey(cities.models.Country, on_delete=models.SET_NULL, related_name='person_active',
                                            null=True,verbose_name="Country in which the person is active in politics")
     positions = ArrayField(models.TextField(), null=True)
 
@@ -87,7 +87,7 @@ class Person(models.Model):
     dob = models.DateField(null=True)
     year_of_birth = models.IntegerField(null=True)
     place_of_birth = models.TextField(null=True)
-    country_of_birth = models.ForeignKey(cities.models.Country, on_delete=models.CASCADE,
+    country_of_birth = models.ForeignKey(cities.models.Country, on_delete=models.SET_NULL,
                                          related_name='person_birth', null=True)
     date_of_death = models.DateField(null=True)
 
@@ -97,7 +97,7 @@ class Person(models.Model):
     occupation = models.TextField(null=True)
     short_bio = models.TextField(null=True)
 
-    party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
+    party = models.ForeignKey(Party, on_delete=models.PROTECT, null=True)
 
     information_source = models.TextField(default="")
 
@@ -163,7 +163,7 @@ class Utterance(models.Model):
     A model for speeches in parliament, associated with one :model:`parliament.Person`
     """
     document = models.ForeignKey(Document, on_delete=models.CASCADE)
-    speaker = models.ForeignKey(Person, on_delete=models.CASCADE)
+    speaker = models.ForeignKey(Person, on_delete=models.PROTECT)
     speaker_role = models.ForeignKey(SpeakerRole, null=True, on_delete=models.SET_NULL)
     search_matches = models.ManyToManyField('Search')
 
@@ -240,11 +240,12 @@ class Constituency(models.Model):
     """
     name = models.TextField(null=True)
     number = models.IntegerField(null=True)
-    region = models.ForeignKey(cities.models.Region, on_delete=models.CASCADE, null=True)
+    region = models.ForeignKey(cities.models.Region, on_delete=models.SET_NULL, null=True)
     parliament = models.ForeignKey(Parl, on_delete=models.CASCADE)
     has_coal = models.NullBooleanField(null=True)
     def __str__(self):
         return "Wahlkreis {}: {} ({})".format(self.number, self.name, self.region)
+
 
 class PartyList(models.Model):
     """
@@ -253,7 +254,7 @@ class PartyList(models.Model):
     Specific to German parliamentary electoral process
     """
     name = models.TextField(null=True)
-    region = models.ForeignKey(cities.models.Region, on_delete=models.CASCADE,null=True)
+    region = models.ForeignKey(cities.models.Region, on_delete=models.SET_NULL,null=True)
     parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
     party = models.ForeignKey(Party, on_delete=models.CASCADE,null=True)
 
@@ -294,9 +295,9 @@ class Seat(models.Model):
     occupant = models.ForeignKey(Person, on_delete=models.CASCADE)
     start_date = models.DateField(null=True)
     end_date = models.DateField(null=True)
-    party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
+    party = models.ForeignKey(Party, on_delete=models.SET_NULL, null=True)
     seat_type = models.IntegerField(choices=SEAT_TYPES,null=True)
-    constituency = models.ForeignKey(Constituency, null=True, on_delete=models.CASCADE,)
+    constituency = models.ForeignKey(Constituency, null=True, on_delete=models.SET_NULL)
     list = models.ForeignKey(PartyList, on_delete=models.CASCADE, null=True)
 
 
@@ -371,7 +372,7 @@ class Search(models.Model):
     title = models.TextField()
     text = models.TextField()
     parliament = models.ForeignKey(Parl, on_delete=models.CASCADE, null=True)
-    party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
+    party = models.ForeignKey(Party, on_delete=models.SET_NULL, null=True)
     speaker_regions = models.ManyToManyField(cities.models.Region)
     start_date = models.DateField(null=True,verbose_name="Earliest date for search")
     stop_date = models.DateField(null=True,verbose_name="Latest date for search")
@@ -380,7 +381,7 @@ class Search(models.Model):
     creation_date = models.DateTimeField(auto_now_add=True,verbose_name="Date of Search creation")
     creator = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         verbose_name="Query Creator",
         #related_name="user_creations",

@@ -333,9 +333,12 @@ def topics_time(request, run_id, stype):
 
     return HttpResponse(template.render(request =request, context=context))
 
+
 #######################################################################
-## DynamicTopic View (for dynamic NMF)
+
 def dynamic_topic_detail(request,topic_id):
+    """ Dynamic Topic view (for dynamic NMF) """
+
     template = loader.get_template('tmv_app/dynamic_topic.html')
 
     topic = DynamicTopic.objects.get(pk=topic_id)
@@ -488,9 +491,14 @@ def dynamic_topic_detail(request,topic_id):
 
 # Topic page for Blei dynamic topics
 def dtopic_detail(request,topic_id):
-    '''
-    View for Blei Dynamic topics
-    '''
+    """
+    View for dynamic topics from Blei dtm
+
+    :param request:
+    :param topic_id:
+    :return:
+    """
+
     template = loader.get_template('tmv_app/dtopic.html')
 
     topic = Topic.objects.get(pk=topic_id)
@@ -554,12 +562,18 @@ def dtopic_detail(request,topic_id):
 
     return HttpResponse(template.render(context))
 
-
-
-
 ###########################################################################
-## Topic View
+
+
 def topic_detail(request, topic_id, run_id=0):
+    """
+    Topic view
+
+    :param request:
+    :param topic_id:
+    :param run_id:
+    :return:
+    """
 
     template = loader.get_template('tmv_app/topic.html')
 
@@ -611,8 +625,9 @@ def topic_detail(request, topic_id, run_id=0):
             doc__journal__isnull=False,
             doc__doctopic__score__gt=stat.dt_threshold
         ).values('fulltext').annotate(
-            t=Count('doc__doctopic__score')
-        ).order_by('-t')[:10]
+            score=Sum('doc__doctopic__score'),
+            no_docs=Count('doc__doctopic__score')
+        ).order_by('-score')[:10]
 
     elif stat.psearch.search_object_type == 1:
         ndocs = pm.Paragraph.objects.filter(
@@ -766,6 +781,7 @@ def get_topic_docs(request,topic_id):
 
     return HttpResponse(template.render(context))
 
+
 def multi_topic(request):
 
     template = loader.get_template('tmv_app/multi_topic_docs.html')
@@ -815,6 +831,14 @@ def multi_topic(request):
 ##############################################################
 
 def term_detail(request, run_id, term_id):
+    """
+    View for details of a topic term
+
+    :param request:
+    :param run_id:
+    :param term_id:
+    :return:
+    """
 
     allnodes = []
     alllinks = []
@@ -900,6 +924,16 @@ def term_detail(request, run_id, term_id):
 
 
 def network_wg(request, run_id, t=5, f=100,top=0):
+    """
+    View of topic network
+
+    :param request:
+    :param run_id:
+    :param t:
+    :param f:
+    :param top:
+    :return:
+    """
     ar = -1
     force = int(f) * -1
     t = int(t) / 100
@@ -1029,9 +1063,16 @@ def network_wg(request, run_id, t=5, f=100,top=0):
     return HttpResponse(template.render(context))
 
 #######################################################################
-## Doc view
 
 def doc_detail(request, doc_id, run_id):
+    """
+    View of document details
+
+    :param request:
+    :param doc_id:
+    :param run_id:
+    :return:
+    """
 
     snowball_stemmer = SnowballStemmer("english")
 
@@ -1181,8 +1222,17 @@ def print_table(request,run_id):
     return response
 
 #################################################################
-### Main page!
+
+
 def topic_presence_detail(request,run_id):
+    """
+    Main page of topic models
+
+    :param request:
+    :param run_id:
+    :return:
+    """
+
     stat = RunStats.objects.get(run_id=run_id)
     template = loader.get_template('tmv_app/topic_presence.html')
     if stat.get_method_display() == 'hlda':
@@ -1210,10 +1260,6 @@ def topic_presence_detail(request,run_id):
     if stat.status==3:
         run_id = int(run_id)
 
-        #update_topic_titles(run_id)
-        #update_topic_scores(run_id)
-
-
         response = ''
 
         get_year_filter(request)
@@ -1238,6 +1284,13 @@ def topic_presence_detail(request,run_id):
 
 
 def dtm_home(request, run_id):
+    """
+    Main page of dynamic topic model (dynamic NMF)
+
+    :param request:
+    :param run_id:
+    :return:
+    """
     template = loader.get_template('tmv_app/dtm_home.html')
 
     stat=RunStats.objects.get(pk=run_id)
@@ -1308,10 +1361,18 @@ def highlight_dtm_w(request):
 
 
     return HttpResponse(json.dumps(list(wts)))
+
+
 ##################################################################
-## Alt Main page for hlda
 
 def topic_presence_hlda(request):
+    """
+    View of main topic model page for hlda
+
+    :param request:
+    :return:
+    """
+
     run_id = find_run_id(request.session)
     update_topic_titles_hlda(request.session)
     update_topic_scores(request.session)
@@ -1360,6 +1421,13 @@ def topic_presence_hlda(request):
 
 
 def stats(request,run_id):
+    """
+    View with statistics of a model run
+
+    :param request:
+    :param run_id:
+    :return:
+    """
 
     template = loader.get_template('tmv_app/stats.html')
 
@@ -1450,6 +1518,13 @@ def stats(request,run_id):
 
 
 def runs(request,pid=0):
+    """
+    View with list of all topic model runs
+
+    :param request:
+    :param pid:
+    :return:
+    """
 
     pid = int(pid)
 
@@ -1459,10 +1534,12 @@ def runs(request,pid=0):
 
 
     if pid > 0:
-        stats = stats.filter(query__project_id=pid)
+        stats_filtered = stats.filter(query__project_id=pid)
 
-        if stats.count() <= 0:
-            stats = RunStats.objects.all().order_by('-start').filter(search__project_id=pid)
+        if stats_filtered.count() <= 0:
+            stats = stats.filter(psearch__project_id=pid)
+        else:
+            stats = stats_filtered
 
 
     stats = stats.annotate(
@@ -1505,6 +1582,13 @@ def update_run(request, run_id):
     return HttpResponseRedirect(reverse('tmv_app:runs'))
 
 def delete_run(request,new_run_id):
+    """
+    Function to delete a run and its associated topic objects
+
+    :param request:
+    :param new_run_id:
+    :return:
+    """
     stat = RunStats.objects.get(run_id=new_run_id)
 
     if stat.query:
