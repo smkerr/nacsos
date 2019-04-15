@@ -512,6 +512,12 @@ def add_scopus_doc(r,q,update):
                 doc = docs.first()
 
         elif len(docs)==0: # if there are none, try with the title and jaccard similarity
+
+            if get(r,'ti') is None:
+                q.upload_log+=f"<p>This document ({r}) has no title!! "
+                q.save()
+                return
+
             s1 = shingle(get(r,'ti'))
 
             twords = get(r,'ti').split()

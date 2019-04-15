@@ -78,6 +78,9 @@ class Project(models.Model):
     reldocs = models.IntegerField(default=0)
     tms = models.IntegerField(default=0)
 
+    # Project level variables
+    no_but = models.BooleanField(default=False)
+
     def __str__(self):
       return self.title
 
