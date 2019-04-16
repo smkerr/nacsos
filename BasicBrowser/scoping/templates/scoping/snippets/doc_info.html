@@ -4,6 +4,9 @@
     <button class="mergebutton" data-keep="{{merge.keep}}" data-throw="{{merge.throw}}">Merge and keep this copy</button>
   {% endif %}
 <h4> {{ doc.title | safe }}</h4>
+{% if doc.id %}
+  <a href="{% url 'scoping:document' project.id doc.id %}">{{doc.id}}</a>
+{% endif %}
 <p>{{ doc.wosarticle__so | safe}}
     {% if doc.wosarticle__py %}
         ({{ doc.wosarticle__py }})

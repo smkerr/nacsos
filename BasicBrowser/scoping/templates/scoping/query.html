@@ -121,7 +121,7 @@
     {% endfor %}
   </table>
   </div>
-  <p style="text-align:left">
+
     <div class="container bg-white border rounded">
       <p>
         <!-- <table id="split_table">
@@ -150,8 +150,25 @@
                 Split Documents
             </div>
         </div>
-        <div class="row">
-            <div class="col-sm text-right">
+        <div class="row" >
+          <div class="container d-flex justify-content-center">
+            <div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="title_ab_full" id="inlineRadio1" value="title">
+                <label class="form-check-label" for="inlineRadio1">Titles only</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="title_ab_full" id="inlineRadio2" value="abstract">
+                <label class="form-check-label" for="inlineRadio2">Abstracts</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="title_ab_full" id="inlineRadio3" value="full">
+                <label class="form-check-label" for="inlineRadio3">Full texts (if available)</label>
+              </div>
+            </div>
+          </div>
+
+            <!-- <div class="col-sm text-right">
                 Abstracts
             </div>
             <div class="col-sm text-center">
@@ -162,7 +179,7 @@
             </div>
             <div class="col-sm text-left">
                 Titles
-            </div>
+            </div> -->
         </div>
       </p>
       <p>Assign a total of <span id="docUserTotal"></span> documents each to <span id="userTotal"></span> users? <button onclick="do_assignment()">Assign</button></p>
@@ -404,12 +421,13 @@ function do_assignment() {
         tagdocs.push($(this).val())
     })
     var proportion = $("#sample").val()
-	console.log(active_users)
+	  console.log(active_users)
     console.log(tags)
     console.log(tagdocs)
     console.log(qid)
     var docsplit = $("#split").is(':checked')
     var title_only = $("#title_only").is(':checked')
+    var title_ab_full = $("input[name='title_ab_full']:checked").val()
     $.ajax({
         url: '/scoping/assign_docs',
         data : {
@@ -418,7 +436,7 @@ function do_assignment() {
             'tags': tags,
             'tagdocs': tagdocs,
             'docsplit': docsplit,
-            'title_only': title_only
+            'title_ab_full': title_ab_full
         },
         success: function() {
             location.reload()

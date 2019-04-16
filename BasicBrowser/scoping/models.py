@@ -78,6 +78,9 @@ class Project(models.Model):
     reldocs = models.IntegerField(default=0)
     tms = models.IntegerField(default=0)
 
+    # Project level variables
+    no_but = models.BooleanField(default=False)
+
     def __str__(self):
       return self.title
 
@@ -318,6 +321,7 @@ class DocProject(models.Model):
     relevant = models.IntegerField(default=0, choices=Relevance)
     ti_relevant = models.IntegerField(default=0, choices=Relevance)
     ab_relevant = models.IntegerField(default=0, choices=Relevance)
+    full_relevant = models.IntegerField(default=0, choices=Relevance)
 
     class Meta:
         unique_together = ("doc","project")
@@ -752,6 +756,12 @@ class Doc(models.Model):
 
       return self.UT.UT
 
+    def file_url(self):
+        if hasattr(self,'docfile'):
+            return f'<a href="/scoping/download_pdf/{self.docfile.id}">{self.docfile.file}</a>'
+        else:
+            return "No pdf uploaded"
+
     def authorlist(self):
         das = self.docauthinst_set.order_by('AU','position').distinct('AU').values_list('id',flat=True)
         unique = self.docauthinst_set.filter(id__in=das).order_by('position')
@@ -817,6 +827,9 @@ class Doc(models.Model):
         for f in fields:
             doc = self
             for fpart in f.split("__"):
+                if not hasattr(doc, fpart):
+                    doc = None
+                    break
                 doc = getattr(doc,fpart)
             s = doc
             if isinstance(s,str):
@@ -828,7 +841,8 @@ class Doc(models.Model):
                     for w in sorted(list(words),key=len, reverse=True):
                         #s = re.sub(w,'<span class="t1">{}</span>'.format(w),s)
                         s = utils.ihighlight(w,s)
-            d[f] = s
+            if s is not None:
+                d[f] = s
         d["authors"] = list(self.docauthinst_set.order_by('position').values())
         for a in d["authors"]:
             for w in sorted(list(words),key=len, reverse=True):
@@ -1126,6 +1140,7 @@ class DocOwnership(models.Model):
     utterance_linked = models.BooleanField(default=False)
 
     title_only = models.BooleanField(default=False)
+    full_text = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Reviewer")
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
@@ -1189,7 +1204,20 @@ def update_docproj(sender, instance, **kwargs):
         else:
             dp.relevant = 3
         dp.save()
-    if instance.title_only:
+    if instance.full_text:
+        if dp.full_relevant == 0:
+            dp.full_relevant=instance.relevant
+            dp.save()
+        elif dp.full_relevant != instance.relevant:
+            ratings = set(DocOwnership.objects.filter(
+                doc=d,tag__query__project=p,full_text=True
+            ).values_list('relevant', flat=True))
+            if len(ratings) < 2:
+                dp.full_relevant = instance.relevant
+            else:
+                dp.full_relevant = 3
+            dp.save()
+    elif instance.title_only:
         if dp.ti_relevant == 0:
             dp.ti_relevant=instance.relevant
             dp.save()

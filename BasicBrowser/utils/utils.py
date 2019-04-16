@@ -8,7 +8,7 @@ from urllib.parse import urlparse, parse_qsl
 import sys
 import uuid
 import short_url
-
+from django.db import IntegrityError
 
 from scoping.models import *
 from tmv_app.models import *
@@ -512,6 +512,12 @@ def add_scopus_doc(r,q,update):
                 doc = docs.first()
 
         elif len(docs)==0: # if there are none, try with the title and jaccard similarity
+
+            if get(r,'ti') is None:
+                q.upload_log+=f"<p>This document ({r}) has no title!! "
+                q.save()
+                return
+
             s1 = shingle(get(r,'ti'))
 
             twords = get(r,'ti').split()
@@ -578,7 +584,11 @@ def add_scopus_doc(r,q,update):
         doc.save()
         article.save()
 
-        doc.query.add(q)
+        try:
+            doc.query.add(q)
+        except IntegrityError as e:
+            print("already in there")
+
         #doc.projects.add(q.project)
     if doc is not None and "WOS:" not in str(doc.UT.UT):
         if update:

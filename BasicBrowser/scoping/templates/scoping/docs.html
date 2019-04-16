@@ -224,6 +224,7 @@ function update_fields(download="false",ris="false") {
     $(".f_join").each(function(){
         joins.push($(this).val())
     })
+    console.log(joins)
     var sortfields = [];
     var sortdirs = [];
     $(".sort_active").each(function() {
@@ -244,7 +245,7 @@ function update_fields(download="false",ris="false") {
     });
     function url_args(url,name,arr) {
         for (var j=0;j<arr.length;j++) {
-            url += '&'+name+'[]='+arr[j]
+            url += '&'+name+'%5B%5D='+arr[j]
         }
         return url
     }
@@ -252,7 +253,7 @@ function update_fields(download="false",ris="false") {
         url = '/scoping/sort_docs?'
         url += 'qid='+qid
         url += '&q2id='+q2id
-        var names = ['fields','f_fields','f_operators','join','sort_fields','sort_dirs','f_text']
+        var names = ['fields','f_fields','f_operators','f_join','sort_fields','sort_dirs','f_text']
         var arrs = [active_field_paths, fields, operators, joins, sortfields, sortdirs, text]
         for (var i=0;i<arrs.length;i++) {
             console.log(i)

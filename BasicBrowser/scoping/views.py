@@ -2596,6 +2596,7 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
     relevance_fields.append({"path": "docfile__id", "name": "PDF"})
     relevance_fields.append({"path": "category__name", "name": "Category"})
     relevance_fields.append({"path": "docproject__relevant", "name": "Project relevant"})
+    relevance_fields.append({"path": "docproject__full_relevant", "name": "Project relevant (Fulltext)"})
     relevance_fields.append({"path": "docproject__ti_relevant", "name": "Project relevant (title)"})
     relevance_fields.append({"path": "docproject__ab_relevant", "name": "Project relevant (abstract)"})
     relevance_fields.append({"path": "note__text", "name": "Notes"})
@@ -3177,6 +3178,8 @@ def sortdocs(request):
     download = request.GET.get('download',None)
     ris = request.GET.get('ris',None)
 
+    # x = y
+
     html = False
 
     print(fields)
@@ -3226,7 +3229,7 @@ def sortdocs(request):
 
     tech = query.category
 
-    if "docproject__relevant" in fields or "docproject__ti_relevant" in fields or "docproject__ab_relevant" in fields:
+    if "docproject__relevant" in fields or "docproject__ti_relevant" in fields or "docproject__ab_relevant" in fields or "docproject__full_relevant" in fields:
         filt_docs = filt_docs.filter(
             docproject__project=query.project
         )
@@ -3341,6 +3344,17 @@ def sortdocs(request):
     if f_fields == ['']:
         f_fields = []
 
+    # Get the tag queries we need for filtering docownership objects
+    tag_queries = []
+    for i in range(len(f_fields)):
+        if i==0:
+            joiner = "AND"
+        else:
+            joiner = f_join[i-1]
+        if joiner=="AND":
+            if "tag__title" in f_fields[i]:
+                tag_queries.append(f_text[i])
+
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
         if f_text[i]=="":
@@ -3386,6 +3400,8 @@ def sortdocs(request):
                 if "docownership__" in f_fields[i]:
                     kwargs["docownership__user__username"] = f_fields[i].split('__')[-1]
                     kwargs["docownership__query"] = query
+                    for t in tag_queries:
+                        kwargs["docownership__tag__title__icontains"] = t
                     f_fields[i] = "docownership__relevant"
                     try:
                         int_f = int(f_text[i])
@@ -3398,7 +3414,7 @@ def sortdocs(request):
                 # kwargs = {
                 #     '{0}__{1}'.format(f_fields[i],op): f_text[i]
                 # }
-                if "docproject__relevant" in f_fields[i] or "docproject__ti_relevant" in f_fields[i] or "docproject__ab_relevant" in f_fields[i]:
+                if "docproject__relevant" in f_fields[i] or "docproject__ti_relevant" in f_fields[i] or "docproject__ab_relevant" in f_fields[i] or "docproject__full_relevant" in f_fields[i]:
                     kwargs['docproject__project'] = query.project
                 if joiner=="AND":
                     if exclude:
@@ -4165,11 +4181,13 @@ def assign_docs(request):
     tags = request.GET.getlist('tags[]',None)
     tagdocs = request.GET.getlist('tagdocs[]',None)
     docsplit = request.GET.get('docsplit',None)
-    title_only = request.GET.get('title_only',False)
-    if title_only=="true":
+    title_ab_full = request.GET.get('title_ab_full',None)
+    full_text = False
+    title_only = False
+    if title_ab_full=="title":
         title_only=True
-    else:
-        title_only=False
+    elif title_ab_full=="full":
+        full_text=True
 
 
     #print(docsplit)
@@ -4227,7 +4245,8 @@ def assign_docs(request):
                             doc=doc,
                             query=query,
                             user=user,
-                            title_only=title_only
+                            title_only=title_only,
+                            full_text=full_text
                         ).first().relevant
                     else:
                         r = 0
@@ -4240,7 +4259,8 @@ def assign_docs(request):
                         user=user,
                         tag=t,
                         relevant=r,
-                        title_only=title_only
+                        title_only=title_only,
+                        full_text=full_text
                     )
                 else:
                     docown = DocOwnership(
@@ -4259,7 +4279,8 @@ def assign_docs(request):
                                 doc=doc,
                                 query=query,
                                 user=user,
-                                title_only=title_only
+                                title_only=title_only,
+                                full_text=full_text
                             ).first().relevant
                         else:
                             r = 0
@@ -4273,7 +4294,8 @@ def assign_docs(request):
                             user=user,
                             tag=t,
                             relevant=r,
-                            title_only=title_only
+                            title_only=title_only,
+                            full_text=full_text
                         )
                     else:
                         docown = DocOwnership(
@@ -4932,6 +4954,8 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
     else:
         if do.title_only:
             doc = do.doc.highlight_fields(tag.query,["title","id","wosarticle__di"])
+        elif do.full_text:
+            doc =  do.doc.highlight_fields(tag.query,["title","id","wosarticle__di","docfile"])
         else:
             doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
 
