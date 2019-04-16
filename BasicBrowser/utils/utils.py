@@ -8,7 +8,7 @@ from urllib.parse import urlparse, parse_qsl
 import sys
 import uuid
 import short_url
-
+from django.db import IntegrityError
 
 from scoping.models import *
 from tmv_app.models import *
@@ -584,7 +584,11 @@ def add_scopus_doc(r,q,update):
         doc.save()
         article.save()
 
-        doc.query.add(q)
+        try:
+            doc.query.add(q)
+        except IntegrityError as e:
+            print("already in there")
+
         #doc.projects.add(q.project)
     if doc is not None and "WOS:" not in str(doc.UT.UT):
         if update:
