@@ -34,6 +34,7 @@ app.conf.task_queues = (
 app.conf.task_default_queue = 'default'
 app.conf.task_default_exchange = 'default'
 app.conf.task_default_routing_key = 'default'
+app.conf.task_track_started = True  # track tasks as running
 
 # increase visibility timeout such that long tasks are not scheduled multiple times
 app.conf.broker_transport_options = {'visibility_timeout': 129600}  # 43200 s = 12 h, 129600 s = 36 h
