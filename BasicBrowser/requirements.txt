@@ -25,7 +25,7 @@ cymem==1.31.2
 dataset==1.0.3
 decorator==4.1.2
 dill==0.2.7.1
-Django==2.1.7
+Django==2.2
 djangorestframework==3.9.0
 django-bootstrap4==0.0.6
 django-cities==0.5.0.6

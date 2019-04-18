@@ -1897,8 +1897,12 @@ def query_tm(request,qid):
             #obj.method = 'NM'
             obj.save()
 
-            do_nmf.delay(obj.run_id)
-
+            #do_nmf.delay(obj.run_id)
+            do_nmf.apply_async(
+                args=[obj.run_id],
+                queue="long"
+            )
+            
             return HttpResponseRedirect(reverse('scoping:query_tm_manager', kwargs={'qid': qid}))
 
         else:

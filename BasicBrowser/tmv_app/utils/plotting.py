@@ -78,7 +78,7 @@ class CoordSquare:
             self.av_y = None
             self.H = None
         else:
-            self.av_y = np.mean(list(docs.values_list('PY',flat=True)))
+            self.av_y = np.mean(list(docs.filter(PY__isnull=False).values_list('PY',flat=True)))
             H = 0
             ts = DTO.filter(
                 run_id=run_id,
