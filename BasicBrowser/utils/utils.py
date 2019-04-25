@@ -95,7 +95,10 @@ def get(r, k):
     try:
         x = r[k]
     except:
-        x = None
+        try:
+            x = r[k.upper()]
+        except:
+            x = None
     return(x)
 
 def jaccard(s1,s2):
@@ -240,7 +243,9 @@ def add_doc(r, q, update):
         #     pass
 
 
-def read_wos(res, q, update):
+def read_wos(res, q, update, deduplicate=False):
+    if deduplicate:
+        print("nonstandard WoS, searching for duplicates")
     i=0
     n_records = 0
     records=[]
@@ -252,7 +257,7 @@ def read_wos(res, q, update):
 
     q.doc_set.clear()
 
-    p=12
+    p=4
 
     for line in res:
         if '\ufeff' in line: # BOM on first line
@@ -266,17 +271,28 @@ def read_wos(res, q, update):
             if chunk_size==max_chunk_size:
                 # parallely add docs
                 pool = Pool(processes=p)
-                pool.map(partial(add_doc, q=q, update=update),records)
+                if deduplicate:
+                    print("adding as if scopus")
+                    pool.map(partial(add_scopus_doc, q=q, update=update),records)
+                else:
+                    pool.map(partial(add_doc, q=q, update=update),records)
                 pool.terminate()
                 records = []
                 chunk_size = 0
             continue
         if re.match("^EF",line): #end of file
             if chunk_size < max_chunk_size:
-                # parallely add docs
-                pool = Pool(processes=p)
+                # parallely add doc
                 #pool.map(update_doc, records)
-                pool.map(partial(add_doc, q=q, update=update),records)
+                if deduplicate:
+                    print("adding as if scopus")
+                    from django.db import connection
+                    connection.close()
+                    pool = Pool(processes=1)
+                    pool.map(partial(add_scopus_doc, q=q, update=update),records)
+                else:
+                    pool = Pool(processes=p)
+                    pool.map(partial(add_doc, q=q, update=update),records)
                 pool.terminate()
             #done!
             break
@@ -446,6 +462,7 @@ def find_with_url(r):
     try:
         ut = scoping.models.UT.objects.get(UT=surl)
         doc = ut.doc
+        #print("found with ID")
     except:
         doc = None
     return doc
@@ -489,18 +506,19 @@ def add_scopus_doc(r,q,update):
                     PY=get(r,'py')
             )
             if not docs.exists() and get(r,'au') is not None:
-                print(get(r,'au')[0].split(',')[0])
-                docs = scoping.models.Doc.objects.filter(
-                    wosarticle__ti__iexact=get(r,'ti'),
-                    docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
-                ).distinct('pk')
-                print(docs)
+                if len(get(r,'au')) > 0:
+                    docs = scoping.models.Doc.objects.filter(
+                        wosarticle__ti__iexact=get(r,'ti'),
+                        docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
+                    ).distinct('pk')
+                    print(docs)
         else:
             docs = scoping.models.Doc.objects.filter(
                 wosarticle__di=did
             )
 
         if len(docs)==1:
+            #print("found! with doi or ti and authors")
             doc = docs.first()
         elif len(docs)>1: # if there are two, that's bad!
             print("more than one doc matching!!!!!")
@@ -512,8 +530,9 @@ def add_scopus_doc(r,q,update):
                 doc = docs.first()
 
         elif len(docs)==0: # if there are none, try with the title and jaccard similarity
-
+            #print("looking with jaccard similarity and so on")
             if get(r,'ti') is None:
+                print(f"<p>This document ({r}) has no title!! ")
                 q.upload_log+=f"<p>This document ({r}) has no title!! "
                 q.save()
                 return
@@ -531,6 +550,7 @@ def add_scopus_doc(r,q,update):
                 title__iregex='\w',
                 title__icontains=twords
             )
+            print(py_docs.count())
             doc = None
             for d in py_docs.iterator():
                 j = jaccard(s1,d.shingle())
@@ -627,7 +647,7 @@ def add_scopus_doc(r,q,update):
                 doc.docauthinst_set.clear()
                 for a in range(len(get(r,'au'))):
                     #af = r['AF'][a]
-                    au = r['au'][a]
+                    au = get(r,'au')[a]
                     dai = scoping.models.DocAuthInst(doc=doc)
                     dai.AU = au
                     dai.position = a+1

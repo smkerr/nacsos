@@ -313,7 +313,7 @@ def update_bdtopics(run_id):
                 topic_time_period_scores, created = TopicTimePeriodScores.objects.get_or_create(
                     topic = topic,
                     period = tp
-                ) 
+                )
                 topic_time_period_scores.score = tpt['score']
                 topic_time_period_scores.share = tpt['score'] / tdt.dt_score
                 if lp:
@@ -325,8 +325,8 @@ def update_bdtopics(run_id):
                         topic_time_period_scores.pgrowth=(tpt['score']-last.score)/last.score
                     except:
                         pass
-                lp = tp
                 topic_time_period_scores.save()
+            lp = tp
 
 def yearly_topic_term_scores(run_id):
 

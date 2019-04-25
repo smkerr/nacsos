@@ -63,6 +63,10 @@ def read_xml(q, update):
                 if name is None:
                     nameid = 'name'
                     name = author.find(nameid)
+                if name is None:
+                    if author.find('collab'):
+                        article_dict['au'].append(author.find('collab').text)
+                    continue
                 surname = name.find('surname')
                 if surname is not None:
                     first_names = name.find('given-names')
