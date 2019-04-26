@@ -9,6 +9,8 @@
 <form class="form" action="" method="POST">
     {% csrf_token %}
 
+    <input type="hidden"  name="page_load" value="{{now}}">
+
     <div class="container border rounded bg-white p-2">
     {% for g in groups %}
         {% if g.counter0 > 0 %}

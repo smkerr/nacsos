@@ -95,6 +95,8 @@ def upload_docs(qid, update):
         print("WoS")
         with open(fname, encoding="utf-8") as res:
             if q.wos_db is not None:
+                from django.db import connection
+                connection.close()
                 r_count = read_wos(res, q, update, deduplicate=True)
             else:
                 r_count = read_wos(res, q, update)

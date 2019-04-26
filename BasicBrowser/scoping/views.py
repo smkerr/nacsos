@@ -48,6 +48,7 @@ from .tables import *
 
 from .tasks import *
 from tmv_app.tasks import *
+from django.utils.timezone import make_aware
 
 import time
 
@@ -1902,7 +1903,7 @@ def query_tm(request,qid):
                 args=[obj.run_id],
                 queue="long"
             )
-            
+
             return HttpResponseRedirect(reverse('scoping:query_tm_manager', kwargs={'qid': qid}))
 
         else:
@@ -2171,6 +2172,9 @@ def proc_topic_intrusion(request,tid,top_id):
 def code_document(request,docmetaid):
     '''From this page, add effects and interventions'''
     dmc = DocMetaCoding.objects.get(pk=docmetaid)
+    if dmc.start_time is None:
+        dmc.start_time=timezone.now()
+    dmc.save()
     template = loader.get_template('scoping/doc_meta.html')
 
     effects = StudyEffect.objects.filter(
@@ -2235,7 +2239,7 @@ def save_document_code(request,docmetaid,dest):
     dmc = DocMetaCoding.objects.get(pk=docmetaid)
     ## save finished
     dmc.coded=True
-    dmc.finished=datetime.datetime.now()
+    dmc.finish_time=datetime.datetime.now()
     dmc.save()
 
     if dest==4:
@@ -2396,6 +2400,8 @@ def clean_form_data(data,model):
             if data[key]=='':
                 data[key]=None
             pcs[key.replace("popchars_","")] = data[key]
+        elif key=="page_load":
+            continue
         else:
             f = model._meta.get_field(key)
             if f.many_to_many:
@@ -2448,7 +2454,7 @@ def attempt_effect_intervention_save(model,edit,instance,
                 errors = e.message_dict
                 form_fields = get_form_fields(model,dmc.project,instance, errors, clean_data)
                 return (errors,instance,form_fields)
-        return (False,False,False)
+        return (False,instance,False)
     except ValidationError as e:
         errors = e.message_dict
         form_fields = get_form_fields(model,dmc.project,instance, errors, clean_data)
@@ -2470,6 +2476,8 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
         data['doc_id'] = dmc.doc.id
         data['project_id'] = dmc.project.id
         data['user_id'] = dmc.user_id
+        page_load = make_aware(datetime.datetime.fromtimestamp(float(data['page_load'][0])))
+
         clean_data, m2m, popchars = clean_form_data(data,StudyEffect)
 
         errors, instance, form_fields = attempt_effect_intervention_save(
@@ -2477,15 +2485,31 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
             clean_data,m2m,"controls",dmc,popchars
         )
         if not errors:
+            effect = instance
+            effect.finish_time=timezone.now()
+            if not effect.start_time:
+                effect.start_time = page_load
+            time_elapsed = timezone.now() - page_load
+            if effect.editing_time_elapsed is not None:
+                effect.editing_time_elapsed += time_elapsed.total_seconds()
+            else:
+                effect.editing_time_elapsed = time_elapsed.total_seconds()
+
+            effect.save()
             return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
+        else:
+            print(errors)
+            now = page_load
     else:
         form_fields = get_form_fields(StudyEffect,dmc.project,instance,errors)
+        now = timezone.now()
 
     context = {
         'project': dmc.project,
         'dmc': dmc,
         'groups': form_fields,
-        'ei': "Effect"
+        'ei': "Effect",
+        'now': now.timestamp()
     }
     return HttpResponse(template.render(context,request))
 
@@ -2507,25 +2531,46 @@ def add_intervention(request,effectid,iid=False,i_edit=False):
     if request.method=="POST":
         data = dict(request.POST.copy())
         data['effect_id'] = effect.id
+        page_load = make_aware(datetime.datetime.fromtimestamp(float(data['page_load'][0])))
         clean_data, m2m, popchars = clean_form_data(data,Intervention)
-
         errors, instance, form_fields = attempt_effect_intervention_save(
             Intervention,i_edit,instance,
             clean_data,m2m,"intervention_subtypes",
             dmc
         )
         if not errors:
+            effect = instance.effect
+            effect.finish_time=timezone.now()
+            if not effect.start_time:
+                effect.start_time = page_load
+            time_elapsed = timezone.now() - page_load
+            if effect.editing_time_elapsed is not None:
+                effect.editing_time_elapsed += time_elapsed.total_seconds()
+            else:
+                effect.editing_time_elapsed = time_elapsed.total_seconds()
+
+            effect.save()
+
             return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
+        else:
+            # If we had an error, don't update *now* pass the original *now* back to the page
+            now = page_load
     else:
         form_fields = get_form_fields(Intervention,dmc.project,instance, errors)
+        # If loading for the first time, pass *now* to the page, ready to be passed back to us
+        now = timezone.now()
 
     template = loader.get_template('scoping/add_effect.html')
+
+
+
 
     context = {
         'project': dmc.project,
         'dmc': dmc,
         'ei': "Intervention",
-        'groups': form_fields
+        'groups': form_fields,
+        'now': now.timestamp()
     }
     return HttpResponse(template.render(context,request))
 

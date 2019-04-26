@@ -244,6 +244,8 @@ def add_doc(r, q, update):
 
 
 def read_wos(res, q, update, deduplicate=False):
+    from django.db import connection
+    connection.close()
     if deduplicate:
         print("nonstandard WoS, searching for duplicates")
     i=0
@@ -270,11 +272,12 @@ def read_wos(res, q, update, deduplicate=False):
             chunk_size+=1
             if chunk_size==max_chunk_size:
                 # parallely add docs
-                pool = Pool(processes=p)
                 if deduplicate:
-                    print("adding as if scopus")
+                    print("adding as if scopus")#
+                    pool = Pool(processes=1)
                     pool.map(partial(add_scopus_doc, q=q, update=update),records)
                 else:
+                    pool = Pool(processes=p)
                     pool.map(partial(add_doc, q=q, update=update),records)
                 pool.terminate()
                 records = []
@@ -468,6 +471,8 @@ def find_with_url(r):
     return doc
 
 def add_scopus_doc(r,q,update):
+    from django.db import connection
+    connection.close()
     doc = None
     try:
         r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid'].strip()
