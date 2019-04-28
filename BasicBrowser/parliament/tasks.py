@@ -222,6 +222,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
             print("{}: {}".format(field.name, field_value))
 
     start_time = time.time()
+    start_datetime = timezone.now()
 
     stat.status = 1  # 3 = finished
 
@@ -438,6 +439,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
     stat.iterations = model.n_iter_
     stat.status = 3  # 3 = finished
     stat.last_update = timezone.now()
+    stat.runtime = timezone.now() - start_datetime
     stat.save()
     update_topic_titles(run_id)
     update_topic_scores(run_id)

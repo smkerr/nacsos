@@ -47,6 +47,7 @@ def run_dynamic_nmf(stat):
             print("{}: {}".format(field.name, field_value))
 
     t0 = time()
+    start_datetime = timezone.now()
 
     s = Search.objects.get(pk=stat.psearch.id)
 
@@ -309,6 +310,7 @@ def run_dynamic_nmf(stat):
     stat.error = stat.error + nmf.reconstruction_err_
     stat.errortype = "Frobenius"
     stat.last_update = timezone.now()
+    stat.runtime = timezone.now() - start_datetime
     stat.status = 3  # 3 = finished
     stat.save()
 
