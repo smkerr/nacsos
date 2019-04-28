@@ -50,11 +50,12 @@ Best,
 
 Max
         '''
-        print(message)
+        print(f"account created for {email}")
 
         # if they have been created, set the password and stuff, and send them an email
         u.first_name = options["first_name"]
         u.last_name = options["last_name"]
+        u.email = email
         u.is_superuser = True
         u.set_password(pw)
 

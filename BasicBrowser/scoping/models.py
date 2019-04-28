@@ -99,10 +99,15 @@ class StudyEffect(models.Model):
 
     ]
 
+    start_time = models.DateTimeField(null=True, blank=True)
+    editing_time_elapsed = models.FloatField(null=True, blank=True)
+    finish_time = models.DateTimeField(null=True, blank=True)
 
     doc = models.ForeignKey('Doc',on_delete=models.CASCADE)
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    docmetacoding = models.ForeignKey('DocMetaCoding', on_delete=models.CASCADE,null=True, blank=True)
 
 
 

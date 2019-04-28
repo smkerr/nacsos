@@ -8,6 +8,8 @@ from scipy.sparse import csr_matrix, coo_matrix
 from MulticoreTSNE import MulticoreTSNE as mTSNE
 import os
 from datetime import timedelta
+from django.db.models.functions import Ln
+from django.db.models import F
 
 class MinMaxFloat(models.FloatField):
     """
@@ -66,11 +68,20 @@ class Topic(models.Model):
     primary_wg = models.IntegerField(null=True)
     wg_prop = models.FloatField(null=True)
     ipcc_coverage = models.FloatField(null=True)
+    ipcc_score = models.FloatField(null=True)
+    ipcc_share = models.FloatField(null=True)
 
     wg_1 = models.FloatField(null=True)
     wg_2 = models.FloatField(null=True)
     wg_3 = models.FloatField(null=True)
 
+    def relevant_words(self, l, n):
+        # https://www.aclweb.org/anthology/W14-3110
+        tts = self.topicterm_set.annotate(
+            share = F('score') / F('alltopic_score'),
+            rel = l * Ln('score') + (1-l) * Ln('share'),
+        ).filter(rel__isnull=False).order_by('-rel')[:n].values('term__title','rel')
+        return tts
 
     def create_wordintrusion(self,user):
         real_words = self.topicterm_set.order_by('-score')[:5]
@@ -364,6 +375,7 @@ class TopicTerm(models.Model):
     term = models.ForeignKey('Term', on_delete=models.SET_NULL, null=True)
     PY = models.IntegerField(db_index=True,null=True)
     score = models.FloatField()
+    alltopic_score = models.FloatField(null=True)
     run_id = models.IntegerField(db_index=True)
 
 class DynamicTopicTerm(models.Model):

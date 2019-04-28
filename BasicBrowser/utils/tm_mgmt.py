@@ -1,3 +1,4 @@
+
 from tmv_app.models import *
 from scoping.models import *
 from tmv_app.tasks import *
@@ -288,7 +289,8 @@ def update_bdtopics(run_id):
             topic_time_period_scores.share = tpt['score'] / time_doc_total.dt_score
             topic_time_period_scores.save()
     else:
-        for tp in stats.periods.all():
+        lp = None
+        for tp in stats.periods.all().order_by('n'):
             dts = DocTopic.objects.filter(
                 run_id=stats.run_id,
                 doc__PY__in=tp.ys
@@ -314,7 +316,17 @@ def update_bdtopics(run_id):
                 )
                 topic_time_period_scores.score = tpt['score']
                 topic_time_period_scores.share = tpt['score'] / tdt.dt_score
+                if lp:
+                    try:
+                        last = TopicTimePeriodScores.objects.get(
+                            topic=topic,
+                            period=lp
+                        )
+                        topic_time_period_scores.pgrowth=(tpt['score']-last.score)/last.score
+                    except:
+                        pass
                 topic_time_period_scores.save()
+            lp = tp
 
 def yearly_topic_term_scores(run_id):
 
@@ -568,7 +580,19 @@ def normalise_tdts(run_id):
                 pgrowthn=0
             )
 
-
+def topicterm_lscores(run_id):
+    tts = TopicTerm.objects.filter(
+        topic__run_id=run_id,
+        score__gt=0.02
+    ).values('term').annotate(
+        total=Sum('score')
+    )
+    for t in tts:
+        topicterms = TopicTerm.objects.filter(
+            topic__run_id=run_id,
+            term=t['term']
+        )
+        topicterms.update(alltopic_score=t['total'])
 
 def update_ipcc_coverage(run_id):
 
@@ -726,8 +750,13 @@ def update_ipcc_coverage(run_id):
         )
         for dt in dts:
             t = Topic.objects.get(pk=dt['topic_id'])
+            t.ipcc_score = dt['ipcc']
             t.ipcc_coverage = dt['ipcc'] / (dt['ipcc'] + dt['no_ipcc'])
             t.save()
+
+        total_ipcc_score = Topic.objects.filter(run_id=run_id).aggregate(
+            ips = Sum('ipcc_score')
+        )['ips']
 
         for topic in Topic.objects.filter(run_id=run_id):
             tdocs = Doc.objects.filter(doctopic__topic=topic,doctopic__score__gt=runstat.dt_threshold)
@@ -746,6 +775,7 @@ def update_ipcc_coverage(run_id):
             topic.wg_3 = wgs[2]['score'] / tscore
             topic.primary_wg = maxwg['WG']
             topic.wg_prop = maxwg['score'] / tscore
+            topic.ipcc_share = topic.ipcc_score / total_ipcc_score
             topic.save()
 
 def update_primary_topic(run_id):

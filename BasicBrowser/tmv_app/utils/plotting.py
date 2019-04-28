@@ -78,7 +78,7 @@ class CoordSquare:
             self.av_y = None
             self.H = None
         else:
-            self.av_y = np.mean(list(docs.values_list('PY',flat=True)))
+            self.av_y = np.mean(list(docs.filter(PY__isnull=False).values_list('PY',flat=True)))
             H = 0
             ts = DTO.filter(
                 run_id=run_id,
@@ -181,7 +181,11 @@ def extend_points(p1,p2,length=0.8):
     p3[1] = p2[1] + (p2[1] - p1[1]) / lenAB*length
     return p3
 
-def cluster_label_points(title, points, ax, eps, min_cluster, n_clusters, clabel_size):
+def cluster_label_points(
+    title, points, ax, eps,
+    min_cluster, n_clusters, clabel_size,
+    words_only
+    ):
     db = DBSCAN(eps=eps,min_samples=min_cluster).fit(points)
     labels = db.labels_
     texts = []
@@ -204,35 +208,46 @@ def cluster_label_points(title, points, ax, eps, min_cluster, n_clusters, clabel
             c = [cx,cy]
 
 
+            if words_only:
+                title = title.split(",")[0].replace("{","")
+                text = ax.annotate(
+                    title, c,
+                    ha="center",va="center",
+                    bbox={'facecolor':"white", 'alpha':0.4, 'pad':0.4, 'boxstyle': 'round'}
 
-            for i, simplex in enumerate(hull.simplices):
-                p1 = extend_points(c,lpoints[simplex,:][0])
-                p2 = extend_points(c,lpoints[simplex,:][1])
-                plt.plot(
-                    [p1[0],p2[0]],
-                    [p1[1],p2[1]],
-                    'k-',
-                    linewidth=0.5
                 )
-                if not text_set:
-                    if p1[0] > cx:
-                        ha = "left"
-                    else:
-                        ha = "right"
-                    pl = extend_points(c,p1)
-                    texts.append(ax.annotate(
-                        title,
-                        p1,
-                        xytext=pl,
-                        va="center",
-                        ha=ha,
-                        fontsize=clabel_size,
-                        arrowprops=dict(width=0.2,headwidth=0.1),
-                        bbox={'facecolor':"white", 'alpha':0.4, 'pad':0.4, 'boxstyle': 'round'}
-                    ))
-                    text_set = True
-            # break here, just do the biggest cluster
-            break
+                return text
+                break
+
+            else:
+                for i, simplex in enumerate(hull.simplices):
+                    p1 = extend_points(c,lpoints[simplex,:][0])
+                    p2 = extend_points(c,lpoints[simplex,:][1])
+                    plt.plot(
+                        [p1[0],p2[0]],
+                        [p1[1],p2[1]],
+                        'k-',
+                        linewidth=0.5
+                    )
+                    if not text_set:
+                        if p1[0] > cx:
+                            ha = "left"
+                        else:
+                            ha = "right"
+                        pl = extend_points(c,p1)
+                        texts.append(ax.annotate(
+                            title,
+                            p1,
+                            xytext=pl,
+                            va="center",
+                            ha=ha,
+                            fontsize=clabel_size,
+                            arrowprops=dict(width=0.2,headwidth=0.1),
+                            bbox={'facecolor':"white", 'alpha':0.4, 'pad':0.4, 'boxstyle': 'round'}
+                        ))
+                        text_set = True
+                # break here, just do the biggest cluster
+                #break
 
 def plot_tsne(
     r_ind,tsne_results,cats,nocatids,
@@ -240,7 +255,8 @@ def plot_tsne(
     legend=True, sc=None, heat_var=None, cmapname=None,
     topics=None, min_cluster = 100, psize=1,
     t_thresh=0.8, eps=1, n_clusters=1,
-    doc_sets=None, clabel_size=8
+    doc_sets=None, clabel_size=8,
+    words_only=False
     ):
     cs = []
     sizes = []
@@ -352,6 +368,7 @@ def plot_tsne(
                 ax.add_patch(rect)
 
     if topics:
+        texts = []
         for t in topics:
             if t.run_id.method=="DT":
                 atdocscores = Doc.objects.filter(
@@ -382,15 +399,20 @@ def plot_tsne(
 
             points = tsne_results[highlight_docs]
 
-            cluster_label_points(
+            texts.append(cluster_label_points(
                 t.title,
                 points,
                 ax,
                 eps,
                 min_cluster,
                 n_clusters,
-                clabel_size
-            )
+                clabel_size,
+                words_only
+            ))
+    # try:
+    #     adjust_text(texts, arrowprops=dict(arrowstyle="->", color='None', lw=0.5))
+    # except:
+    #     pass
     if doc_sets:
         for d in doc_sets:
             highlight_docs = np.argwhere(np.isin(r_ind,d['docs']))[:,0]
