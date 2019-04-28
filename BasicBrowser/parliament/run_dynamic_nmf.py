@@ -42,7 +42,9 @@ def run_dynamic_nmf(stat):
 
     print("starting topic model for runstat with settings:")
     for field in stat._meta.fields:
-        print("{}: {}".format(field.name, getattr(stat, field.name)))
+        field_value = getattr(stat, field.name)
+        if field_value:
+            print("{}: {}".format(field.name, field_value))
 
     t0 = time()
 

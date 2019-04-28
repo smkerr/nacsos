@@ -217,7 +217,9 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
 
     print("starting topic model for runstat with settings:")
     for field in stat._meta.fields:
-        print("{}: {}".format(field.name, getattr(stat, field.name)))
+        field_value = getattr(stat, field.name)
+        if field_value:
+            print("{}: {}".format(field.name, field_value))
 
     start_time = time.time()
 
