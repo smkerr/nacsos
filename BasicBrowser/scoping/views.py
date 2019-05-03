@@ -5698,9 +5698,14 @@ def meta_setup(request,pid):
         )
         doc_counts[key][one] = acds.filter(doc_count=1).count()
         doc_counts[key][many] = acds.filter(doc_count__gt=1).count()
+        # doc_counts[key][many] = len(set(acds.filter(
+        #     doc_count__gt=1
+        # ).values_list('doc__id',flat=True)))
         #doc_counts[key]['n docs'] = all_docs.count()
 
     #doc_counts['assignments']
+
+    assignment_form = MetaAssignmentForm(p=p)
 
     intervention_types = InterventionType.objects.filter(project=p)
     interventiontype_form = InterventionForm()
@@ -5717,6 +5722,7 @@ def meta_setup(request,pid):
 
     context = {
         'project': p,
+        'assignment_form': assignment_form,
         'sfields': sfields,
         'ifields': ifields,
         'doc_counts': doc_counts,
@@ -5732,3 +5738,58 @@ def meta_setup(request,pid):
         'ec_form': ec_form
     }
     return render(request, 'scoping/meta_setup.html',context)
+
+def assign_meta(request):
+    pid = request.POST.get('pid', None)
+    ac = request.POST.get('ac', None)
+    key = request.POST.get('key', None)
+    users = request.POST.getlist('users', None)
+    split = request.POST.get('split', False)
+    sample = float(request.POST.get('sample', 1))
+    p = Project.objects.get(pk=pid)
+    all_docs = Doc.objects.filter(
+        docproject__project=p,docproject__relevant=1
+    )
+    all_codings = DocMetaCoding.objects.filter(
+        project=p
+    )
+    acs = all_codings
+    if ac=="codings":
+        acs = all_codings.filter(coded=True)
+    #else:
+        #acs = all_codings.filter(coded=False)
+    done = len(set(acs.values_list('doc_id',flat=True)))
+    acds = acs.values('doc__id').annotate(
+        doc_count=Count('doc__id')
+    )
+    if "nobody" in key.lower():
+        docs = all_docs.exclude(pk__in=done)
+    elif "one" in key.lower():
+        ones = acds.filter(doc_count=1).values_list('doc__id')
+        docs = all_docs.filter(pk__in=ones)
+    elif "many" in key.lower():
+        manys = acds.filter(doc_count__gt=1).values_list('doc__id')
+        docs = Doc.objects.filter(pk__in=manys)
+
+    print(docs.count())
+
+    doc_ids = list(docs.values_list('pk',flat=True))
+    doc_ids = random.sample(doc_ids,round(len(doc_ids)*sample))
+
+    dmcs = []
+    print(users)
+    for i,did in enumerate(doc_ids):
+        if split:
+            d_users = [users[i%len(users)]]
+        else:
+            d_users = users
+        for u in d_users:
+            dmc, created = DocMetaCoding.objects.get_or_create(
+                doc_id=did,
+                project=p,
+                user_id=u
+            )
+    #DocMetaCoding.objects.bulk_create(dmcs)
+
+
+    return HttpResponse("done")

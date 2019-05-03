@@ -22,7 +22,9 @@ XML_TRANS_TABLE = {
 def element_text_contents(element):
     s = element.text or ""
     for sub_element in element:
-        s += sub_element.text
+        if hasattr(sub_element,'text'):
+            if sub_element.text is not None:
+                s += sub_element.text
     return s.strip()
 
 def read_xml(q, update):

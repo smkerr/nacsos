@@ -21,6 +21,25 @@ class QueryForm(forms.ModelForm):
             'query_file': 'Accepted formats are WoS/Scopus text files or RIS files',
         }
 
+class MetaAssignmentForm(forms.Form):
+    def __init__(self,*args,**kwargs):
+        p = kwargs.pop('p',Project.objects.all())
+        print(p)
+        super(MetaAssignmentForm, self).__init__(*args, **kwargs)
+        self.fields['users'].queryset = User.objects.filter(
+            projectroles__project=p
+        )
+        self.fields['pid'].initial = p.pk
+    users = forms.ModelMultipleChoiceField(queryset=User.objects.all())
+    split = forms.BooleanField(help_text="check to split documents between all users, leave blank to assing all documents to all users")
+    sample = forms.DecimalField(
+        max_value=1,min_value=0.01,decimal_places=2,
+        help_text="The (random) fraction of documents to be assigned - set as 1 to assign all documents."
+    )
+    ac = forms.CharField(widget=forms.HiddenInput())
+    key = forms.CharField(widget=forms.HiddenInput())
+    pid = forms.IntegerField(widget=forms.HiddenInput())
+
 class CategoryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         qs = kwargs.pop('qs',Category.objects.all())
