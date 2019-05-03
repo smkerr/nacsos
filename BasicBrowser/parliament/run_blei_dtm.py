@@ -40,9 +40,13 @@ def run_blei_dtm(stat, call_to_blei_algorithm=True,
     :return: 0 if successful, 1 otherwise
     """
 
+    start_datetime = timezone.now()
+
     print("starting topic model for runstat with settings:")
     for field in stat._meta.fields:
-        print("{}: {}".format(field.name, getattr(stat, field.name)))
+        field_value = getattr(stat, field.name)
+        if field_value:
+            print("{}: {}".format(field.name, field_value))
 
     run_id = stat.run_id
     s = Search.objects.get(pk=stat.psearch.id)
@@ -295,6 +299,7 @@ def run_blei_dtm(stat, call_to_blei_algorithm=True,
 
     stat = RunStats.objects.get(run_id=run_id)
     stat.last_update = timezone.now()
+    stat.runtime = timezone.now() - start_datetime
     stat.status = 3  # 3 = finished
     stat.save()
     management.call_command('update_run', run_id)
