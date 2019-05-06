@@ -2,14 +2,16 @@
 {% load render_table from django_tables2 %}
 {% block content %}
 
+<h2>{{s.title}} (Search #{{s.id}})</h2>
 
-<h2>{{s.title}}</h2>
+<a href="{%url 'parliament:search-list-results' s.id %}">Link to list of paragraphs/speeches in search</a>
+
+
 {% if s.search_object_type == 1 %}
 <p>Paragraphs count: {{count}}
 {% else %}
 <p>Utterances count: {{count}}
 {% endif %}
-
 
 <svg width="960" height="500"></svg>
 
