@@ -2422,6 +2422,16 @@ def attempt_effect_intervention_save(model,edit,instance,
             getattr(instance,key).set(m2m[key])
         for key in clean_data:
             setattr(instance,key,clean_data[key])
+            choices = ProjectChoice.objects.filter(
+                project=dmc.project,
+                field=key
+            )
+            if choices.exists():
+                c, created = ProjectChoice.objects.get_or_create(
+                    project=dmc.project,
+                    field=key,
+                    name=clean_data[key]
+                )
     else:
         instance = model(**clean_data)
     try:
