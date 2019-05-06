@@ -3567,7 +3567,10 @@ def sortdocs(request):
                 d['docfile__id'] = '<a href="/scoping/download_pdf/'+str(d['docfile__id'])+'"">PDF'
 
         if "wosarticle__cr" in fields:
-            d['wosarticle__cr'] = ';<br>'.join(d['wosarticle__cr'])
+            try:
+                d['wosarticle__cr'] = ';<br>'.join(d['wosarticle__cr'])
+            except:
+                d['wosarticle__cr'] = None
 
         try:
             d['relevance_time'] = formats.date_format(d['relevance_time'], "SHORT_DATETIME_FORMAT")
