@@ -15,10 +15,9 @@ urlpatterns = [
 
     url(r'^search/$', views.search, name='search'),
     url(r'^search-home/(?P<sid>[0-9]+)/$', views.search_home, name='search-home'),
+    url(r'^search-list-results/(?P<sid>[0-9]+)/$', views.search_list_results, name='search-list-results'),
 
     url(r'^model-home/(?P<model_id>[0-9]+)/$', views.model_home, name='model-home'),
-
-    url(r'^search-pars/(?P<sid>[0-9]+)/$', views.search_pars, name='search-pars'),
 
     url(r'^parl-topic/(?P<tid>[0-9]+)/$', views.parl_topic, name='parl-topic'),
     url(r'^parl-topic/(?P<tid>[0-9]+)/(?P<pid>[0-9]+)$', views.parl_topic, name='parl-topic-party'),

@@ -313,23 +313,6 @@ def search(request):
     return HttpResponse(template.render(context, request))
 
 
-@login_required
-def search_pars(request,sid):
-
-    template = loader.get_template('parliament/search-pars.html')
-
-    s = Search.objects.get(pk=sid)
-    pars = Paragraph.objects.filter(search_matches=s)
-    pt = SearchParTable(pars)
-    pt.reg_replace(s.text)
-    RequestConfig(request).configure(pt)
-
-    context = {
-        'pars': pt
-    }
-
-    return HttpResponse(template.render(context, request))
-
 
 @login_required
 def search_home(request, sid):
@@ -411,6 +394,31 @@ def search_home(request, sid):
         'y': 'n',
         'stat': stat,
         'topics': topics
+    }
+
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def search_list_results(request, sid):
+
+    template = loader.get_template('parliament/search-list-results.html')
+
+    s = Search.objects.get(pk=sid)
+    pars = Paragraph.objects.filter(search_matches=s)
+    pt = SearchParTable(pars)
+    pt.reg_replace(s.text)
+    RequestConfig(request).configure(pt)
+
+    uts = Utterance.objects.filter(search_matches=s)
+    ut = SearchSpeechTable(uts)
+    ut.reg_replace(s.text)
+    RequestConfig(request).configure(ut)
+
+    context = {
+        'search': s,
+        'pars': pt,
+        'utterance_table': ut
     }
 
     return HttpResponse(template.render(context, request))

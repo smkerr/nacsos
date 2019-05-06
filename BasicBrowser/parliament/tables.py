@@ -66,7 +66,7 @@ class DocumentTable(tables.Table):
 
 
 class SearchTable(tables.Table):
-    par_count = tables.LinkColumn('parliament:search-pars',args=[A('pk')])
+    par_count = tables.LinkColumn('parliament:search-list-results',args=[A('pk')])
     id = tables.LinkColumn('parliament:search-home',args=[A('pk')])
 
     class Meta:
