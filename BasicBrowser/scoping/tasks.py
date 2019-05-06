@@ -227,7 +227,7 @@ def do_query(qid, background=True):
             q.database
         ]
 
-        if q.creator.username in ["galm","khat","hilj","lamw"]:
+        if q.creator.username in ["galm","khat","hilj","lamw","minj"]:
             args += ["-lim", "2000000"]
         if q.credentials:
             args += [
