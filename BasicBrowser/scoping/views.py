@@ -2413,6 +2413,14 @@ def clean_form_data(data,model):
             f = model._meta.get_field(key)
             if f.many_to_many:
                 m2m[key]=data[key]
+            elif hasattr(f, "multiple"):
+                if not isinstance(data[key],list):
+                    if data[key]!='':
+                        clean_data[key]=[data[key]]
+                    else:
+                        clean_data[key] = None
+                else:
+                    clean_data[key] =data[key]
             else:
                 if isinstance(data[key],list) and len(data[key])==1:
                     data[key]=data[key][0]
@@ -2434,11 +2442,19 @@ def attempt_effect_intervention_save(model,edit,instance,
                 field=key
             )
             if choices.exists():
-                c, created = ProjectChoice.objects.get_or_create(
-                    project=dmc.project,
-                    field=key,
-                    name=clean_data[key]
-                )
+                if isinstance(data[key],list):
+                    for d in clean_data[key]:
+                        c, created = ProjectChoice.objects.get_or_create(
+                            project=dmc.project,
+                            field=key,
+                            name=d
+                        )
+                else:
+                    c, created = ProjectChoice.objects.get_or_create(
+                        project=dmc.project,
+                        field=key,
+                        name=clean_data[key]
+                    )
     else:
         instance = model(**clean_data)
     try:

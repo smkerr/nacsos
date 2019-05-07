@@ -24,6 +24,9 @@
             </div>
             <div class="row">
             {% for f in g.form_fields %}
+                {% if forloop.counter|divisibleby:5 %}
+                  </div><div class="row">
+                {% endif %}
                 {% include "scoping/snippets/dynamic_form_input.html" with f=f %}
             {% endfor %}
             </div>

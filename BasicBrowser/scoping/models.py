@@ -248,14 +248,17 @@ class Controls(models.Model):
 class Intervention(models.Model):
     effect = models.ForeignKey(StudyEffect, on_delete=models.CASCADE)
     intervention_subtypes = models.ManyToManyField('InterventionSubType')
-    framing_unit = models.TextField(null=True)
-    #framing_units = ArrayField(models.TextField(), null=True)
-    #framing_units.multiple = True
+    #framing_unit = models.TextField(null=True)
+    framing_units = ArrayField(models.TextField(), null=True)
+    framing_units.multiple = True
     timing = models.TextField(null=True)
     payment = models.TextField(null=True)
     granularity = models.TextField(null=True)
     medium = models.TextField(null=True)
     duration = models.IntegerField(null=True, help_text="weeks")
+    base_data_collection = models.IntegerField(null=True, help_text="weeks", default=-999)
+    treatment_period = models.IntegerField(null=True, help_text="weeks", default=-999)
+    followup = models.IntegerField(null=True, help_text="weeks", default=-999)
     followup = models.IntegerField(null=True)
 
     def __str__(self):
