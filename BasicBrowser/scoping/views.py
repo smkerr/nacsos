@@ -2514,6 +2514,8 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
         form_fields = get_form_fields(StudyEffect,dmc.project,instance,errors)
         now = timezone.now()
 
+
+
     context = {
         'project': dmc.project,
         'dmc': dmc,

@@ -7,7 +7,7 @@
 {% endif %}
 </label>
 
-{% ifequal f.ff.widget.input_type "number" %}
+{% if f.ff.widget.input_type == 'number' %}
 
     <input name="{{f.name}}" type="{{f.ff.widget.input_type}}"
     {% if f.errors %}
@@ -16,6 +16,36 @@
     class="form-control"
     {% endif %}
     id="input_{{f.name}}" aria-describedby="{{f.ff.help_text}}" placeholder="Enter {{f.name}}" min={{f.ff.min_value}} step={{f.step}} value={{f.value}}>
+
+{% elif f.ff.widget.input_type == 'file' %}
+
+  {% if f.value %}
+
+  <div id="fileValue"><br><b>{{ f.value }}</b>
+    <button id="clearfile" type="button" class="btn">Clear</button>
+  </div>
+
+  <input type="{{f.ff.widget.input_type}}"
+  {% if f.errors %}
+  class="form-control is-invalid"
+  {% else %}
+  class="form-control hidden"
+  {% endif %}
+  id="input_{{f.name}}" aria-describedby="{{f.ff.help_text}}"
+  placeholder="Enter {{f.name}}" value={{f.value}}>
+
+  {% else %}
+
+  <input name="{{f.name}}" type="{{f.ff.widget.input_type}}"
+  {% if f.errors %}
+  class="form-control is-invalid"
+  {% else %}
+  class="form-control"
+  {% endif %}
+  id="input_{{f.name}}" aria-describedby="{{f.ff.help_text}}"
+  placeholder="Enter {{f.name}}" value={{f.value}}>
+
+  {% endif %}
 
 {% else %}
 
@@ -55,6 +85,9 @@
         {% if o.0 in f.value %}
         selected
         {% endif %}
+        {% if o.1 in f.value %}
+        selected
+        {% endif %}
         value="{{o.0}}"
         >{{o.1}}</option>
         {% endfor %}
@@ -82,7 +115,7 @@
     {% endif %}
 
 
-{% endifequal %}
+{% endif %}
 
 {% for e in f.errors %}
     <div class="is-invalid was-validated invalid-feedback">

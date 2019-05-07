@@ -536,7 +536,7 @@ def add_scopus_doc(r,q,update):
 
         elif len(docs)==0: # if there are none, try with the title and jaccard similarity
             #print("looking with jaccard similarity and so on")
-            if get(r,'ti') is None:
+            if get(r,'ti') is None or len(get(r,'ti')) < 2:
                 print(f"<p>This document ({r}) has no title!! ")
                 q.upload_log+=f"<p>This document ({r}) has no title!! "
                 q.save()
@@ -553,7 +553,8 @@ def add_scopus_doc(r,q,update):
             py_docs = scoping.models.Doc.objects.filter(
                 PY=get(r,'py'),
                 title__iregex='\w',
-                title__icontains=twords
+                title__icontains=twords,
+                docproject__project=q.project
             )
             print(py_docs.count())
             doc = None

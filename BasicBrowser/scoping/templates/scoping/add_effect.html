@@ -68,6 +68,12 @@ $("#select_statistical_technique").change(function() {
     meanDiff($(this).val())
 })
 
+$("#clearfile").click(function() {
+  $("#fileValue").addClass("hidden")
+  $("#input_calculations_file").removeClass("hidden")
+      .attr("name", "calculations_file");
+})
+
 meanDiff($("#select_statistical_technique").val())
 </script>
 {% endblock %}

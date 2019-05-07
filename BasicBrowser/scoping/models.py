@@ -96,7 +96,7 @@ class StudyEffect(models.Model):
         (2,"Significance"),
         (3,"Sample size"),
         (4,"Study scope"),
-
+        (8,"Others"),
     ]
 
     start_time = models.DateTimeField(null=True, blank=True)
@@ -191,6 +191,13 @@ class StudyEffect(models.Model):
     control_sd.group=6
     pooled_sd = models.FloatField(null=True, blank=True)
     pooled_sd.group=6
+
+    calculations_file = models.FileField(
+        null=True,
+        blank=True,
+        help_text="If you have made some calculations, upload them in a file here"
+    )
+    calculations_file.group=8
 
 
     #Choices? Predefined?
@@ -339,6 +346,7 @@ class Exclusion(models.Model):
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     reason = models.TextField()
+    #reason = ArrayField(models.TextField(), null=True)
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     date = models.DateTimeField(auto_now_add=True)
 

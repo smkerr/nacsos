@@ -22,7 +22,7 @@
 <div class="container">
     <div class="row">
         <div class="col-md-3 border rounded bg-white my-3 mx-2 p-2">
-            Add a note to this paragraph
+            Add a note to this document
             <hr>
             <form action="{% url 'scoping:add_note' %}" method="post">
               {% csrf_token %}
@@ -59,7 +59,7 @@
         <form action="{% url 'scoping:exclude' dmc.id  %}" method="post" class="form">
         {% csrf_token %}
         <div class="form-group" data-name="reason">
-        <select
+        <select multiple
             {% if ecs %}
                 name="reason"
                 class="form-control"
