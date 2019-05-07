@@ -218,6 +218,13 @@ def yearly_topic_term(topic_id, run_id):
 
 @shared_task
 def get_coherence(run_id):
+    """
+    Calculates the coherence for a topic model
+
+    :param run_id: id of the topic model
+    :return:
+    """
+
     stat = RunStats.objects.get(run_id=run_id)
     K = stat.K
 
@@ -235,7 +242,7 @@ def get_coherence(run_id):
 
     elif stat.psearch != None:
         sid = stat.psearch.id
-        uts = pm.Utterance.objects.filter(search_matches=sid)
+        uts = Utterance.objects.filter(search_matches=sid)
         texts = []
         for ut in uts:
             pars = ut.paragraph_set.all()
@@ -268,6 +275,7 @@ def get_coherence(run_id):
     stat.save()
 
     return
+
 
 @shared_task
 def get_exclusivity(run_id, word_num=10, frex_w=.7):
