@@ -2330,6 +2330,11 @@ def get_form_fields(model,project,instance=False,errors={},data={}):
                             ).all().values_list('name',flat=True))
                     else:
                         value=getattr(instance,f.name)
+                elif hasattr(f, "default"):
+                    if f.default is django.db.models.fields.NOT_PROVIDED:
+                        value = None
+                    else:
+                        value = f.default
                 else:
                     value=None
                 if f.many_to_many:
@@ -2341,6 +2346,8 @@ def get_form_fields(model,project,instance=False,errors={},data={}):
                 else:
                     f_errors = []
                 if f.many_to_many:
+                    multiple = True
+                elif hasattr(f, "multiple"):
                     multiple = True
                 else:
                     multiple = False
@@ -3308,9 +3315,10 @@ def sortdocs(request):
         )
 
     if "wosarticle__doc" in fields:
-        filt_docs = filt_docs.annotate(
-            wosarticle__doc=Concat(V('<a href="/scoping/document/'+str(p.id)+'/'),'pk',V('">'),'pk',V('</a>'))
-        )
+        if download:
+            filt_docs = filt_docs.annotate(
+                wosarticle__doc=Concat(V('<a href="/scoping/document/'+str(p.id)+'/'),'pk',V('">'),'pk',V('</a>'))
+            )
     #if
     #x = y
     for i in range(len(f_fields)):
