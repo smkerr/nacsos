@@ -13,6 +13,7 @@ from multiprocess import Pool
 from utils.db import *
 from utils.utils import *
 from scoping.models import *
+import parliament.models as pm
 from time import time
 import gc, sys, resource
 from django.core import management
@@ -242,7 +243,7 @@ def get_coherence(run_id):
 
     elif stat.psearch != None:
         sid = stat.psearch.id
-        uts = Utterance.objects.filter(search_matches=sid)
+        uts = pm.Utterance.objects.filter(search_matches=sid)
         texts = []
         for ut in uts:
             pars = ut.paragraph_set.all()
