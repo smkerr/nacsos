@@ -8,8 +8,9 @@ from django.utils.module_loading import import_module
 def index(request):
     template = loader.get_template('scoping/base_index.html')
     apps = [
-        {'name': 'scoping','app_url':'/scoping'},
-        {'name': 'tmv_app','app_url':'/tmv_app/runs'}
+        {'name': 'scoping','app_url': '/scoping'},
+        {'name': 'tmv_app','app_url': '/tmv_app/runs'},
+        {'name': 'parliament', 'app_url': '/parliament'}
     ]
     context = {
         'site_header': 'MCC-APSIS',
