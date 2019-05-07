@@ -114,7 +114,7 @@ class StudyEffect(models.Model):
     ## User entered fields
 
     #g1
-    coefficient = models.FloatField(null=True, blank=True)
+    coefficient = models.FloatField(null=True, default=-999)
     coefficient.group = 1
 
     direction = (
@@ -126,19 +126,19 @@ class StudyEffect(models.Model):
     effect_direction.group = 1
 
     #g7
-    coefficient_sd = models.FloatField(null=True, blank=True)
+    coefficient_sd = models.FloatField(null=True, blank=False, default=-999, verbose_name="Standard error")
     coefficient_sd.group = 7
-    coefficient_sd_type = models.TextField(null=True, blank=True)
+    coefficient_sd_type = models.TextField(null=True, blank=False, default="-999", verbose_name="Standard error type")
     coefficient_sd_type.group=7
 
     #g2
     significance_test = models.TextField()
     significance_test.group = 2
-    test_statistic = models.FloatField(null=True, blank=True)
+    test_statistic = models.FloatField(null=True, blank=False, default=-999)
     test_statistic.group=2
-    test_statistic_df = models.IntegerField(null=True, blank=True)
+    test_statistic_df = models.IntegerField(null=True, blank=False, default=-999)
     test_statistic_df.group=2
-    p_value = models.FloatField()
+    p_value = models.FloatField(blank=False, default=-999)
     p_value.group=2
 
     tail_choices = (
@@ -148,27 +148,35 @@ class StudyEffect(models.Model):
     test_tails = models.IntegerField(choices=tail_choices)
     test_tails.group=2
 
+    bound_choices = (
+        (1,"Lower bound"),
+        (2,"Upper bound"),
+        (3,"Actual")
+    )
+    significance_bound = models.IntegerField(null=True, choices=bound_choices)
+    significance_bound.group=2
+
     #g3 - sample size
-    total_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    total_sample_size = models.IntegerField(null=True, blank=False, default=-999)
     total_sample_size.group=3
-    treatment_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    treatment_sample_size = models.IntegerField(null=True, blank=False, default=-999)
     treatment_sample_size.group=3
-    control_sample_size = models.PositiveIntegerField(null=True, blank=True)
+    control_sample_size = models.IntegerField(null=True, blank=False, default=-999)
     control_sample_size.group=3
 
     #g4 Study variables
-    geographic_scope = models.TextField()
+    geographic_scope = models.TextField(blank=False, default="-999")
     geographic_scope.group=4
-    geographic_location = models.TextField(null=True,blank=True)
+    geographic_location = models.TextField(null=True,blank=False, default="-999")
     geographic_location.group=4
-    aggregation_level = models.TextField(null=True, blank=True)
+    aggregation_level = models.TextField(null=True, blank=False, default="-999")
     aggregation_level.group=4
     controls = models.ManyToManyField('Controls')
     controls.group=4
 
     #g5 General
 
-    page = models.PositiveSmallIntegerField()
+    page = models.SmallIntegerField(blank=False, default=-999)
     page.group=5
     statistical_technique = models.TextField()
     statistical_technique.group=5
@@ -176,13 +184,16 @@ class StudyEffect(models.Model):
     dependent_variable = models.TextField()
     dependent_variable.group=5
 
+    study_design = models.TextField(null=True)
+    study_design.group=5
+
 
 
     treated_mean = models.FloatField(null=True, blank=True)
     treated_mean.group=6
     control_mean = models.FloatField(null=True, blank=True)
     control_mean.group=6
-    diff_mean = models.FloatField(null=True, blank=True)
+    diff_mean = models.FloatField(null=True, blank=True, help_text="treatment - control")
     diff_mean.group=6
 
     treated_sd = models.FloatField(null=True, blank=True)
@@ -238,6 +249,8 @@ class Intervention(models.Model):
     effect = models.ForeignKey(StudyEffect, on_delete=models.CASCADE)
     intervention_subtypes = models.ManyToManyField('InterventionSubType')
     framing_unit = models.TextField(null=True)
+    #framing_units = ArrayField(models.TextField(), null=True)
+    #framing_units.multiple = True
     timing = models.TextField(null=True)
     payment = models.TextField(null=True)
     granularity = models.TextField(null=True)

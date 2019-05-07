@@ -12,6 +12,8 @@
     <input type="hidden"  name="page_load" value="{{now}}">
 
     <div class="container border rounded bg-white p-2">
+      For all variables, leave as -999 for information not available, or -888 for
+      information not relevant.
     {% for g in groups %}
         {% if g.counter0 > 0 %}
         <hr>
