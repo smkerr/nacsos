@@ -357,9 +357,11 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
             print("running Latent Dirichlet Allocation ({})".format(time.time() - start_time))
         model = LDA(
             n_components=K,
-            doc_topic_prior=stat.alpha,
+            doc_topic_prior=stat.alpha,  # this is the concentration parameter of the Dirichlet distribution of topics in documents
+            topic_word_prior=stat.beta,  # this is the concentration parameter of the Dirichlet distribution of words in topics
+                                         # if None, this defaults to 1/n
             max_iter=stat.max_iter,
-            learning_method='online',
+            learning_method='online',  # using 'batch' instead could lead to memory problems
             learning_offset=50.
             #n_jobs=6
         ).partial_fit(tf)
