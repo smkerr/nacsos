@@ -492,7 +492,7 @@ class RunStats(models.Model):
     error = models.FloatField(null=True, default = 0)
     coherence = models.FloatField(null=True)
     errortype = models.TextField(null=True)
-    exclusivity = models.TextField(null=True)
+    exclusivity = models.FloatField(null=True)
 
     empty_topics = models.IntegerField(null=True)
 
