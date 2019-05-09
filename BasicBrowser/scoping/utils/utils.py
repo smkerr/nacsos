@@ -40,7 +40,7 @@ def make_nears(q, nearness):
 def make_jstor_nears(q, nearness):
     qs = []
     ls = [ l.lower().split(' or ') for l in q.split(' AND ')]
-    combinations = [" ".join([x.strip('()') for x in p]) for p in product(*ls)]
+    combinations = [" ".join([x.strip('() "') for x in p]) for p in product(*ls)]
     qtext = ""
     for c in combinations:
         c = f'("{c}"~{nearness})'
