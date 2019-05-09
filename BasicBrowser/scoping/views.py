@@ -2442,7 +2442,7 @@ def attempt_effect_intervention_save(model,edit,instance,
                 field=key
             )
             if choices.exists():
-                if isinstance(data[key],list):
+                if isinstance(clean_data[key],list):
                     for d in clean_data[key]:
                         c, created = ProjectChoice.objects.get_or_create(
                             project=dmc.project,
@@ -3706,6 +3706,7 @@ def export_ris_docs(request,qid,docs=False):
     from utils.utils import RIS_KEY_MAPPING
     from utils.utils import RIS_TY_MAPPING
     inv_mapping = {v: k for k, v in RIS_KEY_MAPPING.items()}
+    inv_RIS_TY_MAPPING = {v: k for k, v in RIS_TY_MAPPING.items()}
     buffer = io.StringIO()
     q = Query.objects.get(pk=qid)
     if not docs:
@@ -3715,7 +3716,10 @@ def export_ris_docs(request,qid,docs=False):
 
     for d in docs.filter(wosarticle__isnull=False):
         ## Do the single meta fields
-        buffer.write('TY  - {}\n'.format(RIS_TY_MAPPING[d.wosarticle.pt]))
+        try:
+            buffer.write('TY  - {}\n'.format(RIS_TY_MAPPING[d.wosarticle.pt]))
+        except:
+            buffer.write('TY  - {}\n'.format(inv_RIS_TY_MAPPING[d.wosarticle.pt]))
         for f in WoSArticle._meta.get_fields():
             v = getattr(d.wosarticle,f.name)
             if v is not None:

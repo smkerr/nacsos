@@ -2,6 +2,7 @@ from scoping.models import *
 import re
 from django.conf import settings
 from utils.utils import *
+from itertools import product
 #from utils.utils import *
 
 XML_TRANS_TABLE = {
@@ -18,6 +19,41 @@ XML_TRANS_TABLE = {
     'abstract': 'AB'
 }
 
+def make_nears(q, nearness):
+    qs = []
+    ls = [ l.lower().split(' or ') for l in q.split(' AND ')]
+    combinations = [f" NEAR{nearness} ".join([x.strip('()') for x in p]) for p in product(*ls)]
+    qtext = ""
+    for c in combinations:
+        c = f'({c})'
+        if len(qtext) == 0:
+            qtext = c
+        elif len(qtext) + len(c) < 250:
+            qtext += " OR " + c
+        else:
+            qs.append(qtext)
+            qtext = c
+    if len(qs)==1:
+        qs = qs[0]
+    return qs
+
+def make_jstor_nears(q, nearness):
+    qs = []
+    ls = [ l.lower().split(' or ') for l in q.split(' AND ')]
+    combinations = [" ".join([x.strip('() "') for x in p]) for p in product(*ls)]
+    qtext = ""
+    for c in combinations:
+        c = f'("{c}"~{nearness})'
+        if len(qtext) == 0:
+            qtext = c
+        elif len(qtext) + len(c) < 250:
+            qtext += " OR " + c
+        else:
+            qs.append(qtext)
+            qtext = c
+    if len(qs)==1:
+        qs = qs[0]
+    return qs
 
 def element_text_contents(element):
     s = element.text or ""

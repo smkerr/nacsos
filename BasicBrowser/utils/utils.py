@@ -758,15 +758,18 @@ RIS_KEY_MAPPING = {
 
 RIS_TY_MAPPING = {
     'B': 'BOOK',
+    'BOOK': 'BOOK',
     'Book Chapter': 'CHAP',
     'Book Section': 'CHAP',
     'Book section': 'CHAP',
     'J': 'JOUR',
+    'JOUR': 'JOUR',
+    'CONF': 'CONF',
     'Journal Article': 'JOUR',
     'Report': 'REPORT',
     'S': 'SER',
     'SER': 'SER',
-    None: 'GEN'
+    None: 'GEN',
 }
 
 def read_ris(q, update):
