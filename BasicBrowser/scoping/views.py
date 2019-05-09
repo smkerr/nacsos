@@ -2442,7 +2442,7 @@ def attempt_effect_intervention_save(model,edit,instance,
                 field=key
             )
             if choices.exists():
-                if isinstance(data[key],list):
+                if isinstance(clean_data[key],list):
                     for d in clean_data[key]:
                         c, created = ProjectChoice.objects.get_or_create(
                             project=dmc.project,

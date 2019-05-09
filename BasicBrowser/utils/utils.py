@@ -762,6 +762,7 @@ RIS_TY_MAPPING = {
     'Book Section': 'CHAP',
     'Book section': 'CHAP',
     'J': 'JOUR',
+    'CONF': 'CONF',
     'Journal Article': 'JOUR',
     'Report': 'REPORT',
     'S': 'SER',
