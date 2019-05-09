@@ -463,6 +463,13 @@ class Query(models.Model):
         model.train(titles, total_examples=model.corpus_count, epochs=model.epochs)
         model.save(f"/var/www/files/w2v_{self.id}.model")
 
+    def delete(self, *args, **kwargs):
+        other_qs = Query.objects.filter(project=self.project).exclude(pk=self.pk)
+        hanging_docs = Doc.objects.filter(query=self).exclude(query__in=other_qs)
+        dps = DocProject.objects.filter(doc__in=hanging_docs,project=self.project)
+        dps.delete()
+        return super(self.__class__, self).delete(*args, **kwargs)
+
     def save(self, *args, **kw):
         old = type(self).objects.get(pk=self.pk) if self.pk else None
         super(Query, self).save(*args, **kw)

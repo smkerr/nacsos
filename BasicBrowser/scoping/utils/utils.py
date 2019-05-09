@@ -51,6 +51,8 @@ def make_jstor_nears(q, nearness):
         else:
             qs.append(qtext)
             qtext = c
+    if len(qtext) > 0:
+        qs.append(qtext)
     if len(qs)==1:
         qs = qs[0]
     return qs
