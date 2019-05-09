@@ -758,6 +758,7 @@ RIS_KEY_MAPPING = {
 
 RIS_TY_MAPPING = {
     'B': 'BOOK',
+    'BOOK', 'BOOK',
     'Book Chapter': 'CHAP',
     'Book Section': 'CHAP',
     'Book section': 'CHAP',
