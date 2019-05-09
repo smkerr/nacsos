@@ -1455,7 +1455,7 @@ def stats(request,run_id):
     if stat.query:
         project = stat.query.project
     else:
-        project = 'parliament'
+        project = stat.psearch.project
 
     if request.method == "POST":
         topic_assessment=topicAssessmentForm(request.POST or None, max_value = stat.docs_seen)

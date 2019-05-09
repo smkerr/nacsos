@@ -427,7 +427,12 @@ class RunStats(models.Model):
     fancy_tokenization = models.BooleanField(default=False, help_text='tokenize so that multiple word keywords remain whole')
 
     K = models.IntegerField(null=True, help_text='Number of topics')
-    alpha = models.FloatField(null=True, default=0.01, help_text='Alpha parameter (try higher values in LDA, including > 1). Low (high) values indicate that documents should be composed of few (many) topics.')
+    alpha = models.FloatField(null=True, default=0.01, help_text='Concentration parameter of Dirichlet distribution of topics in documents'
+                                                                 '(try higher values in LDA, including > 1). Low (high) values indicate that'
+                                                                 'documents should be composed of few (many) topics. Also called theta.')
+    beta = models.FloatField(null=True, default=None, help_text='Concentration parameter of Dirichlet distribution of words in topics.'
+                                                                'Low (high) values indicate that topics should be composed of few (many) words.'
+                                                                'Also called eta.')
     top_chain_var = models.FloatField(null=True, default=0.05, help_text='Chain var parameter for dtm')
     max_iter = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
     rng_seed = models.IntegerField(null=True, help_text="seed for random number generator for stochastic estimation of topic model (blei dtm)")
@@ -492,7 +497,7 @@ class RunStats(models.Model):
     error = models.FloatField(null=True, default = 0)
     coherence = models.FloatField(null=True)
     errortype = models.TextField(null=True)
-    exclusivity = models.TextField(null=True)
+    exclusivity = models.FloatField(null=True)
 
     empty_topics = models.IntegerField(null=True)
 
