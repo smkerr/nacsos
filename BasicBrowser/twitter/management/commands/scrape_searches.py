@@ -58,12 +58,21 @@ class Command(BaseCommand):
                         status.save()
 
 
-        now = datetime.now() #- timedelta(days=77)
+        prog, created = SearchProgress.objects.get_or_create(server="apsis")
+        if prog.search_date is None:
+            now = datetime.now() #- timedelta(days=77)
+        else:
+            now = prog.search_date
         for i in range(options['weeks']):
             now = now - timedelta(days=7)
             then = now - timedelta(days=8)
             print(now.strftime("%Y-%m-%d"))
             print(then.strftime("%Y-%m-%d"))
+            try:
+                prog.search_date = django.utils.timezone.make_aware(now)
+            except:
+                prog.search_date = now
+            prog.save()
             for ts in TwitterSearch.objects.all().order_by('id'):
                 try:
                     os.remove("tweets/tweets.json")

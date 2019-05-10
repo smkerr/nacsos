@@ -123,3 +123,9 @@ class TwitterSearch(models.Model):
     until = models.DateTimeField(null=True)
     since = models.DateTimeField(null=True)
     project = models.ForeignKey(smodels.Project, on_delete=models.CASCADE, null=True)
+
+class SearchProgress(models.Model):
+
+    server = models.TextField(null=True)
+    search_date = models.DateTimeField(null=True)
+    user_date = models.DateTimeField(null=True)

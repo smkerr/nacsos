@@ -65,6 +65,22 @@ def element_text_contents(element):
                 s += sub_element.text
     return s.strip()
 
+ABSTRACKR_CSV_TABLE = {
+    "keywords": "wosarticle__de",
+    "abstract": "AB"
+}
+
+def read_csv(q, update):
+    '''parse an abstrackr generated csv'''
+    import csv
+    with open(f'{settings.MEDIA_ROOT}/{q.query_file_name}') as f:
+        d = csv.DictReader(f)
+        for row in d:
+            for key in row:
+                pass
+
+
+
 def read_xml(q, update):
     '''parse a jstor like xml'''
     r_count = 0

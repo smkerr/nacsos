@@ -68,7 +68,7 @@
       <!-- Query manager -->
       <h2> User <span class="username">{{ user.username }}</span> Overview</h2>
 
-      {% if '@mcc-berlin.net' in request.user.email %}
+      {% if '@mcc-berlin.net' in request.user.email or '@pik-potsdam' in request.user.email %}
 
           <h3> User Credentials </h4>
               <p> Enter credentials here that can be used when submitting queries. N.B Must be UK Federation, only tested for University of Leeds.
