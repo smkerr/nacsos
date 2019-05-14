@@ -765,10 +765,16 @@ RIS_TY_MAPPING = {
     'J': 'JOUR',
     'JOUR': 'JOUR',
     'CONF': 'CONF',
+    'INPR': 'INPR',
     'Journal Article': 'JOUR',
     'Report': 'REPORT',
     'S': 'SER',
     'SER': 'SER',
+    'CASE': 'CASE',
+    'ABST': 'ABST',
+    'THES': 'THES',
+    'RPRT': 'RPRT',
+    'UNPB': 'UNPB',
     None: 'GEN',
 }
 

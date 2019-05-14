@@ -97,9 +97,15 @@ class Command(BaseCommand):
                         os.rmdir(folder)
                     except:
                         pass
-                ts.scrape_fetched=django.utils.timezone.make_aware(now)
-                if ts.since is None or ts.since > django.utils.timezone.make_aware(then):
-                    ts.since = django.utils.timezone.make_aware(then)
-                if ts.until is None or ts.until < django.utils.timezone.make_aware(now):
-                    ts.until = django.utils.timezone.make_aware(now)
+
+                try:
+                    then = django.utils.timezone.make_aware(now)
+                except:
+                    then = then
+
+                ts.scrape_fetched=now
+                if ts.since is None or ts.since > then:
+                    ts.since = then
+                if ts.until is None or ts.until < now:
+                    ts.until = now
                 ts.save()

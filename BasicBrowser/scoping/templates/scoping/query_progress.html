@@ -51,6 +51,9 @@
                         <p>Document upload in progress (This may take some time for websites other than Web of Science)
                         <p>View the <a href="{% url 'scoping:doclist' query.project.id query.id %}">{{doclength}}</a> documents which have been uploaded.
 
+                          <p> Stopped? <a href="{% url 'scoping:dodocadd' query.id %}"><button>Restart document upload</button></a>
+                            This will start from the beginning (but faster for already uploaded documents), and only
+                            work if the background upload task has really been interrupted.
                     {% endif %}
 
                     <h4> Upload Log
