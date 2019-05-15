@@ -9,6 +9,7 @@ from psycopg2.extras import *
 import time
 import subprocess
 from django.conf import settings
+import operator
 #import scoping
 
 
@@ -147,68 +148,27 @@ def download_metacodes(pid):
 def do_query(qid, background=True):
     q = Query.objects.get(pk=qid)
     q.doc_set.clear()
+
+    def arg_docs(arg):
+        ds = Doc.objects.filter(query=arg.strip())
+        return set(ds.values_list('pk',flat=True))
     # Do internal queries
     if q.database=="intern":
-        args = q.text.split(" ")
-        # Original one for combining qs
-        if "manually uploaded" in q.text:
-            print("manually uploaded")
-        elif args[1].strip() in ["AND", "OR", "NOT"]:
-            q.queries.add(Query.objects.get(pk=args[0]))
-            q.queries.add(Query.objects.get(pk=args[2]))
-            q1 = set(Doc.objects.filter(query=args[0]).values_list('id',flat=True))
-            op = args[1]
-            q2 = set(Doc.objects.filter(query=args[2]).values_list('id',flat=True))
-            if op =="AND":
-                ids = q1 & q2
-            elif op =="OR":
-                ids = q1 | q2
-            elif op == "NOT":
-                ids = q1 - q2
-            combine = Doc.objects.filter(id__in=ids)
-        else:
-            # more complicated filters
-            if args[0].strip()=="*":
-                q1 = Doc.objects.all()
-                q1ids = None
-                cids = q1ids
-            else:
-                q1 = Doc.objects.filter(query=args[0])
-                q.queries.add(pk=args[0])
-                q1ids = q1.values_list('id',flat=True)
-                cids = q1ids
-            for a in range(1,len(args)):
-                parts = args[a].split(":")
-                print(parts)
-                # Deal WITH tech filters
-                if parts[0] == "TECH":
-                    tech, tdocs, tobj = get_tech_docs(parts[1])
-                    tids = tdocs.values_list('id',flat=True)
-                    if q1ids is not None:
-                        cids = list(set(q1ids).intersection(set(tids)))
-                    else:
-                        cids = tids
-                    q1ids = cids
-                    combine = Doc.objects.filter(pk__in=cids)
-                # Deal with relevance filters
-                if parts[0] == "IS":
-                    if parts[1] == "RELEVANT":
-                        combine = Doc.objects.filter(
-                            pk__in=cids,
-                            docownership__relevant=1
-                        ) | Doc.objects.filter(
-                            pk__in=cids,
-                            category__isnull=False
-                        )
-                    if parts[1] == "TRELEVANT":
-                        combine = Doc.objects.filter(
-                            pk__in=cids,
-                            docownership__relevant=1,
-                            docownership__query__category=tobj
-                        ) | Doc.objects.filter(
-                            pk__in=cids,
-                            category=tobj
-                        )
+
+        pat = re.compile('(AND|OR)',re.IGNORECASE)
+        els = re.split(pat, q.text)
+        args = els[2::2]
+        ops = [o.strip().upper() for o in els[1::2]]
+
+        docs = arg_docs(els[0])
+
+        op_dict = {
+            "AND": operator.and_,
+            "OR": operator.or_
+        }
+
+        for arg, op in zip(args,ops):
+            docs = op_dict[op](docs, arg_docs(arg))
 
         t = Tag(
             title="all",
@@ -216,12 +176,17 @@ def do_query(qid, background=True):
             query=q
         )
         t.save()
-        for d in combine.distinct('id'):
-            d.query.add(q)
-            d.tag.add(t)
-        q.r_count = len(combine.distinct('id'))
-        q.save()
 
+        Through = Doc.query.through
+        dqs = [Through(doc_id=d,query=q) for d in docs]
+        Through.objects.bulk_create(dqs)
+
+        Through = Doc.tag.through
+        dts = [Through(doc_id=d,tag=t) for d in docs]
+        Through.objects.bulk_create(dts)
+
+        q.r_count = len(docs)
+        q.save()
         t.update_tag()
 
     else:
