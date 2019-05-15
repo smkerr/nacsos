@@ -55,6 +55,9 @@
   {% endif %}
   <p>Hover over a node to view topic info, click the background
     to refresh the graph
+    <p>Download this data:
+      <a href="{% url 'tmv_app:network' run_id 'nodes' %}">Nodes</a>,
+      <a href="{% url 'tmv_app:network' run_id 'links' %}">Links</a>
 </div>
 <table><tr>
 <td width="30%">

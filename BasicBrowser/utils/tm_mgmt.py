@@ -853,6 +853,10 @@ def update_year_topic_scores(session):
                     )
                     topicyear.score = ytt['score']
                     topicyear.count = yeartotal
+                    try:
+                        topicyear.share = ytt['score'] / yeartotal
+                    except:
+                        pass
                     topicyear.save()
                 stat.topic_year_scores_current = True
 

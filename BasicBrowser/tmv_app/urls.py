@@ -1,6 +1,7 @@
 from django.conf.urls import url, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.urls import path
 
 from tmv_app.views import *
 from django.contrib.auth.decorators import login_required
@@ -9,7 +10,8 @@ app_name = 'tmv_app'
 
 urlpatterns = [
     url(r'^$', login_required(runs), name='index'),
-    url(r'^network/(?P<run_id>\d+)$', login_required(network), name='network'),
+    path('network/<int:run_id>', login_required(network), name='network'),
+    path('network/<int:run_id>/<str:csvtype>', login_required(network), name='network'),
     url(r'^network_wg/(?P<run_id>\d+)$', login_required(network_wg), name='network_wg'),
     url(r'^network_wg/(?P<run_id>\d+)/(?P<t>\d+)/(?P<f>\d+)/(?P<top>.+)$', login_required(network_wg), name='network_wg'),
     url(r'^return_corrs$', login_required(return_corrs), name='return_corrs'),
@@ -34,7 +36,7 @@ urlpatterns = [
     url(r'^topic_presence/(?P<run_id>\d+)$', login_required(topic_presence_detail),name="topics"),
 
     url(r'^topics_time/(?P<run_id>\d+)/(?P<stype>\d+)$', login_required(topics_time),name="topics_time"),
-
+    url(r'^topics_time_csv/(?P<run_id>\d+)/$', login_required(get_yt_csv),name="topics_time_csv"),
     url(r'^stats/(?P<run_id>\d+)$', login_required(stats), name="stats"),
 
     url(r'^runs$', login_required(runs), name='runs'),

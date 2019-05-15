@@ -121,7 +121,7 @@ def institution_detail(request, run_id, institution_name):
 
     return HttpResponse(institution_template.render(institution_page_context))
 
-def network(request,run_id):
+def network(request,run_id, csvtype=None):
 
     # check if network has already been calculated
     if not (DynamicTopicCorr.objects.filter(run_id=run_id)
@@ -143,11 +143,32 @@ def network(request,run_id):
             )
 
     nodes = nodes.values('id','title','arscore','score')
-    nodes = json.dumps(list(nodes),indent=4,sort_keys=True)
     links = topiccorrs.objects.filter(run_id=run_id).filter(score__gt=0.05,score__lt=1,ar=ar).annotate(
         source=F('topic'),
         target=F('topiccorr')
     )
+
+    if csvtype:
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{csvtype}_{run_id}.csv"'
+
+        writer = csv.writer(response,delimiter=',')
+        writer.writerow(['sep=,'])
+
+        if csvtype=="nodes":
+            fields = ('id','score','title')
+            writer.writerow(fields)
+            for n in nodes:
+                writer.writerow([n[f] for f in fields])
+        elif csvtype=="links":
+            fields = ("source", "target", "score")
+            writer.writerow(fields)
+            for l in links.values(*fields):
+                writer.writerow([l[f] for f in fields])
+
+        return response
+
+    nodes = json.dumps(list(nodes),indent=4,sort_keys=True)
     links = json.dumps(list(links.values('source','target','score')),indent=4,sort_keys=True)
 
     if stat.query:
@@ -699,6 +720,26 @@ def topic_detail(request, topic_id, run_id=0):
 
     return HttpResponse(topic_template.render(topic_page_context))
 
+def get_yt_csv(request, run_id):
+    stat = RunStats.objects.get(pk=run_id)
+    if stat.method not in ["DT","BD"]:
+        yts = TopicYear.objects.filter(run_id=run_id)
+
+        fields = ('PY','share','score','topic_id','topic__title')
+        ytarray = yts.values(*fields)
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="topic_years.csv"'
+
+        writer = csv.writer(response,delimiter=',')
+        writer.writerow(['sep=,'])
+
+        writer.writerow(fields)
+
+        for yt in ytarray:
+            writer.writerow(yt.values())
+
+        return response
 
 def get_topic_docs(request,topic_id):
 
@@ -1037,8 +1078,6 @@ def network_wg(request, run_id, t=5, f=100,top=0):
             else:
                 n['wgrank'] = 50
 
-    #x = y
-    nodes = json.dumps(nodes,indent=4,sort_keys=True)
     links = tc.objects.filter(run_id=run_id).filter(
         score__gt=t,
         score__lt=1,
@@ -1047,6 +1086,10 @@ def network_wg(request, run_id, t=5, f=100,top=0):
         source=F('topic'),
         target=F('topiccorr')
     )
+
+
+    nodes = json.dumps(nodes,indent=4,sort_keys=True)
+
     links = json.dumps(list(links.values('source','target','score')),indent=4,sort_keys=True)
 
 
