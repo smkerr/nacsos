@@ -2167,6 +2167,97 @@ def proc_topic_intrusion(request,tid,top_id):
         kwargs={"run_id": ti.intruded_topic.run_id.run_id}
     ))
 
+@login_required
+def download_effects(request, pid):
+    p = Project.objects.get(pk=pid)
+    interventions = Intervention.objects.filter(
+        effect__project=p,
+        #effect__finish_time__isnull=False
+    ).exclude(
+        effect__user__username="galm"
+    )
+
+    column_names = {
+        'effect__user__username':'1. user',
+        'effect__doc__id':'3. document ID',
+        'effect__doc__wosarticle__pt': '3. document type',
+        'effect__doc__title': '3. document title',
+        'effect__doc__PY': '3. document PY',
+        'effect__doc__wosarticle__em': '3. author email',
+        'effect__doc__wosarticle__di': '3. DOI',
+        'effect__doc__wosarticle__tc': '3. times cited',
+        'effect__doc__content': '3. abstract',
+    }
+    i_fields = {i.name: f'5. intervention {i.name}' for i in Intervention._meta.get_fields()}
+    i_fields['id'] = 'Intervention ID'
+    del i_fields['intervention_subtypes']
+
+    e_fields = {f'effect__{e.name}': f'effect {e.name}' for e in StudyEffect._meta.get_fields() if e.name!="popchar"}
+    e_fields['effect__id'] = 'effect ID'
+    #e_fields['effect__controls__name'] = "effect controls"
+    del e_fields['effect__docmetacoding']
+    del e_fields['effect__intervention']
+    del e_fields['effect__controls']
+    del e_fields['effect__user']
+    del e_fields['effect__doc']
+
+    column_names.update(e_fields)
+
+    #i_fields['intervention_subtypes__name'] = "5. intervention subtype name"
+    #i_fields['intervention_subtypes__interventiontype__name'] = "5. intervention type name"
+    column_names.update(i_fields)
+
+    column_names['effect__start_time'] = '2. start'
+    column_names['effect__finish_time'] = '2. finish'
+    column_names['effect__editing_time_elapsed'] = '2. seconds editing'
+
+    values = list(interventions.values(*
+        column_names.keys()
+    ))
+
+    for v in values:
+        for x in v['framing_units']:
+            v[x] = 1
+            column_names[x] = f'5. framing_unit {x}'
+        del v['framing_units']
+        e = StudyEffect.objects.get(pk=v['effect__id'])
+        for pc in e.popchar_set.all():
+            v[pc.field.name] = pc.value
+            column_names[pc.field.name] = f'6. population characteristics {pc.field.name}'
+        for i in e.intervention_set.all():
+            for in_st in i.intervention_subtypes.all():
+                v[in_st.name] = 1
+                column_names[in_st.name] = f'5. intervention subtype name {in_st.name}'
+                v[in_st.interventiontype.name] = 1
+                column_names[in_st.interventiontype.name] = f'5. intervention type name {in_st.name}'
+        for c in e.controls.all():
+            v[c.name] = 1
+            column_names[c.name] = f"effect controls {c.name}"
+
+    del column_names['framing_units']
+
+    df = pd.DataFrame.from_dict(values)
+
+    df = df.rename(columns=column_names)
+
+    cnames = list(column_names.values())
+    cnames.sort()
+    df = df[cnames]
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="document_codings.csv"'
+
+    df.to_csv(response)
+
+    return response
+
+
+
+
+
+
+
+
 
 @login_required
 def code_document(request,docmetaid):

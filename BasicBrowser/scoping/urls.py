@@ -53,6 +53,7 @@ urlpatterns = [
     ### Meta-analysis stuff
     path('meta-setup/<int:pid>', views.meta_setup, name="meta_setup"),
     path('meta-setup/assign_meta', views.assign_meta, name="assign_meta"),
+    path('meta-setup/download_effects/<int:pid>', views.download_effects, name="download_effects"),
     path('code-document/<int:docmetaid>',views.code_document,name='code_document'),
     path('exclude-document/<int:dmc>',views.ExcludeView.as_view(), name="exclude"),
     path('save-document-code/<int:docmetaid>/<int:dest>',views.save_document_code,name='save_document_code'),
