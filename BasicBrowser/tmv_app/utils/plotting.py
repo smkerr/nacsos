@@ -211,7 +211,7 @@ def cluster_label_points(
             if words_only:
                 title = title.split(",")[0].replace("{","")
                 text = ax.annotate(
-                    title, c,
+                    title, c, fontsize=clabel_size,
                     ha="center",va="center",
                     bbox={'facecolor':"white", 'alpha':0.4, 'pad':0.4, 'boxstyle': 'round'}
 
@@ -256,7 +256,7 @@ def plot_tsne(
     topics=None, min_cluster = 100, psize=1,
     t_thresh=0.8, eps=1, n_clusters=1,
     doc_sets=None, clabel_size=8,
-    words_only=False
+    words_only=False, fsize=5
     ):
     cs = []
     sizes = []
@@ -344,7 +344,7 @@ def plot_tsne(
                 l*0.95,
                 t-ysp-i*ysp,
                 "{} {:.1%}".format(c['name'],len(c['docs'])/len(r_ind)),
-                fontsize=5,
+                fontsize=fsize,
                 bbox={
                     'facecolor': c['color'],
                     'pad': 3

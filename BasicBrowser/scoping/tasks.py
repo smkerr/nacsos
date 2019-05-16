@@ -104,6 +104,10 @@ def upload_docs(qid, update):
     elif ".RIS" in q.query_file.name or ".ris" in q.query_file.name:
         r_count = read_ris(q,update)
 
+    elif ".csv" in q.query_file.name:
+        print("CSV")
+        r_count = utils.read_csv(q)
+
     elif q.database =="WoS":
         print("WoS")
         with open(fname, encoding="utf-8") as res:

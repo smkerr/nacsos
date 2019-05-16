@@ -3,6 +3,7 @@ import re
 from django.conf import settings
 from utils.utils import *
 from itertools import product
+import scoping.models
 #from utils.utils import *
 
 XML_TRANS_TABLE = {
@@ -70,14 +71,25 @@ ABSTRACKR_CSV_TABLE = {
     "abstract": "AB"
 }
 
-def read_csv(q, update):
+def read_csv(q):
     '''parse an abstrackr generated csv'''
     import csv
-    with open(f'{settings.MEDIA_ROOT}/{q.query_file_name}') as f:
+    i = 0
+    with open(f'{settings.MEDIA_ROOT}/{q.query_file.name}') as f:
         d = csv.DictReader(f)
         for row in d:
-            for key in row:
-                pass
+            i+=1
+            t = row['title']
+            try:
+                d = scoping.models.Doc.objects.get(
+                    docproject__project=q.project,
+                    title=t
+                )
+            except:
+                print(t)
+                continue
+            d.query.add(q)
+    return i
 
 
 
