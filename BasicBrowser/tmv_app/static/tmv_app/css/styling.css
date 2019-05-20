@@ -189,11 +189,14 @@ width: 100%
 #main table.dark td {
     text-align: center;
     background-color: #799FF2;
+		/* border: 1px solid none;  */
 }
 
 #main table.dark tr.list td:hover {
     cursor: pointer;
-    background-color: #628AE3;
+    /* background-color: #628AE3; */
+		outline: 1px solid black;
+		/* border: 1px solid black; */
 }
 
 #main table.dark tr.list td:active {

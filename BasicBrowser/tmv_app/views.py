@@ -584,7 +584,24 @@ def dtopic_detail(request,topic_id):
     return HttpResponse(template.render(context))
 
 ###########################################################################
+def get_topicterms(request, topic_id):
+    topic = Topic.objects.get(pk=topic_id)
+    l = request.GET.get('l', 1)
+    template = loader.get_template('tmv_app/snippets/topicterms.html')
 
+    topicterms = topic.relevant_words(float(l), 25).values(
+        'term__title','score','term__id','alltopic_score'
+    )
+    max_term_score = max([x['alltopic_score'] for x in topicterms])
+
+    context = {
+        "run_id": topic.run_id.pk,
+        "topicterms": topicterms,
+        "max_term_score": max_term_score,
+        "l": l
+    }
+
+    return HttpResponse(template.render(context, request))
 
 def topic_detail(request, topic_id, run_id=0):
     """
@@ -597,7 +614,7 @@ def topic_detail(request, topic_id, run_id=0):
     """
 
     template = loader.get_template('tmv_app/topic.html')
-
+    topic = Topic.objects.get(pk=int(topic_id))
     try:
         topic = Topic.objects.get(pk=int(topic_id))
     except:
@@ -610,6 +627,7 @@ def topic_detail(request, topic_id, run_id=0):
         run_id = topic.run_id.pk
     stat = RunStats.objects.get(run_id=run_id)
 
+
     if stat.query:
         project = stat.query.project
     else:
@@ -617,21 +635,14 @@ def topic_detail(request, topic_id, run_id=0):
 
     topic_template = loader.get_template('tmv_app/topic.html')
 
-    topic = Topic.objects.get(pk=topic_id,run_id=stat.parent_run_id)
-
-    topicterms = Term.objects.filter(
-        topicterm__topic=topic, #run_id=stat.parent_run_id,
-        topicterm__score__gt=0.00001
-    ).order_by('-topicterm__score')[:50]
-
-    if stat.doc_topic_scaled_score==True:
-        doctopics = Doc.objects.filter(
-            doctopic__topic=topic,doctopic__run_id=run_id
-        ).order_by('-doctopic__scaled_score')[:50]
-    else:
-        doctopics = Doc.objects.filter(
-            doctopic__topic=topic, doctopic__run_id=run_id
-        ).order_by('-doctopic__score')[:50]
+    if request.method=="POST":
+        t = request.POST.get('title',None)
+        if t is not None:
+            if topic.original_title is None:
+                topic.original_title = topic.title
+            topic.title=t
+            topic.manual_title=t
+            topic.save()
 
     if stat.query:
         ndocs = Doc.objects.filter(
@@ -665,27 +676,6 @@ def topic_detail(request, topic_id, run_id=0):
         ).count()
         journals = None
 
-    doctopics = doctopics.values('PY','title','pk','doctopic__score')
-    terms = []
-    term_bar = []
-    remainder = 1
-    remainder_titles = ''
-
-    for tt in topicterms:
-        term = Term.objects.get(pk=tt.pk)
-        score = tt.topicterm_set.all()[0].score
-
-        terms.append(term)
-        if score >= .00001:
-            term_bar.append((True, term, score * 100))
-            remainder -= score
-        else:
-            if remainder_titles == '':
-                remainder_titles += term.title
-            else:
-                remainder_titles += ', ' + term.title
-    term_bar.append((False, remainder_titles, remainder*100))
-
     stat = RunStats.objects.get(pk=run_id)
     if stat.method not in ["DT","BD"]:
         yts = TopicYear.objects.filter(run_id=run_id)
@@ -697,16 +687,17 @@ def topic_detail(request, topic_id, run_id=0):
     corrtops = TopicCorr.objects.filter(
         topic=topic_id,score__lt=1,ar=-1
     ).order_by('-score')[:10]
-    dtops = TopicDTopic.objects.filter(
-        topic=topic_id,
-        dynamictopic__run_id=run_id
-    ).order_by('-score')[:10]
+    if stat.method =="DT":
+        dtops = TopicDTopic.objects.filter(
+            topic=topic_id,
+            dynamictopic__run_id=run_id
+        ).order_by('-score')[:10]
+    else:
+        dtops = None
+
 
     topic_page_context = {
         'topic': topic,
-        'terms': terms,
-        'term_bar': term_bar,
-        'docs': doctopics,
         'yts': ytarray,
         'corrtops': corrtops,
         'dtops': dtops,
@@ -716,9 +707,9 @@ def topic_detail(request, topic_id, run_id=0):
         'ndocs': ndocs,
         'project': project,
         'user': request.user
-        }
+    }
 
-    return HttpResponse(topic_template.render(topic_page_context))
+    return HttpResponse(topic_template.render(topic_page_context, request))
 
 def get_yt_csv(request, run_id):
     stat = RunStats.objects.get(pk=run_id)

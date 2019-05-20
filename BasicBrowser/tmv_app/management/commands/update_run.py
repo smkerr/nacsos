@@ -80,6 +80,7 @@ class Command(BaseCommand):
             except:
                 pass
             management.call_command('corr_topics',run_id)
+            topicterm_lscores(run_id)
             update_year_topic_scores(run_id)
             update_topic_scores(run_id)
             update_topic_titles(run_id)

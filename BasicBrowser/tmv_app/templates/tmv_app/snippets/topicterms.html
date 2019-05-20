@@ -1,0 +1,42 @@
+{% load scoping_extras %}
+    <table class="dark">
+    <tr class="title">
+    <td>words - (topic score / all topic score)
+      <br>Scale with &lambda; = {{l}}<span></span>
+      <br><input id="lambda"
+      value={{l}} type="range" step=0.05 min=0 max=1
+      onchange="topicterms"
+      ></input>
+    </td></tr>
+    {% if topicterms %}
+	    {% for term in topicterms %}
+	    <tr class="list" onmouseover="highlight('{{ term.term__title }}')" onmouseout="unhighlight('{{ term.term__title }}')">
+                <td class="word_list_item" id="{{ term.term__title }}_list"><a href="{% url 'tmv_app:term_detail' run_id term.term__id %}">
+                  {{ term.term__title }} - {{term.score|floatformat:2}} /
+                  {{term.alltopic_score|floatformat:2}}
+                </a>
+            {% if max_term_score %}
+            <div class="progress" style="background-color:rgb(121, 159, 242);;">
+              <div class="progress-bar"
+                role="progressbar"
+                style="background-color:#2b8cbe; width:{% widthratio term.score max_term_score 100 %}%"
+                aria-valuenow={{term.score}}
+                aria-valuemin="0"
+                aria-valuemax="{{max_term_score}}">
+              </div>
+              <div class="progress-bar"
+                role="progressbar"
+                style="background-color: #a6bddb; width:{% widthratio term.alltopic_score|subtract:term.score max_term_score 100 %}%"
+                aria-valuenow={{term.topicterm__score}}
+                aria-valuemin="0"
+                aria-valuemax="{{max_term_score}}">
+              </div>
+            </div>
+            {% endif %}
+                </td>
+
+        </tr>
+	    {% endfor %}
+    {% endif %}
+    <tmv-topic-terms-column>
+    </table>

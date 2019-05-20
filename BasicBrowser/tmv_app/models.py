@@ -57,6 +57,8 @@ class Topic(models.Model):
     The default topic object. The title is usually set according to the top words
     """
     title = models.CharField(max_length=80)
+    manual_title = models.CharField(max_length=80, null=True)
+    original_title = models.CharField(max_length=80, null=True)
     score = models.FloatField(null=True)
     share = models.FloatField(null=True)
     growth = models.FloatField(null=True)

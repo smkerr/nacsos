@@ -14,3 +14,7 @@ def field_type(field):
 @register.filter
 def percentage(value):
     return format(value, ".0%")
+
+@register.filter
+def subtract(value, arg):
+    return value - arg

@@ -10,6 +10,8 @@ from scipy.spatial import ConvexHull
 from sklearn.cluster import DBSCAN
 from adjustText import adjust_text, get_renderer, get_bboxes
 
+from utils.utils import flatten
+
 
 
 plt.rc('font',size=7)
@@ -210,14 +212,16 @@ def cluster_label_points(
 
             if words_only:
                 title = title.split(",")[0].replace("{","")
+
                 text = ax.annotate(
                     title, c, fontsize=clabel_size,
                     ha="center",va="center",
-                    bbox={'facecolor':"white", 'alpha':0.4, 'pad':0.4, 'boxstyle': 'round'}
+                    bbox={'facecolor':"white", 'alpha':0.4, 'pad':0.2, 'boxstyle': 'round'}
 
                 )
-                return text
-                break
+                texts.append(text)
+                #return text
+                #break
 
             else:
                 for i, simplex in enumerate(hull.simplices):
@@ -243,11 +247,12 @@ def cluster_label_points(
                             ha=ha,
                             fontsize=clabel_size,
                             arrowprops=dict(width=0.2,headwidth=0.1),
-                            bbox={'facecolor':"white", 'alpha':0.4, 'pad':0.4, 'boxstyle': 'round'}
+                            bbox={'facecolor':"white", 'alpha':0.4, 'pad':0.2, 'boxstyle': 'round'}
                         ))
                         text_set = True
                 # break here, just do the biggest cluster
                 #break
+    return texts
 
 def plot_tsne(
     r_ind,tsne_results,cats,nocatids,
@@ -256,7 +261,8 @@ def plot_tsne(
     topics=None, min_cluster = 100, psize=1,
     t_thresh=0.8, eps=1, n_clusters=1,
     doc_sets=None, clabel_size=8,
-    words_only=False, fsize=5
+    words_only=False, fsize=5, adjust=False,
+    draw_highlight_points=False,
     ):
     cs = []
     sizes = []
@@ -335,16 +341,21 @@ def plot_tsne(
     t = ax.get_ylim()[1]
 
     yextent = ax.get_ylim()[1]- ax.get_ylim()[0]
-    ysp = yextent*0.08
+    ysp = yextent*0.04
 
 
     if legend:
         for i,c in enumerate(cats):
+            if c['color'] == "#000000":
+                tcolor="white"
+            else:
+                tcolor="black"
             ax.text(
                 l*0.95,
                 t-ysp-i*ysp,
                 "{} {:.1%}".format(c['name'],len(c['docs'])/len(r_ind)),
                 fontsize=fsize,
+                color=tcolor,
                 bbox={
                     'facecolor': c['color'],
                     'pad': 3
@@ -409,10 +420,22 @@ def plot_tsne(
                 clabel_size,
                 words_only
             ))
-    # try:
-    #     adjust_text(texts, arrowprops=dict(arrowstyle="->", color='None', lw=0.5))
-    # except:
-    #     pass
+
+            if draw_highlight_points:
+                ax.scatter(
+                    points[:,0],
+                    points[:,1],
+                    c=c["color"],
+                    s=psize,
+                    alpha=1,
+                    linewidth=0.5,
+                    edgecolor='black'
+                )
+
+        if adjust:
+            texts = list(flatten(texts))
+            adjust_text(texts, arrowprops=dict(arrowstyle="->", color='None', lw=0.5))
+
     if doc_sets:
         for d in doc_sets:
             highlight_docs = np.argwhere(np.isin(r_ind,d['docs']))[:,0]

@@ -1,15 +1,30 @@
 {% extends "tmv_app/base_bs.html" %}
 {% load bootstrap4 %}
-
+{% load scoping_extras %}
+{% bootstrap_javascript %}
 {% block content %}
 
 <div id="top"></div>
 <h1 id="header">
 <table><tr>
-<td id="title">{{ topic.title }}</td>
+<td id="title">{{ topic.title }}
+   <button
+      id="show_rename"
+      type="button"
+      class="btn p-1"
+      data-target="#rename-modal">Rename
+    </button>
+
+    <form action='' method="POST" class="hidden" id="rename-form">
+      {% csrf_token %}
+      <input name="title" type="text">
+      <input type="submit" value="Rename title" />
+    </form>
+  </td>
 </tr></table></span>
 <hr noshade>
 </h1>
+
 
 <div id="main">
 
@@ -24,22 +39,12 @@
 </table>
 <table>
 <tr>
-<td width="25.0%">
-    <table class="dark">
-    <tr class="title">
-    <td>words</td></tr>
-    {% if terms %}
-	    {% for term in terms %}
-	    <tr class="list" onmouseover="highlight('{{ term.title }}')" onmouseout="unhighlight('{{ term.title }}')">
-                <td class="word_list_item" id="{{ term.title }}_list"><a href="{% url 'tmv_app:term_detail' run_id term.id %}">{{ term.title }} - {{term.score}}</a>
-                </td>
 
-        </tr>
-	    {% endfor %}
-    {% endif %}
-    <tmv-topic-terms-column>
-    </table>
+<td width="25.0%">
+  <div id="tt_box">
+    </div>
 </td>
+
 
 <td width="50.0%">
   <div class="explanation">
@@ -122,13 +127,17 @@
 
 <script type="text/JavaScript">
 
+$("#show_rename").on("click", function() {
+  $("#rename-form").toggleClass("hidden")
+})
+
 $('#sort').on('change', function() {
   get_docs(this.value)
 })
 
 function get_docs(s) {
   console.log("getting docs")
-  $("body").toggleClass('waiting')
+  $("body").addClass('waiting')
   $.ajax({
     url: "{% url 'tmv_app:get_topic_docs' topic.pk %}",
     data: {
@@ -136,34 +145,31 @@ function get_docs(s) {
     },
     success: function(response) {
       $("#doc_table").html(response)
-      $("body").toggleClass('waiting')
+      $("body").removeClass('waiting')
+    }
+  })
+}
+
+function topicterms(l) {
+  $.ajax({
+    url: "{% url 'tmv_app:get_topicterms' topic.pk %}",
+    data: {
+      'l': l
+    },
+    success: function(response) {
+      $("#tt_box").html(response)
+      $("body").removeClass('waiting')
+      $("#lambda").on("change", function() {
+        topicterms($(this).val())
+      })
     }
   })
 }
 
 get_docs('-doctopic__score')
 
-  function highlight(id) {
-	   	var list = document.getElementById(id+'_list');
-	   	var bar = document.getElementById(id+'_bar');
-		if (list != null) {
-			list.style.backgroundColor='#628AE3';
-		}
-		if (bar != null) {
-			bar.style.backgroundColor='#416DCC';
-		}
-	}
+topicterms(1)
 
-  function unhighlight(id) {
-		var list = document.getElementById(id+'_list');
-	   	var bar = document.getElementById(id+'_bar');
-		if (list != null) {
-			list.style.backgroundColor='#799FF2';
-		}
-		if (bar != null) {
-			bar.style.backgroundColor='#799FF2';
-		}
-  }
 
     // Yt graph
     var data = {{ yts|safe }};
