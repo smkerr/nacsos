@@ -263,6 +263,7 @@ def plot_tsne(
     doc_sets=None, clabel_size=8,
     words_only=False, fsize=5, adjust=False,
     draw_highlight_points=False,
+    dot_legend=False
     ):
     cs = []
     sizes = []
@@ -346,21 +347,32 @@ def plot_tsne(
 
     if legend:
         for i,c in enumerate(cats):
-            if c['color'] == "#000000":
-                tcolor="white"
+            prop = len(c['docs'])/len(r_ind)
+            label = "{} {:.1%}".format(c['name'],prop)
+            if dot_legend:
+                if prop>0.001:
+                    ax.scatter(
+                        [],[],c=c['color'],label=label
+                    )
             else:
-                tcolor="black"
-            ax.text(
-                l*0.95,
-                t-ysp-i*ysp,
-                "{} {:.1%}".format(c['name'],len(c['docs'])/len(r_ind)),
-                fontsize=fsize,
-                color=tcolor,
-                bbox={
-                    'facecolor': c['color'],
-                    'pad': 3
-                }
-            )
+                if c['color'] == "#000000":
+                    tcolor="white"
+                else:
+                    tcolor="black"
+                ax.text(
+                    l*0.95,
+                    t-ysp-i*ysp,
+                    label,
+                    fontsize=fsize,
+                    color=tcolor,
+                    bbox={
+                        'facecolor': c['color'],
+                        'pad': 3
+                    }
+                )
+
+    if dot_legend:
+        ax.legend()
 
     if heat_var:
         cmap = cm.get_cmap(cmapname)
@@ -434,7 +446,7 @@ def plot_tsne(
 
         if adjust:
             texts = list(flatten(texts))
-            adjust_text(texts, arrowprops=dict(arrowstyle="->", color='None', lw=0.5))
+            adjust_text(texts,ax=ax, arrowprops=dict(arrowstyle="->", color='None', lw=0.5))
 
     if doc_sets:
         for d in doc_sets:

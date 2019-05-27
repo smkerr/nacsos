@@ -779,6 +779,7 @@ class Doc(models.Model):
     date = models.DateTimeField(null=True)
     ymentions = ArrayField(models.IntegerField(),null=True)
     cities = models.ManyToManyField('cities.City')
+    regions = models.ManyToManyField('cities.Region')
 
     citation_objects = models.BooleanField(default=False,db_index=True)
 

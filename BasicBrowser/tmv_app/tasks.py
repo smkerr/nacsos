@@ -541,7 +541,6 @@ and {} topics\n'.format(qid, docs.count(),K))
                 kw_matches = set(wn) & kw_text
                 if len(kw_matches) > 0:
                     for m in kw_matches:
-                        print(m)
                         insensitive_m = re.compile(m, re.IGNORECASE)
                         X = insensitive_m.sub(' ', X)
                         yield m.replace(" ","-")
