@@ -303,7 +303,7 @@ def search(request):
 
     searchform = SearchForm()
 
-    searches = SearchTable(Search.objects.all())
+    searches = SearchTable(Search.objects.all(), order_by="-creation_date")
 
     context = {
         'searchform': searchform,
