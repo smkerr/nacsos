@@ -3353,6 +3353,9 @@ def sortdocs(request):
     download = request.GET.get('download',None)
     ris = request.GET.get('ris',None)
 
+    if download=="false":
+        download = False
+
     # x = y
 
     html = False
@@ -3422,10 +3425,12 @@ def sortdocs(request):
         )
 
     if "wosarticle__doc" in fields:
-        if download:
+        print(download)
+        if not download:
             filt_docs = filt_docs.annotate(
                 wosarticle__doc=Concat(V('<a href="/scoping/document/'+str(p.id)+'/'),'pk',V('">'),'pk',V('</a>'))
             )
+
     #if
     #x = y
     for i in range(len(f_fields)):
