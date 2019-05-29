@@ -162,7 +162,7 @@ def combine_searches(s_ids):
     elif search_object_type == 1:
         pars = Paragraph.objects.filter(search_matches__in=searches).distinct()
         Through = Paragraph.search_matches.through
-        tms = [Through(par=p, search=s) for p in pars]
+        tms = [Through(paragraph=p, search=s) for p in pars]
         Through.objects.bulk_create(tms)
         s.par_count = pars.count()
     s.save()
