@@ -84,7 +84,8 @@
             {% if do.utterance_linked %}
                 <link href="https://afeld.github.io/emoji-css/emoji.css" rel="stylesheet">
                 <div id="docbox">
-                    Speech from <a href="{% url 'parliament:document' doc.document.id %}"> {{doc.document}} </a>
+                    Speech <a href="{% url 'parliament:utterance' doc.utterance.id %}"> {{doc.utterance.id}} </a>
+                    from <a href="{% url 'parliament:document' doc.document.id %}"> {{doc.document}} </a>
                     with {{doc.paragraph_set.count}} paragraphs
                 {% include "parliament/snippets/ut_info.html" with ut=doc %}
                 </div>
