@@ -147,10 +147,16 @@ def combine_searches(s_ids):
         print("all search object types identical")
 
     # create new search object
-
     search_object_type = list(object_types)[0][0]
     s = Search(title='Searches {} combined'.format(", ".join([str(s_id) for s_id in s_ids])))
     s.search_object_type = search_object_type
+
+    search_query_string = set(list(searches.values_list('text')))
+    if len(search_query_string) > 1:
+        print("search object query strings do not match!")
+    else:
+        s.text = searches[0].text
+
     s.project = searches[0].project
     s.save()
     if search_object_type == 2:

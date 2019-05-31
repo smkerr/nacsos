@@ -4,16 +4,8 @@
 
 <h2>List of results for search #{{search.id}} </h2>
 
-{% if search.search_object_type == 1 %}
 
-    {% render_table pars %}
-
-{% else %}
-
-    {% render_table utterance_table %}
-
-{% endif %}
-
+{% render_table table_object %}
 
 {% endblock %}
 
