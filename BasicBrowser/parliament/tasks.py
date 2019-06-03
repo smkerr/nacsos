@@ -134,7 +134,7 @@ def do_search(s_id):
         return
 
 @shared_task
-def combine_searches(s_ids):
+def combine_searches(s_ids, user=None):
 
     searches = Search.objects.filter(pk__in=s_ids)
 
@@ -158,6 +158,9 @@ def combine_searches(s_ids):
         s.text = searches[0].text
 
     s.project = searches[0].project
+    if user:
+        s.creator = user
+
     s.save()
     if search_object_type == 2:
         ut = Utterance.objects.filter(search_matches__in=searches).distinct()
