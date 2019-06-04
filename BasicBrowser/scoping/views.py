@@ -2247,7 +2247,32 @@ def download_effects(request, pid):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="document_codings.csv"'
 
-    df.to_csv(response)
+    column_names = {
+        'user__username':'1. user',
+        'date': '2. finish',
+        'doc__id':'3. document ID',
+        'doc__wosarticle__pt': '3. document type',
+        'doc__title': '3. document title',
+        'doc__PY': '3. document PY',
+        'doc__wosarticle__em': '3. author email',
+        'doc__wosarticle__di': '3. DOI',
+        'doc__wosarticle__tc': '3. times cited',
+        'doc__content': '3. abstract',
+        'reason': '7. exclusion reason'
+    }
+
+    exclusions = Exclusion.objects.filter(project=p)
+    ex_df = pd.DataFrame.from_dict(exclusions.values(*column_names.keys()))
+
+    ex_df = ex_df.rename(columns=column_names)
+
+    cnames = list(column_names.values())
+    cnames.sort()
+    ex_df = ex_df[cnames]
+
+    merged = pd.concat([df,ex_df],sort=True)
+
+    merged.to_csv(response)
 
     return response
 

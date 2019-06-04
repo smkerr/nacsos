@@ -140,6 +140,8 @@ class StudyEffect(models.Model):
     test_statistic_df.group=2
     p_value = models.FloatField(blank=False, default=-999)
     p_value.group=2
+    number_of_observations = models.IntegerField(null=True, blank=False, default=-999)
+    number_of_observations.group = 2
 
     tail_choices = (
         (1,"one-tailed"),
@@ -163,6 +165,10 @@ class StudyEffect(models.Model):
     treatment_sample_size.group=3
     control_sample_size = models.IntegerField(null=True, blank=False, default=-999)
     control_sample_size.group=3
+    control_type = models.TextField(null=True, blank=False, default="-999")
+    control_type.group=3
+    underlying_source = models.TextField(null=True, blank=False, default="-999", verbose_name="Source of underlying data")
+    underlying_source.group = 3
 
     #g4 Study variables
     geographic_scope = models.TextField(blank=False, default="-999")
@@ -255,11 +261,17 @@ class Intervention(models.Model):
     payment = models.TextField(null=True)
     granularity = models.TextField(null=True)
     medium = models.TextField(null=True)
-    duration = models.IntegerField(null=True, help_text="weeks")
+    duration = models.IntegerField(null=True, help_text="weeks", default=-999)
     base_data_collection = models.IntegerField(null=True, help_text="weeks", default=-999)
     treatment_period = models.IntegerField(null=True, help_text="weeks", default=-999)
     followup = models.IntegerField(null=True, help_text="weeks", default=-999)
-    followup = models.IntegerField(null=True)
+    
+
+    co2_choices = (
+        (0,"No"),
+        (1,"Yes")
+    )
+    co2_savings_calculated = models.IntegerField(choices=co2_choices, null=True)
 
     def __str__(self):
         itypes = self.intervention_subtypes.all().values_list('name',flat=True)
@@ -1136,6 +1148,7 @@ class Note(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Notemaker")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     objects = NoteManager()
+    field_group = models.TextField(null=True)
     date = models.DateTimeField(auto_now_add=True)
     text = models.TextField(null=True)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
