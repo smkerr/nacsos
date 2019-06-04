@@ -100,6 +100,7 @@ class Person(models.Model):
     party = models.ForeignKey(Party, on_delete=models.PROTECT, null=True)
 
     information_source = models.TextField(default="")
+    creation_date = models.DateTimeField(auto_now_add=True, null=True, verbose_name="Date of entry creation")
 
     def __str__(self):
         if self.clean_name:

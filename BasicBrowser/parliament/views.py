@@ -303,7 +303,7 @@ def search(request):
 
     searchform = SearchForm()
 
-    searches = SearchTable(Search.objects.all())
+    searches = SearchTable(Search.objects.all(), order_by="-creation_date")
 
     context = {
         'searchform': searchform,
@@ -405,20 +405,24 @@ def search_list_results(request, sid):
     template = loader.get_template('parliament/search-list-results.html')
 
     s = Search.objects.get(pk=sid)
-    pars = Paragraph.objects.filter(search_matches=s)
-    pt = SearchParTable(pars)
-    pt.reg_replace(s.text)
-    RequestConfig(request).configure(pt)
 
-    uts = Utterance.objects.filter(search_matches=s)
-    ut = SearchSpeechTable(uts)
-    ut.reg_replace(s.text)
-    RequestConfig(request).configure(ut)
+    if s.search_object_type == 1:
+        pars = Paragraph.objects.filter(search_matches=s)
+        results_table = SearchParTable(pars)
+        if s.text:
+            results_table.reg_replace(s.text)
+
+    else:
+        uts = Utterance.objects.filter(search_matches=s)
+        results_table = SearchSpeechTable(uts)
+        if s.text:
+            results_table.reg_replace(s.text)
+
+    RequestConfig(request).configure(results_table)
 
     context = {
         'search': s,
-        'pars': pt,
-        'utterance_table': ut
+        'table_object': results_table
     }
 
     return HttpResponse(template.render(context, request))

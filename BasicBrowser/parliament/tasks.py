@@ -134,7 +134,7 @@ def do_search(s_id):
         return
 
 @shared_task
-def combine_searches(s_ids):
+def combine_searches(s_ids, user=None):
 
     searches = Search.objects.filter(pk__in=s_ids)
 
@@ -147,11 +147,20 @@ def combine_searches(s_ids):
         print("all search object types identical")
 
     # create new search object
-
     search_object_type = list(object_types)[0][0]
     s = Search(title='Searches {} combined'.format(", ".join([str(s_id) for s_id in s_ids])))
     s.search_object_type = search_object_type
+
+    search_query_string = set(list(searches.values_list('text')))
+    if len(search_query_string) > 1:
+        print("search object query strings do not match!")
+    else:
+        s.text = searches[0].text
+
     s.project = searches[0].project
+    if user:
+        s.creator = user
+
     s.save()
     if search_object_type == 2:
         ut = Utterance.objects.filter(search_matches__in=searches).distinct()
@@ -162,7 +171,7 @@ def combine_searches(s_ids):
     elif search_object_type == 1:
         pars = Paragraph.objects.filter(search_matches__in=searches).distinct()
         Through = Paragraph.search_matches.through
-        tms = [Through(par=p, search=s) for p in pars]
+        tms = [Through(paragraph=p, search=s) for p in pars]
         Through.objects.bulk_create(tms)
         s.par_count = pars.count()
     s.save()
