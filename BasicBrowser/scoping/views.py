@@ -3424,12 +3424,7 @@ def sortdocs(request):
             category__name=StringAgg('category__name','; ',distinct=True),
         )
 
-    if "wosarticle__doc" in fields:
-        print(download)
-        if not download:
-            filt_docs = filt_docs.annotate(
-                wosarticle__doc=Concat(V('<a href="/scoping/document/'+str(p.id)+'/'),'pk',V('">'),'pk',V('</a>'))
-            )
+
 
     #if
     #x = y
@@ -3617,7 +3612,12 @@ def sortdocs(request):
         #except:
         #    print("failing")
         #    break
-
+    if "wosarticle__doc" in fields:
+        print(download)
+        if not download:
+            filt_docs = filt_docs.annotate(
+                wosarticle__doc=Concat(V('<a href="/scoping/document/'+str(p.id)+'/'),'pk',V('">'),'pk',V('</a>'))
+            )
 
     if tag_title is not None:
         t = Tag(title=tag_title)
