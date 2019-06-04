@@ -10,6 +10,8 @@ class Command(BaseCommand):
 
         for p in psutil.process_iter():
             if "refresh_searches" in p.cmdline() and p.pid != pid:
+                print(p)
+                print(p.cmdline())
                 print("Scraping is already running... skipping for today")
                 return
 

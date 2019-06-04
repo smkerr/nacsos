@@ -64,7 +64,13 @@ class Command(BaseCommand):
         else:
             now = prog.search_date
         for i in range(options['weeks']):
-            now = now - timedelta(days=7)
+            try:
+                td = (now - datetime.now()).days
+            except:
+                td = (now - django.utils.timezone.make_aware(datetime.now())).days
+
+            if abs(td/7) > options['weeks']:
+                now = datetime.now()
             then = now - timedelta(days=8)
             print(now.strftime("%Y-%m-%d"))
             print(then.strftime("%Y-%m-%d"))
@@ -109,3 +115,4 @@ class Command(BaseCommand):
                 if ts.until is None or ts.until < now:
                     ts.until = now
                 ts.save()
+            now = now - timedelta(days=7)

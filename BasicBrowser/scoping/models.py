@@ -336,12 +336,14 @@ class DocProject(models.Model):
     YES = 1
     NO = 2
     MIXED = 3
+    YESBUT = 4
 
     Relevance = (
         (UNRATED, 'Unrated'),
         (YES, 'Yes'),
         (NO, 'No'),
         (MIXED, 'Mixed'),
+        (YESBUT, 'Yes but')
     )
 
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
@@ -780,6 +782,7 @@ class Doc(models.Model):
     ymentions = ArrayField(models.IntegerField(),null=True)
     cities = models.ManyToManyField('cities.City')
     regions = models.ManyToManyField('cities.Region')
+    countries = models.ManyToManyField('cities.Country')
 
     citation_objects = models.BooleanField(default=False,db_index=True)
 
