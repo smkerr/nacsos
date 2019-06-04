@@ -149,7 +149,7 @@ def download_metacodes(pid):
     return
 
 @shared_task
-def do_query(qid, background=True):
+def do_query(qid, background=True, dis=False):
     q = Query.objects.get(pk=qid)
     q.doc_set.clear()
 
@@ -207,6 +207,9 @@ def do_query(qid, background=True):
             "-s",
             q.database
         ]
+
+        if dis:
+            args += ["-dis", "True"]
 
         if q.creator.username in ["galm","khat","hilj","lamw","minj"]:
             args += ["-lim", "2000000"]

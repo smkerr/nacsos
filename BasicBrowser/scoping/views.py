@@ -5897,7 +5897,7 @@ def assign_meta(request):
         acs = all_codings.filter(coded=True)
     #else:
         #acs = all_codings.filter(coded=False)
-    done = len(set(acs.values_list('doc_id',flat=True)))
+    done = set(acs.values_list('doc_id',flat=True))
     acds = acs.values('doc__id').annotate(
         doc_count=Count('doc__id')
     )
@@ -5930,5 +5930,14 @@ def assign_meta(request):
             )
     #DocMetaCoding.objects.bulk_create(dmcs)
 
+    users = User.objects.filter(pk__in=users)
 
-    return HttpResponse("done")
+    if not split:
+        split_message="double checked by"
+    else:
+        split_message = "split between"
+
+    message = f'assigned {len(doc_ids)} documents {split_message} {", ".join([x.username for x in users])}. Refresh page to update counts'
+
+
+    return HttpResponse(message)

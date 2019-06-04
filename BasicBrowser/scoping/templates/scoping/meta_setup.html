@@ -45,7 +45,7 @@
             </table>
         </div>
         <div class="col">
-            <h4> Coded documents - <a href="{% url 'scoping:download_effects' project.id %}">download csv</a></h4> 
+            <h4> Coded documents - <a href="{% url 'scoping:download_effects' project.id %}">download csv</a></h4>
             <table class="table table-bordered">
                 {% for key,value in doc_counts.codings.items %}
                 <tr>
@@ -238,7 +238,8 @@ $('#assignmodal').click(function(e){
       $.post('assign_meta',
          form_array,
          function(data, status, xhr){
-           // do something here with response;
+           alert(data)
+           $('#assignment-modal').modal('toggle')
          });
 });
 
