@@ -772,6 +772,7 @@ GET Args:
     id1 = request.GET.get('id1', None)
     id2 = request.GET.get('id2', None)
     method = request.GET.get('method', None)
+    return_link = request.GET.get('return_link', False)
 
     try:
         t1 = apps.get_model(
@@ -803,6 +804,8 @@ GET Args:
             pass
             #query_doc_category.delay(id1,id2)
     t1.save()
+    if return_link:
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
     return HttpResponse()
 
 ########################################################
@@ -5197,7 +5200,10 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                 lcats.append((e,t))
             levels.append(lcats)
 
-
+        if do.query.project.id==177:
+            cities = do.doc.cities.all()
+        else:
+            cities = None
 
 
     try:
@@ -5209,6 +5215,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         'project':tag.query.project,
         'tag': tag,
         'criteria': criteria,
+        'cities': cities,
         'do': do,
         'pc': pc,
         'doc': doc,

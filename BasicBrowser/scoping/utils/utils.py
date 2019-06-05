@@ -186,14 +186,14 @@ def is_number(s):
     except ValueError:
         return False
 
-def ihighlight(word, text):
+def ihighlight(word, text, tclass="t1"):
     idx = 0
     remaining_text = text
     parsed_text = ""
     word = word.replace("(","").replace(")","")
     try:
         for m in re.finditer(word.lower().replace("*","\w*"),text.lower()):
-            parsed_text += f'{text[idx:m.span()[0]]}<span class="t1">{m.group()}</span>'
+            parsed_text += f'{text[idx:m.span()[0]]}<span class="{tclass}">{m.group()}</span>'
             idx = m.span()[1]
             remaining_text = text[idx:]
     except:

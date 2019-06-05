@@ -111,6 +111,19 @@
         </div>
 
     {% endfor %}
+      <div class="border rounded bg-white my-2 p-2 small">
+          Document cities, click to remove
+                  <hr>
+              {% for c in cities %}
+              <a href="{% url 'scoping:update_thing'%}?thing1=Doc&thing2=cities&id1={{do.doc.pk}}&id2={{c.pk}}&method=remove&return_link=True">
+                <span class="btn t2" style="color:black" >{{c.name}}</span>
+              </a>
+
+              {% endfor %}
+      </div>
+    {% if cities %}
+
+    {% endif %}
     <div class="border rounded bg-white my-3 p-2">
        {% csrf_token %}
        <p >Is this document relevant according the criteria shown? (Click buttons or use number keys)</p>

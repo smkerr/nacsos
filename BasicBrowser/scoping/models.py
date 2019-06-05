@@ -265,7 +265,7 @@ class Intervention(models.Model):
     base_data_collection = models.IntegerField(null=True, help_text="weeks", default=-999)
     treatment_period = models.IntegerField(null=True, help_text="weeks", default=-999)
     followup = models.IntegerField(null=True, help_text="weeks", default=-999)
-    
+
 
     co2_choices = (
         (0,"No"),
@@ -893,6 +893,9 @@ class Doc(models.Model):
                     for w in sorted(list(words),key=len, reverse=True):
                         #s = re.sub(w,'<span class="t1">{}</span>'.format(w),s)
                         s = utils.ihighlight(w,s)
+                    if q.project.id==177:
+                        for c in self.cities.all():
+                            s = utils.ihighlight(c.name, s, "t2")
             if s is not None:
                 d[f] = s
         d["authors"] = list(self.docauthinst_set.order_by('position').values())
