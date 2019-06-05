@@ -2408,13 +2408,18 @@ def save_document_code(request,docmetaid,dest):
 
     return HttpResponse(template.render(context,request))
 
-def get_form_fields(model,project,instance=False,errors={},data={}):
+def get_form_fields(model,project,instance=False,errors={},data={}, dmc=None):
     groups = []
     if hasattr(model, "GROUPS"):
         mgroups = model.GROUPS
     else:
         mgroups = [(None,"")]
     for g in mgroups:
+        notes = None
+        if dmc:
+            notes = Note.objects.filter(dmc=dmc, field_group=g[1])
+        if instance:
+            notes = Note.objects.filter(effect=instance,field_group=g[1])
         if g[0] is not None:
             fields = [x for x in model._meta.get_fields() if hasattr(x,"group") and x.group==g[0]]
         else:
@@ -2482,7 +2487,8 @@ def get_form_fields(model,project,instance=False,errors={},data={}):
                 })
         groups.append({
             "title": g[1],
-            "form_fields": form_fields
+            "form_fields": form_fields,
+            "notes": notes
         })
 
     if model==scoping.models.StudyEffect:
@@ -2623,6 +2629,7 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
         instance=StudyEffect.objects.get(pk=eff_copy)
     else:
         instance=False
+
     if request.method=="POST":
         data = dict(request.POST.copy())
         data['doc_id'] = dmc.doc.id
@@ -2648,17 +2655,26 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
                 effect.editing_time_elapsed = time_elapsed.total_seconds()
 
             effect.save()
+            if not eff_edit:
+                if Note.objects.filter(dmc=dmc).exists():
+                    for n in Note.objects.filter(dmc=dmc):
+                        n.effect=effect
+                        n.dmc = None
+                        n.save()
+
+
             return HttpResponseRedirect(reverse('scoping:code_document', kwargs={'docmetaid': dmc.id}))
         else:
             print(errors)
             now = page_load
     else:
-        form_fields = get_form_fields(StudyEffect,dmc.project,instance,errors)
+        form_fields = get_form_fields(StudyEffect, dmc.project, instance, errors, dmc=dmc)
         now = timezone.now()
 
 
 
     context = {
+        'instance': instance,
         'project': dmc.project,
         'dmc': dmc,
         'groups': form_fields,
@@ -5411,7 +5427,10 @@ def editdoc(request):
 @login_required
 def delete(request,thing,thingid):
     from scoping import models
-    getattr(models, thing).objects.get(pk=thingid).delete()
+    try:
+        getattr(models, thing).objects.get(pk=thingid).delete()
+    except:
+        HttpResponse("could not delete")
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 @login_required
@@ -5431,6 +5450,10 @@ def add_note(request):
     d = request.POST.get('d',None)
     text = request.POST.get('note',None)
     pid = request.POST.get('project',None)
+    field_group = request.POST.get('field_group', None)
+    dmc = request.POST.get('dmc', None)
+    effect = request.POST.get('effect', None)
+
 
     if tid is not None:
         tag = Tag.objects.get(pk=tid)
@@ -5453,7 +5476,7 @@ def add_note(request):
             par = DocPar.objects.get(pk=doc_id)
             note.par=par
 
-    else:
+    elif doc_id is not None:
         doc = Doc.objects.get(pk=doc_id)
         note = Note(
             doc=doc,
@@ -5462,8 +5485,33 @@ def add_note(request):
             project_id=pid,
             text=text
         )
+    elif effect is not None:
+
+        note = Note(
+            effect_id=effect,
+            field_group=field_group,
+            user=request.user,
+            date=timezone.now(),
+            project_id=pid,
+            text=text
+        )
+    elif dmc is not None:
+        note = Note(
+            dmc_id=dmc,
+            field_group=field_group,
+            user=request.user,
+            date=timezone.now(),
+            project_id=pid,
+            text=text
+        )
 
     note.save()
+
+    if dmc is not None or effect is not None:
+        n = dict(note.__dict__)
+        del n['_state']
+        n["username"] = note.user.username
+        return JsonResponse(n)
     next = request.POST.get('next', '/')
     return HttpResponseRedirect(next)
 

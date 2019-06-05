@@ -1152,6 +1152,8 @@ class Note(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Notemaker")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     objects = NoteManager()
+    dmc = models.ForeignKey(DocMetaCoding, on_delete=models.CASCADE, null=True)
+    effect = models.ForeignKey(StudyEffect, on_delete=models.CASCADE, null=True)
     field_group = models.TextField(null=True)
     date = models.DateTimeField(auto_now_add=True)
     text = models.TextField(null=True)

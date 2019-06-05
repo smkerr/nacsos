@@ -21,6 +21,22 @@
         <div data-group="{{g.title}}" class="container">
             <div class="row">
             <h4 class="m-2 mb-1">{{g.title}}</h4>
+            {% if g.notes %}
+              <i class="btn em-svg em-spiral_note_pad" data-note="show" title="view note"
+              data-toggle="modal"
+              data-target="#dnote-modal"
+              data-user="{{g.notes.0.user.username}}"
+              data-date="{{g.notes.0.date}}"
+              data-text="{{g.notes.0.text}}"
+              data-l="{% url 'scoping:delete' thing='Note' thingid=g.notes.0.pk %}"
+              data-group="{{g.title}}"></i>&nbsp;
+            {% else %}
+              <i style="" class="btn em-svg em-writing_hand" data-note="add" title="add note"
+              data-toggle="modal"
+              data-target="#note-modal"
+              data-group="{{g.title}}"></i>&nbsp;
+            {% endif %}
+            <!-- <i class="em em-speech_balloon"></i> -->
             </div>
             <div class="row">
             {% for f in g.form_fields %}
@@ -35,6 +51,74 @@
     {% endfor %}
     <button type="submit" class="btn btn-primary">Submit</button>
     </form>
+    </div>
+
+    <div class="modal fade" id="note-modal" tabindex="-1" role="dialog" aria-labelledby="NoteModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="NoteModalLabel">Add Note</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <!-- <form id="note_form"> -->
+              <form id="noteForm" action="{% url 'scoping:add_note' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <input type="hidden" name="dmc" value="{{dmc.id}}"></input>
+                {% if instance %}
+                  <input type="hidden" name="effect" value="{{instance.id}}"></input>
+                {% endif %}
+                <input type="hidden" name="pid" value="{{project.id}}"></input>
+                <input type="hidden" name="field_group" value=""></input>
+              <textarea class="form-control" name="note" rows=3>
+              </textarea>
+              <br>
+              <p>
+
+            <!-- </form> -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="submit" id="addNote" class="btn btn-primary">Add note</button>
+          </div>
+
+          </form>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="dnote-modal" tabindex="-1" role="dialog" aria-labelledby="dNoteModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="dNoteModalLabel">View Note</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+
+                <p class="notedesc"><b>At <span id="noteDate"></span>,<span id="nUsername"></span> wrote...</b>
+                <hr>
+                <span id="noteText"></span>
+                <input type="hidden" id="nFieldGroup"
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <a id="noteDelete" href="">
+              <button type="button" class="btn">Delete</button>
+            </a>
+          </div>
+
+          </form>
+
+        </div>
+      </div>
     </div>
 
 
@@ -58,6 +142,88 @@
 {% block script %}
 <script src="{% static 'scoping/js/forms.js' %}"></script>
 <script type="text/javascript">
+
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+$('#addNote').click(function(e){
+      e.preventDefault();
+      var form_array = $('#noteForm').serializeArray()
+      var group = $("#noteForm").find('[name=field_group]').val()
+      form_array.push({ // *expand the array to include a csrf token*
+        name: 'csrfmiddlewaretoken',
+        value:  getCookie('csrftoken') // getCookie function from django docs
+      });
+      var b = $('i[data-group="'+group+'"]')
+
+      $.post(
+         $('#noteForm').attr('action'),
+         form_array,
+         function(data, status, xhr){
+           l =  '/scoping/delete/Note/'+data.id
+           b.removeClass("em-writing_hand")
+           b.addClass("em-spiral_note_pad")
+           b.attr('data-target', "#dnote-modal")
+           b.attr('data-user', data.username)
+           b.attr('data-date', data.date)
+           b.attr('data-text', data.text)
+           b.attr('data-group', data.field_group)
+           b.attr('data-l', l)
+           $('#note-modal').modal('toggle')
+         });
+});
+
+$('#noteDelete').click(function(e){
+    e.preventDefault();
+    var field_group = $('#nFieldGroup').val()
+    var b = $('i[data-group="'+field_group+'"]')
+
+    $.get(
+      $(this).attr('href'),
+      function(data, status, xhr) {
+        b.addClass("em-writing_hand")
+        b.removeClass("em-spiral_note_pad")
+        b.attr('data-target', "#note-modal")
+
+        b.removeAttr('data-user')
+        b.removeAttr('data-date')
+        b.removeAttr('data-text')
+        $('#dnote-modal').modal('toggle')
+      }
+    )
+});
+
+$('#note-modal').on('show.bs.modal', function (event) {
+  var button = $(event.relatedTarget) // Button that triggered the modal
+  var field_group = button.attr('data-group')
+  var modal = $(this)
+  modal.find('[name="field_group"]').val(field_group)
+})
+
+$('#dnote-modal').on('show.bs.modal', function (event) {
+  var button = $(event.relatedTarget) // Button that triggered the modal
+  var username = button.data('user')
+  var modal = $(this)
+  modal.find('#nFieldGroup').val(button.attr('data-group'))
+  modal.find('[id="nUsername"]').html(username)
+  modal.find('#noteDate').html(button.attr('data-date'))
+  modal.find('#noteText').html(button.attr('data-text'))
+  modal.find('#noteDelete').attr("href", button.attr('data-l'));
+})
+
 function meanDiff(s) {
     if (['Difference of means','ANOVA'].includes(s)) {
         $('*[data-group="Difference of means"]').removeClass("hidden")
