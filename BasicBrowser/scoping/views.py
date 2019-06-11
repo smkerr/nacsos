@@ -5195,6 +5195,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
             project=tag.query.project,
             utterance = do.utterance
         )
+        cities = None
 
     else:
         if do.title_only:
