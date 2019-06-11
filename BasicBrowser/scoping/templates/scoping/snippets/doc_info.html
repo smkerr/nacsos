@@ -5,7 +5,9 @@
   {% endif %}
 <h4> {{ doc.title | safe }}</h4>
 {% if doc.id %}
-  <a href="{% url 'scoping:document' project.id doc.id %}">{{doc.id}}</a>
+    {% if project.id %}
+      <a href="{% url 'scoping:document' project.id doc.id %}">{{doc.id}}</a>
+    {% endif %}
 {% endif %}
 <p>{{ doc.wosarticle__so | safe}}
     {% if doc.wosarticle__py %}
