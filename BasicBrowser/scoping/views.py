@@ -2319,7 +2319,7 @@ def code_document(request,docmetaid):
 
     ecs = ExclusionCriteria.objects.filter(project=dmc.project)
 
-    exclusions = Exclusion.objects.filter(project=dmc.project,doc=dmc.doc)
+    exclusions = Exclusion.objects.filter(project=dmc.project,doc=dmc.doc,user=request.user)
     #print(doc)
 
     connections = list(interventions.values('id','effect_id'))
@@ -2501,7 +2501,7 @@ def get_form_fields(model,project,instance=False,errors={},data={}, dmc=None):
                 input_type="number"
             else:
                 input_type="text"
-            form_fields.append({
+            ff = {
                 "name": "popchars_{}".format(pc.name),
                 "step": 0.1,
                 "ff": {
@@ -2512,7 +2512,20 @@ def get_form_fields(model,project,instance=False,errors={},data={}, dmc=None):
                      "min_value": 0,
                      "help_text": pc.unit
                  }
-            })
+            }
+            if instance:
+                try:
+                    pcf = instance.popchar_set.get(field_id=pc.id)
+                    v = None
+                    if pcf.value is not None:
+                        v = pcf.value
+                    elif pcf.str_value is not None:
+                        v = pcf.str_value
+                    ff['value'] = v
+                except:
+                    pass
+            form_fields.append(ff)
+
         groups.append({
             "title": "Population Characteristics",
             "form_fields": form_fields
