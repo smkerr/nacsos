@@ -159,6 +159,13 @@ class Document(models.Model):
     def __str__(self):
         return "{}, {}/{}, {}".format(self.doc_type, self.parlperiod.n, self.sitting, self.date)
 
+class AgendaItem(models.Model):
+    """
+    A model for agenda items within a document
+    """
+    title = models.TextField()
+    document = models.ForeignKey(Document, on_delete=models.CASCADE)
+
 class Utterance(models.Model):
     """
     A model for speeches in parliament, associated with one :model:`parliament.Person`
@@ -167,6 +174,7 @@ class Utterance(models.Model):
     speaker = models.ForeignKey(Person, on_delete=models.PROTECT)
     speaker_role = models.ForeignKey(SpeakerRole, null=True, on_delete=models.SET_NULL)
     search_matches = models.ManyToManyField('Search')
+    agenda_item = models.ForeignKey(AgendaItem, null=True, on_delete=models.PROTECT)
 
     @property
     def paragraph_texts(self):
