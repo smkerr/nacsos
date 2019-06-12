@@ -3872,7 +3872,10 @@ def export_ris_docs(request,qid,docs=False):
         try:
             buffer.write('TY  - {}\n'.format(RIS_TY_MAPPING[d.wosarticle.pt]))
         except:
-            buffer.write('TY  - {}\n'.format(inv_RIS_TY_MAPPING[d.wosarticle.pt]))
+            try:
+                buffer.write('TY  - {}\n'.format(inv_RIS_TY_MAPPING[d.wosarticle.pt]))
+            except:
+                buffer.write('TY  - {}\n'.format(d.wosarticle.pt))
         for f in WoSArticle._meta.get_fields():
             v = getattr(d.wosarticle,f.name)
             if v is not None:

@@ -738,6 +738,8 @@ and {} topics\n'.format(qid, docs.count(),K))
     stat.last_update=timezone.now()
     stat.status=3
 
+    stat.save()
+
     term_rankings = []
 
     topics = Topic.objects.filter(
