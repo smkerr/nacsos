@@ -260,7 +260,8 @@ class Intervention(models.Model):
     timing = models.TextField(null=True)
     payment = models.TextField(null=True)
     granularity = models.TextField(null=True)
-    medium = models.TextField(null=True)
+    medium = ArrayField(models.TextField(), null=True)
+    medium.multiple = True
     duration = models.IntegerField(null=True, help_text="weeks", default=-999)
     base_data_collection = models.IntegerField(null=True, help_text="weeks", default=-999)
     treatment_period = models.IntegerField(null=True, help_text="weeks", default=-999)

@@ -55,7 +55,11 @@ class Command(BaseCommand):
                         status.retweets_count = tweet['retweets_count']
                         status.place = tweet['location']
                         status.text = tweet['tweet']
-                        status.save()
+                        try:
+                            status.save()
+                        except:
+                            status.text = None
+                            status.save()
 
 
         prog, created = SearchProgress.objects.get_or_create(server="apsis")
