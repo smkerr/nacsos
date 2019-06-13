@@ -455,6 +455,8 @@ def find_with_id(r):
             doc = docs.first()
         elif docs.count() > 1:
             print("OH no! multiple matches!")
+        elif scoping.models.UT.objects.filter(UT=r['UT'],doc__isnull=True).exists():
+            scoping.models.UT.objects.filter(UT=r['UT'],doc__isnull=True).delete()
     return doc
 
 def find_with_url(r):
