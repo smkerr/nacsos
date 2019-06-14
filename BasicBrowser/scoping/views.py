@@ -2359,6 +2359,8 @@ class ExcludeView(CreateView):
     fields = ("reason",)
     def form_valid(self, form):
         dmc = DocMetaCoding.objects.get(pk=self.kwargs['dmc'])
+        dmc.excluded=True
+        dmc.save()
         model = form.save(commit=False)
         model.doc = dmc.doc
         model.project = dmc.project
@@ -2382,7 +2384,7 @@ def save_document_code(request,docmetaid,dest):
 
     mycodes = DocMetaCoding.objects.filter(
         user=request.user,project=dmc.project
-    )
+    ).order_by('order')
     docids = set(mycodes.values_list('doc_id',flat=True))
     docs = Doc.objects.filter(pk__in=docids)
     uncoded_docs = docs.exclude(docmetacoding__coded=True)

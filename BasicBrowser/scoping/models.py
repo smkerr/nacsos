@@ -395,6 +395,13 @@ def exclude_doc(sender, instance, **kwargs):
 
 @receiver(pre_delete, sender=Exclusion)
 def unexclude_doc(sender,instance,**kwargs):
+    dmc = DocMetaCoding.objects.get(
+        doc=instance.doc,
+        project=instance.project,
+        user=instance.user
+    )
+    dmc.excluded=False
+    dmc.save()
     dp = DocProject.objects.get(
         doc=instance.doc,
         project=instance.project

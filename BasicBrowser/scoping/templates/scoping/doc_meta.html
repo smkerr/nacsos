@@ -58,6 +58,7 @@
 <h3>Exclusion</h3>
 <div class="container">
 <div class="row">
+    {% if not exclusions %}
     <div class="col-md-3 border rounded bg-white my-3 mx-2 p-2">
         <form action="{% url 'scoping:exclude' dmc.id  %}" method="post" class="form">
         {% csrf_token %}
@@ -92,6 +93,7 @@
         <button type="submit" class="btn btn-primary">Exclude document</button>
         </form>
     </div>
+    {% endif %}
     {% for e in exclusions %}
     <div class="col-md-3 border rounded bg-danger my-3 mx-2 p-2">
         <p class="notedesc"><b>{{e.date}}, {{e.user.username}} excluded</b>
@@ -167,6 +169,7 @@
 <script src="{% static 'scoping/js/forms.js' %}"></script>
 <script>
   var json = {{dmcs|safe}}
+  var dmcid = {{dmc.id | safe}}
   console.log(json)
   width = "100%"
   height = 20
@@ -217,7 +220,11 @@
   })
   .style("fill", function(d){
       if (d.coded==false) {
-        r = 0
+        if (d.excluded==false) {
+          r = 0
+        } else {
+          r = 2
+        }
       } else {
         if (d.excluded==false) {
           r = 1
@@ -228,7 +235,7 @@
       return cmap[r]
   })
   .style("stroke", function(d) {
-      if (d.order==pos) {
+      if (d.id==dmcid) {
           return "red"
       } else {
           return "lightgrey"
