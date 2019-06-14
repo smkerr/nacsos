@@ -2288,13 +2288,23 @@ def download_effects(request, pid):
 
 
 @login_required
-def code_document(request,docmetaid):
+def code_document(request, docmetaid, reorder=0):
     '''From this page, add effects and interventions'''
     dmc = DocMetaCoding.objects.get(pk=docmetaid)
     if dmc.start_time is None:
         dmc.start_time=timezone.now()
     dmc.save()
     template = loader.get_template('scoping/doc_meta.html')
+
+    if reorder==1:
+        dmcs = list(DocMetaCoding.objects.filter(
+            project=dmc.project,user=dmc.user
+        ).order_by('-coded'))
+        for i in range(len(dmcs)):
+            dmcs[i].order = i
+        DocMetaCoding.objects.bulk_update(dmcs, ['order'])
+            #dmc.save()
+
 
     effects = StudyEffect.objects.filter(
         doc=dmc.doc,
@@ -2323,6 +2333,11 @@ def code_document(request,docmetaid):
     #print(doc)
 
     connections = list(interventions.values('id','effect_id'))
+
+    dmcs = DocMetaCoding.objects.filter(
+        project=dmc.project,user=dmc.user
+    ).order_by('order').values('order','id','doc__title','coded','excluded')
+
     context = {
         'ecs': ecs,
         'exclusions': exclusions,
@@ -2333,7 +2348,8 @@ def code_document(request,docmetaid):
         'dmc': dmc,
         'effects': effects,
         'interventions': interventions,
-        'connections': connections
+        'connections': connections,
+        'dmcs': json.dumps(list(dmcs))
     }
     return HttpResponse(template.render(context,request))
 

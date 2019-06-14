@@ -15,11 +15,12 @@ class DocTable(tables.Table):
 
 class CodingTable(tables.Table):
     doc = tables.LinkColumn(
-        'scoping:code_document', args=[A('pk')],
+        'scoping:code_document', args=[A('pk'),1],
         accessor='doc.title'
     ) # link column
     finish_time = tables.Column()
     coded = tables.Column()
+    excluded = tables.Column()
     class Meta:
         template_name = 'django_tables2/bootstrap.html'
         attrs = {'class': 'table'}

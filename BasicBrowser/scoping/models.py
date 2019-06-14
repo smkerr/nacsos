@@ -243,6 +243,9 @@ class DocMetaCoding(models.Model):
     finish_time = models.DateTimeField(null=True)
 
     coded = models.BooleanField(default=False)
+    excluded = models.BooleanField(default=False)
+
+    order = models.IntegerField(null=True)
 
 
 

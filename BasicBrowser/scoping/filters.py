@@ -4,7 +4,7 @@ from .models import *
 class DocMetaFilter(django_filters.FilterSet):
     class Meta:
         model = DocMetaCoding
-        fields = {'coded':['exact'], 'doc__title': ['icontains']}
+        fields = {'coded':['exact'], 'doc__title': ['icontains'], 'excluded':['exact']}
 
 class DocParFilter(django_filters.FilterSet):
     regex = django_filters.CharFilter(
