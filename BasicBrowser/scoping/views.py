@@ -3552,7 +3552,7 @@ def sortdocs(request):
             user = User.objects.get(username=uname)
             #uval = reldocs.filter(docownership__user=user).docownership
             if "tag__title" in f_fields:
-                if download == "false":
+                if not download:
                     filt_docs = filt_docs.filter(
                             docownership__user=user,
                             docownership__query=query,
@@ -3566,7 +3566,7 @@ def sortdocs(request):
                     )
                 })
             else:
-                if download == "false":
+                if not download:
                     filt_docs = filt_docs.filter(docownership__user=user,docownership__query=query)
                 filt_docs = filt_docs.annotate(**{
                     u: models.Case(
@@ -3729,7 +3729,7 @@ def sortdocs(request):
     else:
         n_docs = len(filt_docs)
 
-    if download != "true":
+    if not download:
         docs = docs[:100]
 
 
@@ -3788,7 +3788,7 @@ def sortdocs(request):
             d["relevance__netrelevant"] = DocOwnership.objects.filter(doc_id=d['pk'],relevant__gt=0).count()
         # Get the user relevance rating for each doc (if asked)
 
-        if len(users) > 0 and download=="false":
+        if len(users) > 0 and download==False:
             for u in users:
                 uname = u.split("__")[1]
                 doc = Doc.objects.get(pk=d['pk'])
@@ -3804,7 +3804,7 @@ def sortdocs(request):
                     text = do.first().get_relevant_display()
                     tag = str(do.first().tag.id)
                     user = str(User.objects.filter(username=uname).first().id)
-                    if download == "false":
+                    if not download:
                         d[u] = '<select class="relevant_cycle" data-user=' \
                         +user+' data-tag='+tag+' data-id='+str(d['pk'])+' \
                         onchange="cyclescore(this)"\
@@ -3825,14 +3825,14 @@ def sortdocs(request):
                         #' data-value='+str(d[u])+'\
                         #onclick="cyclescore(this)">'+text+'</span>'
         try:
-            if download=="true":
+            if download:
                 d['wosarticle__di'] = 'http://dx.doi.org/'+d['wosarticle__di']
             else:
                 d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
         except:
             pass
 
-    if download == "true":
+    if download:
         if ris=="true":
             return export_ris_docs(request,qid,docs)
 
