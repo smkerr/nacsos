@@ -21,20 +21,23 @@
         <div data-group="{{g.title}}" class="container">
             <div class="row">
             <h4 class="m-2 mb-1">{{g.title}}</h4>
-            {% if g.notes %}
-              <i class="btn em-svg em-spiral_note_pad" data-note="show" title="view note"
-              data-toggle="modal"
-              data-target="#dnote-modal"
-              data-user="{{g.notes.0.user.username}}"
-              data-date="{{g.notes.0.date}}"
-              data-text="{{g.notes.0.text}}"
-              data-l="{% url 'scoping:delete' thing='Note' thingid=g.notes.0.pk %}"
-              data-group="{{g.title}}"></i>&nbsp;
-            {% else %}
-              <i style="" class="btn em-svg em-writing_hand" data-note="add" title="add note"
-              data-toggle="modal"
-              data-target="#note-modal"
-              data-group="{{g.title}}"></i>&nbsp;
+
+            {% if g.title %}
+              {% if g.notes %}
+                <i class="btn em-svg em-spiral_note_pad" data-note="show" title="view note"
+                data-toggle="modal"
+                data-target="#dnote-modal"
+                data-user="{{g.notes.0.user.username}}"
+                data-date="{{g.notes.0.date}}"
+                data-text="{{g.notes.0.text}}"
+                data-l="{% url 'scoping:delete' thing='Note' thingid=g.notes.0.pk %}"
+                data-group="{{g.title}}"></i>&nbsp;
+              {% else %}
+                <i style="" class="btn em-svg em-writing_hand" data-note="add" title="add note"
+                data-toggle="modal"
+                data-target="#note-modal"
+                data-group="{{g.title}}"></i>&nbsp;
+              {% endif %}
             {% endif %}
             <!-- <i class="em em-speech_balloon"></i> -->
             </div>

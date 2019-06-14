@@ -905,3 +905,155 @@ def update_year_topic_scores(session):
             print("warning: no TopicYear objects created")
 
         stat.save()
+
+def ipcc_proportionality(run_id, dir):
+    def calculate_deviations(df):
+        df['deviation'] = df['ipcc_share'] - df['share']
+        df['abs_md'] = abs(df['deviation'])
+
+        md = df['deviation'].max()
+        rae = df['abs_md'].mean()
+        lh = df['abs_md'].sum() / 2
+
+        df['representation'] = df['ipcc_share'] / df['share']
+
+        df_disp = {'MD':md,'Rae':rae,'L-H':lh}
+        return [df,df_disp]
+    runstat = RunStats.objects.get(pk=run_id)
+
+    if runstat.method=="DT":
+        topics = DynamicTopic.objects.filter(run_id=run_id)
+    else:
+        topics = Topic.objects.filter(run_id=run_id)
+
+    if runstat.method=="DT":
+
+        tsums = topics.aggregate(
+            ip_score=Sum('ipcc_score'),
+            score=Sum('ipcc_time_score')
+        )
+        tsums
+
+        topics.update(
+            ipcc_share=F('ipcc_score')/tsums['ip_score'],
+            share=F('ipcc_time_score')/tsums['score']
+        )
+
+    if runstat.method=="DT":
+        df = pd.DataFrame.from_dict(
+            list(topics.values(
+                'title',
+                'score',
+                'ipcc_coverage',
+                'share',
+                'ipcc_score',
+                'ipcc_share',
+                'ipcc_time_score',
+                'primary_wg'
+            ))
+        )
+    else:
+        df = pd.DataFrame.from_dict(
+            list(topics.values(
+                'title',
+                'score',
+                'ipcc_coverage',
+                'share',
+                'ipcc_score',
+                'ipcc_share',
+                'primary_wg'
+            ))
+        )
+
+
+
+
+    df, df_disp  = calculate_deviations(df)
+
+
+    df.sort_values('representation').head()
+
+    if runstat.method=="DT":
+
+        tds = topics.filter(timedtopic__period__n__lt=6).values(
+            'title','timedtopic__period__title','timedtopic__period__n','timedtopic__score','score'
+        ).order_by('id','timedtopic__period__n')
+
+        tdf = pd.DataFrame.from_dict(list(tds))
+
+        #tdf['ys'] = tdf[]
+
+        tdf['share'] = tdf['timedtopic__score'] / tdf['score']
+
+        tdf['ys'] = tdf['timedtopic__period__n'] * tdf['share']
+
+
+        tdf.head(12)
+        #tdf.groupby('')
+    else:
+        topic_period_scores = []
+        periods = TimePeriod.objects.filter(title__regex="^AR",n__lt=7,n__gt=0).distinct('title')
+        if runstat.periods.count()==0:
+            for p in periods:
+                runstat.periods.add(p)
+        periods = runstat.periods.filter(n__lt=6,n__gt=0).order_by('n')
+        ttps = TopicTimePeriodScores.objects.filter(topic__run_id=run_id,score__isnull=False)
+        if ttps.count() < (topics.count() * periods.count()-2):
+            print("calculating topictimeperiodscores")
+            for p in TimePeriod.objects.filter(title__regex="^AR",n__lt=6,n__gt=0).distinct('title'):
+                pdts = DocTopic.objects.filter(
+                    topic__run_id=run_id,
+                    doc__PY__in=p.ys
+                ).values(
+                    'topic__title','topic__score'
+                ).annotate(
+                    timedtopic__score = Sum('score')
+                )
+                for pdt in list(pdts):
+                    pdt['timedtopic__period__n'] = p.n
+                    t = Topic.objects.get(run_id=run_id,title=pdt['topic__title'])
+                    ttps, created = TopicTimePeriodScores.objects.get_or_create(
+                        topic=t,
+                        period=p
+                    )
+                    ttps.score = pdt['timedtopic__score']
+                    ttps.save()
+                    topic_period_scores.append(pdt)
+            tdf = pd.DataFrame.from_dict(topic_period_scores)
+            tdf['share'] = tdf['timedtopic__score'] / tdf['topic__score']
+
+            tdf['ys'] = tdf['timedtopic__period__n'] * tdf['share']
+        else:
+            print("getting topictimeperiodscores")
+            tds = topics.filter(topictimeperiodscores__period__n__lt=6).values(
+                'title','topictimeperiodscores__period__title',
+                'topictimeperiodscores__period__n','topictimeperiodscores__score','score'
+            ).order_by('id','topictimeperiodscores__period__n')
+
+            tdf = pd.DataFrame.from_dict(list(tds))
+
+            tdf['share'] = tdf['topictimeperiodscores__score'] / tdf['score']
+
+            tdf['ys'] = tdf['topictimeperiodscores__period__n'] * tdf['share']
+        tdf = tdf.rename(columns={
+            "topic__title":"title",
+            "topictimeperiodscores__period__n":"timedtopic__period__n"
+        }).dropna().reset_index(drop=True)
+
+
+    means = tdf.groupby('title')['ys'].mean()
+
+    means = pd.DataFrame({'ys' : tdf.groupby('title')['ys'].mean()}).reset_index()
+
+    mdf = df.merge(means)
+
+    def year_av(x):
+        group = tdf[tdf['title']==x['title']]
+        l = []
+        for index, y in group.iterrows():
+            l = l + [y.timedtopic__period__n] * round(y.share*100)
+        return np.mean(l)
+
+    mdf['year_av'] = df.apply(year_av,axis=1)
+
+    mdf.to_csv(f'{dir}newness_representation_{run_id}.csv',index=False)

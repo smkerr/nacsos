@@ -2410,15 +2410,16 @@ def save_document_code(request,docmetaid,dest):
 
 def get_form_fields(model,project,instance=False,errors={},data={}, dmc=None):
     groups = []
+    notes = None
     if hasattr(model, "GROUPS"):
         mgroups = model.GROUPS
     else:
         mgroups = [(None,"")]
     for g in mgroups:
         notes = None
-        if dmc:
+        if dmc and g[0] is not None:
             notes = Note.objects.filter(dmc=dmc, field_group=g[1])
-        if instance:
+        if instance and g[0] is not None:
             notes = Note.objects.filter(effect=instance,field_group=g[1])
         if g[0] is not None:
             fields = [x for x in model._meta.get_fields() if hasattr(x,"group") and x.group==g[0]]
