@@ -93,7 +93,7 @@ def run_dynamic_nmf(stat):
         if s.search_object_type == 1:
             ps = Paragraph.objects.filter(search_matches=s, utterance__document__parlperiod__n=timestep)
             docs = ps.filter(text__iregex='\w')
-            texts, docsizes, ids = process_texts(docs, stoplist, stat.fulltext)
+            texts, docsizes, ids = process_texts(docs)
 
         elif s.search_object_type == 2:
             uts = Utterance.objects.filter(search_matches=s, document__parlperiod__n=timestep)

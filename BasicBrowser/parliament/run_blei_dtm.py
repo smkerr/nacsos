@@ -76,7 +76,7 @@ def run_blei_dtm(stat, call_to_blei_algorithm=True,
     if s.search_object_type == 1:
         ps = Paragraph.objects.filter(search_matches=s)
         docs = ps.filter(text__iregex='\w').order_by('utterance__document__parlperiod__n')
-        texts, docsizes, ids = process_texts(docs, stoplist, stat.fulltext)
+        texts, docsizes, ids = process_texts(docs)
         tc = ps.order_by().values('utterance__document__parlperiod__n'
                                   ).annotate(count = models.Count('utterance__document__parlperiod__n'))
         time_counts = {item['utterance__document__parlperiod__n']: item['count'] for item in tc}
