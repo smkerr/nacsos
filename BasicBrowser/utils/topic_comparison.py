@@ -161,6 +161,8 @@ def compare_topic_queryset(runs, method='top_word_overlap', verbosity=0, order_b
     res = mdf.groupby(columns)
     res = res.apply(lambda x: x.sort_values(s, ascending=False))
 
+    res = res.drop(columns=columns)
+
     return [res, ss, score_matrix]
 
 
@@ -168,12 +170,14 @@ def save_res(runs, res, options):
     ss = res[1]
     res = res[0]
 
+    run_ids_str = [str(run.run_id) for run in runs]
+
     if runs.count() == 1 and runs.first().method == "DT":
         fname = "/tmp/run_compare_{}_windows.xlsx".format(stat.run_id)
     else:
-        fname = "/tmp/run_compare_{}_{}.xlsx".format(runs[0].run_id, runs[len(runs) - 1].run_id)
+        fname = "/tmp/run_compare_{}.xlsx".format("_".join(run_ids_str))
         if options["fname"] is not None:
-            fname = "{}/run_compare_{}_{}.xlsx".format(options["fname"], runs[0].run_id, runs[len(runs) - 1].run_id)
+            fname = "{}/run_compare_{}.xlsx".format(options["fname"], "_".join(run_ids_str))
 
     writer = pd.ExcelWriter(fname, engine='xlsxwriter')
 
