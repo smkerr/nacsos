@@ -219,7 +219,7 @@ class TopicModelForm(forms.ModelForm):
             'ngram','fulltext','citations',
             'fancy_tokenization',
             'K','alpha','max_iter','db',
-            'method', 'lda_learning_method'
+            'method', 'lda_learning_method','lda_library'
         )
         exclude = (
             'topic',

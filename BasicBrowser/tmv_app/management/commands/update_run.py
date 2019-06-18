@@ -79,8 +79,9 @@ class Command(BaseCommand):
                 update_bdtopics(run_id)
             except:
                 pass
-            management.call_command('corr_topics',run_id)
             topicterm_lscores(run_id)
+            management.call_command('corr_topics',run_id)
+
             update_year_topic_scores(run_id)
             update_topic_scores(run_id)
             update_topic_titles(run_id)

@@ -3,6 +3,8 @@ from celery import shared_task
 from .models import *
 from django.db.models import Q, F, Sum, Count, FloatField, Case, When
 
+import lda
+
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import NMF, LatentDirichletAllocation as LDA
@@ -632,15 +634,23 @@ and {} topics\n'.format(qid, docs.count(),K))
         dtm = csr_matrix(model.transform(tfidf))
 
     else:
-        model = LDA(
-            n_components=K,
-            doc_topic_prior=stat.alpha,
-            learning_method=stat.get_lda_learning_method_display().lower(),
-            max_iter=stat.max_iter,
-            n_jobs=6
-        ).fit(tfidf)
+        if stat.lda_library == RunStats.LDA_LIB:
+            model = lda.LDA(
+                n_topics=K,
+                alpha=stat.alpha,
+                n_iter=stat.max_iter*10,
+            ).fit(tfidf)
+            dtm = model.doc_topic_
+        else:
+            model = LDA(
+                n_components=K,
+                doc_topic_prior=stat.alpha,
+                learning_method=stat.get_lda_learning_method_display().lower(),
+                max_iter=stat.max_iter,
+                n_jobs=2
+            ).fit(tfidf)
 
-        dtm = csr_matrix(model.transform(tfidf))
+            dtm = csr_matrix(model.transform(tfidf))
 
     print("done in %0.3fs." % (time() - t0))
     stat.nmf_time = time() - t0
@@ -732,9 +742,14 @@ and {} topics\n'.format(qid, docs.count(),K))
         stat.error = model.reconstruction_err_
         stat.errortype = "Frobenius"
     elif stat.method=="LD":
-        stat.error = model.perplexity(tfidf)
-        stat.errortype = "Perplexity"
-    stat.iterations = model.n_iter_
+        if stat.lda_library == RunStats.LDA_LIB:
+            stat.error = model.loglikelihood()
+            stat.errortype = "Log likelihood"
+            stat.iterations = model.n_iter
+        else:
+            stat.error = model.perplexity(tfidf)
+            stat.errortype = "Perplexity"
+            stat.iterations = model.n_iter_
     stat.last_update=timezone.now()
     stat.status=3
 
