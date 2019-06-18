@@ -559,10 +559,11 @@ def update_ar_scores(run_id):
 
     for ar in ar_av:
         ars = run_ars.filter(ar=ar['ar'])
-        n = abs(ar['av_growth'])
-        ars.update(
-            pgrowthn = F('pgrowth') / n
-        )
+        if ar['av_growth']:
+            n = abs(ar['av_growth'])
+            ars.update(
+                pgrowthn = F('pgrowth') / n
+            )
 
 def normalise_tdts(run_id):
     stat = RunStats.objects.get(pk=run_id)

@@ -631,11 +631,11 @@ and {} topics\n'.format(qid, docs.count(),K))
         ).fit(tfidf)
         dtm = csr_matrix(model.transform(tfidf))
 
-
     else:
         model = LDA(
             n_components=K,
             doc_topic_prior=stat.alpha,
+            learning_method=stat.get_lda_learning_method_display().lower(),
             max_iter=stat.max_iter,
             n_jobs=6
         ).fit(tfidf)
@@ -740,23 +740,24 @@ and {} topics\n'.format(qid, docs.count(),K))
 
     stat.save()
 
-    term_rankings = []
-
-    topics = Topic.objects.filter(
-        run_id=run_id
-    )
-
-    for topic in topics:
-        term_ranking = list(Term.objects.filter(
-            topicterm__topic=topic
-        ).order_by(
-            '-topicterm__score'
-        ).values_list('title',flat=True)[:50])
-        term_rankings.append(term_ranking)
-
-    stat.coherence = validation_measure.evaluate_rankings(
-        term_rankings
-    )
-    stat.save()
     if stat.db:
-        management.call_command('update_run',run_id)
+        term_rankings = []
+
+        topics = Topic.objects.filter(
+            run_id=run_id
+        )
+
+        for topic in topics:
+            term_ranking = list(Term.objects.filter(
+                topicterm__topic=topic
+            ).order_by(
+                '-topicterm__score'
+            ).values_list('title',flat=True)[:50])
+            term_rankings.append(term_ranking)
+
+        stat.coherence = validation_measure.evaluate_rankings(
+            term_rankings
+        )
+        stat.save()
+        if stat.db:
+            management.call_command('update_run',run_id)

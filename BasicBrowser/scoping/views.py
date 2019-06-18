@@ -1921,7 +1921,7 @@ def query_tm(request,qid):
         'form': form,
         'project': query.project,
         'fields_1': ['min_freq','max_df','max_features','limit','ngram','fulltext','citations','fancy_tokenization'],
-        'fields_2': ['K','alpha','max_iter','db'],
+        'fields_2': ['K','alpha','lda_learning_method','max_iter','db'],
         'fields_3': ['method']
     }
     return HttpResponse(template.render(context, request))
@@ -3609,7 +3609,7 @@ def sortdocs(request):
 
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
-        if f_text[i]=="":
+        if f_text[i]=="" or f_fields[i]=="":
             continue
         if i==0:
             joiner = "AND"
@@ -3662,6 +3662,11 @@ def sortdocs(request):
                 if "relevance_time" in f_fields[i]:
                     import dateutil.parser as parser
                     f_text[i] = parser.parse(f_text[i], dayfirst=True)
+                if "docproject" in f_fields[i]:
+                    try:
+                        int_f = int(f_text[i])
+                    except:
+                        f_text[i] = getattr(DocOwnership,f_text[i].upper())
                 kwargs[f"{f_fields[i]}__{op}"] = f_text[i]
                 # kwargs = {
                 #     '{0}__{1}'.format(f_fields[i],op): f_text[i]
