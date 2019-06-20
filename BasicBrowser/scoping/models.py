@@ -749,6 +749,10 @@ def handle_uncat_doc(sender, instance, **kwargs):
 
 
 class Doc(models.Model):
+
+    def make_tslug(s):
+        return re.sub('\W','',s).lower()
+
     random = DocManager
 
     DTYPE_CHOICES = (
@@ -782,6 +786,9 @@ class Doc(models.Model):
     query = models.ManyToManyField('Query')
     tag = models.ManyToManyField('Tag')
     title = models.TextField(null=True)
+
+    tslug = models.TextField(null=True, db_index=True)
+
     alternative_titles = ArrayField(models.TextField(), null=True)
     tilength = models.IntegerField(null=True)
     content = models.TextField(null=True)
