@@ -800,8 +800,9 @@ class Doc(models.Model):
     scopus = models.BooleanField(default=False)
     uploaded = models.BooleanField(default=False)
 
+    date_added = models.DateTimeField(default=timezone.now)
+
     uploader = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name="uploaded_docs", verbose_name="Uploader")
-    date = models.DateTimeField(null=True)
     ymentions = ArrayField(models.IntegerField(),null=True)
     cities = models.ManyToManyField('cities.City')
     regions = models.ManyToManyField('cities.Region')
@@ -992,6 +993,14 @@ class DocFile(models.Model):
     doc = models.OneToOneField(Doc, on_delete=models.CASCADE)
     file = models.FileField(validators=[validate_pdf])
 
+class TitleVecModel(models.Model):
+    date_completed = models.DateTimeField()
+    n_docs = models.IntegerField()
+    n_vec = models.IntegerField()
+    file_path = models.TextField()
+    epochs = models.IntegerField()
+    time_taken = models.IntegerField()
+    whole_corpus = models.BooleanField()
 
 @receiver(models.signals.post_delete, sender=DocFile)
 def auto_delete_file_on_delete(sender, instance, **kwargs):
