@@ -5167,11 +5167,6 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         last = 0
     else:
         tag = Tag.objects.get(pk=tid)
-        dois = DocOwnership.objects.filter(
-            order__isnull=False,
-            tag=tag,
-            user=request.user
-        ).order_by('order')
 
         # Don't load the bar on the first go
         if js==1:
@@ -5189,11 +5184,16 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         # Sometimes the task takes some time to complete, if so wait a while
         while s < 15:
             try:
+                dois = DocOwnership.objects.filter(
+                    order__isnull=False,
+                    tag=tag,
+                    user=request.user
+                ).order_by('order')
                 do = dois[pos]
                 s = 20
             except:
                 s+=1
-                time.sleep(1.5)
+                time.sleep(0.5)
         if s == 15: #if it takes too long go back
             return HttpResponseRedirect(reverse(
                 'scoping:userpage',
