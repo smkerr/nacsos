@@ -30,10 +30,11 @@ def handle_update_tag(tid):
 @shared_task
 def order_dos(dos):
     dos = DocOwnership.objects.filter(pk__in=dos).order_by('id')
-    for i range(len(dos)):
+    for i in range(len(dos)):
         do = dos[i]
         do.order=i
     DocOwnership.objects.bulk_update(dos, ['order'])
+    return dos
 
 @shared_task
 def update_projs(pids,add_docprojects=False):
