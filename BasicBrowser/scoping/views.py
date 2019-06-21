@@ -5354,6 +5354,7 @@ def screen(request,qid,tid,ctype,d=0):
         # do in background
         doids = dois.values_list('id',flat=True)
         order_dos.delay(list(doids))
+        time.sleep(0.5)
         return HttpResponseRedirect(reverse(
             'scoping:screen_doc',
             kwargs={
