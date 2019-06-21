@@ -5182,6 +5182,11 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                     doc__title=F('utterance__speaker__clean_name')
                 )
             else:
+                dois = DocOwnership.objects.filter(
+                    order__isnull=False,
+                    tag=tag,
+                    user=request.user
+                ).order_by('order')
                 dois = dois.values('order','doc__title','relevant')
             return HttpResponse(json.dumps(list(dois)), content_type="application/json")
 
