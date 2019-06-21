@@ -5173,6 +5173,11 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
             if pos==0:
                 time.sleep(3)
             if tag.utterance_linked:
+                dois = DocOwnership.objects.filter(
+                    order__isnull=False,
+                    tag=tag,
+                    user=request.user
+                ).order_by('order')
                 dois = dois.values('order','utterance__speaker__clean_name','relevant').annotate(
                     doc__title=F('utterance__speaker__clean_name')
                 )
