@@ -457,16 +457,22 @@ Returns JSON response with:
     dids = list(set(list(Doc.objects.filter(
         query__project=project,id__gte=did
     ).values_list('pk',flat=True))))
+    dids.sort()
     all_ids = list(set(list(Doc.objects.filter(
         query__project=project
     ).values_list('pk',flat=True))))
-    pc = (len(all_ids) - len(dids) / len(all_ids))
+    all_ids.sort()
+    acs = sum(1 for i in itertools.combinations(all_ids, 2))
+    todocs = sum(1 for i in itertools.combinations(dids, 2))
+    pc = (acs - todocs) / acs
+    #pc = (len(all_ids) - len(dids) / len(all_ids))
     t1 = time.time()
     for i in range(len(dids)):
         t2 = time.time()
         if t2 - t1 > 5:
             next = dids[i]
-            pc = round((len(all_ids) - len(compare_ids)) / len(all_ids) * 100)
+            todocs = sum(1 for i in itertools.combinations(compare_ids, 2))
+            pc = round((acs - todocs) / acs*100)
             return JsonResponse({
                 'matches': False,
                 'done': False,
@@ -479,7 +485,8 @@ Returns JSON response with:
         compare_ids = dids[i+1:]
         dups, j_score = d.find_duplicates(compare_ids, j)
         if dups:
-            pc = round((len(all_ids) - len(compare_ids)) / len(all_ids) * 100)
+            todocs = sum(1 for i in itertools.combinations(compare_ids, 2))
+            pc = round((acs - todocs) / acs*100)
             next = dids[i+1]
             return JsonResponse({
                 'matches': True,
@@ -5168,10 +5175,10 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
     else:
         tag = Tag.objects.get(pk=tid)
 
-        # Don't load the bar on the first go
+        # Don't load the bar straight away on the first go
         if js==1:
             if pos==0:
-                time.sleep(3)
+                time.sleep(0.5)
             if tag.utterance_linked:
                 dois = DocOwnership.objects.filter(
                     order__isnull=False,
