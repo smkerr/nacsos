@@ -13,7 +13,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        docs = Doc.objects.filter(query=1603)
+        docs = Doc.objects.filter(query__project=127)
 
         for d in docs:
             das = d.docauthinst_set.order_by('AU','position').distinct('AU').values_list('id',flat=True)

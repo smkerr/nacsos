@@ -766,6 +766,7 @@ class Doc(models.Model):
     DTYPE_CHOICES = (
         ('AR','Article'),
         #('RE','Review'),
+        ('RS', 'Regulation/Standard'),
         ('RP', 'Report'),
         ('BC','Book Chapter'),
         ('BK','Book'),
