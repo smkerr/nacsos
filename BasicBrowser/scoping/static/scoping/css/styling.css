@@ -6,6 +6,10 @@ body {
 	padding: 0;
 }
 
+.errorlist.nonfield {
+	display: none;
+}
+
 .buttonp {
     background-color: yellow;
     border: 2px solid grey;

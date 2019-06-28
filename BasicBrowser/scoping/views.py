@@ -457,16 +457,22 @@ Returns JSON response with:
     dids = list(set(list(Doc.objects.filter(
         query__project=project,id__gte=did
     ).values_list('pk',flat=True))))
+    dids.sort()
     all_ids = list(set(list(Doc.objects.filter(
         query__project=project
     ).values_list('pk',flat=True))))
-    pc = (len(all_ids) - len(dids) / len(all_ids))
+    all_ids.sort()
+    acs = sum(1 for i in itertools.combinations(all_ids, 2))
+    todocs = sum(1 for i in itertools.combinations(dids, 2))
+    pc = (acs - todocs) / acs
+    #pc = (len(all_ids) - len(dids) / len(all_ids))
     t1 = time.time()
     for i in range(len(dids)):
         t2 = time.time()
         if t2 - t1 > 5:
             next = dids[i]
-            pc = round((len(all_ids) - len(compare_ids)) / len(all_ids) * 100)
+            todocs = sum(1 for i in itertools.combinations(compare_ids, 2))
+            pc = round((acs - todocs) / acs*100)
             return JsonResponse({
                 'matches': False,
                 'done': False,
@@ -479,7 +485,8 @@ Returns JSON response with:
         compare_ids = dids[i+1:]
         dups, j_score = d.find_duplicates(compare_ids, j)
         if dups:
-            pc = round((len(all_ids) - len(compare_ids)) / len(all_ids) * 100)
+            todocs = sum(1 for i in itertools.combinations(compare_ids, 2))
+            pc = round((acs - todocs) / acs*100)
             next = dids[i+1]
             return JsonResponse({
                 'matches': True,
@@ -1921,7 +1928,7 @@ def query_tm(request,qid):
         'form': form,
         'project': query.project,
         'fields_1': ['min_freq','max_df','max_features','limit','ngram','fulltext','citations','fancy_tokenization'],
-        'fields_2': ['K','alpha','max_iter','db'],
+        'fields_2': ['K','alpha','lda_learning_method','lda_library','max_iter','db'],
         'fields_3': ['method']
     }
     return HttpResponse(template.render(context, request))
@@ -3609,7 +3616,7 @@ def sortdocs(request):
 
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
-        if f_text[i]=="":
+        if f_text[i]=="" or f_fields[i]=="":
             continue
         if i==0:
             joiner = "AND"
@@ -3662,6 +3669,11 @@ def sortdocs(request):
                 if "relevance_time" in f_fields[i]:
                     import dateutil.parser as parser
                     f_text[i] = parser.parse(f_text[i], dayfirst=True)
+                if "docproject" in f_fields[i]:
+                    try:
+                        int_f = int(f_text[i])
+                    except:
+                        f_text[i] = getattr(DocOwnership,f_text[i].upper())
                 kwargs[f"{f_fields[i]}__{op}"] = f_text[i]
                 # kwargs = {
                 #     '{0}__{1}'.format(f_fields[i],op): f_text[i]
@@ -5162,21 +5174,26 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         last = 0
     else:
         tag = Tag.objects.get(pk=tid)
-        dois = DocOwnership.objects.filter(
-            order__isnull=False,
-            tag=tag,
-            user=request.user
-        ).order_by('order')
 
-        # Don't load the bar on the first go
+        # Don't load the bar straight away on the first go
         if js==1:
             if pos==0:
-                time.sleep(3)
+                time.sleep(0.5)
             if tag.utterance_linked:
+                dois = DocOwnership.objects.filter(
+                    order__isnull=False,
+                    tag=tag,
+                    user=request.user
+                ).order_by('order')
                 dois = dois.values('order','utterance__speaker__clean_name','relevant').annotate(
                     doc__title=F('utterance__speaker__clean_name')
                 )
             else:
+                dois = DocOwnership.objects.filter(
+                    order__isnull=False,
+                    tag=tag,
+                    user=request.user
+                ).order_by('order')
                 dois = dois.values('order','doc__title','relevant')
             return HttpResponse(json.dumps(list(dois)), content_type="application/json")
 
@@ -5184,11 +5201,16 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         # Sometimes the task takes some time to complete, if so wait a while
         while s < 15:
             try:
+                dois = DocOwnership.objects.filter(
+                    order__isnull=False,
+                    tag=tag,
+                    user=request.user
+                ).order_by('order')
                 do = dois[pos]
                 s = 20
             except:
                 s+=1
-                time.sleep(1.5)
+                time.sleep(0.5)
         if s == 15: #if it takes too long go back
             return HttpResponseRedirect(reverse(
                 'scoping:userpage',
@@ -5349,6 +5371,7 @@ def screen(request,qid,tid,ctype,d=0):
         # do in background
         doids = dois.values_list('id',flat=True)
         order_dos.delay(list(doids))
+        time.sleep(0.5)
         return HttpResponseRedirect(reverse(
             'scoping:screen_doc',
             kwargs={

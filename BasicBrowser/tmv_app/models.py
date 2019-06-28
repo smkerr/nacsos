@@ -419,6 +419,19 @@ class RunStats(models.Model):
 
     ##Inputs
 
+    ONLINE = "on"
+    BATCH = "ba"
+    lda_choices = (
+        (ONLINE, 'Online'),
+        (BATCH, 'Batch'),
+    )
+    SKLEARN = "sk"
+    LDA_LIB = "ld"
+    lda_libs = (
+        (SKLEARN, "Sklearn"),
+        (LDA_LIB, "lda")
+    )
+
     max_features = models.IntegerField(default=0, help_text = 'Maximum number of terms (0 = no limit)')
     min_freq = models.IntegerField(default=1, help_text = 'Minimum frequency of terms')
     max_df = MinMaxFloat(default=0.95, min_value=0.0, max_value=1.0)
@@ -435,6 +448,8 @@ class RunStats(models.Model):
     beta = models.FloatField(null=True, default=None, help_text='Concentration parameter of Dirichlet distribution of words in topics.'
                                                                 'Low (high) values indicate that topics should be composed of few (many) words.'
                                                                 'Also called eta.')
+    lda_learning_method = models.CharField(max_length = 2, choices=lda_choices, null=True, default=BATCH, help_text='When using LDA in sklearn, you can choose between batch or online learning')
+    lda_library = models.CharField(max_length = 2, choices=lda_libs, null=True, default=SKLEARN,help_text = 'you can use sklearn or https://github.com/lda-project/lda for LDA')
     top_chain_var = models.FloatField(null=True, default=0.05, help_text='Chain var parameter for dtm')
     max_iter = models.IntegerField(null=True, default=200, help_text='Maximum iterations')
     rng_seed = models.IntegerField(null=True, help_text="seed for random number generator for stochastic estimation of topic model (blei dtm)")
