@@ -5199,7 +5199,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
 
         s = 0
         # Sometimes the task takes some time to complete, if so wait a while
-        while s < 15:
+        while s < 5:
             try:
                 dois = DocOwnership.objects.filter(
                     order__isnull=False,
@@ -5211,11 +5211,30 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
             except:
                 s+=1
                 time.sleep(0.5)
-        if s == 15: #if it takes too long go back
-            return HttpResponseRedirect(reverse(
-                'scoping:userpage',
-                kwargs={"pid":tag.query.project.id}
-            ))
+        if s == 5: #if it takes too long go back
+            try:
+                dois = DocOwnership.objects.filter(
+                    tag=tag,
+                    user=request.user
+                )
+                if ctype==99:
+                    dois = dois.filter(relevant__gt=0)
+                else:
+                    dois = dois.filter(relevant=ctype)
+                dois = dois.order_by('date')
+                doids = dois.values_list('id',flat=True)
+                order_dos(doids)
+                dois = DocOwnership.objects.filter(
+                    order__isnull=False,
+                    tag=tag,
+                    user=request.user
+                ).order_by('order')
+                do = dois[pos]
+            except:
+                return HttpResponseRedirect(reverse(
+                    'scoping:userpage',
+                    kwargs={"pid":tag.query.project.id}
+                ))
 
         last = dois.filter(relevant__gt=0).count()
         if pos==last:
