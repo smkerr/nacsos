@@ -2225,12 +2225,19 @@ def download_effects(request, pid):
         column_names.keys()
     ))
 
+    groups = StudyEffect.GROUPS
+    groups.sort()
+
     for v in values:
         for x in v['framing_units']:
             v[x] = 1
             column_names[x] = f'5. framing_unit {x}'
         del v['framing_units']
         e = StudyEffect.objects.get(pk=v['effect__id'])
+        for o, name in groups:
+            notes = Note.objects.filter(effect=e,field_group=name).values_list('text',flat=True)
+            v[name] = ";".join(list(notes))
+            column_names[name] = f'8. Notes: {name}'
         for pc in e.popchar_set.all():
             v[pc.field.name] = pc.value
             column_names[pc.field.name] = f'6. population characteristics {pc.field.name}'
