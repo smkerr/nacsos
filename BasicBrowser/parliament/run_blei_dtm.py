@@ -30,7 +30,7 @@ from parliament.utils import merge_utterance_paragraphs
 
 # run the dynamic topic model with the algorithm by Blei
 def run_blei_dtm(stat, call_to_blei_algorithm=True,
-                 dtm_path="/home/galm/software/dtm/dtm/main"):
+                 dtm_path="/home/galm/software/dtm/dtm/main", archiving=True):
     """
     Run dynamic NMF model on utterances (speeches) or paragraphs from the parliament data
 
@@ -309,6 +309,14 @@ def run_blei_dtm(stat, call_to_blei_algorithm=True,
 
     print("done! total time: " + str(tm) + " minutes and " + str(ts) + " seconds")
     print("a maximum of " + str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000) + " MB was used")
+
+    if archiving:
+        subprocess.Popen(["zip", "-r", output_path + ".zip", output_path + "/",
+                        ], stdout=process_output, stderr=process_output).wait()
+        subprocess.Popen(["zip", "-r", input_path + ".zip", input_path + "/",
+                        ], stdout=process_output, stderr=process_output).wait()
+        subprocess.Popen(["rm", "-r", output_path], stdout=process_output, stderr=process_output).wait()
+        subprocess.Popen(["rm", "-r", input_path], stdout=process_output, stderr=process_output).wait()
 
     return 0
 
