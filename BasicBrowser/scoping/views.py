@@ -2239,7 +2239,10 @@ def download_effects(request, pid):
             v[name] = ";".join(list(notes))
             column_names[name] = f'8. Notes: {name}'
         for pc in e.popchar_set.all():
-            v[pc.field.name] = pc.value
+            if pc.value is not None:
+                v[pc.field.name] = pc.value
+            else:
+                v[pc.field.name] = pc.str_value
             column_names[pc.field.name] = f'6. population characteristics {pc.field.name}'
         for i in e.intervention_set.all():
             for in_st in i.intervention_subtypes.all():
