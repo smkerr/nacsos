@@ -161,7 +161,7 @@ def do_query(qid, background=True, dis=False):
     # Do internal queries
     if q.database=="intern":
 
-        pat = re.compile('(AND|OR)',re.IGNORECASE)
+        pat = re.compile('(AND|OR|NOT)',re.IGNORECASE)
         els = re.split(pat, q.text)
         args = els[2::2]
         ops = [o.strip().upper() for o in els[1::2]]
@@ -170,7 +170,8 @@ def do_query(qid, background=True, dis=False):
 
         op_dict = {
             "AND": operator.and_,
-            "OR": operator.or_
+            "OR": operator.or_,
+            "NOT": operator.sub,
         }
 
         for arg, op in zip(args,ops):
