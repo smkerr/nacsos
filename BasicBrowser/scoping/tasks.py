@@ -156,7 +156,9 @@ def do_query(qid, background=True, dis=False):
     q.doc_set.clear()
 
     def arg_docs(arg):
-        ds = Doc.objects.filter(query=arg.strip())
+        sq = Query.objects.get(pk=arg.strip())
+        q.queries.add(sq)
+        ds = Doc.objects.filter(query=sq)
         return set(ds.values_list('pk',flat=True))
     # Do internal queries
     if q.database=="intern":
