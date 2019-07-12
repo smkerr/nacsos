@@ -724,6 +724,7 @@ RIS_KEY_MAPPING = {
     'LB': 'label',
     'M1': 'note',
     'M3': 'pt',
+    'M4': 'source',
     'N1': 'notes',
     'N2': 'ab',
     'NV': 'number_of_Volumes',
@@ -783,6 +784,7 @@ RIS_TY_MAPPING = {
 def read_ris(q, update):
     r_count = 0
     changed = False
+    encoding = None
     with open(
         "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name
     ),'r') as f:
@@ -790,15 +792,21 @@ def read_ris(q, update):
             "{}/{}_tmp".format(settings.MEDIA_ROOT,q.query_file.name), "w"
         ) as ftmp:
             for l in f:
+                if "\\ufeff" in repr(l):
+                    encoding = 'utf-8-sig'
                 if "Link to the Ovid Full Text or citation:" in l:
                     changed=True
+                elif re.compile('^[A-Z][A-Z0-9]  -\n').match(l):
+                    changed = True
+                    ftmp.write(l.replace('-\n','- \n'))
                 else:
                     ftmp.write(l)
     if changed:
         fpath = "{}/{}_tmp".format(settings.MEDIA_ROOT,q.query_file.name)
     else:
         fpath = "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name)
-    with open(fpath, "r") as f:
+
+    with open(fpath, "r", encoding = encoding) as f:
         entries = readris(f,mapping=RIS_KEY_MAPPING)
         try:
             for e in entries:
