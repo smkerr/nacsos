@@ -174,7 +174,7 @@ class Utterance(models.Model):
     speaker = models.ForeignKey(Person, on_delete=models.PROTECT)
     speaker_role = models.ForeignKey(SpeakerRole, null=True, on_delete=models.SET_NULL)
     search_matches = models.ManyToManyField('Search')
-    agenda_item = models.ForeignKey(AgendaItem, null=True, on_delete=models.PROTECT)
+    agenda_item = models.ForeignKey(AgendaItem, null=True, on_delete=models.SET_NULL)
 
     @property
     def paragraph_texts(self):
