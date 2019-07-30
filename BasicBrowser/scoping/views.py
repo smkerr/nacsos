@@ -15,6 +15,7 @@ import operator
 from django.forms.models import model_to_dict
 from collections import OrderedDict
 import markdown
+import mimetypes
 
 from cities.models import *
 from tmv_app.models import *
@@ -2234,6 +2235,10 @@ def download_effects(request, pid):
             column_names[x] = f'5. framing_unit {x}'
         del v['framing_units']
         e = StudyEffect.objects.get(pk=v['effect__id'])
+        if e.calculations_file:
+            if os.path.isfile(e.calculations_file.path):
+                v['effect__calculations_file'] = f"https://apsis.mcc-berlin.net/scoping/download-calculations/{e.id}"
+
         for o, name in groups:
             notes = Note.objects.filter(effect=e,field_group=name).values_list('text',flat=True)
             v[name] = ";".join(list(notes))
@@ -2262,7 +2267,6 @@ def download_effects(request, pid):
 
     cnames = list(column_names.values())
     cnames.sort()
-    df = df[cnames]
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="document_codings.csv"'
@@ -2290,7 +2294,7 @@ def download_effects(request, pid):
     cnames.sort()
     ex_df = ex_df[cnames]
 
-    merged = pd.concat([df,ex_df],sort=True)
+    merged = pd.concat([df,ex_df],sort=True).drop(['effect ID'], axis=1)
 
     merged.to_csv(response)
 
@@ -2545,7 +2549,7 @@ def get_form_fields(model,project,instance=False,errors={},data={}, dmc=None):
                         "input_type": input_type
                      },
                      "label": pc.name,
-                     "min_value": 0,
+                     #"min_value": 0,
                      "help_text": pc.unit
                  }
             }
@@ -2704,6 +2708,9 @@ def add_effect(request,docmetaid,eff_copy=False,eff_edit=False):
                 effect.editing_time_elapsed = time_elapsed.total_seconds()
 
             effect.save()
+            if request.FILES:
+                effect.calculations_file = request.FILES['calculations_file']
+                effect.save()
             if not eff_edit:
                 if Note.objects.filter(dmc=dmc).exists():
                     for n in Note.objects.filter(dmc=dmc):
@@ -5445,6 +5452,15 @@ def download_pdf(request,id):
         response['Content-Disposition'] = 'inline;filename={}.pdf'.format(filename)
         return response
 
+@login_required
+def download_calculations(request, id):
+    e = StudyEffect.objects.get(pk=id)
+    filename = e.calculations_file.path
+    ctype = mimetypes.guess_type(filename)
+    with open(filename,'rb') as pdf:
+        response = HttpResponse(e.calculations_file.file, content_type=ctype)
+        response['Content-Disposition'] = 'attachment;filename={}'.format(filename)
+        return response
 
 @login_required
 def do_review(request):

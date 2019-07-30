@@ -1,3 +1,4 @@
+*/.dir-locals.el
 __pycache__
 logs/*
 settings_local.py

@@ -64,6 +64,7 @@ urlpatterns = [
     path('add-intervention/<int:effectid>',views.add_intervention,name='add_intervention'),
     path('add-intervention/<int:effectid>/<int:iid>',views.add_intervention,name='add_intervention'),
     path('add-intervention/<int:effectid>/<int:iid>/<int:i_edit>',views.add_intervention,name='add_intervention'),
+    path('download-calculations/<int:id>', views.download_calculations, name="download_calculations"),
 
 
     url(r'^snowball$', views.snowball, name='snowball'),

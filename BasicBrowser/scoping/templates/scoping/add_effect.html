@@ -6,7 +6,7 @@
 <p>
 <h2> Add {{ei}} for - {{ dmc.doc.title }}</h2>
 
-<form class="form" action="" method="POST">
+<form class="form" action="" enctype="multipart/form-data" method="POST">
     {% csrf_token %}
 
     <input type="hidden"  name="page_load" value="{{now}}">
