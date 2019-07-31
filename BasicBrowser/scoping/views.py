@@ -452,6 +452,11 @@ Returns JSON response with:
     '''
     def doc_dict(d):
         return {k:v for k,v in d.__dict__.items() if k!="_state"}
+
+    def n_combinations(l):
+        n = len(l)
+        return (n*(n-1))/2
+
     did = request.GET.get('did',None)
     j = float(request.GET.get('jaccard', None))
     project = Project.objects.get(pk=pid)
@@ -463,8 +468,8 @@ Returns JSON response with:
         query__project=project
     ).values_list('pk',flat=True))))
     all_ids.sort()
-    acs = sum(1 for i in itertools.combinations(all_ids, 2))
-    todocs = sum(1 for i in itertools.combinations(dids, 2))
+    acs = n_combinations(all_ids)
+    todocs = n_combinations(dids)
     pc = (acs - todocs) / acs
     #pc = (len(all_ids) - len(dids) / len(all_ids))
     t1 = time.time()
@@ -472,7 +477,7 @@ Returns JSON response with:
         t2 = time.time()
         if t2 - t1 > 5:
             next = dids[i]
-            todocs = sum(1 for i in itertools.combinations(compare_ids, 2))
+            todocs = n_combinations(compare_ids)
             pc = round((acs - todocs) / acs*100)
             return JsonResponse({
                 'matches': False,
@@ -484,9 +489,13 @@ Returns JSON response with:
             pass
         d = Doc.objects.get(pk=dids[i])
         compare_ids = dids[i+1:]
-        dups, j_score = d.find_duplicates(compare_ids, j)
+        if len(compare_ids) > 1000:
+            limit_y = True
+        else:
+            limit_y = False
+        dups, j_score = d.find_duplicates(compare_ids, j, limit_y)
         if dups:
-            todocs = sum(1 for i in itertools.combinations(compare_ids, 2))
+            todocs = n_combinations(compare_ids)
             pc = round((acs - todocs) / acs*100)
             next = dids[i+1]
             return JsonResponse({

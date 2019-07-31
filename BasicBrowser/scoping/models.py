@@ -852,16 +852,25 @@ class Doc(models.Model):
         return len(str(self.content).split())
 
     def shingle(self):
-        return set(s for s in ngrams(self.title.lower().replace("-"," ").split(),2))
+        if self.title:
+            return set(s for s in ngrams(self.title.lower().replace("-"," ").split(),2))
+        else:
+            return None
 
     def find_duplicates(self,ids,j_thresh,limit_y=False):
         comparison_docs = Doc.objects.filter(id__in=ids)
         if limit_y:
             comparison_docs = comparison_docs.filter(PY=self.PY)
-        for d in comparison_docs:
-            j = utils.jaccard(self.shingle(),d.shingle())
+        s1 = self.shingle()
+
+        for d in list(comparison_docs.values('id','title')):
+            if d['title']:
+                s2 = set(s for s in ngrams(d['title'].lower().replace("-"," ").split(),2))
+            else:
+                s2 = None
+            j = utils.jaccard(s1, s2)
             if j > j_thresh:
-                return (d,j)
+                return (Doc.objects.get(pk=d['id']),j)
         return (False, 0)
 
     def reassign_doc(self, doc):
