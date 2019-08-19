@@ -8,7 +8,7 @@
 <h2> Document Homepage: {{ doc.title }} </h2>
   <div class="explanation" style="text-align:left">
     <p><b>ID:</b> {{doc.pk}}</p>
-    <p><b>Title:</b> {{doc.title}}<a id="edit">[Edit]</a></p>
+    <p><b>Title:</b> {{doc.title}}<a class="editToggle">[Edit]</a></p>
     <div class="hidden edit">
       <form action="{% url 'scoping:editdoc' %}" method="post">
         {% csrf_token %}
@@ -18,7 +18,7 @@
         <input type="submit" value="Save changes" />
       </form>
     </div>
-    <p><b>Year:</b> {{doc.PY}} <a id="edit">[Edit]</a></p>
+    <p><b>Year:</b> {{doc.PY}} <a class="editToggle">[Edit]</a></p>
     <div class="hidden edit">
       <form action="{% url 'scoping:editdoc' %}" method="post">
         {% csrf_token %}
@@ -42,7 +42,7 @@
     <p><b>DOI</b> <a target="_blank" href="http://dx.doi.org/{{ doc.wosarticle.di }}">{{ doc.wosarticle.di}}</a>
     <p><b>Document type:</b> {{ doc.wosarticle.dt }}
     <p><b>Pages:</b> {{ doc.wosarticle.bp }}
-    <p><b>Abstract:</b> {{doc.content}} <a id="edit">[Edit]</a></p>
+    <p><b>Abstract:</b> {{doc.content}} <a class="editToggle">[Edit]</a></p>
     <div class="hidden edit">
       <form action="{% url 'scoping:editdoc' %}" method="post">
         {% csrf_token %}
@@ -170,8 +170,8 @@ $(".hboxselect").click(function() {
   console.log(reveal)
   $('*[data-type="'+reveal+'"]').removeClass("hidden")
 })
-$("#edit").click(function(){
-  $(".edit").toggleClass("hidden")
+$(".editToggle").click(function(){
+  $(this).parent().next().toggleClass("hidden")
 })
 
 $("#addtech").click(function() {
