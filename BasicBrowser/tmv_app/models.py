@@ -588,7 +588,7 @@ class RunStats(models.Model):
 
         d = [x['score'] for x in vs]
         c = [int(np.where(c_ind==x['topic_id'])[0]) for x in vs]
-        r = [int(np.where(r_ind==x['doc_id'])[0]) for x in vs]
+        r = [int(np.where(r_ind==x['doc__id'])[0]) for x in vs]
 
         m = coo_matrix((d,(r,c)),shape=(len(r_ind),len(c_ind)))
 

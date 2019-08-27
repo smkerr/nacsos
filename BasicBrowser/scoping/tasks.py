@@ -151,7 +151,7 @@ def download_metacodes(pid):
     return
 
 @shared_task
-def do_query(qid, background=True, dis=False):
+def do_query(qid, background=True, dis=False, resume=False, execute=True):
     q = Query.objects.get(pk=qid)
     q.doc_set.clear()
 
@@ -243,9 +243,10 @@ def do_query(qid, background=True, dis=False):
         print(" ".join(args))
 
         # run "scrapeQuery.py" on the text file in the background
-        if background:
-            subprocess.Popen(args)
-        else:
-            subprocess.call(args)
+        if execute:
+            if background:
+                subprocess.Popen(args)
+            else:
+                subprocess.call(args)
 
     return qid

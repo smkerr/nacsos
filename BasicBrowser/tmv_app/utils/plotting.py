@@ -263,7 +263,9 @@ def plot_tsne(
     doc_sets=None, clabel_size=8,
     words_only=False, fsize=5, adjust=False,
     draw_highlight_points=False,
-    dot_legend=False
+    dot_legend=False,
+    nocat_colour='#F0F0F026',
+    nocat_alpha=0.4
     ):
     cs = []
     sizes = []
@@ -283,9 +285,9 @@ def plot_tsne(
     ax.scatter(
         tsne_results[nocatids,0],
         tsne_results[nocatids,1],
-        c='#F0F0F026',
+        c=nocat_colour,
         s=psize,
-        alpha=0.4,
+        alpha=nocat_alpha,
         linewidth=0.1,
         edgecolor='#a39c9c66'
     )

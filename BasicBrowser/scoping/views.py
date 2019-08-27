@@ -489,10 +489,10 @@ Returns JSON response with:
             pass
         d = Doc.objects.get(pk=dids[i])
         compare_ids = dids[i+1:]
-        if len(compare_ids) > 1000:
-            limit_y = True
-        else:
+        if len(compare_ids) < 1000 or pid==176:
             limit_y = False
+        else:
+            limit_y = True
         dups, j_score = d.find_duplicates(compare_ids, j, limit_y)
         if dups:
             todocs = n_combinations(compare_ids)
