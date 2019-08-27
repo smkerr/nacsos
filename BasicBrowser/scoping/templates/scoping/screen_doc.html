@@ -60,7 +60,7 @@
                       {% endif %}
 
                       <input type="hidden" name="tag" value="{{tag.id}}"></input>
-                    <textarea class="form-control" name="note" rows=3>
+                    <textarea id="notebox" class="form-control" name="note" rows=3>
                     </textarea>
                     <br>
                     <p>
@@ -191,15 +191,20 @@ function review(d) {
 }
 
 $(document).keydown(function(e){
-    if (e.keyCode == 49) {
-        review("1")
+    if ($("#notebox").is(":focus")){
+
+    } else {
+      if (e.keyCode == 49) {
+          review("1")
+      }
+      if (e.keyCode == 50) {
+          review("2")
+      }
+      if (e.keyCode == 51) {
+          review("3")
+      }
     }
-    if (e.keyCode == 50) {
-        review("2")
-    }
-    if (e.keyCode == 51) {
-        review("3")
-    }
+
 });
 
 width = "100%"

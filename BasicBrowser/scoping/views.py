@@ -5290,7 +5290,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         if do.title_only:
             doc = do.doc.highlight_fields(tag.query,["title","id","wosarticle__di"])
         elif do.full_text:
-            doc =  do.doc.highlight_fields(tag.query,["title","id","wosarticle__di","docfile"])
+            doc =  do.doc.highlight_fields(tag.query,["title","id","wosarticle__so","wosarticle__py","wosarticle__di","docfile"])
         else:
             doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
 
