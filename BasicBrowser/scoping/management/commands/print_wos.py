@@ -79,6 +79,8 @@ class Command(BaseCommand):
                             fn="ID"
                         if fn=="ISS":
                             fn="IS"
+                        if fn=="EMS":
+                            fn="EM"
                         f.write(fn)
                         f.write(' ')
 

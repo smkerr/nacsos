@@ -66,6 +66,8 @@ urlpatterns = [
     path('add-intervention/<int:effectid>/<int:iid>/<int:i_edit>',views.add_intervention,name='add_intervention'),
     path('download-calculations/<int:id>', views.download_calculations, name="download_calculations"),
 
+    path('risk-of-bias/<int:dmcid>', login_required(views.RoBCreate.as_view()),name="rob_create"),
+    path('edit-risk-of-bias/<int:dmcid>', login_required(views.RoBEdit.as_view()),name="rob_edit"),
 
     url(r'^snowball$', views.snowball, name='snowball'),
     #### Query processing

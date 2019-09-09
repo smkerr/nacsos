@@ -21,6 +21,12 @@ class QueryForm(forms.ModelForm):
             'query_file': 'Accepted formats are WoS/Scopus text files or RIS files',
         }
 
+class RiskOfBiasForm(forms.ModelForm):
+
+    class Meta:
+        model = (RiskOfBias)
+        exclude = ()
+
 class MetaAssignmentForm(forms.Form):
     def __init__(self,*args,**kwargs):
         p = kwargs.pop('p',Project.objects.all())

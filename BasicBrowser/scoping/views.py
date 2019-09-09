@@ -79,6 +79,47 @@ def switch_mode(request):
         return HttpResponseRedirect(reverse('scoping:index'))
 
 
+class RoBCreate(CreateView):
+    '''
+    '''
+    model=RiskOfBias
+    form_class = RiskOfBiasForm
+
+    def get_context_data(self, **kwargs):
+        context = super(RoBCreate, self).get_context_data(**kwargs)
+        dmc = DocMetaCoding.objects.get(pk=self.kwargs['dmcid'])
+        context['project'] = dmc.project
+        context['doc'] = dmc.doc
+        return context
+
+    def form_valid(self, form, **kwargs):
+        dmc = DocMetaCoding.objects.get(pk=self.kwargs['dmcid'])
+        self.object = form.save()
+        dmc.risk_of_bias = self.object
+        dmc.save()
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('scoping:code_document', kwargs={'docmetaid': self.object.docmetacoding.id})
+
+class RoBEdit(UpdateView):
+    model = RiskOfBias
+    form_class = RiskOfBiasForm
+
+    def get_context_data(self, **kwargs):
+        context = super(RoBEdit, self).get_context_data(**kwargs)
+        dmc = DocMetaCoding.objects.get(pk=self.kwargs['dmcid'])
+        context['project'] = dmc.project
+        context['doc'] = dmc.doc
+        return context
+
+    def get_object(self, **kwargs):
+        obj = DocMetaCoding.objects.get(pk=self.kwargs['dmcid']).risk_of_bias
+        return obj
+
+    def get_success_url(self):
+        return reverse('scoping:code_document', kwargs={'docmetaid': self.object.docmetacoding.id})
 
 
 class QueryCreate(CreateView):

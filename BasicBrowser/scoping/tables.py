@@ -21,6 +21,9 @@ class CodingTable(tables.Table):
     finish_time = tables.Column()
     coded = tables.Column()
     excluded = tables.Column()
+    risk_of_bias = tables.LinkColumn(
+        'scoping:rob_edit', args=[A('id')]
+    )
     class Meta:
         template_name = 'django_tables2/bootstrap.html'
         attrs = {'class': 'table'}

@@ -146,6 +146,28 @@
 
 <hr>
 <p>
+
+  <h3>Risk of Bias</h3>
+
+  {% if dmc.risk_of_bias %}
+    <a href="{% url 'scoping:rob_edit' dmc.id %}">
+    EDIT
+    <a/>
+  {% else %}
+
+    <a href="{% url 'scoping:rob_create' dmc.id %}">
+    Create
+    </a>
+  {% endif %}
+
+
+  <hr>
+  <p>
+
+
+
+
+
 <h3>Finished coding this document? (this will mark the document as "coded")</h3>
 </p>
 <div class="container">

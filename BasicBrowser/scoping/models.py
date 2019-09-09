@@ -245,8 +245,35 @@ class DocMetaCoding(models.Model):
     coded = models.BooleanField(default=False)
     excluded = models.BooleanField(default=False)
 
+    risk_of_bias = models.OneToOneField('RiskOfBias', null=True, on_delete=models.SET_NULL)
+
     order = models.IntegerField(null=True)
 
+
+class RiskOfBias(models.Model):
+    PY = 0
+    PN = 2
+    UNCLEAR = 1
+
+    rob_choices = (
+        (PY, 'Probably Yes'),
+        (PN, 'Probably No'),
+        (UNCLEAR, 'Unclear'),
+    )
+
+    randomisation_control = models.IntegerField(null=True, help_text='Was there a control group in the study?', choices=rob_choices)
+
+    randomisation_allocation = models.IntegerField(null=True, help_text='Was the allocation between treatment and control group random?', choices=rob_choices)
+
+    randomisation_differences = models.IntegerField(null=True, help_text='Did the differences between the baseline characteristics of the control and treatment group suggest a problem with the randomisation process?', choices=rob_choices)
+
+    out_of_sample_bias = models.IntegerField(null=True, help_text='Were the control and treatment group representative of the average population of the corresponding area?', choices=rob_choices)
+
+    missing_data = models.IntegerField(null=True, help_text='Were data for this outcome available for all, or nearly all, participants randomised? OR was the drop out of the experiment reasonably low?', choices=rob_choices)
+
+    collection_biases = models.IntegerField(null=True, help_text='Was the process of being observed causing motivation bias (Hawthorne and John Henry effects, courtesy bias, and recall bias)?', choices=rob_choices)
+
+    reporting_biases = models.IntegerField(null=True, help_text='Was the study free from outcome reporting ias and analysis reporting bias?', choices=rob_choices)
 
 
 class Controls(models.Model):
