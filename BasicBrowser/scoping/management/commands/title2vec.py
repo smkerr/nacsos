@@ -16,6 +16,7 @@ class Command(BaseCommand):
         # Update any documents which don't have a tslug saved
         updating_slugs = True
         while updating_slugs == True:
+
             batch_docs = Doc.objects.filter(title__iregex='\w',tslug__isnull=True).order_by('id')[:10000]
             if batch_docs:
                 b_titles = list(batch_docs.values_list('title',flat=True))
@@ -26,6 +27,7 @@ class Command(BaseCommand):
                 updating_slugs=False
 
 
+        print("FINISHED!")
         docs = Doc.objects.filter(title__iregex='\w').order_by('id')
         n_docs = docs.count()
 

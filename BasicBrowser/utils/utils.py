@@ -508,21 +508,42 @@ def add_scopus_doc(r,q,update):
             pass
 
         if did=='NA':
+
+            if get(r,'ti') is None or len(get(r,'ti')) < 2:
+                print(f"<p>This document ({r}) has no title!! ")
+                q.upload_log+=f"<p>This document ({r}) has no title!! "
+                q.save()
+                return
+
             docs = scoping.models.Doc.objects.filter(
-                    wosarticle__ti__iexact=get(r,'ti'),
+                    tslug=scoping.models.Doc.make_tslug(get(r,'ti')),
                     PY=get(r,'py')
             )
             if not docs.exists() and get(r,'au') is not None:
                 if len(get(r,'au')) > 0:
                     docs = scoping.models.Doc.objects.filter(
-                        wosarticle__ti__iexact=get(r,'ti'),
+                        tslug=scoping.models.Doc.make_tslug(get(r,'ti')),
                         docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
                     ).distinct('pk')
-                    print(docs)
+
         else:
             docs = scoping.models.Doc.objects.filter(
                 wosarticle__di=did
             )
+
+            if not docs.exists():
+
+                docs = scoping.models.Doc.objects.filter(
+                        tslug=scoping.models.Doc.make_tslug(get(r,'ti')),
+                        PY=get(r,'py')
+                )
+                if not docs.exists() and get(r,'au') is not None:
+                    if len(get(r,'au')) > 0:
+                        docs = scoping.models.Doc.objects.filter(
+                            tslug=scoping.models.Doc.make_tslug(get(r,'ti')),
+                            docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
+                        ).distinct('pk')
+
 
         if len(docs)==1:
             #print("found! with doi or ti and authors")
@@ -538,11 +559,7 @@ def add_scopus_doc(r,q,update):
 
         elif len(docs)==0: # if there are none, try with the title and jaccard similarity
             #print("looking with jaccard similarity and so on")
-            if get(r,'ti') is None or len(get(r,'ti')) < 2:
-                print(f"<p>This document ({r}) has no title!! ")
-                q.upload_log+=f"<p>This document ({r}) has no title!! "
-                q.save()
-                return
+
 
             s1 = shingle(get(r,'ti'))
 

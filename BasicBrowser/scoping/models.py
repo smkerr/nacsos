@@ -411,14 +411,14 @@ class Exclusion(models.Model):
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     date = models.DateTimeField(auto_now_add=True)
 
-@receiver(post_save, sender=Exclusion)
-def exclude_doc(sender, instance, **kwargs):
-    dp = DocProject.objects.get(
-        doc=instance.doc,
-        project=instance.project
-    )
-    dp.relevant=2
-    dp.save()
+# @receiver(post_save, sender=Exclusion)
+# def exclude_doc(sender, instance, **kwargs):
+#     dp = DocProject.objects.get(
+#         doc=instance.doc,
+#         project=instance.project
+#     )
+#     dp.relevant=2
+#     dp.save()
 
 @receiver(pre_delete, sender=Exclusion)
 def unexclude_doc(sender,instance,**kwargs):
@@ -779,7 +779,10 @@ def handle_uncat_doc(sender, instance, **kwargs):
 class Doc(models.Model):
 
     def make_tslug(s):
-        return re.sub('\W','',s).lower()
+        if s is not None:
+            return re.sub('\W','',s).lower()
+        else:
+            return None
 
     random = DocManager
 
@@ -990,6 +993,17 @@ class Doc(models.Model):
         topic_intrusion.save()
         for r in real_topics:
             topic_intrusion.real_topics.add(r.topic)
+
+
+    @classmethod
+    def post_create(cls, sender, instance, created, *args, **kwargs):
+        if not created:
+            return
+        else:
+            instance.tslug = Doc.make_tslug(instance.title)
+
+
+post_save.connect(Doc.post_create, sender=Doc)
 
 class DocSection(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE)

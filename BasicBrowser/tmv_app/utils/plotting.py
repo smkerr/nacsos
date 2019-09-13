@@ -312,13 +312,18 @@ def plot_tsne(
             if hdoc is not False:
                 hdocs = ids[np.isin(ids,hdoc)]
                 ids = ids[np.isin(ids,hdoc,invert=True)]
+
+            if len(nocatids) > len(r_ind) / 2:
+                a = 1
+            else:
+                a = 0.7
             ax.scatter(
                 tsne_results[ids,0],
                 tsne_results[ids,1],
                 #zorder = [math.ceil(random.random()*1) for i in range(len(ids))],
                 c=c['color'],
                 s=psize,
-                alpha=0.7,
+                alpha=a,
                 linewidth=0.1,
                 edgecolor='#a39c9c66'
             )
