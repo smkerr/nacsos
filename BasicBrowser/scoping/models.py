@@ -271,7 +271,7 @@ class RiskOfBias(models.Model):
 
     missing_data = models.IntegerField(null=True, help_text='Were data for this outcome available for all, or nearly all, participants randomised? OR was the drop out of the experiment reasonably low?', choices=rob_choices)
 
-    collection_biases = models.IntegerField(null=True, help_text='Was the study free from motivation bias caused by the process of being observed (Hawthorne effects)?', choices=rob_choices)
+    collection_biases = models.IntegerField(null=True, help_text='Was the study free from motivation bias caused by the process of being observed (Hawthorne effect)?', choices=rob_choices)
 
     reporting_biases = models.IntegerField(null=True, help_text='Was the study free from outcome reporting ias and analysis reporting bias?', choices=rob_choices)
 
