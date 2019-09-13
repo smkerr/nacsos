@@ -265,13 +265,13 @@ class RiskOfBias(models.Model):
 
     randomisation_allocation = models.IntegerField(null=True, help_text='Was the allocation between treatment and control group random?', choices=rob_choices)
 
-    randomisation_differences = models.IntegerField(null=True, help_text='Did the differences between the baseline characteristics of the control and treatment group suggest a problem with the randomisation process?', choices=rob_choices)
+    randomisation_differences = models.IntegerField(null=True, help_text='Did the differences between the baseline characteristics of the control and treatment group suggest a reliable randomisation between treatment and control groups?', choices=rob_choices)
 
     out_of_sample_bias = models.IntegerField(null=True, help_text='Were the control and treatment group representative of the average population of the corresponding area?', choices=rob_choices)
 
     missing_data = models.IntegerField(null=True, help_text='Were data for this outcome available for all, or nearly all, participants randomised? OR was the drop out of the experiment reasonably low?', choices=rob_choices)
 
-    collection_biases = models.IntegerField(null=True, help_text='Was the process of being observed causing motivation bias (Hawthorne and John Henry effects, courtesy bias, and recall bias)?', choices=rob_choices)
+    collection_biases = models.IntegerField(null=True, help_text='Was the study free from motivation bias caused by the process of being observed (Hawthorne effects)?', choices=rob_choices)
 
     reporting_biases = models.IntegerField(null=True, help_text='Was the study free from outcome reporting ias and analysis reporting bias?', choices=rob_choices)
 
