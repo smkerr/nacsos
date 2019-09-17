@@ -99,6 +99,8 @@ def get(r, k):
             x = r[k.upper()]
         except:
             x = None
+    if k.upper()=="PY" and x is not None:
+        x = "".join(re.findall("[0-9]",x))
     return(x)
 
 def jaccard(s1,s2):

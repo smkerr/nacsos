@@ -3780,7 +3780,7 @@ def sortdocs(request):
         t.query = query
         t.save()
         Through = Doc.tag.through
-        tms = [Through(doc=d,tag=t) for d in filt_docs]
+        tms = [Through(doc_id=d,tag=t) for d in set(filt_docs.values_list('pk',flat=True)]
         Through.objects.bulk_create(tms)
         handle_update_tag.delay(t.id)
         return(JsonResponse("",safe=False))
