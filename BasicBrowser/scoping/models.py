@@ -1138,6 +1138,19 @@ class WG(models.Model):
       return "AR"+str(self.ar)+" WG"+str(self.wg)
 
 class IPCCRef(models.Model):
+
+    UNCHECKED = 0
+    IN_QUERY = 1
+    IN_WOS = 2
+    NON_WOS = 3
+
+    MATCH_STATUS = (
+        (UNCHECKED, 'Unchecked'),
+        (IN_QUERY, 'In query'),
+        (IN_WOS, 'In WoS'),
+        (NON_WOS, 'Not in WoS'),
+    )
+
     authors = models.TextField()
     year = models.IntegerField()
     text = models.TextField()
@@ -1147,6 +1160,8 @@ class IPCCRef(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True)
     chapter = models.TextField(null=True)
     checked_count = models.IntegerField(default=0)
+
+    match_status = models.IntegerField(choices=MATCH_STATUS, default=0)
 
     def shingle(self):
         return set(s for s in ngrams(self.text.lower().split(".")[0].split(),2))
