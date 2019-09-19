@@ -651,7 +651,7 @@ def add_scopus_doc(r,q,update):
                         if f.get_internal_type() != 'ArrayField' and type(r[field]) == list:
                             setattr(article,f.name,'; '.join(r[field]))
                         else:
-                            setattr(article,f.name,r[field])
+                            setattr(article,f.name,get(r,field.name))
                 except:
                     # Field in data but not in model
                     pass

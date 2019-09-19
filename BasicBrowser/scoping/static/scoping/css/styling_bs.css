@@ -40,6 +40,12 @@ html, body {
     height: 100%;
 }
 
+
+.padded  td, th {
+  padding: 10px;
+  border: 1px solid black;
+}
+
 div.explanation {
     width:60%;
 	margin-left: auto;

@@ -782,7 +782,7 @@ Args:
             t.save()
         else:
             t.docs = t.ndocs
-        possible_parents = Category.objects.filter(level=t.level-1)
+        possible_parents = Category.objects.filter(level__lt=t.level)
         t.form = CategoryForm(instance=t,prefix=t.id,qs=possible_parents)
 
     catform = CategoryForm(prefix="add")
@@ -803,7 +803,7 @@ Filter the categories in the project of the given level
 
     """
     cats = Category.objects.filter(
-        project_id=pid,level=level
+        project_id=pid,level__lte=level
     ).values('id','name')
     #return JsonResponse(cats,safe=False)
     return HttpResponse(json.dumps(list(cats)), content_type="application/json")
@@ -5343,7 +5343,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         cats = Category.objects.filter(project=tag.query.project)#.order_by('name')
 
         levels = []
-        for l in cats.values_list('level',flat=True).distinct():
+        for l in cats.exclude(name__contains="<hidden>").values_list('level',flat=True).distinct():
             lcats = []
             for t in cats.filter(level=l).order_by('name'):
                 dcus = cats.filter(
@@ -5358,7 +5358,12 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                 )
                 e = dcus.exists() or dcs.exists()
                 lcats.append((e,t))
-            levels.append(lcats)
+            parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))
+            if cats.filter(level=l).count() > 1 and len(set(parents)) ==1:
+                cname = list(parents)[0].replace("<hidden>","")
+            else:
+                cname= f"level {l}"
+            levels.append((cname,lcats))
 
         if do.query.project.id in [177, 136]:
             cities = do.doc.cities.all()
@@ -5367,7 +5372,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
 
 
     try:
-        criteria = markdown.markdown(tag.query.criteria)
+        criteria = markdown.markdown(tag.query.criteria, extensions=["tables"])
     except:
         criteria = tag.query.criteria
 

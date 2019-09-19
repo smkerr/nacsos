@@ -38,7 +38,11 @@
             <div class="col-12">
                 <div class="border rounded bg-white p-3 m-2 position-sticky sticky-top">
                     <div><h4>Query criteria</h4></div>
-                    <div style="column-count: 2;">
+                    {% if "table" in criteria %}
+                      <div class="padded">
+                    {% else %}
+                      <div style="column-count: 2;">
+                    {% endif %}
                     {{criteria |safe }}
                     </div>
                 </div>
@@ -98,10 +102,10 @@
     </div>
 
     <div class="col-3">
-    {% for l in levels %}
+    {% for n,l in levels %}
 
         <div class="border rounded bg-white my-2 p-2 small">
-            Which level {{l.0.1.level}} categories is this document relevant to?
+            Which {{n}} categories is this document relevant to?
             (hover for more info)
                     <hr>
                 {% for t in l %}
@@ -111,6 +115,9 @@
         </div>
 
     {% endfor %}
+
+
+    {% if cities %}
       <div class="border rounded bg-white my-2 p-2 small">
           Document cities, click to remove
                   <hr>
@@ -121,8 +128,6 @@
 
               {% endfor %}
       </div>
-    {% if cities %}
-
     {% endif %}
     <div class="border rounded bg-white my-3 p-2">
        {% csrf_token %}
@@ -164,6 +169,12 @@
 {% block script %}
 
 <script type="text/javascript">
+
+$("div.padded td, th").each(function(t) {
+  c = $(this).find("span").css("background-color")
+  $(this).css("background-color", c)
+  $(this).find("span").css("background-color","")
+})
 
 $(".cat").click(function(){
     id2 = $(this).val()
