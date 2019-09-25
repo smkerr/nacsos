@@ -100,7 +100,10 @@ def get(r, k):
         except:
             x = None
     if k.upper()=="PY" and x is not None:
-        x = "".join(re.findall("[0-9]",x))
+        try:
+            x = int(x)
+        except:
+            x = "".join(re.findall("[0-9]",x))
     return(x)
 
 def jaccard(s1,s2):
@@ -838,8 +841,9 @@ def read_ris(q, update):
                     add_scopus_doc(e,q,update)
                     r_count+=1
                 except:
-                    return e
                     print(f"couldn't add {e}")
+                    return e
+
         except:
             r_count = 0
             with open(fpath,'r',encoding='utf-8-sig') as f:
