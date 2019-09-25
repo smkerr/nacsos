@@ -475,6 +475,7 @@ class Query(models.Model):
     text        = models.TextField(null=True, verbose_name="Query Text")
     database    = models.CharField(max_length=6,null=True, verbose_name="Query database", choices=DB_CHOICES)
     date        = models.DateTimeField(auto_now_add=True,verbose_name="Query Date")
+    estimated_docs = models.IntegerField(null=True)
     r_count     = models.IntegerField(null=True, verbose_name="Query Results Count")
     creator     = models.ForeignKey(User, on_delete=models.CASCADE, null=True, verbose_name="Query Creator", related_name="user_creations")
     upload_link = models.ForeignKey('EmailTokens', on_delete=models.CASCADE, null=True)
@@ -884,7 +885,8 @@ class Doc(models.Model):
 
     def shingle(self):
         if self.title:
-            return set(s for s in ngrams(self.title.lower().replace("-"," ").split(),2))
+            tokens = [re.sub('\W','',x) for x in self.title.lower().split()]
+            return set(s for s in ngrams([t for t in tokens if t!=""] ,2))
         else:
             return None
 
@@ -1164,7 +1166,8 @@ class IPCCRef(models.Model):
     match_status = models.IntegerField(choices=MATCH_STATUS, default=0)
 
     def shingle(self):
-        return set(s for s in ngrams(self.text.lower().split(".")[0].split(),2))
+        tokens = [re.sub('\W','',x) for x in self.text.lower().split(".")[0].split()]
+        return set(s for s in ngrams([t for t in tokens if t!=""] ,2))
 
 class KW(models.Model):
     kwtype_choices = (

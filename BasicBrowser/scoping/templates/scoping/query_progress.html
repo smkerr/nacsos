@@ -49,7 +49,11 @@
                         <p><a href="{% url 'scoping:doclist' query.project.id query.id %}">View the documents</a>
                     {% else %}
                         <p>Document upload in progress (This may take some time for websites other than Web of Science)
-                        <p>View the <a href="{% url 'scoping:doclist' query.project.id query.id %}">{{doclength}}</a> documents which have been uploaded.
+                        <p>View the <a href="{% url 'scoping:doclist' query.project.id query.id %}">{{doclength}}</a> documents
+                          {% if query.estimated_docs %}
+                            (out of an estimated {{query.estimated_docs}})
+                          {% endif %}
+                          which have been uploaded.
 
                           <p> Stopped? <a href="{% url 'scoping:dodocadd' query.id %}"><button>Restart document upload</button></a>
                             This will start from the beginning (but faster for already uploaded documents), and only
