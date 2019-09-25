@@ -19,6 +19,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+BasicBrowser/dtm_io_archive/*
 BasicBrowser/twitter/users.json
 BasicBrowser/twitter/tweets.json
 BasicBrowser/tweets/*

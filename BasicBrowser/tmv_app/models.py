@@ -543,7 +543,7 @@ class RunStats(models.Model):
         rpath = f"{path}/run_{self.pk}_s_{s_size}_r_ind.npy"
         cpath = f"{path}/run_{self.pk}_s_{s_size}_c_ind.npy"
         if os.path.exists(mpath):
-            m = np.load(mpath)
+            m = np.load(mpath)[()]
             if os.path.exists(rpath):
                 r_ind = np.load(rpath)
                 if os.path.exists(cpath):
@@ -561,9 +561,9 @@ class RunStats(models.Model):
             doc_id_var = 'doc__id'
         elif self.psearch:
             if self.psearch.search_object_type==parliament.models.Search.PARAGRAPH:
-                doc_id_var = 'ut__id'
-            elif self.psearch.search_object_type==parliament.models.Search.UTTERANCE:
                 doc_id_var = 'par__id'
+            elif self.psearch.search_object_type==parliament.models.Search.UTTERANCE:
+                doc_id_var = 'ut__id'
         else:
             print("I don't know what type of document I have...")
             return
@@ -588,7 +588,7 @@ class RunStats(models.Model):
 
         d = [x['score'] for x in vs]
         c = [int(np.where(c_ind==x['topic_id'])[0]) for x in vs]
-        r = [int(np.where(r_ind==x['doc__id'])[0]) for x in vs]
+        r = [int(np.where(r_ind==x[doc_id_var])[0]) for x in vs]
 
         m = coo_matrix((d,(r,c)),shape=(len(r_ind),len(c_ind)))
 
