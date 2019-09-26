@@ -5360,7 +5360,10 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                 lcats.append((e,t))
             parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))
             if cats.filter(level=l).count() > 1 and len(set(parents)) ==1:
-                cname = list(parents)[0].replace("<hidden>","")
+                try:
+                    cname = list(parents)[0].replace("<hidden>","")
+                except:
+                    cname = f"level {l}"
             else:
                 cname= f"level {l}"
             levels.append((cname,lcats))
