@@ -102,10 +102,36 @@
     </div>
 
     <div class="col-3">
+
+    {% if project.rating_first %}
+    <div class="border rounded bg-white my-3 p-2">
+       {% csrf_token %}
+       <p >Is this document relevant according the criteria shown?</p>
+       <hr>
+
+        <button data-ref="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}" class="btn btn-secondary reviewButton m-1 b-yes {% if do.relevant == 1 %} True {% endif %}">Yes (1)</button>
+        <button data-ref="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}" class="btn btn-secondary reviewButton m-2 b-yes {% if do.relevant == 2 %} True {% endif %}">No (2)</button>
+        <button data-ref="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}" class="btn btn-secondary reviewButton m-3 b-yes {% if do.relevant == 3 %} True {% endif %}">Maybe (3)</button>
+
+          {% if project.no_but %}
+          <button class="btn btn-secondary reviewButton m-4 b-yes {% if do.relevant == 4 %} True {% endif %}">No but (4)</button>
+          {% endif %}
+        <!-- </div> -->
+    </div>
+
+    <hr>
+
+    {% endif %}
+
     {% for n,l in levels %}
 
         <div class="border rounded bg-white my-2 p-2 small">
+          {% if "<wholetext>" in n %}
+            {{n |safe}}
+          {% else %}
             Which {{n}} categories is this document relevant to?
+          {% endif %}
+
             (hover for more info)
                     <hr>
                 {% for t in l %}
@@ -129,10 +155,22 @@
               {% endfor %}
       </div>
     {% endif %}
+
+    {% if project.rating_first %}
+
+      <div class="border rounded bg-white my-3 p-2">
+        <p>Finish rating this document and move on to the next document </p>
+        <hr>
+          <button class="btn btn-secondary" onclick="review(0)">Done</button>
+      </div>
+
+    {% else %}
     <div class="border rounded bg-white my-3 p-2">
        {% csrf_token %}
        <p >Is this document relevant according the criteria shown? (Click buttons or use number keys)</p>
        <hr>
+
+
 
           <a id="r-1" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}" class="btn btn-secondary m-1 b-yes {% if do.relevant == 1 %} True {% endif %}">Yes (1)</a>
           <a id="r-2" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}" class="btn btn-secondary m-1 b-no {% if do.relevant == 2 %} True {% endif %}">No (2)</a>
@@ -143,7 +181,9 @@
           {% endif %}
         <!-- </div> -->
     </div>
+    {% endif %}
     </div>
+
 
 <!-- </div>
 <div class="row"> -->
@@ -196,13 +236,31 @@ $(".cat").click(function(){
 })
 
 function review(d) {
-	url = $("#r-"+d).attr("href")
-    console.log(url)
-    window.location.href = url
+  if ($(".reviewButton").length > 1) {
+    if ($(".reviewButton.True").length==1) {
+      url = $(".reviewButton.True").data("ref")
+    }
+  } else {
+    url = $("#r-"+d).attr("href")
+  }
+  console.log(url)
+  window.location.href = url
 }
 
+$(".reviewButton").click(function(){
+  $(".reviewButton").removeClass("True")
+  $(this).toggleClass("True")
+  if ($(this).hasClass("m-2")) {
+    review(0)
+  }
+})
+
 $(document).keydown(function(e){
-    if ($("#notebox").is(":focus")){
+
+    if ($(".reviewButton").length > 1) {
+
+    }
+    else if ($("#notebox").is(":focus")){
 
     } else {
       if (e.keyCode == 49) {

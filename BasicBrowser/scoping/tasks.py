@@ -216,7 +216,7 @@ def do_query(qid, background=True, dis=False, resume=False, execute=True):
         if dis:
             args += ["-dis", "True"]
 
-        if q.creator.profile.unlimited: 
+        if q.creator.profile.unlimited:
             args += ["-lim", "2000000"]
         if q.credentials:
             args += [

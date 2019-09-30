@@ -78,6 +78,8 @@ class Project(models.Model):
     reldocs = models.IntegerField(default=0)
     tms = models.IntegerField(default=0)
 
+    rating_first = models.BooleanField(default=False)
+
     # Project level variables
     no_but = models.BooleanField(default=False)
 
