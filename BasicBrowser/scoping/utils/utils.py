@@ -205,6 +205,10 @@ def ihighlight(word, text, tclass="t1"):
 
 def clean_qword(s):
     # Remove WoS + Scopus Field Keys
+    try:
+        s = s.split('(')[1]
+    except:
+        pass
     if "=" in s:
         return False
     s = re.sub('[\(\)]','',s)
@@ -226,6 +230,8 @@ def extract_words_phrases(s):
 
     phrases = re.findall('"([^"]*)"',s)
     s = re.sub('"([^"]*)"','',s)
+    notpat = "(NOT \w* ?= ?\(.*\))"
+    s = re.sub(notpat,"",s)
     words = [clean_qword(x) for x in s.split() if clean_qword(x)]
 
     return phrases + words

@@ -814,9 +814,11 @@ def read_ris(q, update):
             "{}/{}_tmp".format(settings.MEDIA_ROOT,q.query_file.name), "w"
         ) as ftmp:
             for l in f:
-                if "\\ufeff" in repr(l):
-                    encoding = 'utf-8-sig'
-                if "Link to the Ovid Full Text or citation:" in l:
+                if "\\ufeff" in repr(l) or "\ufeff" in repr(l):
+                    #encoding = 'utf-8-sig'
+                    changed = True
+                    ftmp.write(l.replace('\\ufeff','').replace('\ufeff',''))
+                elif "Link to the Ovid Full Text or citation:" in l:
                     changed=True
                 elif re.compile('^[A-Z][A-Z0-9]  -\n').match(l):
                     changed = True
@@ -824,6 +826,7 @@ def read_ris(q, update):
                 else:
                     ftmp.write(l)
     if changed:
+        print("opening edited file")
         fpath = "{}/{}_tmp".format(settings.MEDIA_ROOT,q.query_file.name)
     else:
         fpath = "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name)
