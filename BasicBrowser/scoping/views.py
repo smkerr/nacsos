@@ -3507,7 +3507,7 @@ def sortdocs(request):
         download = False
 
     # x = y
-
+    t0 = time.time()
     html = False
 
     print(fields)
@@ -3583,7 +3583,7 @@ def sortdocs(request):
             tag_filter = f_text[i]
 
 
-    print(len(filt_docs))
+
 
     # filter documents with user ratings
     if len(users) > 0:
@@ -3621,9 +3621,12 @@ def sortdocs(request):
             #    print(reldocs)
             #reldocs = reldocs.values("pk")
             #filt_docs = filt_docs.filter(pk__in=reldocs)
+        doids = set([])
         for u in users:
             uname = u.split("__")[1]
             user = User.objects.get(username=uname)
+            utag = f"{u}__tag"
+            single_fields = single_fields + (utag,)
             #uval = reldocs.filter(docownership__user=user).docownership
             if "tag__title" in f_fields:
                 if not download:
@@ -3637,7 +3640,12 @@ def sortdocs(request):
                             models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
                             default=0,
                             output_field=models.IntegerField()
-                    )
+                    ),
+                    utag: models.Case(
+                            models.When(docownership__user=user,docownership__query=query,then='docownership__tag__id'),
+                            default=0,
+                            output_field=models.IntegerField()
+                    ),
                 })
             else:
                 if not download:
@@ -3647,9 +3655,14 @@ def sortdocs(request):
                             models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
                             default=0,
                             output_field=models.IntegerField()
-                    )
+                    ),
+                    utag: models.Case(
+                            models.When(docownership__user=user,docownership__query=query,then='docownership__tag__id'),
+                            default=0,
+                            output_field=models.IntegerField()
+                    ),
                 })
-
+        print(f"user filtering took {time.time() - t0:.2} seconds")
     else:
         if "relevance_time" in rfields:
             filt_docs = filt_docs.annotate(
@@ -3662,6 +3675,9 @@ def sortdocs(request):
                     )
                 )
             )
+
+
+
     all_docs = filt_docs
 
     fids = []
@@ -3680,6 +3696,8 @@ def sortdocs(request):
         if joiner=="AND":
             if "tag__title" in f_fields[i]:
                 tag_queries.append(f_text[i])
+
+    print(f_fields)
 
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
@@ -3841,6 +3859,7 @@ def sortdocs(request):
         max = 8
         min = 5
 
+    print(f"about to loop through docs after {time.time()-t0} seconds")
 
     for d in docs:
         # work out total relevance
@@ -3867,6 +3886,8 @@ def sortdocs(request):
             d["relevance__netrelevant"] = DocOwnership.objects.filter(doc_id=d['pk'],relevant__gt=0).count()
         # Get the user relevance rating for each doc (if asked)
 
+        #x = y
+
         if len(users) > 0 and download==False:
             for u in users:
                 uname = u.split("__")[1]
@@ -3874,20 +3895,23 @@ def sortdocs(request):
                 if q2id!='0':
                     do = DocOwnership.objects.filter(doc_id=d['pk'],query__id=qid,user__username=uname) | DocOwnership.objects.filter(doc_id=d['pk'],query__id=q2id,user__username=uname)
                 else:
-                    do = DocOwnership.objects.filter(doc_id=d['pk'],query__id=qid,user__username=uname)
-                if "tag__title" in f_fields:
-                    do = do.filter(tag__title__icontains=tag_filter)
-                if do.count() > 0:
-                    d[u] = do.first().get_relevant_display()
-                    num = do.first().relevant
-                    text = do.first().get_relevant_display()
-                    tag = str(do.first().tag.id)
-                    user = str(User.objects.filter(username=uname).first().id)
+                    pass
+                    #do = DocOwnership.objects.filter(doc_id=d['pk'],query__id=qid,user__username=uname)
+                #if "tag__title" in f_fields:
+                    #do = do.filter(tag__title__icontains=tag_filter)
+                #if do.count() > 0:
+                if u in d:
+                    #d[u] = do.first().get_relevant_display()
+                    num = d[u]
+                    text = DocOwnership.Status[d[u]]
+                    tag = str(d[f"{u}__tag"])
+                    user = str(User.objects.get(username=uname).id)
                     if not download:
                         d[u] = '<select class="relevant_cycle" data-user=' \
                         +user+' data-tag='+tag+' data-id='+str(d['pk'])+' \
                         onchange="cyclescore(this)"\
                         >'
+
                         for r in range(min,max+1):
                             dis = DocOwnership(
                                 relevant=r
