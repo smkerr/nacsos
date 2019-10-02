@@ -3814,6 +3814,8 @@ def sortdocs(request):
         for s in range(len(sort_dirs)):
             sortdir = sort_dirs[s]
             field = sort_fields[s]
+            if field=="wosarticle__doc":
+                field="id"
             if sortdir=="+":
                 sortdir=""
             null_filter = field+'__isnull'
