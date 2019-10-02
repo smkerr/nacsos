@@ -15,6 +15,7 @@ import operator
 from django.forms.models import model_to_dict
 from collections import OrderedDict
 import markdown
+from io import BytesIO, StringIO
 import mimetypes
 
 from cities.models import *
@@ -24,7 +25,7 @@ import parliament.models as pms
 
 from django.utils import formats
 
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, StreamingHttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.template import loader, RequestContext
@@ -3477,6 +3478,129 @@ def get_doclist(request,qid,fields=None):
     }
     return HttpResponse(template.render(context,request))
 
+@login_required
+def db1_db2_report(request,tagid):
+
+    output = BytesIO()
+
+    t = Tag.objects.get(pk=tagid)
+    q = t.query
+    doids = set(DocOwnership.objects.filter(tag=t).values_list('doc__id',flat=True))
+    uids = set(DocOwnership.objects.filter(tag=t).values_list('user__id',flat=True))
+
+    users = User.objects.filter(pk__in=uids)
+
+    docs = Doc.objects.filter(pk__in=doids)#, docproject__project=q.project, docproject__relevant__in=[1,3])
+    db2 = Category.objects.get(id=362)
+    doc_dict = []
+
+    for d in docs.values("title","content","id"):
+        db1_cols = []
+        db2_cols = []
+        note_cols = []
+        d = dict(d)
+        db2s = []
+        d["link"] = f"https://apsis.mcc-berlin.net/scoping/document/193/{d['id']}/"
+        d["db1_overall"] = DocProject.objects.get(project=q.project, doc_id=d["id"]).get_relevant_display()
+        for u in users:
+            uname = u.username.split("@")[0]
+            db2_cols.append(f"{uname} db2")
+            db1_cols.append(f"{uname} db1")
+            note_cols.append(f"{uname} notes")
+
+            try:
+                d[f"{uname} db2"] = DocUserCat.objects.get(doc_id=d["id"], user=u, category__parent_category=362).category.name
+            except:
+                d[f"{uname} db2"] = "Unrated"
+            db2s.append(d[f"{uname} db2"])
+            try:
+                d[f"{uname} db1"] = DocOwnership.objects.get(doc_id=d["id"], user=u).get_relevant_display()
+            except:
+                d[f"{uname} db1"] = None
+            try:
+                d[f"{uname} notes"] = Note.objects.get(doc_id=d["id"], user=u).text
+            except:
+                d[f"{uname} notes"] = None
+
+        if len(set(db2s))==1:
+            db2v = db2s[0]
+        else:
+            db2v = "Mixed/Maybe"
+        d["db2_overall"] = db2v
+        doc_dict.append(d)
+
+    doc_df = pd.DataFrame.from_dict(doc_dict)
+
+    doc_df["db1_resolution"] = doc_df.apply(lambda _: '', axis=1)
+    doc_df["db2_resolution"] = doc_df.apply(lambda _: '', axis=1)
+
+    doc_df = doc_df[['id','link','title','content','db1_overall']+db1_cols+['db1_resolution','db2_overall']+db2_cols+['db2_resolution']+note_cols]
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+
+    doc_df.to_excel(writer,index=False, startrow=1, header=False)
+
+    workbook  = writer.book
+    worksheet = writer.sheets['Sheet1']
+
+    cbase = ord('A')
+    tcols = ["id"]
+    wcols = ["title","content"]
+
+    wformat = workbook.add_format({
+        'text_wrap': True,
+        'valign': "top"
+    })
+
+    yformat = workbook.add_format({
+        "fg_color": "#ffffb3"
+    })
+
+    gformat = workbook.add_format({
+        "fg_color": "#8dd3c7"
+    })
+
+    bformat = workbook.add_format({
+        "fg_color": "#80b1d3"
+    })
+
+    header_format = workbook.add_format({
+        'bold': True,
+        'text_wrap': True,
+        'valign': 'top',
+        'fg_color': 'black',
+        'font_color': 'white',
+        'border': 1})
+
+    for col_num, value in enumerate(doc_df.columns.values):
+        worksheet.write(0, col_num , value, header_format)
+
+    worksheet.set_row(0,25)
+
+    for i, c in doc_df.iterrows():
+        worksheet.set_row(i+1,75)
+
+    for i, c in enumerate(doc_df.columns):
+        l = chr(cbase+i)
+        if c == "title":
+            worksheet.set_column(f"{l}:{l}",25, wformat)
+        elif c == "content":
+            worksheet.set_column(f"{l}:{l}",60, wformat)
+        elif c in db1_cols:
+            worksheet.set_column(f"{l}:{l}", 10, yformat )
+        elif c in db2_cols:
+            worksheet.set_column(f"{l}:{l}", 10, bformat )
+        elif "_overall" in c:
+            worksheet.set_column(f"{l}:{l}", 10, gformat )
+        elif "notes" in c:
+            worksheet.set_column(f"{l}:{l}",20, wformat)
+
+    writer.save()
+    output.seek(0)
+    workbook = output.getvalue()
+
+    response = HttpResponse(workbook, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response['Content-Disposition'] = f'attachment; filename={tagid}.xlsx'
+    return response
 
 ##################################################
 ## Ajax function, to return sorted docs
