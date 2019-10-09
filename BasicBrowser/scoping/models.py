@@ -1299,9 +1299,10 @@ class DocOwnership(models.Model):
 
     title_only = models.BooleanField(default=False)
     full_text = models.BooleanField(default=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Reviewer")
-    query = models.ForeignKey(Query, on_delete=models.CASCADE)
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=True)
+    project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, verbose_name="Reviewer", null=True)
+    query = models.ForeignKey(Query, on_delete=models.SET_NULL, null=True)
+    tag = models.ForeignKey(Tag, on_delete=models.SET_NULL, null=True)
     order = models.IntegerField(null=True)
     relevant = models.IntegerField(
         choices=Status,
@@ -1316,8 +1317,9 @@ class DocOwnership(models.Model):
 @receiver(post_save, sender=DocOwnership)
 def docownership_update(sender, instance, **kwargs):
     if instance.relevant > 0:
-        from scoping.tasks import handle_update_tag
-        transaction.on_commit(lambda: current_app.send_task('scoping.tasks.handle_update_tag', args=(instance.tag.pk,)))
+        if instance.tag:
+            from scoping.tasks import handle_update_tag
+            transaction.on_commit(lambda: current_app.send_task('scoping.tasks.handle_update_tag', args=(instance.tag.pk,)))
 
 def create_docproj(sender,instance,**kwargs):
     #print("fired!")
@@ -1336,6 +1338,8 @@ m2m_changed.connect(create_docproj,sender=Doc.query.through)
 
 @receiver(post_save, sender=DocOwnership)
 def update_docproj(sender, instance, **kwargs):
+    if not instance.query:
+        return
     p = instance.query.project
     if instance.doc is not None:
         d = instance.doc

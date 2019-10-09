@@ -818,6 +818,8 @@ def read_ris(q, update):
                     #encoding = 'utf-8-sig'
                     changed = True
                     ftmp.write(l.replace('\\ufeff','').replace('\ufeff',''))
+                elif l == "EF":
+                    changed=True
                 elif "Link to the Ovid Full Text or citation:" in l:
                     changed=True
                 elif re.compile('^[A-Z][A-Z0-9]  -\n').match(l):

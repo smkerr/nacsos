@@ -101,10 +101,13 @@
         </div>
     </div>
 
-    <div class="col-3">
+    <div class="col-3 ">
 
     {% if project.rating_first %}
-    <div class="border rounded bg-white my-3 p-2">
+    <div class="my-5"><br><br></div>
+    <div class="my-5"><br><br></div>
+    <div class="my-5 catspacer"><br><br></div>
+    <div class="border rounded bg-white mb-3 p-2 mt-5 align-middle">
        {% csrf_token %}
        <p >Is this document relevant according the level 1 criteria shown?</p>
        <hr>
@@ -125,7 +128,12 @@
 
     {% for n,l in levels %}
 
+      {% if project.rating_first %}
+
+        <div class="border rounded bg-white my-2 p-2 small hidden catbox">
+      {% else %}
         <div class="border rounded bg-white my-2 p-2 small">
+      {% endif %}
           {% if "<wholetext>" in n %}
             {{n |safe}}
           {% else %}
@@ -250,9 +258,14 @@ function review(d) {
 $(".reviewButton").click(function(){
   $(".reviewButton").removeClass("True")
   $(this).toggleClass("True")
-  // if ($(this).hasClass("m-2")) {
-  //   review(0)
-  // }
+  if ($(this).hasClass("m-1")) {
+    $(".catbox").removeClass("hidden")
+    $(".catspacer").first().addClass("hidden")
+  } else if ($(this).hasClass("m-2")) {
+    $(".catbox").addClass("hidden")
+  } else if ($(this).hasClass("m-3")) {
+    $(".catbox").removeClass("hidden")
+  }
 })
 
 $(document).keydown(function(e){
