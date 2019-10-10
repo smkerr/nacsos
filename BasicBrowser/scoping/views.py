@@ -5547,7 +5547,10 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         'last': last
     }
 
-    return render(request, 'scoping/screen_doc.html', context)
+    if tag.query.project.rating_first:
+        return render(request, 'scoping/screen_doc_alt.html', context)
+    else:
+        return render(request, 'scoping/screen_doc.html', context)
 
 @login_required
 def rate_doc(request,tid,ctype,doid,pos,todo,rel):

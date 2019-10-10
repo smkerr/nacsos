@@ -1,0 +1,360 @@
+{% extends "scoping/base_bs.html" %}
+{% load bootstrap4 %}
+{% load static %}
+
+{% block content %}
+
+
+
+
+<div class="container ">
+    <h4> Query Screener (<a href="{% url 'scoping:query' tag.query.id %}">Query no. {{tag.query.id}}</a>) - Welcome, {{user.username}}, your progress: </h4>
+
+    <div class="m-3" style="margin-bottom:-15px !important">
+        <div id="graphBox" style="width:100%; height:20px"></div>
+    </div>
+
+    <div class="progress m-3 position-sticky">
+        <div class="progress-bar" role="progressbar" style="width: {{pc}}%;" aria-valuenow="{{pc}}" aria-valuemin="0" aria-valuemax="100">{{pc}}%</div>
+    </div>
+
+    <div class="m-3" style="margin-bottom:-5px !important; margin-top:-25px !important">
+        <div class="d-flex justify-content-center">
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype 0 todo %}"><<</a></div>
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype prev todo %}"><</a></div>
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype next todo %}">></a></div>
+            <div class="p-2"><a href="{% url 'scoping:screen_doc' tag.id ctype last todo %}">>></a></div>
+        </div>
+    </div>
+
+
+</div>
+
+<div class="row">
+
+    <div class="col-12">
+        <div class="row">
+
+            <!--  DOC -->
+            <div class="col-6">
+
+
+            {% if do.utterance_linked %}
+                <link href="https://afeld.github.io/emoji-css/emoji.css" rel="stylesheet">
+                <div id="docbox">
+                    Speech <a href="{% url 'parliament:utterance' doc.id %}"> {{doc.id}} </a>
+                    from <a href="{% url 'parliament:document' doc.document.id %}"> {{doc.document}} </a>
+                    with {{doc.paragraph_set.count}} paragraphs
+                {% include "parliament/snippets/ut_info.html" with ut=doc %}
+                </div>
+            {% else %}
+                {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+            {% endif %}
+
+            <div class="border rounded bg-white my-3 p-2">
+                Add a note to this document
+                <hr>
+                <div class="row">
+                <div class="col-9">
+                <form action="{% url 'scoping:add_note' %}" method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.path }}">
+                  {% if do.utterance_linked %}
+                    <input type="hidden" name="ut_id" value="{{do.utterance.id}}"></input>
+                  {% else %}
+                    <input type="hidden" name="docn" value="{{do.doc.id}}"></input>
+                  {% endif %}
+
+                  <input type="hidden" name="tag" value="{{tag.id}}"></input>
+                <textarea id="notebox" class="form-control" name="note" rows=3>
+                </textarea>
+                </div>
+                <div class="col-3 align-bottom">
+                <button type="submit" class="btn btn-primary">Add note</button>
+                </div>
+                </div>
+                </form>
+            </div>
+            {% for note in notes %}
+            <div class="border rounded bg-white my-3 p-2 note">
+              <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
+              <hr>
+              {{note.text}}
+              <hr>
+              <a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
+              </a>
+            </div>
+            {% endfor %}
+
+            </div>
+            <!--  NOTES -->
+            <div class="col-6">
+                <div class="border rounded bg-white mb-3 p-2 align-middle">
+                   {% csrf_token %}
+                   <p >Is this document relevant according the level 1 criteria shown?</p>
+                   <hr>
+
+                    <button data-ref="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 1 %}" class="btn btn-secondary reviewButton m-1 rev-1 b-yes {% if do.relevant == 1 %} True {% endif %}">Yes (1)</button>
+                    <button data-ref="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 2 %}" class="btn btn-secondary reviewButton m-1 rev-2 b-yes {% if do.relevant == 2 %} True {% endif %}">No (2)</button>
+                    <button data-ref="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}" class="btn btn-secondary reviewButton m-1 rev-3 b-yes {% if do.relevant == 3 %} True {% endif %}">Maybe (3)</button>
+
+                      {% if project.no_but %}
+                      <button class="btn btn-secondary reviewButton m-4 b-yes {% if do.relevant == 4 %} True {% endif %}">No but (4)</button>
+                      {% endif %}
+                    <!-- </div> -->
+                </div>
+
+                <hr>
+
+                {% for n,l in levels %}
+
+                  {% if project.rating_first %}
+
+                    <div class="border rounded bg-white my-2 p-2 small hidden catbox">
+                  {% else %}
+                    <div class="border rounded bg-white my-2 p-2 small">
+                  {% endif %}
+                      {% if "<wholetext>" in n %}
+                        {{n |safe}}
+                      {% else %}
+                        Which {{n}} categories is this document relevant to?
+                      {% endif %}
+
+                        (hover for more info)
+                                <hr>
+                            {% for t in l %}
+                            <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
+
+                            {% endfor %}
+                    </div>
+
+                {% endfor %}
+
+
+                {% if cities %}
+                  <div class="border rounded bg-white my-2 p-2 small">
+                      Document cities, click to remove
+                              <hr>
+                          {% for c in cities %}
+                          <a href="{% url 'scoping:update_thing'%}?thing1=Doc&thing2=cities&id1={{do.doc.pk}}&id2={{c.pk}}&method=remove&return_link=True">
+                            <span class="btn t2" style="color:black" >{{c.name}}</span>
+                          </a>
+
+                          {% endfor %}
+                  </div>
+                {% endif %}
+
+                  <div class="border rounded bg-white my-3 p-2">
+                    <p>Finish rating this document and move on to the next document </p>
+                    <hr>
+                      <button class="btn btn-secondary" onclick="review(0)">Done</button>
+                  </div>
+                </div>
+        </div>
+
+
+
+
+<!-- </div>
+<div class="row"> -->
+
+
+
+    <div class="row">
+        <div class="col-12">
+            <div class="border rounded bg-white p-3 m-2 position-sticky sticky-top">
+                <div><h4>Query criteria</h4></div>
+                {% if "table" in criteria %}
+                  <div class="padded">
+                {% else %}
+                  <div style="column-count: 2;">
+                {% endif %}
+                {{criteria |safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+<script type="text/javascript">
+
+$("div.padded td, th").each(function(t) {
+  c = $(this).find("span").css("background-color")
+  $(this).css("background-color", c)
+  $(this).find("span").css("background-color","")
+})
+
+$(".cat").click(function(){
+    id2 = $(this).val()
+    if ($(this).hasClass("True")) {
+        method = "remove"
+    } else {
+        method = "add"
+    }
+    $(this).toggleClass("True")
+    $.ajax({
+        url: "{% url 'scoping:cat_doc' %}",
+        data: {
+          "did": "{{do.doc.pk}}",
+          "cid": id2,
+        },
+        success: function(data) {
+        }
+    })
+})
+
+function review(d) {
+  if ($(".reviewButton").length > 1) {
+    if ($(".reviewButton.True").length==1) {
+      url = $(".reviewButton.True").data("ref")
+    }
+  } else {
+    url = $("#r-"+d).attr("href")
+  }
+  console.log(url)
+  window.location.href = url
+}
+
+$(".reviewButton").click(function(){
+  $(".reviewButton").removeClass("True")
+  $(this).toggleClass("True")
+  if ($(this).hasClass("rev-1")) {
+    $(".catbox").removeClass("hidden")
+    $(".catspacer").first().addClass("hidden")
+  } else if ($(this).hasClass("rev-2")) {
+    $(".catbox").addClass("hidden")
+  } else if ($(this).hasClass("rev-3")) {
+    $(".catbox").removeClass("hidden")
+  }
+})
+
+$(document).keydown(function(e){
+
+    if ($(".reviewButton").length > 1) {
+
+    }
+    else if ($("#notebox").is(":focus")){
+
+    } else {
+      if (e.keyCode == 49) {
+          review("1")
+      }
+      if (e.keyCode == 50) {
+          review("2")
+      }
+      if (e.keyCode == 51) {
+          review("3")
+      }
+    }
+
+});
+
+width = "100%"
+height = 20
+
+var graph = d3.select("#graphBox")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var div = d3.select("#graphBox").node().getBoundingClientRect()
+var w = div.width;
+
+var div = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+console.log(w)
+var url = window.location.href + '/1'
+console.log(url)
+var cmap = {
+    1: "#91cf60", 2: "#fc8d59", 3: "#ffffbf", 0: "#F5F5F5"
+}
+
+d3.json(url, function(json) {
+    var urlparts = window.location.href.split("/")
+    var n = json.length
+    var h = 20
+    var rows = 1 + Math.floor(n/250)
+    var wn = (w*rows)/n
+    var hn = h/rows
+    var pos = {{pos|safe}}
+
+    console.log(wn)
+
+    var m = wn*0.1
+    if (m > 3) {
+        sw = 3
+    } else {
+        sw = m
+    }
+    if (wn > 5) {
+        m = 1.5
+    }
+    console.log(json)
+    graph.selectAll("rect")
+    .data(json)
+    .enter()
+    .append("rect")
+    .attr("x", function(d,i) {
+        return Math.floor(i/rows)*wn + m
+    })
+    .style("fill", function(d){
+        return cmap[d.relevant]
+    })
+    .style("stroke", function(d) {
+        if (d.order==pos) {
+            return "red"
+        } else {
+            return "lightgrey"
+        }
+    })
+    .on("mouseover", function(d) {
+        chars = d.doc__title.length
+        approx_lines = Math.ceil(chars/40)
+        div.transition()
+            .duration(200)
+            .style("opacity", .9);
+        div	.html(d.doc__title)
+            .style("left", (d3.event.pageX) + "px")
+            .style("height", 10+10*approx_lines + "px")
+            .style("top", (d3.event.pageY - 28) + "px");
+        })
+    .on("mouseout", function(d) {
+        div.transition()
+            .duration(500)
+            .style("opacity", 0);
+    })
+    .on("click", function(d) {
+        //if (d.order <= pos) {
+            console.log(urlparts)
+            var link = urlparts.slice(0,3).join('/')
+            for (var i = 3; i < urlparts.length; i++) {
+                if (urlparts[i-3]=="screen_doc") {
+                    link+="/"+d.order
+                } else {
+                    link+="/"+urlparts[i]
+                }
+            }
+            window.location = link
+        //}
+    })
+    .attr("y",function(d,i) {
+        return (i%rows)*hn
+    })
+    .attr("height",  hn*0.8)
+    .attr("width", wn - m*2)
+    .attr("class", "scoped-doc")
+    .attr("rx", sw + "px")
+    .attr("ry", sw + "px")
+    .style("stroke-width", sw + "px")
+})
+
+
+</script>
+
+{% endblock %}
