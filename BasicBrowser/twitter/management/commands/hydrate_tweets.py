@@ -32,7 +32,7 @@ class Command(BaseCommand):
         auth.set_access_token(settings.ACCESS_TOKEN, settings.ACCESS_SECRET)
         api = tweepy.API(auth,wait_on_rate_limit=True)
         dry_statuses = Status.objects.filter(
-            api_got=False,
+            #api_got=False,
             text__icontains="…"
         ).order_by('fetched')
         slookup = []

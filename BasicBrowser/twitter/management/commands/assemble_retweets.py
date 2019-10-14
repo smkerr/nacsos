@@ -24,7 +24,12 @@ class Command(BaseCommand):
 
         pid = pk=options['pid']
 
-        for search in TwitterSearch.objects.filter(project_id=pid):
+        if pid != 0:
+            searches = TwitterSearch.objects.filter(project_id=pid)
+        else:
+            searches = TwitterSearch.objects.all()
+
+        for search in searches.iterator():
 
             print(search.string)
 

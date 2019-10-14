@@ -8,7 +8,7 @@
 
 
 <div class="container ">
-    <h4> Query Screener (<a href="{% url 'scoping:query' tag.query.id %}">Query no. {{tag.query.id}}</a>) - Welcome, {{user.username}}, your progress: </h4>
+    <h5> Query Screener (<a href="{% url 'scoping:query' tag.query.id %}">Query no. {{tag.query.id}}</a>) - Welcome, {{user.username}}, your progress: </h5>
 
     <div class="m-3" style="margin-bottom:-15px !important">
         <div id="graphBox" style="width:100%; height:20px"></div>
@@ -196,7 +196,7 @@ $(".cat").click(function(){
     } else {
         method = "add"
     }
-    $(this).toggleClass("True")
+    const but = $(this)
     $.ajax({
         url: "{% url 'scoping:cat_doc' %}",
         data: {
@@ -204,6 +204,7 @@ $(".cat").click(function(){
           "cid": id2,
         },
         success: function(data) {
+          but.toggleClass("True")
         }
     })
 })

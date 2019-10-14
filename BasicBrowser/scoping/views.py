@@ -3485,7 +3485,7 @@ def db1_db2_report(request,tagid):
 
     t = Tag.objects.get(pk=tagid)
     q = t.query
-    doids = set(DocOwnership.objects.filter(tag=t).values_list('doc__id',flat=True))
+    doids = set(DocOwnership.objects.filter(tag=t,relevant__gt=0).values_list('doc__id',flat=True))
     uids = set(DocOwnership.objects.filter(tag=t).values_list('user__id',flat=True))
 
     users = User.objects.filter(pk__in=uids)
@@ -5139,9 +5139,6 @@ def async_add_tech(request):
     tname = request.GET.get('tname', None)
     tdesc = request.GET.get('tdesc', None)
 
-    print(pid)
-    print(tname)
-    print(tdesc)
 
     # Get last ID
     try:
@@ -5160,8 +5157,6 @@ def async_add_tech(request):
         group="Other"
     )
     t.save()
-
-    print(t)
 
     return HttpResponse()
 
