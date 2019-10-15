@@ -110,7 +110,12 @@
 
                   {% if project.rating_first %}
 
-                    <div class="border rounded bg-white my-2 p-2 small hidden catbox">
+                    {% if "<onno>" in l.0.1.parent_category.name %}
+                      <div class="border rounded bg-white my-2 p-2 small hidden onno catbox">
+                    {% else %}
+                      <div class="border rounded bg-white my-2 p-2 small hidden catbox">
+                    {% endif %}
+
                   {% else %}
                     <div class="border rounded bg-white my-2 p-2 small">
                   {% endif %}
@@ -226,11 +231,14 @@ $(".reviewButton").click(function(){
   $(this).toggleClass("True")
   if ($(this).hasClass("rev-1")) {
     $(".catbox").removeClass("hidden")
+    $(".catbox.onno").addClass("hidden")
     $(".catspacer").first().addClass("hidden")
   } else if ($(this).hasClass("rev-2")) {
     $(".catbox").addClass("hidden")
+    $(".catbox.onno").removeClass("hidden")
   } else if ($(this).hasClass("rev-3")) {
     $(".catbox").removeClass("hidden")
+    $(".catbox.onno").addClass("hidden")
   }
 })
 

@@ -3489,52 +3489,74 @@ def db1_db2_report(request,tagid):
     uids = set(DocOwnership.objects.filter(tag=t).values_list('user__id',flat=True))
 
     users = User.objects.filter(pk__in=uids)
-
     docs = Doc.objects.filter(pk__in=doids)#, docproject__project=q.project, docproject__relevant__in=[1,3])
-    db2 = Category.objects.get(id=362)
-    doc_dict = []
 
-    for d in docs.values("title","content","id"):
-        db1_cols = []
-        db2_cols = []
-        note_cols = []
-        d = dict(d)
-        db2s = []
-        d["link"] = f"https://apsis.mcc-berlin.net/scoping/document/193/{d['id']}/"
-        d["db1_overall"] = DocProject.objects.get(project=q.project, doc_id=d["id"]).get_relevant_display()
-        for u in users:
-            uname = u.username.split("@")[0]
-            db2_cols.append(f"{uname} db2")
-            db1_cols.append(f"{uname} db1")
-            note_cols.append(f"{uname} notes")
+    def db_doc_table(docs,f,u,v,n,vmap=None,agg=True, fillna=None):
+        df = pd.DataFrame.from_dict(
+            docs.filter(**f).values('id', u, v)
+        )
 
-            try:
-                d[f"{uname} db2"] = DocUserCat.objects.get(doc_id=d["id"], user=u, category__parent_category=362).category.name
-            except:
-                d[f"{uname} db2"] = "Unrated"
-            db2s.append(d[f"{uname} db2"])
-            try:
-                d[f"{uname} db1"] = DocOwnership.objects.get(doc_id=d["id"], user=u).get_relevant_display()
-            except:
-                d[f"{uname} db1"] = None
-            try:
-                d[f"{uname} notes"] = Note.objects.get(doc_id=d["id"], user=u).text
-            except:
-                d[f"{uname} notes"] = None
+        df[u] = df[u].str.extract("(^[a-zA-Z0-9_.+-]*)") + f" - {n}"
+        cols = df[u].unique()
+        if vmap:
+            df[v] = df[v].map(vmap)
+        df = df.pivot(index="id",columns=u,values=v).reset_index(drop=False)
+        if agg:
+            df[f'{n}_overall'] = df[cols].ffill(axis=1).iloc[:, -1]
+            df.loc[df[cols].nunique(axis=1)>1,f'{n}_overall'] = "Mixed/Maybe"
+        if fillna:
+            df = df.fillna(fillna)
+        return df, cols
 
-        if len(set(db2s))==1:
-            db2v = db2s[0]
-        else:
-            db2v = "Mixed/Maybe"
-        d["db2_overall"] = db2v
-        doc_dict.append(d)
+    doc_info_df = pd.DataFrame.from_dict(docs.values('id','title','content'))
 
-    doc_df = pd.DataFrame.from_dict(doc_dict)
+    db1_doc_df, db1_cols = db_doc_table(
+        docs,
+        {"docownership__tag":t},
+        "docownership__user__username",
+        "docownership__relevant",
+        "db1",
+        vmap=dict(DocOwnership.Status),
+        fillna="Unrated"
+    )
+
+    db2_doc_df, db2_cols = db_doc_table(
+        docs,
+        {"docusercat__category__parent_category":362},
+        "docusercat__user__username",
+        "docusercat__category__name",
+        "db2",
+        fillna="Unrated"
+    )
+
+    note_doc_df, note_cols = db_doc_table(
+        docs,
+        {"note__project":t.query.project},
+        "note__user__username",
+        "note__text",
+        "notes",
+        agg=False
+    )
+
+    doc_df = doc_info_df.merge(
+        db1_doc_df, how="left"
+    ).merge(
+        db2_doc_df, how="left"
+    ).merge(
+        note_doc_df, how="left"
+    )
+
+    fillcs = [x for x in doc_df.columns if " - notes" not in x]
+
+    doc_df[fillcs] = doc_df[fillcs].fillna("Unrated")
+    doc_df = doc_df.fillna("")
 
     doc_df["db1_resolution"] = doc_df.apply(lambda _: '', axis=1)
     doc_df["db2_resolution"] = doc_df.apply(lambda _: '', axis=1)
 
-    doc_df = doc_df[['id','link','title','content','db1_overall']+db1_cols+['db1_resolution','db2_overall']+db2_cols+['db2_resolution']+note_cols]
+    doc_df['link'] = "https://apsis.mcc-berlin.net/scoping/document/193/" + doc_df['id'].astype(str) 
+
+    doc_df = doc_df[['id','link','title','content','db1_overall']+list(db1_cols)+['db1_resolution','db2_overall']+list(db2_cols)+['db2_resolution']+list(note_cols)]
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
 
     doc_df.to_excel(writer,index=False, startrow=1, header=False)
