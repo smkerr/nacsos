@@ -1372,7 +1372,7 @@ def update_docproj(sender, instance, **kwargs):
             dp.save()
         elif dp.full_relevant != instance.relevant:
             ratings = set(DocOwnership.objects.filter(
-                doc=d,tag__query__project=p,full_text=True
+                doc=d,tag__query__project=p,full_text=True, relevant__gt=0
             ).values_list('relevant', flat=True))
             if len(ratings) < 2:
                 dp.full_relevant = instance.relevant
@@ -1385,7 +1385,7 @@ def update_docproj(sender, instance, **kwargs):
             dp.save()
         elif dp.ti_relevant != instance.relevant:
             ratings = set(DocOwnership.objects.filter(
-                doc=d,tag__query__project=p,title_only=True
+                doc=d,tag__query__project=p,title_only=True, relevant__gt=0
             ).values_list('relevant', flat=True))
             if len(ratings) < 2:
                 dp.ti_relevant = instance.relevant
@@ -1398,7 +1398,7 @@ def update_docproj(sender, instance, **kwargs):
             dp.save()
         elif dp.ab_relevant != instance.relevant:
             ratings = set(DocOwnership.objects.filter(
-                doc=d,tag__query__project=p,title_only=False
+                doc=d,tag__query__project=p,title_only=False, relevant__gt=0
             ).values_list('relevant', flat=True))
             if len(ratings) < 2:
                 dp.ab_relevant = instance.relevant

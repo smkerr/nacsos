@@ -3554,7 +3554,7 @@ def db1_db2_report(request,tagid):
     doc_df["db1_resolution"] = doc_df.apply(lambda _: '', axis=1)
     doc_df["db2_resolution"] = doc_df.apply(lambda _: '', axis=1)
 
-    doc_df['link'] = "https://apsis.mcc-berlin.net/scoping/document/193/" + doc_df['id'].astype(str) 
+    doc_df['link'] = "https://apsis.mcc-berlin.net/scoping/document/193/" + doc_df['id'].astype(str)
 
     doc_df = doc_df[['id','link','title','content','db1_overall']+list(db1_cols)+['db1_resolution','db2_overall']+list(db2_cols)+['db2_resolution']+list(note_cols)]
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
