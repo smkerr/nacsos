@@ -74,7 +74,7 @@ class Person(models.Model):
     ortszusatz = models.TextField(null=True)
     adel = models.TextField(null=True)
     prefix = models.TextField(null=True)
-    aph_id = models.Textfield(null=True)
+    aph_id = models.TextField(null=True)
     unique_id = models.Textfield(null=True)
 
     clean_name = models.TextField(null=True)
