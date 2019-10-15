@@ -743,6 +743,7 @@ class DocCat(models.Model):
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     updated = models.DateTimeField(auto_now_add=True)
     docusercats = models.ManyToManyField('DocUserCat')
+    top_cat = models.BooleanField(default=False)
 
     user_inherited = models.BooleanField(default=False)
     user_tagged = models.BooleanField(default=False)
