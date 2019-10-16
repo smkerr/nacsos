@@ -112,6 +112,8 @@
 
                     {% if "<onno>" in l.0.1.parent_category.name %}
                       <div class="border rounded bg-white my-2 p-2 small hidden onno catbox">
+                    {% elif "<ondb2no>" in l.0.1.parent_category.name %}
+                      <div class="border rounded bg-white my-2 p-2 small hidden ondb2no catbox">
                     {% else %}
                       <div class="border rounded bg-white my-2 p-2 small hidden catbox">
                     {% endif %}
@@ -202,6 +204,7 @@ $(".cat").click(function(){
         method = "add"
     }
     const but = $(this)
+    console.log(id2)
     $.ajax({
         url: "{% url 'scoping:cat_doc' %}",
         data: {
@@ -210,6 +213,13 @@ $(".cat").click(function(){
         },
         success: function(data) {
           but.toggleClass("True")
+          if (id2 == 390){
+            if (method == "add") {
+              $(".catbox.ondb2no").removeClass("hidden")
+            } else {
+              $(".catbox.ondb2no").addClass("hidden")
+            }
+          }
         }
     })
 })
@@ -232,6 +242,7 @@ $(".reviewButton").click(function(){
   if ($(this).hasClass("rev-1")) {
     $(".catbox").removeClass("hidden")
     $(".catbox.onno").addClass("hidden")
+    $(".catbox.ondb2no").addClass("hidden")
     $(".catspacer").first().addClass("hidden")
   } else if ($(this).hasClass("rev-2")) {
     $(".catbox").addClass("hidden")
@@ -239,6 +250,7 @@ $(".reviewButton").click(function(){
   } else if ($(this).hasClass("rev-3")) {
     $(".catbox").removeClass("hidden")
     $(".catbox.onno").addClass("hidden")
+    $(".catbox.ondb2no").addClass("hidden")
   }
 })
 
