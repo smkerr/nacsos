@@ -25,6 +25,9 @@ import parliament.models as pms
 
 from django.utils import formats
 
+from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
+
+
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, StreamingHttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -5598,11 +5601,23 @@ def rate_doc(request,tid,ctype,doid,pos,todo,rel):
 
 @login_required
 def cat_doc(request):
-    dc, created = DocUserCat.objects.get_or_create(
-        doc_id=int(request.GET['did']),
-        category_id=int(request.GET['cid']),
-        user=request.user
-    )
+    try:
+        dc, created = DocUserCat.objects.get_or_create(
+            doc_id=int(request.GET['did']),
+            category_id=int(request.GET['cid']),
+            user=request.user
+        )
+    except MultipleObjectsReturned:
+        DocUserCat.objects.filter(
+            doc_id=int(request.GET['did']),
+            category_id=int(request.GET['cid']),
+            user=request.user
+        ).delete()
+        dc, created = DocUserCat.objects.get_or_create(
+            doc_id=int(request.GET['did']),
+            category_id=int(request.GET['cid']),
+            user=request.user
+        )
     if not created:
         dc.delete()
     return HttpResponse()

@@ -393,10 +393,10 @@ class DocProject(models.Model):
 
     doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    relevant = models.IntegerField(default=0, choices=Relevance)
-    ti_relevant = models.IntegerField(default=0, choices=Relevance)
-    ab_relevant = models.IntegerField(default=0, choices=Relevance)
-    full_relevant = models.IntegerField(default=0, choices=Relevance)
+    relevant = models.PositiveSmallIntegerField(default=0, choices=Relevance)
+    ti_relevant = models.PositiveSmallIntegerField(default=0, choices=Relevance)
+    ab_relevant = models.PositiveSmallIntegerField(default=0, choices=Relevance)
+    full_relevant = models.PositiveSmallIntegerField(default=0, choices=Relevance)
 
     class Meta:
         unique_together = ("doc","project")
@@ -829,7 +829,7 @@ class Doc(models.Model):
     tilength = models.IntegerField(null=True)
     content = models.TextField(null=True)
     fulltext = models.TextField(null=True)
-    PY = models.IntegerField(null=True,db_index=True)
+    PY = models.PositiveSmallIntegerField(null=True,db_index=True)
     first_author = models.TextField(null=True, verbose_name='First Author')
     authors = models.TextField(null=True, verbose_name='All Authors')
     users = models.ManyToManyField(User, through='DocOwnership')
@@ -1102,7 +1102,7 @@ class NetworkProperties(models.Model):
 
 class Citation(models.Model):
     au = models.TextField(null=True)
-    py = models.IntegerField(null=True)
+    py = models.PositiveSmallIntegerField(null=True)
     so = models.TextField(null=True)
     vl = models.IntegerField(null=True)
     bp = models.IntegerField(null=True)
@@ -1124,7 +1124,7 @@ class CDO(models.Model):
 class BibCouple(models.Model):
     doc1 = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="node1")
     doc2 = models.ForeignKey(Doc, on_delete=models.CASCADE, related_name="node2")
-    cocites = models.IntegerField(default=0)
+    cocites = models.PositiveSmallIntegerField(default=0)
 
 class AR(models.Model):
     ar = models.IntegerField(unique=True)
@@ -1166,7 +1166,7 @@ class IPCCRef(models.Model):
     chapter = models.TextField(null=True)
     checked_count = models.IntegerField(default=0)
 
-    match_status = models.IntegerField(choices=MATCH_STATUS, default=0)
+    match_status = models.PositiveSmallIntegerField(choices=MATCH_STATUS, default=0)
 
     def shingle(self):
         tokens = [re.sub('\W','',x) for x in self.text.lower().split(".")[0].split()]
@@ -1304,8 +1304,8 @@ class DocOwnership(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, verbose_name="Reviewer", null=True)
     query = models.ForeignKey(Query, on_delete=models.SET_NULL, null=True)
     tag = models.ForeignKey(Tag, on_delete=models.SET_NULL, null=True)
-    order = models.IntegerField(null=True)
-    relevant = models.IntegerField(
+    order = models.PositiveSmallIntegerField(null=True)
+    relevant = models.PositiveSmallIntegerField(
         choices=Status,
         default=0,
         db_index=True,
@@ -1416,7 +1416,7 @@ class DocAuthInst(models.Model):
     AU = models.CharField(max_length=90, db_index=True, null=True, verbose_name="Author")
     AF = models.CharField(max_length=90, db_index=True, null=True, verbose_name="Author Full Name")
     institution = models.TextField(db_index=True, verbose_name="Institution Name")
-    position = models.IntegerField(verbose_name="Author Position")
+    position = models.PositiveSmallIntegerField(verbose_name="Author Position")
 
     class Meta:
         unique_together = ('doc', 'AU','AF','institution','position')
@@ -1462,7 +1462,7 @@ class WoSArticle(models.Model):
     pt = models.CharField(null=True, max_length=50, verbose_name="Publication Type") # pub type
     ti = models.TextField(null=True, verbose_name="Title")
     ab = models.TextField(null=True, verbose_name="Abstract")
-    py = models.IntegerField(null=True, verbose_name="Year")
+    py = models.PositiveSmallIntegerField(null=True, verbose_name="Year")
     ar = models.CharField(null=True, max_length=100, verbose_name="Article Number") # Article number
     bn = models.CharField(null=True, max_length=100, verbose_name="ISBN") # ISBN
     bp = models.CharField(null=True, max_length=50, verbose_name="Beginning Page") # beginning page
@@ -1489,10 +1489,10 @@ class WoSArticle(models.Model):
     j9 = models.CharField(null=True, max_length=30, verbose_name="29-Character Source Abbreviation") # 29 char source abbreviation
     ji = models.CharField(null=True, max_length=100, verbose_name="ISO Source Abbreviation") # ISO source abbrev
     la = models.CharField(null=True, max_length=100, verbose_name="Language") # Language
-    nr = models.IntegerField(null=True, verbose_name="Cited Reference Count") # number of references
+    nr = models.PositiveSmallIntegerField(null=True, verbose_name="Cited Reference Count") # number of references
     pa = models.TextField(null=True, verbose_name="Publisher Address") # pub address
     pd = models.CharField(null=True, max_length=50, verbose_name="Publication Date") # pub month
-    pg = models.IntegerField(null=True, verbose_name="Page Count") # page count
+    pg = models.PositiveSmallIntegerField(null=True, verbose_name="Page Count") # page count
     pi = models.TextField(null=True, verbose_name="Publisher City") # pub city
     pu = models.TextField(null=True, verbose_name="Publisher") # publisher
     rp = models.TextField(null=True, verbose_name="Reprint Address") # reprint address
