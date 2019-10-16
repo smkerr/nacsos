@@ -3500,6 +3500,8 @@ def db1_db2_report(request,tagid):
         cols = df[u].unique()
         if vmap:
             df[v] = df[v].map(vmap)
+        df = pd.DataFrame(df.groupby(["id",u]).apply(lambda x: "%s" % ', '.join(x[v]))).reset_index()
+        df = df.rename(columns={0: v})
         df = df.pivot(index="id",columns=u,values=v).reset_index(drop=False)
         if agg:
             df[f'{n}_overall'] = df[cols].ffill(axis=1).iloc[:, -1]
