@@ -114,6 +114,8 @@
                       <div class="border rounded bg-white my-2 p-2 small hidden onno catbox">
                     {% elif "<ondb2no>" in l.0.1.parent_category.name %}
                       <div class="border rounded bg-white my-2 p-2 small hidden ondb2no catbox">
+                    {% elif "<ondb2y>" in l.0.1.parent_category.name %}
+                      <div class="border rounded bg-white my-2 p-2 small hidden ondb2y catbox">
                     {% else %}
                       <div class="border rounded bg-white my-2 p-2 small hidden catbox">
                     {% endif %}
@@ -219,6 +221,12 @@ $(".cat").click(function(){
             } else {
               $(".catbox.ondb2no").addClass("hidden")
             }
+          } else if (id2 == 365 || id2 == 363) {
+            if (method == "add") {
+              $(".catbox.ondb2y").removeClass("hidden")
+            } else {
+              $(".catbox.ondb2y").addClass("hidden")
+            }
           }
         }
     })
@@ -243,6 +251,7 @@ $(".reviewButton").click(function(){
     $(".catbox").removeClass("hidden")
     $(".catbox.onno").addClass("hidden")
     $(".catbox.ondb2no").addClass("hidden")
+    $(".catbox.ondb2y").addClass("hidden")
     $(".catspacer").first().addClass("hidden")
   } else if ($(this).hasClass("rev-2")) {
     $(".catbox").addClass("hidden")
@@ -251,6 +260,7 @@ $(".reviewButton").click(function(){
     $(".catbox").removeClass("hidden")
     $(".catbox.onno").addClass("hidden")
     $(".catbox.ondb2no").addClass("hidden")
+    $(".catbox.ondb2y").addClass("hidden")
   }
 })
 
