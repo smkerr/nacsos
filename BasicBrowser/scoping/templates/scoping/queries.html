@@ -73,7 +73,7 @@
 <h2> Query Getter </h2>
 
 <p>
-    {% if '@mcc-berlin.net' in request.user.email or '@pik-potsdam' in request.user.email %}
+    {% if '@mcc-berlin.net' in request.user.email or '@pik-potsdam' in request.user.email or request.user.profile.unlimited %}
 Use this form to submit a new query, which will be run in the background. Be aware that queries of external databases may take some time, and involve scraping outside websites and downloading large amounts of information.
 <p>It is recommended that you develop a query at the external page (<a href="http://apps.webofknowledge.com/WOS_AdvancedSearch_input.do?SID=3CWPGcaiOusPROlzkHF&product=WOS&search_mode=AdvancedSearch">Web of Science</a> or <a href="https://www.scopus.com/search/form.uri?display=advanced">Scopus</a>). When you enter it here, an assistant will type it into the box on the relevant page, download bibliographic information about all results, and upload them to the server where they can be analysed in more detail.
 <p>Note that larger queries (more than 2000 results in any single year) cannot currently be carried out in Scopus.
@@ -93,7 +93,7 @@ Use this form to submit a new query, which will be run in the background. Be awa
 
 
     <select name="qdb" id="databaseSelect" autocomplete="off">
-        {% if '@mcc-berlin.net' in request.user.email or '@pik-potsdam' in request.user.email %}
+        {% if '@mcc-berlin.net' in request.user.email or '@pik-potsdam' in request.user.email or request.user.profile.unlimited %}
         <option value="WoS">Web of Science</option>
         <option value="scopus">Scopus</option>
         {% endif %}
@@ -101,7 +101,7 @@ Use this form to submit a new query, which will be run in the background. Be awa
     </select>
 
 
-    {% if '@mcc-berlin.net' in request.user.email or '@pik-potsdam' in request.user.email %}
+    {% if '@mcc-berlin.net' in request.user.email or '@pik-potsdam' in request.user.email or request.user.profile.unlimited %}
 
   <div >
       <h4> Use my credentials? </h4>
