@@ -19,5 +19,5 @@ class Command(BaseCommand):
         print("\n\n#########\n\n")
         print("collecting users and their tweets from the api")
         call_command('hydrate_users')
-        print("hydrating empty tweets with the api")
-        call_command('hydrate_tweets')
+        #print("hydrating empty tweets with the api")
+        #call_command('hydrate_tweets')

@@ -80,12 +80,12 @@ class Command(BaseCommand):
             except:
                 pass
             topicterm_lscores(run_id)
-            management.call_command('corr_topics',run_id)
 
             update_year_topic_scores(run_id)
             update_topic_scores(run_id)
             update_topic_titles(run_id)
             update_ar_scores(run_id)
+            management.call_command('corr_topics',run_id)
             if stat.query:
                 if stat.query.project.id == 23:
                     update_ipcc_coverage(run_id)

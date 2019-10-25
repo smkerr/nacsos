@@ -3498,6 +3498,11 @@ def db1_db2_report(request,tagid):
         df = pd.DataFrame.from_dict(
             docs.filter(**f).values('id', u, v)
         )
+        if df.shape==(0,0):
+            df = pd.DataFrame.from_dict(
+                docs.values('id')
+            )
+            return df, []
 
         df[u] = df[u].str.extract("(^[a-zA-Z0-9_.+-]*)") + f" - {n}"
         cols = df[u].unique()
@@ -3525,6 +3530,15 @@ def db1_db2_report(request,tagid):
         fillna="Unrated"
     )
 
+    ex_df, ex_cols = db_doc_table(
+        docs,
+        {"docusercat__category__level__in": [7,8]},
+        "docusercat__user__username",
+        "docusercat__category__name",
+        "exclusions",
+        fillna="Unrated"
+    )
+
     db2_doc_df, db2_cols = db_doc_table(
         docs,
         {"docusercat__category__parent_category":362},
@@ -3549,6 +3563,8 @@ def db1_db2_report(request,tagid):
         db2_doc_df, how="left"
     ).merge(
         note_doc_df, how="left"
+    ).merge(
+        ex_df, how="left"
     )
 
     fillcs = [x for x in doc_df.columns if " - notes" not in x]
@@ -3561,7 +3577,7 @@ def db1_db2_report(request,tagid):
 
     doc_df['link'] = "https://apsis.mcc-berlin.net/scoping/document/193/" + doc_df['id'].astype(str)
 
-    doc_df = doc_df[['id','link','title','content','db1_overall']+list(db1_cols)+['db1_resolution','db2_overall']+list(db2_cols)+['db2_resolution']+list(note_cols)]
+    doc_df = doc_df[['id','link','title','content','db1_overall']+list(db1_cols)+['db1_resolution','db2_overall']+list(db2_cols)+['db2_resolution']+list(note_cols)+list(ex_cols)]
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
 
     doc_df.to_excel(writer,index=False, startrow=1, header=False)

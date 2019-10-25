@@ -9,6 +9,7 @@ import time
 import tweepy
 from django.conf import settings
 import twitter.utils.utils as tutils
+import psutil
 
 class Command(BaseCommand):
     help = 'redoes searches with api'
@@ -27,6 +28,13 @@ class Command(BaseCommand):
                     print(s._json)
                     sys.exit()
             return
+
+        pid = os.getpid()
+
+        for p in psutil.process_iter():
+            if "hydrate_tweets" in p.cmdline() and p.pid != pid:
+                print("api getting is already running... skipping for today")
+                return
 
         auth = tweepy.OAuthHandler(settings.CONSUMER_KEY, settings.CONSUMER_SECRET)
         auth.set_access_token(settings.ACCESS_TOKEN, settings.ACCESS_SECRET)
