@@ -4754,7 +4754,7 @@ def assign_docs(request):
             rand_ids = random.sample(my_ids, ssize)
             sample = docs.filter(pk__in=rand_ids).all()
         except:
-            continue
+            sample = docs.filter(pk__in=my_ids)
 
 
         s = 0
