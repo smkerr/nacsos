@@ -1799,11 +1799,11 @@ def query(request,qid,q2id='0',sbsid='0'):
             query.cohen_kappa = "NA"
             query.ratio = "NA"
 
-        tagged = len(set(Doc.objects.filter(
-            tag__query=query
-        ).values_list('pk',flat=True)))
-
-        untagged = query.r_count - tagged #Doc.objects.filter(query=query,tag__query=query).distinct().count()
+        # tagged = len(set(Doc.objects.filter(
+        #     tag__query=query
+        # ).values_list('pk',flat=True)))
+        #
+        # untagged = query.r_count - tagged #Doc.objects.filter(query=query,tag__query=query).distinct().count()
         # untagged = Doc.objects.filter(query=query).count() - Doc.objects.filter(query=query,tag__query=query).distinct().count()
 
 
@@ -1846,20 +1846,22 @@ def query(request,qid,q2id='0',sbsid='0'):
                 for c,op,v in doccats:
                     user_docs[c] = sum([x['n'] for x in udors if x['user']==u['user__id'] and op(x['relevant'],v) ])
                 user_docs['checked_percent'] = user_docs['checked'] / user_docs['tdocs']
-            if u['user__id'] in list(qusers):
-                user_list.append({
-                    'username': u['user__username'],
-                    'email': u['user__email'],
-                    'onproject': True,
-                    'user_docs': user_docs
-                })
-            else:
-                user_list.append({
-                    'username': u['user__username'],
-                    'email': u['user__email'],
-                    'onproject': False,
-                    'user_docs': user_docs
-                })
+                if query.project.rating_first:
+
+                    ndb2 = len(set(
+                        DocUserCat.objects.filter(
+                            user_id=u['user__id'],
+                            doc__query=query,category=363
+                        ).values_list('doc__id',flat=True)
+                    ))
+                    user_docs['db2'] = f"{ndb2} ({ndb2/user_docs['checked']:.0%})"
+            user_list.append({
+                'username': u['user__username'],
+                'email': u['user__email'],
+                'onproject': u['user__id'] in list(qusers),
+                'user_docs': user_docs
+            })
+
 
         user_list = sorted(user_list, key=lambda k: k['username'].lower())
 
@@ -1871,7 +1873,7 @@ def query(request,qid,q2id='0',sbsid='0'):
             'query': query,
             'project': query.project,
             'tags': list(tags),
-            'untagged': untagged,
+            #'untagged': untagged,
             'users': user_list,
             'user': request.user,
             'pars': pars
@@ -5634,6 +5636,7 @@ def cat_doc(request):
             category_id=int(request.GET['cid']),
             user=request.user
         )
+        created = False
     if not created:
         dc.delete()
     return HttpResponse()

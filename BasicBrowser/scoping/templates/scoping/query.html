@@ -63,7 +63,9 @@
   <p style="text-align:left">{{query.ndocs}} Documents doublechecked by {{query.nusers}} users.
     <p style="text-align:left">Agreement ratio: {{query.ratio}}; Cohen's Kappa: {{query.cohen_kappa}}
 
+{% if untagged %}
   <p style="text-align:left">{{ untagged }} Documents are not tagged</p>
+{% endif %}
 
   <br/><hr/><br/>
 
@@ -90,6 +92,9 @@
       <td>Relevant Docs</td>
       <td>Irrelevant Docs</td>
       <td>Maybe Docs</td>
+      {% if project.rating_first %}
+      <td>DB2 relevant</td>
+      {% endif %}
     </tr>
     {% for u in users %}
       <tr>
@@ -116,6 +121,9 @@
           <td>{{ u.user_docs.reldocs }}</td>
           <td>{{ u.user_docs.irreldocs }}</td>
           <td>{{ u.user_docs.maybedocs }}</td>
+          {% if project.rating_first %}
+          <td>{{u.user_docs.db2}}</td>
+          {% endif %}
         {% else %}
           <td></td>
           <td></td>
