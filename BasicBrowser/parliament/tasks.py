@@ -194,30 +194,30 @@ def take_random_sample_from_search(s_id, sampling_fraction):
     sample_s.search_object_type = search.search_object_type
     sample_s.text = search.text
 
-    s.project = search.project
-    s.creator = search.creator
+    sample_s.project = search.project
+    sample_s.creator = search.creator
 
-    s.save()
+    sample_s.save()
 
     if search_object_type == 2:
         uts = pm.Utterance.objects.filter(search_matches=search)
-        uts_count = uts.count()
-        uts_sample = np.random.choice(uts, int(np.round(uts_count * sampling_fraction)), replace=False)
+        uts_sample_count = int(np.round(uts.count() * sampling_fraction))
+        uts_sample = np.random.choice(uts, uts_sample_count, replace=False)
         Through = Utterance.search_matches.through
         tms = [Through(utterance=u, search=s) for u in uts_sample]
         Through.objects.bulk_create(tms)
-        s.utterance_count = ut.count()
+        sample_s.utterance_count = uts_sample_count
     elif search_object_type == 1:
         pars = pm.Paragraph.objects.filter(search_matches=search)
-        pars_count = pars.count()
-        pars_sample = np.random.choice(pars, int(np.round(pars_count * sampling_fraction)), replace=False)
+        pars_sample_count = int(np.round(pars.count() * sampling_fraction))
+        pars_sample = np.random.choice(pars, pars_sample_count, replace=False)
         Through = Paragraph.search_matches.through
         tms = [Through(paragraph=p, search=s) for p in pars_sample]
         Through.objects.bulk_create(tms)
-        s.par_count = pars.count()
-    s.save()
+        sample_s.par_count = pars_sample_count
+    sample_s.save()
 
-    print("Created sample from search: id = {}".format(s.id))
+    print("Created sample from search: id = {}".format(sample_s.id))
 
     return
 
