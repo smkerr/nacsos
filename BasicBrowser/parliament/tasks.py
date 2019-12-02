@@ -138,7 +138,7 @@ def do_search(s_id):
         return
 
 @shared_task
-def combine_searches(s_ids, user=None):
+def combine_searches(s_ids):
 
     searches = Search.objects.filter(pk__in=s_ids)
 
@@ -162,8 +162,7 @@ def combine_searches(s_ids, user=None):
         s.text = searches[0].text
 
     s.project = searches[0].project
-    if user:
-        s.creator = user
+    s.creator = searches[0].creator
 
     s.save()
     if search_object_type == 2:
@@ -181,6 +180,44 @@ def combine_searches(s_ids, user=None):
     s.save()
 
     print("Created combined search: id = {}".format(s.id))
+
+    return
+
+
+@shared_task
+def take_random_sample_from_search(s_id, sampling_fraction):
+
+    search = Search.objects.get(pk=s_id)
+
+    # create new search object
+    sample_s = Search(title='Sample from search {}'.format(str(s_id)))
+    sample_s.search_object_type = search.search_object_type
+    sample_s.text = search.text
+
+    s.project = search.project
+    s.creator = search.creator
+
+    s.save()
+
+    if search_object_type == 2:
+        uts = pm.Utterance.objects.filter(search_matches=search)
+        uts_count = uts.count()
+        uts_sample = np.random.choice(uts, int(np.round(uts_count * sampling_fraction)), replace=False)
+        Through = Utterance.search_matches.through
+        tms = [Through(utterance=u, search=s) for u in uts_sample]
+        Through.objects.bulk_create(tms)
+        s.utterance_count = ut.count()
+    elif search_object_type == 1:
+        pars = pm.Paragraph.objects.filter(search_matches=search)
+        pars_count = pars.count()
+        pars_sample = np.random.choice(pars, int(np.round(pars_count * sampling_fraction)), replace=False)
+        Through = Paragraph.search_matches.through
+        tms = [Through(paragraph=p, search=s) for p in pars_sample]
+        Through.objects.bulk_create(tms)
+        s.par_count = pars.count()
+    s.save()
+
+    print("Created sample from search: id = {}".format(s.id))
 
     return
 
