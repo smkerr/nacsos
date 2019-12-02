@@ -12,6 +12,16 @@ from tmv_app.models import *
 
 
 def compare_topic_queryset(runs, method='top_word_overlap', verbosity=0, order_by_str='id'):
+    """
+    Compares two topic model runs
+
+    :param runs:
+    :param method:
+    :param verbosity:
+    :param order_by_str:
+    :return:
+    """
+
     col1s = []
     col2s = []
     ss = []

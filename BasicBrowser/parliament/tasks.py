@@ -34,7 +34,11 @@ def do_search(s_id):
     s = Search.objects.get(pk=s_id)
     if s.search_object_type == 1: # paragraphs
         s.paragraph_set.clear()  # delete old search matches
-        ps = Paragraph.objects.filter(text__iregex=s.text)
+
+        if s.text:
+            ps = Paragraph.objects.filter(text__iregex=s.text)
+        else:
+            ps = Paragraph.objects.all()
 
         if s.document_source:
             ps = ps.filter(utterance__document__text_source__iregex=s.document_source)
