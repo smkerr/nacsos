@@ -204,7 +204,7 @@ def take_random_sample_from_search(s_id, sampling_fraction):
         uts_sample_count = int(np.round(uts.count() * sampling_fraction))
         uts_sample = np.random.choice(uts, uts_sample_count, replace=False)
         Through = Utterance.search_matches.through
-        tms = [Through(utterance=u, search=s) for u in uts_sample]
+        tms = [Through(utterance=u, search=sample_s) for u in uts_sample]
         Through.objects.bulk_create(tms)
         sample_s.utterance_count = uts_sample_count
     elif search.search_object_type == 1:
@@ -212,7 +212,7 @@ def take_random_sample_from_search(s_id, sampling_fraction):
         pars_sample_count = int(np.round(pars.count() * sampling_fraction))
         pars_sample = np.random.choice(pars, pars_sample_count, replace=False)
         Through = Paragraph.search_matches.through
-        tms = [Through(paragraph=p, search=s) for p in pars_sample]
+        tms = [Through(paragraph=p, search=sample_s) for p in pars_sample]
         Through.objects.bulk_create(tms)
         sample_s.par_count = pars_sample_count
     sample_s.save()
