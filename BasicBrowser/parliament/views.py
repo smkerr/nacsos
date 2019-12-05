@@ -110,11 +110,14 @@ def parties(request,pid):
 
     """
 
+    template = loader.get_template('parliament/parties.html')
+
     parl = Parl.objects.get(pk=pid)
 
     parties = Party.objects.filter(parliament=parl).annotate(
         members=Count('person')
     )
+    print(parties)
 
     party_table = PartyTable(parties)
 
@@ -135,6 +138,8 @@ def persons(request, pid):
         A table displaying all parliamentarians in :model:`parliament.Parl`
 
     """
+
+    template = loader.get_template('parliament/persons.html')
 
     parl = Parl.objects.get(pk=pid)
 
