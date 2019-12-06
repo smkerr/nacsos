@@ -225,11 +225,14 @@ def take_random_sample_from_search(s_id, sampling_fraction):
 # ===================================================================================================================
 
 @shared_task
-def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha=0.01,
+def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=None, max_df=0.95, min_df=5, alpha=0.01,
            extra_stopwords=set(), top_chain_var=None, rng_seed=None, max_iter=200, **kwargs):
 
-    if method in ['DT', 'dnmf', 'BD', 'BleiDTM'] and max_features == 0:
+    if method in ['DT', 'dnmf', 'BD', 'BleiDTM'] and max_features == None:
+        print("setting maximum number of features to 20000.")
         max_features = 20000
+    elif max_features == None:
+        max_features = 0
     if method in ['BD', 'BleiDTM'] and top_chain_var is None:
         top_chain_var = 0.005
 
