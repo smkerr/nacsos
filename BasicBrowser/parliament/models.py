@@ -238,7 +238,8 @@ class Interjection(models.Model):
     def emoji(self):
         return self.EMOJIS[self.type]
 
-
+    class Meta:
+        ordering = ['id']
 
 
 ###################################
