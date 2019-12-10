@@ -134,6 +134,18 @@ class Person(models.Model):
 
         super(Person, self).save(*args, **kwargs)
 
+
+class PartyMembership(models.Model):
+    """
+    Connects a :model:`parliament.Person` to a :model:`parliament.Party` for a defined period
+    """
+
+    entry_date = models.DateField(null=True)
+    resignation_date = models.DateField(null=True)
+    person = models.ForeignKey(Person, on_delete=models.PROTECT)
+    party = models.ForeignKey(Party, on_delete=models.PROTECT)
+
+
 class SpeakerRole(models.Model):
     """
     Describes role of the speaker :model:`parliament.Person` in parliament
