@@ -481,6 +481,8 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=No
         ),doc_batches))
         pool.terminate()
         django.db.connections.close_all()
+        print("... created document topic matrix for saving iteration {}".format(i))
+
         values_list = [item for sublist in values_list for item in sublist]
         pool = Pool(processes=no_cores)
         if s.search_object_type == 1:
@@ -490,6 +492,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=No
         pool.terminate()
         gc.collect()
         sys.stdout.flush()
+        print("... saved document topic matrix iteration {}".format(i))
 
     stat.iterations = model.n_iter_
     stat.status = 3  # 3 = finished
