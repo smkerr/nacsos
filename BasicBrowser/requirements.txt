@@ -45,6 +45,7 @@ gensim==3.2.0
 glob2==0.6
 graphviz==0.8.3
 grpcio==1.14.1
+hdbscan
 html5lib==0.999999999
 idna==2.6
 ipykernel==4.8.2

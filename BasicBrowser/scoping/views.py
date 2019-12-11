@@ -5566,6 +5566,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
 
     try:
         criteria = markdown.markdown(tag.query.criteria, extensions=["tables"])
+        criteria = criteria.replace('<table>','<table style="width:100%">')
     except:
         criteria = tag.query.criteria
 
