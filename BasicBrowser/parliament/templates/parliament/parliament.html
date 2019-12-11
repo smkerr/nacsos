@@ -5,13 +5,11 @@
 
 <h1>{{ parl.country.name}}</h1>
 
+<a href="{% url 'parliament:parties' parl.id %}">Link to list of parties</a>
+<br>
+<a href="{% url 'parliament:persons' parl.id %}">Link to list of speakers</a>
+
 <h2>Parliamentary Periods</h2>
 {% render_table ps %}
-
-<h2>Parties</h2>
-{% render_table parties %}
-
-<h2>People</h2>
-{% render_table persons %}
 
 {% endblock %}

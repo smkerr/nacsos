@@ -34,7 +34,11 @@ def do_search(s_id):
     s = Search.objects.get(pk=s_id)
     if s.search_object_type == 1: # paragraphs
         s.paragraph_set.clear()  # delete old search matches
-        ps = Paragraph.objects.filter(text__iregex=s.text)
+
+        if s.text:
+            ps = Paragraph.objects.filter(text__iregex=s.text)
+        else:
+            ps = Paragraph.objects.all()
 
         if s.document_source:
             ps = ps.filter(utterance__document__text_source__iregex=s.document_source)
@@ -134,7 +138,7 @@ def do_search(s_id):
         return
 
 @shared_task
-def combine_searches(s_ids, user=None):
+def combine_searches(s_ids):
 
     searches = Search.objects.filter(pk__in=s_ids)
 
@@ -158,8 +162,7 @@ def combine_searches(s_ids, user=None):
         s.text = searches[0].text
 
     s.project = searches[0].project
-    if user:
-        s.creator = user
+    s.creator = searches[0].creator
 
     s.save()
     if search_object_type == 2:
@@ -180,15 +183,56 @@ def combine_searches(s_ids, user=None):
 
     return
 
+
+@shared_task
+def take_random_sample_from_search(s_id, sampling_fraction):
+
+    search = Search.objects.get(pk=s_id)
+
+    # create new search object
+    sample_s = Search(title='Sample from search {}'.format(str(s_id)))
+    sample_s.search_object_type = search.search_object_type
+    sample_s.text = search.text
+
+    sample_s.project = search.project
+    sample_s.creator = search.creator
+
+    sample_s.save()
+
+    if search.search_object_type == 2:
+        uts = Utterance.objects.filter(search_matches=search)
+        uts_sample_count = int(np.round(uts.count() * sampling_fraction))
+        uts_sample = np.random.choice(uts, uts_sample_count, replace=False)
+        Through = Utterance.search_matches.through
+        tms = [Through(utterance=u, search=sample_s) for u in uts_sample]
+        Through.objects.bulk_create(tms)
+        sample_s.utterance_count = uts_sample_count
+    elif search.search_object_type == 1:
+        pars = Paragraph.objects.filter(search_matches=search)
+        pars_sample_count = int(np.round(pars.count() * sampling_fraction))
+        pars_sample = np.random.choice(pars, pars_sample_count, replace=False)
+        Through = Paragraph.search_matches.through
+        tms = [Through(paragraph=p, search=sample_s) for p in pars_sample]
+        Through.objects.bulk_create(tms)
+        sample_s.par_count = pars_sample_count
+    sample_s.save()
+
+    print("Created sample from search: id = {}".format(sample_s.id))
+
+    return
+
 # ==================================================================================================================
 # ===================================================================================================================
 
 @shared_task
-def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0, max_df=0.95, min_df=5, alpha=0.01,
+def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=None, max_df=0.95, min_df=5, alpha=0.01,
            extra_stopwords=set(), top_chain_var=None, rng_seed=None, max_iter=200, **kwargs):
 
-    if method in ['DT', 'dnmf', 'BD', 'BleiDTM'] and max_features == 0:
+    if method in ['DT', 'dnmf', 'BD', 'BleiDTM'] and max_features is None:
+        print("setting maximum number of features to 20000.")
         max_features = 20000
+    elif max_features is None:
+        max_features = 0
     if method in ['BD', 'BleiDTM'] and top_chain_var is None:
         top_chain_var = 0.005
 
@@ -437,6 +481,8 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         ),doc_batches))
         pool.terminate()
         django.db.connections.close_all()
+        print("... created document topic matrix for saving iteration {}".format(i))
+
         values_list = [item for sublist in values_list for item in sublist]
         pool = Pool(processes=no_cores)
         if s.search_object_type == 1:
@@ -446,6 +492,7 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
         pool.terminate()
         gc.collect()
         sys.stdout.flush()
+        print("... saved document topic matrix iteration {}".format(i))
 
     stat.iterations = model.n_iter_
     stat.status = 3  # 3 = finished

@@ -9,8 +9,11 @@ urlpatterns = [
     # Homepage, Parliaments
     url(r'^$', views.index, name='index'),
 
-    #Parliament page
+    #Parliament pages
     url(r'^parliament/(?P<pid>[0-9]+)/$', views.parliament, name='parliament'),
+    url(r'^parties/(?P<pid>[0-9]+)/$', views.parties, name='parties'),
+    url(r'^persons/(?P<pid>[0-9]+)/$', views.persons, name='persons'),
+
     url(r'^session/(?P<pid>[0-9]+)/$', views.parlperiod, name='parlperiod'),
 
     url(r'^search/$', views.search, name='search'),

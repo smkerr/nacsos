@@ -3,7 +3,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth.models import User
 import cities.models
 import scoping
-
+import datetime
 
 ##########################
 ## Political Structure
@@ -134,6 +134,19 @@ class Person(models.Model):
 
         super(Person, self).save(*args, **kwargs)
 
+
+class PartyMembership(models.Model):
+    """
+    Connects a :model:`parliament.Person` to a :model:`parliament.Party` for a defined period
+    """
+
+    period_unknown = models.BooleanField(default=True)
+    entry_date = models.DateField(default=datetime.date(1700, 1,1))
+    resignation_date = models.DateField(default=datetime.date(2100, 1,1))
+    person = models.ForeignKey(Person, on_delete=models.PROTECT)
+    party = models.ForeignKey(Party, on_delete=models.PROTECT)
+
+
 class SpeakerRole(models.Model):
     """
     Describes role of the speaker :model:`parliament.Person` in parliament
@@ -238,7 +251,8 @@ class Interjection(models.Model):
     def emoji(self):
         return self.EMOJIS[self.type]
 
-
+    class Meta:
+        ordering = ['id']
 
 
 ###################################

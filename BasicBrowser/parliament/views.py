@@ -78,12 +78,6 @@ def parliament(request,pid):
     ``parl``
         An instance of :model:`parliament.Parl`
 
-    ``persons``
-        A table displaying all parliamentarians in :model:`parliament.Parl`
-
-    ``parties``
-        A table displaying all political parties in :model:`parliament.Parl` and number of parliamentarians in each party
-
     **Template:**
 
     :template:`parliament/parliament.html`
@@ -92,31 +86,72 @@ def parliament(request,pid):
     template = loader.get_template('parliament/parliament.html')
 
     parl = Parl.objects.get(pk=pid)
-    ps  = ParlPeriod.objects.filter(parliament=parl).annotate(
+    ps = ParlPeriod.objects.filter(parliament=parl).annotate(
         docs = Count('document')
     ).order_by('n')
     ps = ParlPeriodTable(ps, order_by="n")
 
-    # persons = person_table(Person.objects.filter(
-    #     utterance__document__parlperiod__parliament=parl,
-    # ))
+    context = {
+        'ps': ps,
+        'parl': parl
+    }
+
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def parties(request,pid):
+    """
+    displays all parties in a parliament
+
+    ``party_table``
+        A table displaying all political parties in :model:`parliament.Parl` and number of parliamentarians in each party
+
+
+    """
+
+    template = loader.get_template('parliament/parties.html')
+
+    parl = Parl.objects.get(pk=pid)
+
+    parties = Party.objects.filter(parliament=parl).annotate(
+        members=Count('person')
+    )
+    print(parties)
+
+    party_table = PartyTable(parties)
+
+    context = {
+        'parties': party_table,
+        'parl': parl
+    }
+
+    return HttpResponse(template.render(context, request))
+
+
+@login_required
+def persons(request, pid):
+    """
+    displays all persons in a parliament
+
+            ``persons``
+        A table displaying all parliamentarians in :model:`parliament.Parl`
+
+    """
+
+    template = loader.get_template('parliament/persons.html')
+
+    parl = Parl.objects.get(pk=pid)
+
     persons = person_table(Person.objects.filter(
         seat__parlperiod__parliament=parl
     ))
 
     RequestConfig(request).configure(persons)
 
-    parties = Party.objects.filter(parliament=parl).annotate(
-        members=Count('person')
-    )
-
-    parties = PartyTable(parties)
-
     context = {
-        'ps': ps,
-        'parl': parl,
         'persons': persons,
-        'parties': parties
+        'parl': parl
     }
 
     return HttpResponse(template.render(context, request))
