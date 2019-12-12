@@ -1168,6 +1168,8 @@ class IPCCRef(models.Model):
 
     match_status = models.PositiveSmallIntegerField(choices=MATCH_STATUS, default=0)
 
+    tslug = models.TextField(null=True, db_index=True)
+
     def shingle(self):
         tokens = [re.sub('\W','',x) for x in self.text.lower().split(".")[0].split()]
         return set(s for s in ngrams([t for t in tokens if t!=""] ,2))
