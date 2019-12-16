@@ -8,8 +8,9 @@ from matplotlib import cm, patches
 from scoping.models import *
 from scipy.spatial import ConvexHull
 from sklearn.cluster import DBSCAN
+import hdbscan
 from adjustText import adjust_text, get_renderer, get_bboxes
-
+from scipy.interpolate import interp1d
 from utils.utils import flatten
 
 
@@ -183,12 +184,27 @@ def extend_points(p1,p2,length=0.8):
     p3[1] = p2[1] + (p2[1] - p1[1]) / lenAB*length
     return p3
 
+def chaikins_corner_cutting(coords, refinements=5):
+
+    for _ in range(refinements):
+        L = coords.repeat(2, axis=0)
+        R = np.empty_like(L)
+        R[0] = L[0]
+        R[2::2] = L[1:-1:2]
+        R[1:-1:2] = L[2::2]
+        R[-1] = L[-1]
+        coords = L * 0.75 + R * 0.25
+
+    return coords
+
 def cluster_label_points(
     title, points, ax, eps,
     min_cluster, n_clusters, clabel_size,
     words_only
     ):
     db = DBSCAN(eps=eps,min_samples=min_cluster).fit(points)
+    #clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster)
+    #db = clusterer.fit(points)
     labels = db.labels_
     texts = []
     bboxes = []
@@ -224,15 +240,21 @@ def cluster_label_points(
                 #break
 
             else:
-                for i, simplex in enumerate(hull.simplices):
-                    p1 = extend_points(c,lpoints[simplex,:][0])
-                    p2 = extend_points(c,lpoints[simplex,:][1])
-                    plt.plot(
-                        [p1[0],p2[0]],
-                        [p1[1],p2[1]],
-                        'k-',
-                        linewidth=0.5
-                    )
+                x = []
+                y = []
+                for i, v in enumerate(lpoints[hull.vertices,:]):
+                    p1 = extend_points(c,v)
+                    #p2 = extend_points(c,v])
+                    x.append(p1[0])
+                    y.append(p1[1])
+                    #x.append(p2[0])
+                    #y.append(p2[1])
+                    # plt.plot(
+                    #     [p1[0],p2[0]],
+                    #     [p1[1],p2[1]],
+                    #     'k-',
+                    #     linewidth=0.5
+                    # )
                     if not text_set:
                         if p1[0] > cx:
                             ha = "left"
@@ -241,15 +263,42 @@ def cluster_label_points(
                         pl = extend_points(c,p1)
                         texts.append(ax.annotate(
                             title,
-                            p1,
-                            xytext=pl,
+                            c,
+                            #p1,
+                            #xytext=pl,
                             va="center",
-                            ha=ha,
+                            #ha=ha,
+                            ha="center",
                             fontsize=clabel_size,
-                            arrowprops=dict(width=0.2,headwidth=0.1),
+                            #arrowprops=dict(width=0.2,headwidth=0.1),
                             bbox={'facecolor':"white", 'alpha':0.4, 'pad':0.2, 'boxstyle': 'round'}
                         ))
                         text_set = True
+                orig_len = len(x)
+                x = x[-3:-1] + x + x[1:3]
+                y = y[-3:-1] + y + y[1:3]
+
+                t = np.arange(len(x))
+                ti = np.linspace(2, orig_len + 1, 10 * orig_len)
+
+                x2 = interp1d(t, x, kind='cubic')(ti)
+                y2 = interp1d(t, y, kind='cubic')(ti)
+
+
+                x = lpoints[hull.vertices,0]
+                x = np.append(x,[x[:1]])
+                y = lpoints[hull.vertices,1]
+                y = np.append(y,[y[:1]])
+                coords = np.array(list(zip(x,y)))
+                coords = chaikins_corner_cutting(coords)
+
+
+                x2 = coords[:,0]
+                y2 = coords[:,1]
+
+                #x2 = interpolate.BSpline(t, x, nt)
+                #y2 = interpolate.BSpline(t, y, nt)
+                plt.plot(x2, y2,'k-',linewidth=0.8)
                 # break here, just do the biggest cluster
                 #break
     return texts
@@ -263,7 +312,7 @@ def plot_tsne(
     doc_sets=None, clabel_size=8,
     words_only=False, fsize=5, adjust=False,
     draw_highlight_points=False,
-    dot_legend=False,
+    dot_legend=True,
     nocat_colour='#F0F0F026',
     nocat_alpha=0.4
     ):
@@ -456,19 +505,35 @@ def plot_tsne(
             adjust_text(texts,ax=ax, arrowprops=dict(arrowstyle="->", color='None', lw=0.5))
 
     if doc_sets:
+        texts = []
         for d in doc_sets:
             highlight_docs = np.argwhere(np.isin(r_ind,d['docs']))[:,0]
             points = tsne_results[highlight_docs]
 
-            cluster_label_points(
+            texts.append(cluster_label_points(
                 d['title'],
                 points,
                 ax,
                 eps,
                 min_cluster,
                 n_clusters,
-                clabel_size
-            )
+                clabel_size,
+                words_only
+            ))
+            if draw_highlight_points:
+                ax.scatter(
+                    points[:,0],
+                    points[:,1],
+                    c=c["color"],
+                    s=psize,
+                    alpha=1,
+                    linewidth=0.5,
+                    edgecolor='black'
+                )
+
+        if adjust:
+            texts = list(flatten(texts))
+            adjust_text(texts,ax=ax, arrowprops=dict(arrowstyle="->", color='None', lw=0.5))
 
 
                     #adjust_text(texts,arrowprops=dict(arrowstyle='->', color='red'))

@@ -1142,6 +1142,10 @@ class WG(models.Model):
     def __str__(self):
       return "AR"+str(self.ar)+" WG"+str(self.wg)
 
+class ARChapter(models.Model):
+    wg = models.ForeignKey(WG, on_delete=models.CASCADE)
+    chapter = models.TextField(null=True)
+
 class IPCCRef(models.Model):
 
     UNCHECKED = 0
@@ -1164,9 +1168,12 @@ class IPCCRef(models.Model):
     wg = models.ManyToManyField('WG')
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True)
     chapter = models.TextField(null=True)
+    chapters = models.ManyToManyField('ARChapter')
     checked_count = models.IntegerField(default=0)
 
     match_status = models.PositiveSmallIntegerField(choices=MATCH_STATUS, default=0)
+
+    tslug = models.TextField(null=True, db_index=True)
 
     def shingle(self):
         tokens = [re.sub('\W','',x) for x in self.text.lower().split(".")[0].split()]

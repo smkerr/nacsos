@@ -49,22 +49,31 @@ def parse_status(s, ts=None):
         return
 
     for f in sdata:
-        if sdata[f] != "none":
+        if sdata[f] != "none" and sdata[f] is not None:
             try:
                 if f=="in_reply_to_user_id":
                     new_user, created = User.objects.get_or_create(
                         id=sdata[f]
                     )
-                if f=="in_reply_to_status_id":
+                    status.in_reply_to_user = new_user
+                elif f=="in_reply_to_status_id":
                     ns, created = Status.objects.get_or_create(
                         id=sdata[f]
                     )
-                if f=="created_at":
-                    sdata[f] = datetime.strptime(sdata[f],tf)
-                field = Status._meta.get_field(f)
-                setattr(status, f, sdata[f])
+                    status.in_reply_to_status = ns
+                else:
+                    if f=="created_at":
+                        sdata[f] = datetime.strptime(sdata[f],tf)
+                    if f=="retweet_count":
+                        field = Status._meta.get_field("retweets_count")
+                    elif f=="favorite_count":
+                        field = Status._meta.get_field("favorites_count")
+                    elif f=="full_text":
+                        field = Status._meta.get_field("text")
+                    else:
+                        field = Status._meta.get_field(f)
+                    setattr(status, field.name, sdata[f])
             except:
-                #print(f)
                 pass
     status.author = user
     status.api_got = True
