@@ -4763,11 +4763,13 @@ def assign_docs(request):
         else:
             full = False
 
+        my_ids = list(docs.values_list('pk', flat=True))
+
         if full == False:
             for user in user_list:
-                docs = docs.exclude(docownership__user=user,docownership__relevant__gt=0)
+                rdocs = set(DocOwnership.objects.filter(query__project=t.query.project,user=user).values_list('pk',flat=True))
+                my_ids = set(my_ids) - rdocs
 
-        my_ids = list(docs.values_list('pk', flat=True))
         try:
             rand_ids = random.sample(my_ids, ssize)
             sample = docs.filter(pk__in=rand_ids).all()
