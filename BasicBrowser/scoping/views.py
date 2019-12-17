@@ -5288,6 +5288,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
 
     notes = Note.objects.filter(
         par     = do.docpar,
+        user    = do.user,
         project = tag.query.project
     )
 
@@ -5529,6 +5530,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
 
         notes = Note.objects.filter(
             project=tag.query.project,
+            user = do.user,
             doc = do.doc
         )
 
