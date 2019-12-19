@@ -267,10 +267,10 @@ def save_topic_list_as_table(topic_list, filename):
 def bipartite_graph_from_matrix(matrix, labels1, labels2, threshold=0, match=False):
     if match:
         matrix, permutation = sort_matrix(matrix)
-        labels1 = [labels1[int(permutation[i])] for i in range(max(Ks))]
+        labels1 = [labels1[int(permutation[i])] for i in range(len(labels1))]
 
     label_dict = {i: l for i, l in enumerate(labels1 + labels2)}
-    print(label_dict)
+    print("Topic labels:", label_dict)
 
     if not isinstance(matrix, np.ndarray):
         matrix = np.array(matrix)
@@ -335,4 +335,4 @@ def draw_bipartite_topic_graph(graph, filename='bipartite_topic_graph', figsize=
     plt.savefig(filename + ".png", dpi=150, bbox_inches='tight')  # save as png
     plt.savefig(filename + ".pdf", bbox_inches='tight')  # save as pd
 
-    return 0
+    return fig

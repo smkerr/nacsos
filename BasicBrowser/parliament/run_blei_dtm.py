@@ -131,9 +131,14 @@ def run_blei_dtm(stat, call_to_blei_algorithm=True,
     if stat.extra_stopwords:
         stopword_list = list(set(stopword_list) | set(stat.extra_stopwords))
 
+    if stat.max_features == 0:
+        n_features=100000000
+    else:
+        n_features = stat.max_features
+
     vectorizer = CountVectorizer(max_df=stat.max_df,
                                  min_df=stat.min_freq,
-                                 max_features=stat.max_features,
+                                 max_features=n_features,
                                  ngram_range=(1 ,stat.ngram),
                                  tokenizer=tokenizer,
                                  stop_words=stopword_list)
