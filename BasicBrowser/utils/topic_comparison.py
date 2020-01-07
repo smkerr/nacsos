@@ -264,23 +264,36 @@ def save_topic_list_as_table(topic_list, filename):
     return 0
 
 
-def bipartite_graph_from_matrix(matrix, threshold=1):
+def bipartite_graph_from_matrix(matrix, labels1, labels2, threshold=0, match=False):
+    if match:
+        matrix, permutation = sort_matrix(matrix)
+        labels1 = [labels1[int(permutation[i])] for i in range(len(labels1))]
+
+    label_dict = {i: l for i, l in enumerate(labels1 + labels2)}
+    print("Topic labels:", label_dict)
+
     if not isinstance(matrix, np.ndarray):
         matrix = np.array(matrix)
     matrix[matrix < threshold] = 0
     sp_matrix = sparse.coo_matrix(matrix)
-    return bipartite.from_biadjacency_matrix(sp_matrix)
+    g = bipartite.from_biadjacency_matrix(sp_matrix)
+    nx.set_node_attributes(g, label_dict, name='label')
+    return g
 
 
-def draw_bipartite_topic_graph(graph, topic_list1, topic_list2, filename='bipartite_topic_graph'):
+def draw_bipartite_topic_graph(graph, filename='bipartite_topic_graph', figsize=(12, 12)):
     top_nodes = set(n for n, d in graph.nodes(data=True) if d['bipartite'] == 0)
     bottom_nodes = set(graph) - top_nodes
+    top_nodes = sorted(list(top_nodes))
+    bottom_nodes = sorted(list(bottom_nodes))
     pos = dict()
-    pos.update((n, (0, -i)) for i, n in enumerate(top_nodes))  # put top nodes at x=1
-    pos.update((n, (1, -i)) for i, n in enumerate(bottom_nodes))  # put bottom nodes at x=2
-    # nx.draw(g, pos=pos, node_size=10)
+    pos.update((n, (0, -i)) for i, n in enumerate(top_nodes))  # put top nodes at x=0
+    pos.update((n, (1, -i)) for i, n in enumerate(bottom_nodes))  # put bottom nodes at x=1
+    labels = nx.get_node_attributes(graph, 'label')
+    labels1 = [labels[node] for node in top_nodes]
+    labels2 = [labels[node] for node in bottom_nodes]
 
-    fig = plt.figure(figsize=(12, 12))
+    fig = plt.figure(figsize=figsize)
 
     # edges
     weights = nx.get_edge_attributes(graph, 'weight')
@@ -302,13 +315,13 @@ def draw_bipartite_topic_graph(graph, topic_list1, topic_list2, filename='bipart
                            alpha=0.8)
 
     ax = plt.gca()
-    for i, t in enumerate(topic_list1):
+    for i, t in enumerate(labels1):
         ax.text(-0.1, -i, t,
                 horizontalalignment='right',
                 verticalalignment='center',
                 fontsize=12)
 
-    for i, t in enumerate(topic_list2):
+    for i, t in enumerate(labels2):
         ax.text(1.1, -i, t,
                 horizontalalignment='left',
                 verticalalignment='center',
@@ -322,4 +335,4 @@ def draw_bipartite_topic_graph(graph, topic_list1, topic_list2, filename='bipart
     plt.savefig(filename + ".png", dpi=150, bbox_inches='tight')  # save as png
     plt.savefig(filename + ".pdf", bbox_inches='tight')  # save as pd
 
-    return 0
+    return fig

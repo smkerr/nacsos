@@ -109,9 +109,15 @@ def run_dynamic_nmf(stat):
         # print("esimating {} topics...".format(k))
 
         print("Extracting tf-idf features for NMF...")
+
+        if stat.max_features == 0:
+            n_features=100000000
+        else:
+            n_features = stat.max_features
+
         tfidf_vectorizer = TfidfVectorizer(max_df=stat.max_df,
                                            min_df=stat.min_freq,
-                                           max_features=stat.max_features,
+                                           max_features=n_features,
                                            ngram_range=(1, stat.ngram),
                                            tokenizer=tokenizer,
                                            stop_words=stopword_list)
