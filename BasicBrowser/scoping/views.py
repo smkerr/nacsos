@@ -786,7 +786,7 @@ Args:
             t.save()
         else:
             t.docs = t.ndocs
-        possible_parents = Category.objects.filter(level__lt=t.level)
+        possible_parents = Category.objects.filter(project=project, level__lt=t.level)
         t.form = CategoryForm(instance=t,prefix=t.id,qs=possible_parents)
 
     catform = CategoryForm(prefix="add")

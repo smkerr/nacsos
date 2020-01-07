@@ -240,6 +240,7 @@ def cluster_label_points(
                 #break
 
             else:
+                title = title.split(",")[0].replace("{","")
                 x = []
                 y = []
                 for i, v in enumerate(lpoints[hull.vertices,:]):
@@ -301,6 +302,8 @@ def cluster_label_points(
                 plt.plot(x2, y2,'k-',linewidth=0.8)
                 # break here, just do the biggest cluster
                 #break
+    if len(texts)==0:
+        print(f"couldn't find a cluster for {title}")
     return texts
 
 def plot_tsne(
@@ -314,7 +317,8 @@ def plot_tsne(
     draw_highlight_points=False,
     dot_legend=True,
     nocat_colour='#F0F0F026',
-    nocat_alpha=0.4
+    nocat_alpha=0.4, raster=False,
+    extension="png",
     ):
     cs = []
     sizes = []
@@ -338,7 +342,8 @@ def plot_tsne(
         s=psize,
         alpha=nocat_alpha,
         linewidth=0.1,
-        edgecolor='#a39c9c66'
+        edgecolor='#a39c9c66',
+        rasterized=raster
     )
 
     # Draw docs to be highlighted separately
@@ -350,7 +355,8 @@ def plot_tsne(
             s=psize,
             alpha=1,
             linewidth=0.5,
-            edgecolor='black'
+            edgecolor='black',
+            rasterized=raster
         )
 
     # split the data and add layer by layer to prevent top layer overwriting all
@@ -374,7 +380,8 @@ def plot_tsne(
                 s=psize,
                 alpha=a,
                 linewidth=0.1,
-                edgecolor='#a39c9c66'
+                edgecolor='#a39c9c66',
+                rasterized=raster
             )
             if hdoc is not False:
                 ax.scatter(
@@ -384,7 +391,8 @@ def plot_tsne(
                     s=psize,
                     alpha=1,
                     linewidth=0.5,
-                    edgecolor='black'
+                    edgecolor='black',
+                    rasterized=raster
                 )
 
 
@@ -400,13 +408,16 @@ def plot_tsne(
     yextent = ax.get_ylim()[1]- ax.get_ylim()[0]
     ysp = yextent*0.04
 
-
+    draw_leg = False
     if legend:
         for i,c in enumerate(cats):
             prop = len(c['docs'])/len(r_ind)
             label = "{} {:.1%}".format(c['name'],prop)
+            if extension=="pdf":
+                label=label.replace("%","\%")
             if dot_legend:
                 if prop>0.001:
+                    draw_leg=True
                     ax.scatter(
                         [],[],c=c['color'],label=label
                     )
@@ -427,7 +438,7 @@ def plot_tsne(
                     }
                 )
 
-    if dot_legend:
+    if dot_legend and draw_leg:
         ax.legend()
 
     if heat_var:
@@ -497,7 +508,8 @@ def plot_tsne(
                     s=psize,
                     alpha=1,
                     linewidth=0.5,
-                    edgecolor='black'
+                    edgecolor='black',
+                    rasterized=raster
                 )
 
         if adjust:
@@ -528,7 +540,8 @@ def plot_tsne(
                     s=psize,
                     alpha=1,
                     linewidth=0.5,
-                    edgecolor='black'
+                    edgecolor='black',
+                    rasterized=raster
                 )
 
         if adjust:

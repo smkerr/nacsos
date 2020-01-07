@@ -14,7 +14,10 @@ from django.utils import timezone
 import time
 from pathlib import Path
 import re
+import shutil
 import random
+from django.contrib.postgres.aggregates.general import ArrayAgg
+import gc
 
 class Command(BaseCommand):
     help = 'exports a set of tweets from a search id'
@@ -33,8 +36,57 @@ class Command(BaseCommand):
 
         users = User.objects.filter(pk__in=uids)
 
+        n = tweets.count()
 
-        with open(f'{search.string}_tweets.json','w') as f:
-            json.dump(serialize('json',tweets,cls=DjangoJSONEncoder),f)
-        with open(f'{search.string}_users.json','w') as f:
-            json.dump(serialize('json',users,cls=DjangoJSONEncoder),f)
+        print(f"{n} tweets, {len(uids)} users")
+
+        exclude_fields = [
+            'api_got','scrape_got','fetched', 'replies','retweets',
+            'twitterbasemodel_ptr','searches','retweeted_by'
+            ]
+        fields = [x.name for x in Status._meta.get_fields() if x.name not in exclude_fields]
+        fields.append('retweeted_by_user_id')
+
+        if n < 1000000:
+
+            tweets = tweets.filter(pk__in=tweets)
+            tweet_values = tweets.prefetch_related('retweeted_by').annotate(
+                retweeted_by_user_id=ArrayAgg('retweeted_by')
+            ).values(*fields)
+            with open(f'{search.string}_tweets.json','w') as f:
+                #f.write(serialize('json',all_objects,cls=DjangoJSONEncoder,fields=fields))
+                f.write(json.dumps(list(tweet_values),cls=DjangoJSONEncoder))
+            with open(f'{search.string}_users.json','w') as f:
+                f.write(serialize('json',users,cls=DjangoJSONEncoder))
+
+        else:
+            f = tweets.filter(created_at__isnull=False).order_by('created_at').first().created_at
+            l = tweets.filter(created_at__isnull=False).order_by('created_at').last().created_at
+            exporting = True
+            i = 0
+            try:
+                os.mkdir(f"exports/{search.string}")
+            except:
+                shutil.rmtree(f"exports/{search.string}")
+                os.mkdir(f"exports/{search.string}")
+            while exporting:
+                gc.collect()
+                b = l - timedelta(days=14)
+                t_ids = tweets.filter(created_at__gt=b, created_at__lte=l).values_list('id',flat=True)
+                t_chunk = tweets.filter(pk__in=t_ids)
+                uids = set(t_chunk.values_list('author__id',flat=True))
+                user_chunk = User.objects.filter(pk__in=uids)
+
+                tweet_values = t_chunk.annotate(
+                    retweeted_by_user_id=ArrayAgg('retweeted_by')
+                ).values(*fields)
+
+                with open(f'exports/{search.string}/{i}_tweets.json','w') as file:
+                    #json.dump(serialize('json',tweets,cls=DjangoJSONEncoder),f)
+                    file.write(json.dumps(list(tweet_values),cls=DjangoJSONEncoder))
+                with open(f'exports/{search.string}/{i}_users.json','w') as file:
+                    file.write(serialize('json',users,cls=DjangoJSONEncoder))
+
+                l = l - timedelta(days=30)
+                if b < f:
+                    exporting = False
