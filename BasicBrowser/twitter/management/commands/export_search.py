@@ -90,3 +90,5 @@ class Command(BaseCommand):
                 l = l - timedelta(days=30)
                 if b < f:
                     exporting = False
+
+                i+=1

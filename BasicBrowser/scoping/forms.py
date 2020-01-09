@@ -224,7 +224,7 @@ class TopicModelForm(forms.ModelForm):
             'min_freq','max_df','max_features','limit',
             'ngram','fulltext','citations',
             'fancy_tokenization',
-            'K','alpha','max_iter','db',
+            'K','alpha','beta','max_iter','db',
             'method', 'lda_learning_method','lda_library'
         )
         exclude = (

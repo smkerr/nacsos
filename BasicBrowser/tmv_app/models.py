@@ -443,11 +443,12 @@ class RunStats(models.Model):
 
     K = models.IntegerField(null=True, help_text='Number of topics')
     alpha = models.FloatField(null=True, default=0.01, help_text='Concentration parameter of Dirichlet distribution of topics in documents'
-                                                                 '(try higher values in LDA, including > 1). Low (high) values indicate that'
-                                                                 'documents should be composed of few (many) topics. Also called theta.')
+                                                                 ' (try higher values in LDA, including > 1). Low (high) values indicate that'
+                                                                 ' documents should be composed of few (many) topics. Also called theta.'
+                                                                 ' In NMF, this is the regularization term alpha')
     beta = models.FloatField(null=True, default=None, help_text='Concentration parameter of Dirichlet distribution of words in topics.'
-                                                                'Low (high) values indicate that topics should be composed of few (many) words.'
-                                                                'Also called eta.')
+                                                                ' Low (high) values indicate that topics should be composed of few (many) words.'
+                                                                ' Also called eta. This parameter is not used in NMF')
     lda_learning_method = models.CharField(max_length = 2, choices=lda_choices, null=True, default=BATCH, help_text='When using LDA in sklearn, you can choose between batch or online learning')
     lda_library = models.CharField(max_length = 2, choices=lda_libs, null=True, default=SKLEARN,help_text = 'you can use sklearn or https://github.com/lda-project/lda for LDA')
     top_chain_var = models.FloatField(null=True, default=0.05, help_text='Chain var parameter for dtm')

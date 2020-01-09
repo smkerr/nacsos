@@ -638,6 +638,7 @@ and {} topics\n'.format(qid, docs.count(),K))
             model = lda.LDA(
                 n_topics=K,
                 alpha=stat.alpha,
+                eta=stat.alpha,
                 n_iter=stat.max_iter*10,
             ).fit(tfidf)
             dtm = model.doc_topic_
@@ -645,6 +646,7 @@ and {} topics\n'.format(qid, docs.count(),K))
             model = LDA(
                 n_components=K,
                 doc_topic_prior=stat.alpha,
+                topic_word_prior=stat.beta,
                 learning_method=stat.get_lda_learning_method_display().lower(),
                 max_iter=stat.max_iter,
                 n_jobs=2
