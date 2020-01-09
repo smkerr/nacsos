@@ -446,7 +446,7 @@ class RunStats(models.Model):
                                                                  ' (try higher values in LDA, including > 1). Low (high) values indicate that'
                                                                  ' documents should be composed of few (many) topics. Also called theta.'
                                                                  ' In NMF, this is the regularization term alpha')
-    beta = models.FloatField(null=True, default=None, help_text='Concentration parameter of Dirichlet distribution of words in topics.'
+    beta = models.FloatField(null=True, blank=True, default=None, help_text='Concentration parameter of Dirichlet distribution of words in topics.'
                                                                 ' Low (high) values indicate that topics should be composed of few (many) words.'
                                                                 ' Also called eta. This parameter is not used in NMF')
     lda_learning_method = models.CharField(max_length = 2, choices=lda_choices, null=True, default=BATCH, help_text='When using LDA in sklearn, you can choose between batch or online learning')
