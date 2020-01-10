@@ -201,8 +201,9 @@ def do_query(qid, background=True, dis=False, resume=False, execute=True):
     else:
         # write the query into a text file
         fname = q.txtfile()
-        with open(fname,encoding='utf-8',mode="w") as qfile:
-            qfile.write(q.text.encode("utf-8").decode("utf-8"))
+        if not resume:
+            with open(fname,encoding='utf-8',mode="w") as qfile:
+                qfile.write(q.text.encode("utf-8").decode("utf-8"))
 
         time.sleep(1)
 
