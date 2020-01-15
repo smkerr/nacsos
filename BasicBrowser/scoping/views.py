@@ -5440,6 +5440,7 @@ def screen_doc_id(request,doid):
 
 @login_required
 def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
+
     if do:
         tag = do.tag
         pc = 0
@@ -5448,6 +5449,11 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         last = 0
     else:
         tag = Tag.objects.get(pk=tid)
+
+        try:
+            project = tag.query.project
+        except:
+            project = tag.project
 
         # Don't load the bar straight away on the first go
         if js==1:
