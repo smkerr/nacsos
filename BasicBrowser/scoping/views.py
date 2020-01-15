@@ -21,6 +21,7 @@ import mimetypes
 from cities.models import *
 from tmv_app.models import *
 import parliament.models as pms
+import twitter.models as tms
 # Create your views here.
 
 from django.utils import formats
@@ -2027,11 +2028,13 @@ def userpage(request, pid):
     template = loader.get_template('scoping/user.html')
 
     project = Project.objects.get(pk=pid)
+
+    qts = Tag.objects.filter(query__project=project).values_list('pk', flat=True)
+    pts = Tag.objects.filter(project=project).values_list('pk', flat=True)
     # Queries
     queries = Tag.objects.filter(
-        #query__users=request.user,
-        query__project=project
-    ).values('query__id','query__type','id').order_by('-id')
+        pk__in=set(qts | pts)
+    ).values('query__id','query__type','id','title').order_by('-id')
 
     if project.id==1 and project.title=='Sustainability':
          queries = queries.filter(id__gt=731)
@@ -2040,7 +2043,10 @@ def userpage(request, pid):
 
     for qt in queries:
         docstats = {}
-        q = Query.objects.get(pk=qt['query__id'])
+        try:
+            q = Query.objects.get(pk=qt['query__id'])
+        except:
+            q = None
         tag = Tag.objects.get(pk=qt['id'])
         docstats['ndocs'] = tag.all_docs
         #docstats['ndocs'] = Doc.objects.filter(tag=tag).distinct().count()
@@ -2070,14 +2076,22 @@ def userpage(request, pid):
             docstats['relevance'] = 0
 
         if docstats['revdocs'] > 0:
-            query_list.append({
-                'id': q.id,
-                'tag': tag,
-                'type': q.type,
-                'title': q.title,
-                'docstats': docstats
-            })
-
+            if q is not None:
+                query_list.append({
+                    'id': q.id,
+                    'tag': tag,
+                    'type': q.type,
+                    'title': q.title,
+                    'docstats': docstats
+                })
+            else:
+                query_list.append({
+                    'id': None,
+                    'tag': tag,
+                    'type': "default",
+                    'title': qt['title'],
+                    'docstats': docstats
+                })
     query = None # Query.objects.filter(project=project).last()#.query
 
     wis = WordIntrusion.objects.filter(
@@ -5439,7 +5453,16 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         if js==1:
             if pos==0:
                 time.sleep(0.5)
-            if tag.utterance_linked:
+            if tag.status_set.exists():
+                dois = DocOwnership.objects.filter(
+                    order__isnull=False,
+                    tag=tag,
+                    user=request.user
+                ).order_by('order')
+                dois = dois.values('order','tweet__text','relevant').annotate(
+                    doc__title=F('tweet__text')
+                )
+            elif tag.utterance_linked:
                 dois = DocOwnership.objects.filter(
                     order__isnull=False,
                     tag=tag,
@@ -5491,9 +5514,13 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                 ).order_by('order')
                 do = dois[pos]
             except:
+                try:
+                    project = tag.query.project
+                except:
+                    project = tag.project
                 return HttpResponseRedirect(reverse(
                     'scoping:userpage',
-                    kwargs={"pid":tag.query.project.id}
+                    kwargs={"pid":project.id}
                 ))
 
         last = dois.filter(relevant__gt=0).count()
@@ -5510,7 +5537,6 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         pc = round(pos/todo*100)
         next = pos+1
 
-
     if do.utterance_linked:
         doc = do.utterance
         levels = None # would be categories
@@ -5521,35 +5547,56 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         cities = None
 
     else:
-        if do.title_only:
-            doc = do.doc.highlight_fields(tag.query,["title","id","wosarticle__di"])
-        elif do.full_text:
-            doc =  do.doc.highlight_fields(tag.query,["title","id","wosarticle__so","wosarticle__py","wosarticle__di","docfile"])
+        if do.tweet:
+            doc = do.tweet
+            levels = None # would be categories
+            try:
+                project = tag.query.project
+            except:
+                project = tag.project
+            notes = Note.objects.filter(
+                project=project,
+                tweet = do.tweet
+            )
+            cities = None
         else:
-            doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
+            if do.title_only:
+                doc = do.doc.highlight_fields(tag.query,["title","id","wosarticle__di"])
+            elif do.full_text:
+                doc =  do.doc.highlight_fields(tag.query,["title","id","wosarticle__so","wosarticle__py","wosarticle__di","docfile"])
+            else:
+                doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
 
-        notes = Note.objects.filter(
-            project=tag.query.project,
-            user = do.user,
-            doc = do.doc
-        )
+            notes = Note.objects.filter(
+                project=tag.query.project,
+                user = do.user,
+                doc = do.doc
+            )
 
-        cats = Category.objects.filter(project=tag.query.project)#.order_by('name')
+        cats = Category.objects.filter(project=project)#.order_by('name')
 
         levels = []
         for l in cats.exclude(name__contains="<hidden>").values_list('level',flat=True).distinct().order_by('level'):
             lcats = []
             for t in cats.filter(level=l).order_by('name'):
-                dcus = cats.filter(
-                    pk=t.pk,
-                    docusercat__user=request.user,
-                    docusercat__doc=do.doc
-                )
-                dcs = cats.filter(
-                    doccat__category=t,
-                    doccat__doc=do.doc,
-                    doccat__query_tagged=True
-                )
+                if do.tweet:
+                    dcus = cats.filter(
+                        pk=t.pk,
+                        docusercat__user=request.user,
+                        docusercat__tweet=do.tweet
+                    )
+                    dcs = cats.none()
+                else:
+                    dcus = cats.filter(
+                        pk=t.pk,
+                        docusercat__user=request.user,
+                        docusercat__doc=do.doc
+                    )
+                    dcs = cats.filter(
+                        doccat__category=t,
+                        doccat__doc=do.doc,
+                        doccat__query_tagged=True
+                    )
                 e = dcus.exists() or dcs.exists()
                 lcats.append((e,t))
             parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))
@@ -5562,7 +5609,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                 cname= f"level {l}"
             levels.append((cname,lcats))
 
-        if do.query.project.id in [177, 136, 201]:
+        if project.id in [177, 136, 201]:
             cities = do.doc.cities.all()
         else:
             cities = None
@@ -5572,10 +5619,19 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         criteria = markdown.markdown(tag.query.criteria, extensions=["tables"])
         criteria = criteria.replace('<table>','<table style="width:100%">')
     except:
-        criteria = tag.query.criteria
+        try:
+            criteria = tag.query.criteria
+        except:
+            criteria = None #TODO project criteria
+
+    try:
+        project = tag.query.project
+    except:
+        project = tag.project
+
 
     context = {
-        'project':tag.query.project,
+        'project': project,
         'tag': tag,
         'criteria': criteria,
         'cities': cities,
@@ -5592,7 +5648,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         'last': last
     }
 
-    if tag.query.project.rating_first:
+    if project.rating_first:
         return render(request, 'scoping/screen_doc_alt.html', context)
     else:
         return render(request, 'scoping/screen_doc.html', context)
@@ -5606,9 +5662,13 @@ def rate_doc(request,tid,ctype,doid,pos,todo,rel):
     do.save()
     pos+=1
     if pos==todo or todo==0:
+        try:
+            project = tag.query.project
+        except:
+            project = tag.project
         return HttpResponseRedirect(reverse(
             'scoping:userpage',
-            kwargs={'pid':tag.query.project.id}
+            kwargs={'pid':tag.project.id}
         ))
 
 
@@ -5624,42 +5684,37 @@ def rate_doc(request,tid,ctype,doid,pos,todo,rel):
 
 @login_required
 def cat_doc(request):
+    if request.GET.get('tweet',False):
+        doc_field = "tweet_id"
+    else:
+        doc_field = "doc_id"
+    filter = {
+        doc_field: int(request.GET['did']),
+        "category_id": int(request.GET['cid']),
+        "user": request.user
+    }
     try:
-        dc, created = DocUserCat.objects.get_or_create(
-            doc_id=int(request.GET['did']),
-            category_id=int(request.GET['cid']),
-            user=request.user
-        )
+        dc, created = DocUserCat.objects.get_or_create(**filter)
     except MultipleObjectsReturned:
-        DocUserCat.objects.filter(
-            doc_id=int(request.GET['did']),
-            category_id=int(request.GET['cid']),
-            user=request.user
-        ).delete()
-        dc, created = DocUserCat.objects.get_or_create(
-            doc_id=int(request.GET['did']),
-            category_id=int(request.GET['cid']),
-            user=request.user
-        )
+        DocUserCat.objects.filter(**filter).delete()
+        dc, created = DocUserCat.objects.get_or_create(**filter)
         created = False
     if not created:
         dc.delete()
+
     return HttpResponse()
 
 ## Universal screening function, ctype = type of documents to show
 @login_required
-def screen(request,qid,tid,ctype,d=0):
+def screen(request,tid,ctype,d=0):
     d = int(d)
     ctype = int(ctype)
-    query = Query.objects.get(pk=qid)
     tag = Tag.objects.get(pk=tid)
 
     user = request.user
 
-
     dois = DocOwnership.objects.filter(
         tag=tag,
-        query=query,
         user=user
     )
     dois.update(order=None)
@@ -5668,9 +5723,10 @@ def screen(request,qid,tid,ctype,d=0):
     else:
         dois = dois.filter(relevant=ctype)
     dois = dois.order_by('date')
-    q = Query.objects.get(pk=qid)
-    if q.project_id in [119, 113]:
-        dois = dois.order_by('doc__title')
+    q = tag.query
+    if hasattr(q,'project_id'):
+        if q.project_id in [119, 113]:
+            dois = dois.order_by('doc__title')
 
     if tag.document_linked or tag.utterance_linked:
         # do in background
@@ -6394,3 +6450,76 @@ def assign_meta(request):
 
 
     return HttpResponse(message)
+
+@login_required
+def twitter_home(request,pid):
+    ''' Manages the assignment of tweets to users for checking
+    '''
+    p = Project.objects.get(pk=pid)
+    searches = tms.TwitterSearch.objects.filter(project=p)
+    total_tweets = p.tweets
+    new_sample = TwitterForm(p=p)
+
+    tags = Tag.objects.filter(project=p)
+    dos = DocOwnership.objects.filter(tag__in=tags)
+
+
+
+    if request.method == "POST":
+        form = TwitterForm(request.POST,p=p)
+        if form.is_valid():
+            x = form.cleaned_data['double_check']
+            users = User.objects.filter(pk__in=form.cleaned_data['users'])
+            n_users = users.count()
+            tag = Tag(
+                project=p,
+                title=datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            )
+            tag.save()
+            try:
+                sids=random.sample(list(tms.Status.searches.through.objects.filter(
+                    twittersearch__in=searches
+                ).values_list('status_id',flat=True)),10000*searches.count())
+            except:
+                sids=list(tms.Status.searches.through.objects.filter(
+                    twittersearch__in=searches
+                ).values_list('status_id',flat=True))
+
+            sids = set(sids) - set(dos.values_list('pk',flat=True))
+            tweet_ids = tms.Status.objects.filter(
+                pk__in=sids
+            ).values_list('pk',flat=True)
+            tweets = tms.Status.objects.filter(
+                pk__in=tweet_ids,
+                lang="en"
+            )
+
+            sample = random.sample(list(
+                tweets.values_list('id',flat=True)
+            ), form.cleaned_data['sample_size'])
+            sample_tweets = tms.Status.objects.filter(pk__in=sample)
+
+            Through = tms.Status.tag.through
+            dqs = [Through(status_id=t,tag=tag) for t in sample]
+            Through.objects.bulk_create(dqs)
+
+
+            if form.cleaned_data['double_check']:
+                dqs = []
+                for u in users:
+                    dqs += [DocOwnership(tweet=t, tag=tag, user=u) for t in sample_tweets]
+            else:
+                dqs = [DocOwnership(tweet=t, tag=tag, user=users[i%n_users]) for i,t in enumerate(sample_tweets)]
+            DocOwnership.objects.bulk_create(dqs)
+
+
+
+
+
+    context = {
+        'project': p,
+        'n_tweets': total_tweets,
+        'new_sample': new_sample,
+        'samples': tags,
+    }
+    return render(request, 'scoping/twitter-home.html',context)

@@ -9,7 +9,11 @@
 
 <div class="container ">
     <br>
-    <h4> Query Screener (<a href="{% url 'scoping:query' tag.query.id %}">Query no. {{tag.query.id}}</a>) - Welcome, {{user.username}}, your progress: </h4>
+    <h4>
+      {% if tag.query %}
+          Query Screener (<a href="{% url 'scoping:query' tag.query.id %}">Query no. {{tag.query.id}}</a>) -
+      {% endif %}
+          Welcome, {{user.username}}, your progress: </h4>
 
     <div class="m-4" style="margin-bottom:-15px !important">
         <div id="graphBox" style="width:100%; height:20px"></div>
@@ -59,6 +63,7 @@
                       <input type="hidden" name="next" value="{{ request.path }}">
                       {% if do.utterance_linked %}
                         <input type="hidden" name="ut_id" value="{{do.utterance.id}}"></input>
+                      {% elif do.tweet %}
                       {% else %}
                         <input type="hidden" name="docn" value="{{do.doc.id}}"></input>
                       {% endif %}
@@ -91,6 +96,10 @@
                     from <a href="{% url 'parliament:document' doc.document.id %}"> {{doc.document}} </a>
                     with {{doc.paragraph_set.count}} paragraphs
                 {% include "parliament/snippets/ut_info.html" with ut=doc %}
+                </div>
+            {% elif do.tweet %}
+              <div id="docbox">
+                {% include "scoping/snippets/tweet_info.html" with tweet=do.tweet %}
                 </div>
             {% else %}
                 {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
@@ -163,7 +172,7 @@
       </div>
     {% endif %}
 
-    {% if project.rating_first %}
+    {% if project.rating_first %}/1134040086465695745
 
       <div class="border rounded bg-white my-3 p-2">
         <p>Finish rating this document and move on to the next document </p>
@@ -230,14 +239,21 @@ $(".cat").click(function(){
     } else {
         method = "add"
     }
-    $(this).toggleClass("True")
+    {% if do.doc %}
+    var did = "{{do.doc.pk}}"
+    {% else %}
+    var did = "{{do.tweet.pk}}"
+    {% endif %}
+    const but = $(this)
     $.ajax({
         url: "{% url 'scoping:cat_doc' %}",
         data: {
-          "did": "{{do.doc.pk}}",
+          "did": did,
           "cid": id2,
+          "tweet": "{{do.tweet}}"
         },
         success: function(data) {
+          but.toggleClass("True")
         }
     })
 })

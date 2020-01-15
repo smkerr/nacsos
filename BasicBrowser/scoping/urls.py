@@ -47,7 +47,8 @@ urlpatterns = [
     path('del_statement', views.del_statement, name="del_statement"),
     path('rate_par/<int:tid>/<int:ctype>/<int:doid>/<int:todo>/<int:done>', views.rate_par, name="rate_par"),
 
-
+    ### twitter
+    path('twitter-home/<int:pid>', views.twitter_home, name="twitter_home"),
 
 
     ### Meta-analysis stuff
@@ -144,7 +145,7 @@ urlpatterns = [
 
 
     #### Individual docs
-    url(r'^screen/(?P<qid>[0-9]+)/(?P<tid>[0-9]+)/(?P<ctype>[0-9]+)/(?P<d>[-0-9]+)$', views.screen, name='screen'),
+    url(r'^screen/(?P<tid>[0-9]+)/(?P<ctype>[0-9]+)/(?P<d>[-0-9]+)$', views.screen, name='screen'),
     url(r'^do_review$', views.do_review, name='do_review'),
     url(r'^add_note', views.add_note, name='add_note'),
 

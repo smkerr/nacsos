@@ -2,8 +2,9 @@ from django.db import models
 import parliament.models as pmodels
 from django.contrib.postgres.fields import JSONField
 
-import scoping.models as smodels
-
+#import scoping.models as smodels
+#rom scoping.models import Project
+import scoping
 # Create your models here.
 
 class TwitterBaseModel(models.Model):
@@ -13,7 +14,7 @@ class TwitterBaseModel(models.Model):
 
     id = models.BigIntegerField(primary_key=True)
     created_at = models.DateTimeField(null=True)
-    lang = models.CharField(max_length=10, null=True)
+    lang = models.CharField(max_length=10, null=True, db_index=True)
     entities = JSONField(null=True)
 
     fetched = models.DateTimeField(u'Fetched', null=True, blank=True)
@@ -112,6 +113,7 @@ class Status(TwitterBaseModel):
     geo = JSONField(null=True)
 
     searches = models.ManyToManyField('TwitterSearch')
+    tag = models.ManyToManyField('scoping.Tag')
 
     def __unicode__(self):
         return u'%s: %s' % (self.author, self.text)
@@ -122,7 +124,7 @@ class TwitterSearch(models.Model):
     scrape_fetched = models.DateTimeField(u'Fetched', null=True, blank=True)
     until = models.DateTimeField(null=True)
     since = models.DateTimeField(null=True)
-    project = models.ForeignKey(smodels.Project, on_delete=models.CASCADE, null=True)
+    project = models.ForeignKey('scoping.Project', on_delete=models.CASCADE, null=True)
 
 class SearchProgress(models.Model):
 

@@ -30,6 +30,9 @@ from gensim.models import Doc2Vec
 import gensim
 
 import tmv_app.models as tm
+import twitter.models as tms
+
+#tms = twitter.models.Status
 # Create your models here.
 
 def get_notnull_fields(model):
@@ -76,6 +79,7 @@ class Project(models.Model):
     queries = models.IntegerField(default=0)
     docs = models.IntegerField(default=0)
     reldocs = models.IntegerField(default=0)
+    tweets = models.IntegerField(default=0)
     tms = models.IntegerField(default=0)
 
     rating_first = models.BooleanField(default=False)
@@ -566,7 +570,8 @@ class Category(models.Model):
       return self.name
 
 class DocUserCat(models.Model):
-    doc = models.ForeignKey('Doc', on_delete=models.CASCADE)
+    doc = models.ForeignKey('Doc', null=True, on_delete=models.CASCADE)
+    tweet = models.ForeignKey(tms.Status, null=True, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
@@ -592,6 +597,7 @@ class Tag(models.Model):
     title = models.TextField(null=True, verbose_name="Tag Title")
     text = models.TextField(null=True, verbose_name="Tag Text")
     query = models.ForeignKey('Query',null=True, on_delete=models.CASCADE, verbose_name="TagQuery")
+    project = models.ForeignKey('Project', null=True, on_delete=models.CASCADE)
     document_linked = models.BooleanField(default=True)
     utterance_linked = models.BooleanField(default=False)
 
@@ -608,17 +614,22 @@ class Tag(models.Model):
 
     def update_tag(self):
         users = User.objects.filter(docownership__tag=self).distinct()
-        self.all_docs = self.doc_set.count()
-        self.a_docs = self.docownership_set.distinct('doc_id').count()
+        if self.status_set.exists():
+            doc_id = "tweet_id"
+            self.all_docs = self.status_set.count()
+        else:
+            doc_id = "doc_id"
+            self.all_docs = self.doc_set.count()
+        self.a_docs = self.docownership_set.distinct(doc_id).count()
         self.seen_docs = self.docownership_set.filter(
             relevant__gt=0
-        ).distinct('doc_id').count()
+        ).distinct(doc_id).count()
         self.rel_docs = self.docownership_set.filter(
             relevant=1
-        ).distinct('doc_id').count()
+        ).distinct(doc_id).count()
         self.irrel_docs = self.docownership_set.filter(
             relevant=2
-        ).distinct('doc_id').count()
+        ).distinct(doc_id).count()
         try:
             self.relevance = self.rel_docs/self.seen_docs
         except:
@@ -632,12 +643,20 @@ class Tag(models.Model):
         ).distinct()
         if users.count()==2:
             scores = []
-            coded = Doc.objects.filter(
-                docownership__tag=self,
-                docownership__relevant__gt=0
-            ).values('pk').annotate(users=Count('pk')).filter(
-                users=2
-            )
+            if self.doc_set.exists():
+                coded = Doc.objects.filter(
+                    docownership__tag=self,
+                    docownership__relevant__gt=0
+                ).values('pk').annotate(users=Count('pk')).filter(
+                    users=2
+                )
+            else:
+                coded = tms.Status.objects.filter(
+                    docownership__tag=self,
+                    docownership__relevant__gt=0
+                ).values('pk').annotate(users=Count('pk')).filter(
+                    users=2
+                )
 
             coded_ids = set(coded.values_list('pk',flat=True))
 
@@ -751,33 +770,35 @@ class DocCat(models.Model):
 
 @receiver(post_save, sender=DocUserCat)
 def handle_cat_doc(sender, instance, **kwargs):
-    dc, created = DocCat.objects.get_or_create(
-        doc=instance.doc,
-        category=instance.category
-    )
-    dc.save()
-    dc.docusercats.add(instance)
+    if instance.doc:
+        dc, created = DocCat.objects.get_or_create(
+            doc=instance.doc,
+            category=instance.category
+        )
+        dc.save()
+        dc.docusercats.add(instance)
 
 @receiver(pre_delete,sender=DocUserCat)
 def handle_uncat_doc(sender, instance, **kwargs):
-    dc, created = DocCat.objects.get_or_create(
-        doc=instance.doc,
-        category=instance.category
-    )
-    if created:
-        dc.delete()
-    if dc.docusercats.count() > 1:
-        dc.docusercats.remove(instance)
-    else:
-        print("bla")
-        if not dc.user_inherited:
-            print("del")
-            dc.docusercats.remove(instance)
+    if instance.doc:
+        dc, created = DocCat.objects.get_or_create(
+            doc=instance.doc,
+            category=instance.category
+        )
+        if created:
             dc.delete()
-        else:
+        if dc.docusercats.count() > 1:
             dc.docusercats.remove(instance)
-            dc.user_tagged=False
-            dc.save()
+        else:
+            print("bla")
+            if not dc.user_inherited:
+                print("del")
+                dc.docusercats.remove(instance)
+                dc.delete()
+            else:
+                dc.docusercats.remove(instance)
+                dc.user_tagged=False
+                dc.save()
 
 
 class Doc(models.Model):
@@ -1259,6 +1280,7 @@ class Note(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Notemaker")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
     objects = NoteManager()
+    tweet = models.ForeignKey(tms.Status, on_delete=models.CASCADE, null=True)
     dmc = models.ForeignKey(DocMetaCoding, on_delete=models.CASCADE, null=True)
     effect = models.ForeignKey(StudyEffect, on_delete=models.CASCADE, null=True)
     field_group = models.TextField(null=True)
@@ -1302,6 +1324,7 @@ class DocOwnership(models.Model):
     doc = models.ForeignKey(Doc, on_delete=models.CASCADE, null=True)
     docpar = models.ForeignKey(DocPar, on_delete=models.CASCADE, null=True)
     utterance = models.ForeignKey(pms.Utterance, on_delete=models.CASCADE, null=True)
+    tweet = models.ForeignKey(tms.Status, on_delete=models.CASCADE, null=True)
     document_linked = models.BooleanField(default=True)
     utterance_linked = models.BooleanField(default=False)
 

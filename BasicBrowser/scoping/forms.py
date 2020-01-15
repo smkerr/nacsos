@@ -27,10 +27,27 @@ class RiskOfBiasForm(forms.ModelForm):
         model = (RiskOfBias)
         exclude = ()
 
+
+class TwitterForm(forms.Form):
+    def __init__(self,*args,**kwargs):
+        p = kwargs.pop('p',Project.objects.all())
+        super(TwitterForm, self).__init__(*args, **kwargs)
+        self.fields['users'].queryset = User.objects.filter(
+            projectroles__project=p
+        )
+        if hasattr(p, 'pk'):
+            self.fields['pid'].initial = p.pk
+    sample_size = forms.IntegerField(min_value=0, max_value=1000)
+    users = forms.ModelMultipleChoiceField(queryset=User.objects.all())
+    double_check = forms.BooleanField(
+        help_text="Click to make sure each tweet is seen by all users,"
+        +" if not each tweet will be seen by a single user"
+        )
+    pid = forms.IntegerField(widget=forms.HiddenInput())
+
 class MetaAssignmentForm(forms.Form):
     def __init__(self,*args,**kwargs):
         p = kwargs.pop('p',Project.objects.all())
-        print(p)
         super(MetaAssignmentForm, self).__init__(*args, **kwargs)
         self.fields['users'].queryset = User.objects.filter(
             projectroles__project=p

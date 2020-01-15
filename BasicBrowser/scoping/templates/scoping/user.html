@@ -111,16 +111,16 @@
               <td>{{q.tag.title}}</td>
               {% if q.docstats.revdocs > 0 %}
                 <td class="review{{q.unreviewed_docs}} review">
-                  <a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/0/0">
+                  <a href="/scoping/screen/{{q.tag.id}}/0/0">
                     {{q.docstats.unreviewed_docs}}</a></td>
                 <td class="review{{q.revieweddocs}} review">
-                  <a href="/scoping/screen/{{q.id}}/{{q.tag.id}}/99/0">
+                  <a href="/scoping/screen/{{q.tag.id}}/99/0">
                     {{q.docstats.reviewed_docs}}</a>
                     ({{q.docstats.relevance}}% relevant)</td>
 
                 {% for r in q.docstats.dts %}
                 <td class="review{{q.reldocs}} review">
-                  <a href="{% url 'scoping:screen' q.id q.tag.id r.r 0 %}">
+                  <a href="{% url 'scoping:screen' q.tag.id r.r 0 %}">
                     {{ r.n }}</a></td>
                 {% endfor %}
               {% else %}

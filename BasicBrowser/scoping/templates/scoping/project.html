@@ -37,6 +37,11 @@
     </div>
 
     <div class="container bg-white border rounded m-4 p-2">
+        <h3>Twitter</h3>
+        Manage twitter data associated with this project <a href="{% url 'scoping:twitter_home' project.id %}" >>></a>
+    </div>
+
+    <div class="container bg-white border rounded m-4 p-2">
         <h3>Duplicates</h3>
         Find duplicated documents in this project <a href="{% url 'scoping:manage_duplicates' project.id %}" >>></a>
     </div>

@@ -1,0 +1,49 @@
+{% extends "scoping/base_bs.html" %}
+
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% block content %}
+
+<h1> Scoping Review Helper</h1>
+<hr>
+<h2> Twitter Data - {{project.title}}</h2>
+<br>
+
+<div class="row">
+    <div class="col-sm bg-white border rounded m-2 p-2">
+        <h3> Collected data</h3>
+        Approximately {{n_tweets}} tweets
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm bg-white border rounded m-2 p-2">
+        <h3> Screened samples</h3>
+        {% if samples %}
+          <table class="table">
+            <tr>
+              <th>Sample
+              <th>Docs Assigned
+              <th>Docs Screened
+            </tr>
+          {% for s in samples %}
+          <tr><td>{{s}} <a href="{% url 'scoping:delete' thing='Tag' thingid=s.id %}">Delete</a>
+            <td>{{s.a_docs}}
+            <td>{{s.seen_docs}}
+              </tr>
+          {% endfor %}
+
+          </table>
+        {% else %}
+        There are no samples associated with this project
+        {% endif %}
+    </div>
+    <div class="col-sm bg-white border rounded m-2 p-2">
+        <h3>Set up new sample</h3>
+        <form method="POST" class="form">{% csrf_token %}
+        {% bootstrap_form new_sample %}
+        {% bootstrap_button 'Create sample' %}
+        </form>
+    </div>
+</div>
+
+{% endblock %}
