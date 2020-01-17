@@ -5674,7 +5674,7 @@ def rate_doc(request,tid,ctype,doid,pos,todo,rel):
             project = tag.project
         return HttpResponseRedirect(reverse(
             'scoping:userpage',
-            kwargs={'pid':tag.project.id}
+            kwargs={'pid': project.id}
         ))
 
 
