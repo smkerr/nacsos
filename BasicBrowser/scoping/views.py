@@ -5584,7 +5584,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         levels = []
         for l in cats.exclude(name__contains="<hidden>").values_list('level',flat=True).distinct().order_by('level'):
             lcats = []
-            for t in cats.filter(level=l).order_by('name'):
+            for t in cats.filter(level=l).exclude(name__contains="<hidden>").order_by('name'):
                 if do.tweet:
                     dcus = cats.filter(
                         pk=t.pk,
