@@ -5690,7 +5690,7 @@ def rate_doc(request,tid,ctype,doid,pos,todo,rel):
 
 @login_required
 def cat_doc(request):
-    if request.GET.get('tweet',False):
+    if request.GET.get('tweet',False) is not "None":
         doc_field = "tweet_id"
     else:
         doc_field = "doc_id"
