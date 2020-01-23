@@ -5449,6 +5449,10 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         prev = 0
         next = 0
         last = 0
+        try:
+            project = tag.query.project
+        except:
+            project = tag.project
     else:
         tag = Tag.objects.get(pk=tid)
 
