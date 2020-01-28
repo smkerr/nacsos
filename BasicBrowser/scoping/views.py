@@ -5443,6 +5443,10 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
 
     if do:
         tag = do.tag
+        try:
+            project = tag.query.project
+        except:
+            project = tag.project
         pc = 0
         prev = 0
         next = 0
