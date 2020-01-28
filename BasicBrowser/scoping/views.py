@@ -5904,6 +5904,10 @@ def add_note(request):
     if tid is not None:
         tag = Tag.objects.get(pk=tid)
 
+        try:
+            project = tag.query.project
+        except:
+            project = tag.project
         note = Note(
             tag=tag,
             user=request.user,
