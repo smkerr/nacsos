@@ -2,7 +2,7 @@
 from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 from itertools import chain
-from django.db.models import Max
+from django.db.models import Max, Subquery, OuterRef
 from django.db.models import Q, Count, Func, F, Sum, Value as V
 from django.db.models.functions import Concat
 from django.core import serializers
@@ -3729,7 +3729,7 @@ def sortdocs(request):
             #single_fields.append(f)
         elif "docownership" in f:
             users.append(f)
-            single_fields.append(f)
+            #single_fields.append(f)
         elif "relevance" in f:
             rfields.append(f)
             single_fields.append(f)
@@ -3804,48 +3804,47 @@ def sortdocs(request):
             #    print(reldocs)
             #reldocs = reldocs.values("pk")
             #filt_docs = filt_docs.filter(pk__in=reldocs)
-        doids = set([])
+
+        user_objects = User.objects.filter(username__in=[u.split("__")[1] for u in users])
+
+        if download:
+            dos = DocOwnership.objects.filter(query=query)
+            if "tag__title" in f_fields:
+                dos = dos.filter(tag__title__icontains=tag_filter)
+            doids = set(dos.values_list('doc__id',flat=True))
+            filt_docs = filt_docs.filter(pk__in=doids)
+
         for u in users:
+            annotations = {}
             uname = u.split("__")[1]
             user = User.objects.get(username=uname)
             utag = f"{u}__tag"
-            single_fields = single_fields + (utag,)
-            #uval = reldocs.filter(docownership__user=user).docownership
+
+            dos = DocOwnership.objects.filter(
+                query = query,
+                user = user
+            )
             if "tag__title" in f_fields:
-                if not download:
-                    filt_docs = filt_docs.filter(
-                            docownership__user=user,
-                            docownership__query=query,
-                            docownership__tag__title__icontains=tag_filter
-                        )
-                filt_docs = filt_docs.annotate(**{
-                    u: models.Case(
-                            models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
-                            default=0,
-                            output_field=models.IntegerField()
-                    ),
-                    utag: models.Case(
-                            models.When(docownership__user=user,docownership__query=query,then='docownership__tag__id'),
-                            default=0,
-                            output_field=models.IntegerField()
-                    ),
-                })
-            else:
-                if not download:
-                    filt_docs = filt_docs.filter(docownership__user=user,docownership__query=query)
-                filt_docs = filt_docs.annotate(**{
-                    u: models.Case(
-                            models.When(docownership__user=user,docownership__query=query,then='docownership__relevant'),
-                            default=0,
-                            output_field=models.IntegerField()
-                    ),
-                    utag: models.Case(
-                            models.When(docownership__user=user,docownership__query=query,then='docownership__tag__id'),
-                            default=0,
-                            output_field=models.IntegerField()
-                    ),
-                })
+                dos = dos.filter(tag__title__icontains=tag_filter)
+            if not download:
+                doids = set(dos.values_list('doc__id',flat=True))
+                filt_docs = filt_docs.filter(pk__in=doids)
+
+            dos = dos.filter(
+                doc=OuterRef('pk'),
+            )
+
+            filt_docs = filt_docs.annotate(**{
+                u: Subquery(dos.values('relevant')[:1]),
+                utag: Subquery(dos.values('tag__id')[:1])
+            })
+
+        single_fields = single_fields +  tuple(users)
+        if "tag__title" in f_fields:
+            single_fields = single_fields +  tuple([f"{u}__tag" for u in users])
+
         print(f"user filtering took {time.time() - t0:.2} seconds")
+
     else:
         if "relevance_time" in rfields:
             filt_docs = filt_docs.annotate(
@@ -4089,7 +4088,10 @@ def sortdocs(request):
                     #d[u] = do.first().get_relevant_display()
                     num = d[u]
                     text = DocOwnership.Status[d[u]]
-                    tag = str(d[f"{u}__tag"])
+                    if f"{u}__tag" in d:
+                        tag = str(d[f"{u}__tag"])
+                    else:
+                        tag = "0"
                     user = str(User.objects.get(username=uname).id)
                     if not download:
                         d[u] = '<select class="relevant_cycle" data-user=' \
@@ -5451,6 +5453,10 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         prev = 0
         next = 0
         last = 0
+        try:
+            project = tag.query.project
+        except:
+            project = tag.project
     else:
         tag = Tag.objects.get(pk=tid)
 
@@ -5588,7 +5594,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         levels = []
         for l in cats.exclude(name__contains="<hidden>").values_list('level',flat=True).distinct().order_by('level'):
             lcats = []
-            for t in cats.filter(level=l).order_by('name'):
+            for t in cats.filter(level=l).exclude(name__contains="<hidden>").order_by('name'):
                 if do.tweet:
                     dcus = cats.filter(
                         pk=t.pk,
