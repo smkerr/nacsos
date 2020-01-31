@@ -4679,15 +4679,14 @@ def cycle_score(request):
         else:
             new_score = score+1
         new_score = score
-        try:
-            dos = DocOwnership.objects.filter(query__id=qid, doc__pk=doc_id, user__id=user, tag__id=tag)
-        except:
+        if tag==0:
             dos = DocOwnership.objects.filter(query__id=qid, doc__pk=doc_id, user__id=user)
+        else:
+            dos = DocOwnership.objects.filter(query__id=qid, doc__pk=doc_id, user__id=user, tag__id=tag)    
         if dos.count() == 1:
             docown = dos.first()
         else:
             docown = None
-        docown = dos.first()
         docown.relevant = new_score
         docown.save()
     else:
