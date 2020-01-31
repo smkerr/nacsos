@@ -3840,8 +3840,8 @@ def sortdocs(request):
             })
 
         single_fields = single_fields +  tuple(users)
-        if "tag__title" in f_fields:
-            single_fields = single_fields +  tuple([f"{u}__tag" for u in users])
+        #if "tag__title" in f_fields:
+        single_fields = single_fields +  tuple([f"{u}__tag" for u in users])
 
         print(f"user filtering took {time.time() - t0:.2} seconds")
 
