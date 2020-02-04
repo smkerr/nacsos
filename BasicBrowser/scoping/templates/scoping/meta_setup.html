@@ -45,7 +45,9 @@
             </table>
         </div>
         <div class="col">
-            <h4> Coded documents - <a href="{% url 'scoping:download_effects' project.id %}">download csv</a></h4>
+            <h4> Coded documents - <a href="{% url 'scoping:download_effects' project.id %}">download csv</a>
+              - <a href="{% url 'scoping:meta_report' project.id %}">View report</a>
+            </h4>
             <table class="table table-bordered">
                 {% for key,value in doc_counts.codings.items %}
                 <tr>

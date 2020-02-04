@@ -1,0 +1,21 @@
+{% extends "scoping/base_bs.html" %}
+
+{% load render_table from django_tables2 %}
+{% load bootstrap4 %}
+{% block content %}
+<p>
+<h1> Scoping Review Helper</h1>
+<hr>
+
+<div class="container bg-white border rounded ">
+    <h2> Meta-analysis report - {{project.title}}</h2>
+    <p>
+      <h3>Users</h3>
+    {{budf | safe}}
+
+    <p>
+      <h3>By document</h3>
+      {{ dsum | safe }}
+</div>
+
+{% endblock %}

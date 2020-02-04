@@ -55,6 +55,7 @@ urlpatterns = [
     path('meta-setup/<int:pid>', views.meta_setup, name="meta_setup"),
     path('meta-setup/assign_meta', views.assign_meta, name="assign_meta"),
     path('meta-setup/download_effects/<int:pid>', views.download_effects, name="download_effects"),
+    path('meta-setup/report/<int:pid>', views.meta_report, name="meta_report"),
     path('code-document/<int:docmetaid>',views.code_document,name='code_document'),
     path('code-document/<int:docmetaid>/<int:reorder>',views.code_document,name='code_document'),
     path('exclude-document/<int:dmc>',views.ExcludeView.as_view(), name="exclude"),

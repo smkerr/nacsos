@@ -2,7 +2,7 @@
 from django.shortcuts import render, render_to_response
 import os, time, math, itertools, csv, random
 from itertools import chain
-from django.db.models import Max, Subquery, OuterRef
+from django.db.models import Max, Subquery, OuterRef, Exists
 from django.db.models import Q, Count, Func, F, Sum, Value as V
 from django.db.models.functions import Concat
 from django.core import serializers
@@ -4682,7 +4682,7 @@ def cycle_score(request):
         if tag==0:
             dos = DocOwnership.objects.filter(query__id=qid, doc__pk=doc_id, user__id=user)
         else:
-            dos = DocOwnership.objects.filter(query__id=qid, doc__pk=doc_id, user__id=user, tag__id=tag)    
+            dos = DocOwnership.objects.filter(query__id=qid, doc__pk=doc_id, user__id=user, tag__id=tag)
         if dos.count() == 1:
             docown = dos.first()
         else:
@@ -6414,6 +6414,93 @@ def meta_setup(request,pid):
         'ec_form': ec_form
     }
     return render(request, 'scoping/meta_setup.html',context)
+
+@login_required
+def meta_report(request,pid):
+    p = Project.objects.get(pk=pid)
+
+    effects = StudyEffect.objects.filter(
+        doc=OuterRef('doc__pk'),
+        user=OuterRef('user__pk'),
+        project=OuterRef('project__pk')
+    )
+
+    exclusions = Exclusion.objects.filter(
+        doc=OuterRef('doc__pk'),
+        user=OuterRef('user__pk'),
+        project=OuterRef('project__pk')
+    )
+
+    dmcs = DocMetaCoding.objects.filter(
+        project=p
+    ).exclude(user=1).annotate(
+        effects = Exists(effects),
+        exclusions = Exists(exclusions)
+    )
+
+    dmcdf = pd.DataFrame.from_dict(list(dmcs.values(
+        'user__username','coded','effects','exclusions','doc__pk'
+    )))
+
+    dmcdf['included'] = 0
+    dmcdf.loc[(dmcdf['coded']==True) &  (dmcdf['exclusions']==False),'included'] = 1
+
+    rows = []
+    for name, group in dmcdf.groupby('user__username'):
+        rows.append({
+            "name": name,
+            "coded": group.query('coded==True').shape[0],
+            "uncoded": group.query('coded==False').shape[0],
+            "excluded": group.query('exclusions==True').shape[0],
+        })
+    budf = pd.DataFrame.from_dict(rows)
+    budf['included'] = budf['coded'] - budf['excluded']
+    budf['inclusion rate'] = budf['included'] / budf['coded']
+    budf = budf.set_index('name')
+
+    # Check for each doc
+    rows = []
+    for name, group in dmcdf.groupby('doc__pk'):
+        d = {"doc_id": name}
+        set_decisions = set([])
+        for u in budf.index:
+            gu = group[group['user__username']==u]
+            if gu.size:
+                if gu['included'].iloc[0]:
+                    d[u] = 'included'
+                elif gu['exclusions'].iloc[0]:
+                    d[u] = 'excluded'
+                else:
+                    d[u] = 'uncoded'
+                set_decisions.add(d[u])
+            else:
+                d[u] = 'unassigned'
+        if len(set_decisions) > 1:
+            set_decisions.discard('uncoded')
+        d['overall'] = "/".join(list(set_decisions))
+        rows.append(d)
+
+    dodf = pd.DataFrame.from_dict(rows)
+
+    dsum = pd.DataFrame(dodf.groupby('overall')['overall'].count()).rename(columns={"overall":"n"})
+    dsum['share'] = dsum['n'] / dsum['n'].sum()
+
+    context = {
+        'project': p,
+        'dsum': dsum.to_html(
+            classes="table",
+            formatters = {
+                'share': '{:,.2%}'.format
+            }
+        ).replace('border="1"','border="0"'),
+        'budf': budf.to_html(
+            classes="table",
+            formatters = {
+                'inclusion rate': '{:,.2%}'.format
+            }
+        ).replace('border="1"','border="0"')
+    }
+    return render(request, 'scoping/meta_report.html',context)
 
 def assign_meta(request):
     pid = request.POST.get('pid', None)
