@@ -379,7 +379,7 @@ class Post(models.Model):
     """
     title = models.TextField()
     person = models.ForeignKey(Person, on_delete=models.CASCADE)
-    party = models.ForeignKey(Party, on_delete=models.CASCADE)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE, null=True)
     parlperiod = models.ForeignKey(ParlPeriod, on_delete=models.CASCADE)
     cabinet = models.BooleanField(default=False)
     years = ArrayField(models.IntegerField())
