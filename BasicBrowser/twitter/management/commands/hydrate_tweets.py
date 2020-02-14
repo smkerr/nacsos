@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 from twitter.models import *
+import scoping.models as sms
 import os
 import sys
 from datetime import datetime, timedelta
@@ -39,10 +40,23 @@ class Command(BaseCommand):
         auth = tweepy.OAuthHandler(settings.CONSUMER_KEY, settings.CONSUMER_SECRET)
         auth.set_access_token(settings.ACCESS_TOKEN, settings.ACCESS_SECRET)
         api = tweepy.API(auth,wait_on_rate_limit=True)
+        dots = sms.DocOwnership.objects.filter(
+            tweet__isnull=False
+        ).values_list('tweet__id',flat=True)
         dry_statuses = Status.objects.filter(
-            #api_got=False,
-            text__icontains="…"
-        ).order_by('fetched')
+            pk__in=dots,
+            text__icontains="…",
+            api_got=False
+        )
+        if not dry_statuses.exists():
+            dry_statuses = Status.objects.filter(
+                api_got=False,
+                #text__icontains="…",
+                searches__project=197
+                #searches=57,
+                #searches__project=224
+            ).order_by('-fetched')
+        print(dry_statuses.count())
         slookup = []
         for s in dry_statuses.iterator():
             slookup.append(s.id)

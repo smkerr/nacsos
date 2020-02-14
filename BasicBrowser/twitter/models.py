@@ -13,7 +13,7 @@ class TwitterBaseModel(models.Model):
     scrape_got = models.BooleanField(default=False)
 
     id = models.BigIntegerField(primary_key=True)
-    created_at = models.DateTimeField(null=True)
+    created_at = models.DateTimeField(null=True, db_index=True)
     lang = models.CharField(max_length=10, null=True, db_index=True)
     entities = JSONField(null=True)
 
@@ -124,6 +124,7 @@ class TwitterSearch(models.Model):
     scrape_fetched = models.DateTimeField(u'Fetched', null=True, blank=True)
     until = models.DateTimeField(null=True)
     since = models.DateTimeField(null=True)
+    search_since = models.DateTimeField(null=True)
     project = models.ForeignKey('scoping.Project', on_delete=models.CASCADE, null=True)
 
 class SearchProgress(models.Model):
