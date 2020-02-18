@@ -84,6 +84,11 @@ class Command(BaseCommand):
                 prog.search_date = now
             prog.save()
             for ts in TwitterSearch.objects.all().order_by('id'):
+                print(ts.string)
+                if ts.search_since and prog.search_date < ts.search_since:
+                    print("skipping, as we are searching since later than this")
+                    time.sleep(0.1)
+                    continue
                 try:
                     os.remove("tweets/tweets.json")
                 except:
