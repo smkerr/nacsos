@@ -1029,6 +1029,7 @@ class Doc(models.Model):
             instance.tslug = Doc.make_tslug(instance.title)
 
 
+
 post_save.connect(Doc.post_create, sender=Doc)
 
 class DocSection(models.Model):

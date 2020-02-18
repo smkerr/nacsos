@@ -10,6 +10,9 @@ import os
 from datetime import timedelta
 from django.db.models.functions import Ln
 from django.db.models import F
+from psqlextra.types import PostgresPartitioningMethod
+from psqlextra.models import PostgresPartitionedModel
+import architect
 
 class MinMaxFloat(models.FloatField):
     """
@@ -347,10 +350,13 @@ class HTopicYear(models.Model):
 ## for docs and topics respectively
 
 
-class DocTopic(models.Model):
+class DocTopic(PostgresPartitionedModel):
     """
     Relates :model:`scoping.Doc` or objects from parliament (paragraphs, speeches) with :model:`tmv_app.Topics` and holds the corresponding topic scores
     """
+    class PartitioningMeta:
+        method = PostgresPartitioningMethod.RANGE
+        key = ["run_id"]
     doc = models.ForeignKey('scoping.Doc', null=True, on_delete=models.SET_NULL)
     par = models.ForeignKey('parliament.Paragraph',null=True, on_delete=models.SET_NULL)
     ut = models.ForeignKey('parliament.Utterance',null=True, on_delete=models.SET_NULL)

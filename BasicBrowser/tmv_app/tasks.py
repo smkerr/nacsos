@@ -443,6 +443,7 @@ def k_fold(run_id,k_folds):
 
 @shared_task
 def do_nmf(run_id):
+    
     stat = RunStats.objects.get(run_id=run_id)
     qid = stat.query.id
     K = stat.K
