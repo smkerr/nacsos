@@ -442,7 +442,7 @@ def k_fold(run_id,k_folds):
     return
 
 @shared_task
-def do_nmf(run_id):
+def do_nmf(run_id, no_processes=16):
     stat = RunStats.objects.get(run_id=run_id)
     qid = stat.query.id
     K = stat.K
@@ -685,7 +685,6 @@ and {} topics\n'.format(qid, docs.count(),K))
 
         chunk_size = 100000
 
-        ps = 16
         parallel_add = True
 
         all_dts = []
@@ -704,9 +703,9 @@ and {} topics\n'.format(qid, docs.count(),K))
                 l = glength
             docs = range(f,l)
             doc_batches = []
-            for p in range(ps):
-                doc_batches.append([x for x in docs if x % ps == p])
-            pool = Pool(processes=ps)
+            for p in range(no_processes):
+                doc_batches.append([x for x in docs if x % no_processes == p])
+            pool = Pool(processes=no_processes)
             make_t0 = time()
             values_list.append(pool.map(partial(
                 db.f_gamma_batch, gamma=gamma,
@@ -722,7 +721,7 @@ and {} topics\n'.format(qid, docs.count(),K))
 
             add_t0 = time()
             values_list = [item for sublist in values_list for item in sublist]
-            pool = Pool(processes=ps)
+            pool = Pool(processes=no_processes)
             pool.map(insert_many, values_list)
             pool.terminate()
             add_t += time() - add_t0
