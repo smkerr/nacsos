@@ -160,7 +160,7 @@ def add_doc(r, q, update):
         try:
             article.save()
         except:
-            print(r)
+            print("Failed to save article for record", r)
             sys.exit()
 
 
@@ -243,9 +243,7 @@ def add_doc(r, q, update):
         try:
             doc.first_author = doc.docauthinst_set.all().order_by('position').first().AU
         except:
-            pass
-        # except:
-        #     pass
+            print("failed to extract first author.")
 
 
 def read_wos(res, q, update, deduplicate=False):

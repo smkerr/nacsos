@@ -485,7 +485,7 @@ def do_nmf(run_id, no_processes=16):
 
     print('\n###############################\
     \n## Doing NMF on query {} with {} documents \
-and {} topics\n'.format(qid, docs.count(),K))
+and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
 
     # Get the docs into lists
     abstracts, docsizes, ids, citations = proc_docs(docs, stoplist, stat.fulltext, stat.citations)
