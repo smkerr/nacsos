@@ -79,13 +79,13 @@ def upload_docs(qid, update):
     i = inspect()
     s = i.reserved()
     a = i.active()
-    list(flatten(list(a.values()) + list(s.values())))
-    for t in flatten(list(a.values()) + list(s.values())):
-        if "upload_docs" in t["name"]:
-            if eval(t['args'])[0] == qid:
-                if str(t['id']) != str(upload_docs.request.id):
-                    print("already running!")
-                    return qid
+    if a is not None and s is not None:
+        for t in flatten(list(a.values()) + list(s.values())):
+            if "upload_docs" in t["name"]:
+                if eval(t['args'])[0] == qid:
+                    if str(t['id']) != str(upload_docs.request.id):
+                        print("already running!")
+                        return qid
     q = Query.objects.get(pk=qid)
     q.doc_set.clear()
     q.upload_log = ""
