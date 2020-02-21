@@ -73,18 +73,18 @@ class Command(BaseCommand):
             while exporting:
                 gc.collect()
                 b = l - timedelta(days=30)
-                t_ids = tweets.filter(created_at__gt=b,created_at__lte=l).exclude(text__iregex="^RT @").values_list('id',flat=True)
+                t_ids = list(tweets.filter(created_at__gt=b,created_at__lte=l).exclude(text__iregex="^RT @").values_list('id',flat=True))
                 t_chunk = tweets.filter(pk__in=t_ids)
                 uids = set(t_chunk.values_list('author__id',flat=True))
                 user_chunk = User.objects.filter(pk__in=uids)
 
-                tweet_values = t_chunk.annotate(
-                    retweeted_by_user_id=ArrayAgg('retweeted_by')
-                ).values(*fields)
-
                 with open(f'/usr/local/apsis/slowhome/galm/exports/{search.string}/{i}_tweets.json','w') as file:
                     #json.dump(serialize('json',tweets,cls=DjangoJSONEncoder),f)
-                    file.write(json.dumps(list(tweet_values),cls=DjangoJSONEncoder))
+                    file.write(json.dumps(list(
+                        t_chunk.annotate(
+                            retweeted_by_user_id=ArrayAgg('retweeted_by')
+                        ).values(*fields)
+                    ),cls=DjangoJSONEncoder))
                 with open(f'/usr/local/apsis/slowhome/galm/exports/{search.string}/{i}_users.json','w') as file:
                     file.write(serialize('json',user_chunk,cls=DjangoJSONEncoder))
 

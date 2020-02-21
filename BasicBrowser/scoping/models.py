@@ -294,6 +294,7 @@ class Intervention(models.Model):
     framing_units = ArrayField(models.TextField(), null=True)
     framing_units.multiple = True
     timing = models.TextField(null=True)
+    timing.multiple = True
     payment = models.TextField(null=True)
     granularity = models.TextField(null=True)
     medium = ArrayField(models.TextField(), null=True)
@@ -1027,6 +1028,7 @@ class Doc(models.Model):
             return
         else:
             instance.tslug = Doc.make_tslug(instance.title)
+
 
 
 post_save.connect(Doc.post_create, sender=Doc)
