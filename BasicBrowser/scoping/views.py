@@ -2031,9 +2031,20 @@ def userpage(request, pid):
 
     qts = Tag.objects.filter(query__project=project).values_list('pk', flat=True)
     pts = Tag.objects.filter(project=project).values_list('pk', flat=True)
+
+    dos = DocOwnership.objects.filter(
+        tag=OuterRef('pk'),
+        user=request.user
+    )
+
+    ts = Tag.objects.filter(
+        pk__in=set(qts | pts),
+    ).annotate(
+        dos = Exists(dos)
+    ).filter(dos=True)
     # Queries
     queries = Tag.objects.filter(
-        pk__in=set(qts | pts)
+        pk__in=ts.values_list('pk')
     ).values('query__id','query__type','id','title').order_by('-id')
 
     if project.id==1 and project.title=='Sustainability':
@@ -5637,9 +5648,13 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         else:
             cities = None
 
+    if tag.query:
+        criteria = tag.query.criteria
+    else:
+        criteria = tag.project.criteria
 
     try:
-        criteria = markdown.markdown(tag.query.criteria, extensions=["tables"])
+        criteria = markdown.markdown(criteria, extensions=["tables"])
         criteria = criteria.replace('<table>','<table style="width:100%">')
     except:
         try:
@@ -5897,6 +5912,7 @@ def remove_tech(request,doc_id,tid,thing='Category'):
 def add_note(request):
     doc_id = request.POST.get('docn',None)
     ut_id = request.POST.get('ut_id', None)
+    status_id = request.POST.get('status_id', None)
     tid = request.POST.get('tag',None)
     qid = request.POST.get('qid',None)
     ctype = request.POST.get('ctype',None)
@@ -5919,11 +5935,14 @@ def add_note(request):
             tag=tag,
             user=request.user,
             date=timezone.now(),
-            project=tag.query.project,
+            project=project,
             text=text
         )
 
-        if tag.document_linked:
+        if tag.status_set.exists():
+            status = tms.Status.objects.get(pk=status_id)
+            note.tweet = status
+        elif tag.document_linked:
             doc = Doc.objects.get(pk=doc_id)
             note.doc = doc
         elif ut_id:

@@ -80,6 +80,7 @@ class Project(models.Model):
     docs = models.IntegerField(default=0)
     reldocs = models.IntegerField(default=0)
     tweets = models.IntegerField(default=0)
+    criteria = models.TextField(null=True)
     tms = models.IntegerField(default=0)
 
     rating_first = models.BooleanField(default=False)
