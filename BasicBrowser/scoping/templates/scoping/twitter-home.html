@@ -29,7 +29,10 @@
               <th>Docs Screened
             </tr>
           {% for s in samples %}
-          <tr><td>{{s}} <a href="{% url 'scoping:delete' thing='Tag' thingid=s.id %}">Delete</a>
+          <tr>
+
+            <td>{{s}}{% if delete %} <a href="{% url 'scoping:delete' thing='Tag' thingid=s.id %}">Delete</a>
+            {% endif %}
             <td>{{s.a_docs}}
             <td>{{s.seen_docs}}
               </tr>
