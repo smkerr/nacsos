@@ -6657,3 +6657,29 @@ def twitter_home(request,pid):
         'samples': tags,
     }
     return render(request, 'scoping/twitter-home.html',context)
+
+@login_required
+def download_screened_tweets(request,pid):
+    ''' Downloads screened tweets
+    '''
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="screened_tweets.csv"'
+
+    p = Project.objects.get(pk=pid)
+    dos = DocOwnership.objects.filter(tag__project=p, relevant__gt=0)
+    cat_refs = {}
+    annotations = {}
+    for c in Category.objects.filter(project=p):
+        cat_refs[c.name] = DocUserCat.objects.filter(
+            tweet = OuterRef('tweet__pk'),
+            user = OuterRef('user__pk'),
+            category=c
+        )
+        annotations[c.name] = Exists(cat_refs[c.name])
+
+    cols = ['tweet__id','tweet__text','user__username','tag__title','relevant'] + list(annotations.keys())
+    df = pd.DataFrame.from_dict(list(dos.annotate(**annotations).values(*cols)))[cols] * 1
+
+    df.to_csv(response)
+
+    return response
