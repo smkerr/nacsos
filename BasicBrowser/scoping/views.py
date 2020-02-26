@@ -262,6 +262,16 @@ def index(request):
 
     return HttpResponse(template.render(context, request))
 
+def project_admin(p, request):
+    ars = ['OW','AD']
+    try:
+        if ProjectRoles.objects.get(project=p,user=request.user).role in ars:
+            return "true"
+        else:
+            return "false"
+    except:
+        return "norole"
+
 @login_required
 def project(request, pid):
     '''Project homepage
@@ -302,14 +312,8 @@ Shows menu linking to
 
     template = loader.get_template('scoping/project.html')
 
-    p = Project.objects.get(pk=pid)
-    ars = ['OW','AD']
-    try:
-        if ProjectRoles.objects.get(project=p,user=request.user).role in ars:
-            admin="true"
-        else:
-            admin="false"
-    except:
+    admin = project_admin(p, request)
+    if admin=="norole":
         return HttpResponseRedirect(reverse('scoping:index'))
 
     updateRoles = []
@@ -581,6 +585,12 @@ Queries page for the given project
         p = None
     else:
         p = Project.objects.get(pk=pid)
+
+        if p.criteria:
+            return HttpResponseRedirect(reverse(
+                'scoping:userpage',
+                kwargs={'pid':pid}
+            ))
         users = User.objects.filter(
             projectroles__project=p
         ).order_by('username')
@@ -747,6 +757,20 @@ Args:
     template = loader.get_template('scoping/categories.html')
 
     project = Project.objects.get(pk=pid)
+
+    admin = project_admin(p, request)
+    if admin == "norole":
+        return HttpResponseRedirect(reverse('scoping:index'))
+    elif admin == "false":
+        return HttpResponseRedirect(reverse(
+            'scoping:userpage',
+            kwargs={'pid':pid}
+        ))
+
+    try:
+        pr = ProjectRoles.objects.get(project=project, user=request.user)
+    except:
+        return HttpResponseRedirect(reverse('scoping:index'))
 
     ## Save or update category
     if request.method=="POST":
@@ -6590,12 +6614,25 @@ def twitter_home(request,pid):
     ''' Manages the assignment of tweets to users for checking
     '''
     p = Project.objects.get(pk=pid)
+
+    admin = project_admin(p, request)
+    if admin == "norole":
+        return HttpResponseRedirect(reverse('scoping:index'))
+    elif admin == "false":
+        return HttpResponseRedirect(reverse(
+            'scoping:userpage',
+            kwargs={'pid':pid}
+        ))
+
+
     searches = tms.TwitterSearch.objects.filter(project=p)
     total_tweets = p.tweets
     new_sample = TwitterForm(p=p)
 
     tags = Tag.objects.filter(project=p)
     dos = DocOwnership.objects.filter(tag__in=tags)
+
+
 
 
 
@@ -6655,6 +6692,7 @@ def twitter_home(request,pid):
         'n_tweets': total_tweets,
         'new_sample': new_sample,
         'samples': tags,
+        'admin': admin
     }
     return render(request, 'scoping/twitter-home.html',context)
 

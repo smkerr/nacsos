@@ -17,17 +17,20 @@
          <li class="nav-item">
            <a class="nav-link" href="{% url 'scoping:categories' project.id %}">Categories</a>
          </li>
+         {% if project.criteria == None %}
          <li class="nav-item">
            <a class="nav-link" href="{% url 'scoping:queries' project.id %}">Queries</a>
          </li>
+         {% endif %}
          <li class="nav-item">
            <a class="nav-link" href="{% url 'scoping:userpage' project.id %}">{{user}}</a>
          </li>
          {% if qid %}
              <li class="nav-item"><a class="nav-link" href="{% url 'scoping:doclist' project.id qid %}">Documents</a></li>
          {% endif %}
+         {% if project.criteria == None %}
          <li class="nav-item"><a class="nav-link" href="{% url 'scoping:manual_add_doc_form' project.id %}">Add Reference Manually</a></li>
-
+         {% endif %}
          <!-- <li class="nav-item">
            <a class="nav-link" href="#">Link</a>
          </li> -->
