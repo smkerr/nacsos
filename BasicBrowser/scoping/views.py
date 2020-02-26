@@ -767,11 +767,6 @@ Args:
             kwargs={'pid':pid}
         ))
 
-    try:
-        pr = ProjectRoles.objects.get(project=project, user=request.user)
-    except:
-        return HttpResponseRedirect(reverse('scoping:index'))
-
     ## Save or update category
     if request.method=="POST":
         for f in request.POST.keys():
