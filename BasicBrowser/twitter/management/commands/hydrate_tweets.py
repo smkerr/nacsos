@@ -48,11 +48,13 @@ class Command(BaseCommand):
             text__icontains="…",
             api_got=False
         )
-        if not dry_statuses.exists():
+        if not dry_statuses.exists() or dry_statuses.count() < 200:
             dry_statuses = Status.objects.filter(
                 api_got=False,
+                #docownership__isnull=False,
+                tag__isnull=False,
                 #text__icontains="…",
-                searches__project=197
+                #searches__project=197
                 #searches=57,
                 #searches__project=224
             ).order_by('-fetched')

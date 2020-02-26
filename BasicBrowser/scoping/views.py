@@ -758,7 +758,7 @@ Args:
 
     project = Project.objects.get(pk=pid)
 
-    admin = project_admin(p, request)
+    admin = project_admin(project, request)
     if admin == "norole":
         return HttpResponseRedirect(reverse('scoping:index'))
     elif admin == "false":
