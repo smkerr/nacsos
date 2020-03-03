@@ -609,7 +609,7 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
     if stat.db:
         vocab = vectorizer.get_feature_names()
         vocab_ids = []
-        pool = Pool(processes=8)
+        pool = Pool(processes=no_processes)
         vocab_ids.append(pool.map(partial(add_features, run_id=run_id),vocab))
         pool.terminate()
         del vocab
@@ -664,7 +664,7 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
         ldalambda = find(csr_matrix(model.components_))
         topics = range(len(ldalambda[0]))
         tts = []
-        pool = Pool(processes=8)
+        pool = Pool(processes=no_processes)
 
         tts.append(pool.map(partial(db.f_lambda, m=ldalambda,
                         v_ids=vocab_ids,t_ids=topic_ids,run_id=run_id),topics))
