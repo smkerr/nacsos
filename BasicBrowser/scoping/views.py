@@ -262,6 +262,16 @@ def index(request):
 
     return HttpResponse(template.render(context, request))
 
+def project_admin(p, request):
+    ars = ['OW','AD']
+    try:
+        if ProjectRoles.objects.get(project=p,user=request.user).role in ars:
+            return "true"
+        else:
+            return "false"
+    except:
+        return "norole"
+
 @login_required
 def project(request, pid):
     '''Project homepage
@@ -302,14 +312,8 @@ Shows menu linking to
 
     template = loader.get_template('scoping/project.html')
 
-    p = Project.objects.get(pk=pid)
-    ars = ['OW','AD']
-    try:
-        if ProjectRoles.objects.get(project=p,user=request.user).role in ars:
-            admin="true"
-        else:
-            admin="false"
-    except:
+    admin = project_admin(p, request)
+    if admin=="norole":
         return HttpResponseRedirect(reverse('scoping:index'))
 
     updateRoles = []
@@ -581,6 +585,12 @@ Queries page for the given project
         p = None
     else:
         p = Project.objects.get(pk=pid)
+
+        if p.criteria:
+            return HttpResponseRedirect(reverse(
+                'scoping:userpage',
+                kwargs={'pid':pid}
+            ))
         users = User.objects.filter(
             projectroles__project=p
         ).order_by('username')
@@ -747,6 +757,15 @@ Args:
     template = loader.get_template('scoping/categories.html')
 
     project = Project.objects.get(pk=pid)
+
+    admin = project_admin(project, request)
+    if admin == "norole":
+        return HttpResponseRedirect(reverse('scoping:index'))
+    elif admin == "false":
+        return HttpResponseRedirect(reverse(
+            'scoping:userpage',
+            kwargs={'pid':pid}
+        ))
 
     ## Save or update category
     if request.method=="POST":
@@ -2031,9 +2050,20 @@ def userpage(request, pid):
 
     qts = Tag.objects.filter(query__project=project).values_list('pk', flat=True)
     pts = Tag.objects.filter(project=project).values_list('pk', flat=True)
+
+    dos = DocOwnership.objects.filter(
+        tag=OuterRef('pk'),
+        user=request.user
+    )
+
+    ts = Tag.objects.filter(
+        pk__in=set(qts | pts),
+    ).annotate(
+        dos = Exists(dos)
+    ).filter(dos=True)
     # Queries
     queries = Tag.objects.filter(
-        pk__in=set(qts | pts)
+        pk__in=ts.values_list('pk')
     ).values('query__id','query__type','id','title').order_by('-id')
 
     if project.id==1 and project.title=='Sustainability':
@@ -5637,9 +5667,13 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         else:
             cities = None
 
+    if tag.query:
+        criteria = tag.query.criteria
+    else:
+        criteria = tag.project.criteria
 
     try:
-        criteria = markdown.markdown(tag.query.criteria, extensions=["tables"])
+        criteria = markdown.markdown(criteria, extensions=["tables"])
         criteria = criteria.replace('<table>','<table style="width:100%">')
     except:
         try:
@@ -5897,6 +5931,7 @@ def remove_tech(request,doc_id,tid,thing='Category'):
 def add_note(request):
     doc_id = request.POST.get('docn',None)
     ut_id = request.POST.get('ut_id', None)
+    status_id = request.POST.get('status_id', None)
     tid = request.POST.get('tag',None)
     qid = request.POST.get('qid',None)
     ctype = request.POST.get('ctype',None)
@@ -5919,11 +5954,14 @@ def add_note(request):
             tag=tag,
             user=request.user,
             date=timezone.now(),
-            project=tag.query.project,
+            project=project,
             text=text
         )
 
-        if tag.document_linked:
+        if tag.status_set.exists():
+            status = tms.Status.objects.get(pk=status_id)
+            note.tweet = status
+        elif tag.document_linked:
             doc = Doc.objects.get(pk=doc_id)
             note.doc = doc
         elif ut_id:
@@ -6571,12 +6609,25 @@ def twitter_home(request,pid):
     ''' Manages the assignment of tweets to users for checking
     '''
     p = Project.objects.get(pk=pid)
+
+    admin = project_admin(p, request)
+    if admin == "norole":
+        return HttpResponseRedirect(reverse('scoping:index'))
+    elif admin == "false":
+        return HttpResponseRedirect(reverse(
+            'scoping:userpage',
+            kwargs={'pid':pid}
+        ))
+
+
     searches = tms.TwitterSearch.objects.filter(project=p)
     total_tweets = p.tweets
     new_sample = TwitterForm(p=p)
 
     tags = Tag.objects.filter(project=p)
     dos = DocOwnership.objects.filter(tag__in=tags)
+
+
 
 
 
@@ -6636,5 +6687,32 @@ def twitter_home(request,pid):
         'n_tweets': total_tweets,
         'new_sample': new_sample,
         'samples': tags,
+        'admin': admin
     }
     return render(request, 'scoping/twitter-home.html',context)
+
+@login_required
+def download_screened_tweets(request,pid):
+    ''' Downloads screened tweets
+    '''
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="screened_tweets.csv"'
+
+    p = Project.objects.get(pk=pid)
+    dos = DocOwnership.objects.filter(tag__project=p, relevant__gt=0)
+    cat_refs = {}
+    annotations = {}
+    for c in Category.objects.filter(project=p):
+        cat_refs[c.name] = DocUserCat.objects.filter(
+            tweet = OuterRef('tweet__pk'),
+            user = OuterRef('user__pk'),
+            category=c
+        )
+        annotations[c.name] = Exists(cat_refs[c.name])
+
+    cols = ['tweet__id','tweet__text','user__username','tag__title','relevant'] + list(annotations.keys())
+    df = pd.DataFrame.from_dict(list(dos.annotate(**annotations).values(*cols)))[cols] * 1
+
+    df.to_csv(response)
+
+    return response

@@ -64,6 +64,7 @@
                       {% if do.utterance_linked %}
                         <input type="hidden" name="ut_id" value="{{do.utterance.id}}"></input>
                       {% elif do.tweet %}
+                        <input type="hidden" name="status_id" value="{{do.tweet.id}}"></input>
                       {% else %}
                         <input type="hidden" name="docn" value="{{do.doc.id}}"></input>
                       {% endif %}

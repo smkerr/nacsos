@@ -49,6 +49,7 @@ urlpatterns = [
 
     ### twitter
     path('twitter-home/<int:pid>', views.twitter_home, name="twitter_home"),
+    path('twitter-home/download_screened_tweets/<int:pid>', views.download_screened_tweets, name="download_screened_tweets"),
 
 
     ### Meta-analysis stuff

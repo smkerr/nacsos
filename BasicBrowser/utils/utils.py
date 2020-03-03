@@ -129,7 +129,7 @@ def add_doc(r, q, update):
         doc, created = scoping.models.Doc.objects.get_or_create(UT=ut)
         doc.title=get(r,'TI')
         if created:
-            doc.tslug = Doc.make_tslug(doc.title)
+            doc.tslug = scoping.models.Doc.make_tslug(doc.title)
         doc.content=get(r,'AB')
         doc.PY=get(r,'PY')
         doc.wos=True
