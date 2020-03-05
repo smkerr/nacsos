@@ -193,7 +193,7 @@ class Utterance(models.Model):
 
     @property
     def paragraph_texts(self):
-        return ' '.join([x.text for x in self.paragraph_set.all()])
+        return "\n".join([x.text.strip("\n") for x in self.paragraph_set.all()])
 
 class Paragraph(models.Model):
     """
