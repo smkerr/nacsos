@@ -139,9 +139,9 @@
 
       {% if project.rating_first %}
 
-        <div class="border rounded bg-white my-2 p-2 small hidden catbox">
+        <div class="border rounded bg-white my-2 p-2 small hidden catbox " data-level={{forloop.counter}}>
       {% else %}
-        <div class="border rounded bg-white my-2 p-2 small">
+        <div class="border rounded bg-white my-2 p-2 small" data-level={{forloop.counter}}>
       {% endif %}
           {% if "<wholetext>" in n %}
             {{n |safe}}
@@ -152,7 +152,7 @@
             (hover for more info)
                     <hr>
                 {% for t in l %}
-                <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
+                <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-level={{forloop.parentloop.counter}} data-nofurther="{{t.1.no_further}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
 
                 {% endfor %}
         </div>
@@ -173,7 +173,7 @@
       </div>
     {% endif %}
 
-    {% if project.rating_first %}/1134040086465695745
+    {% if project.rating_first %}
 
       <div class="border rounded bg-white my-3 p-2">
         <p>Finish rating this document and move on to the next document </p>
@@ -181,6 +181,14 @@
           <button class="btn btn-secondary" onclick="review(0)">Done</button>
       </div>
 
+    {% else %}
+    {% if project.no_relevance %}
+      <div id="finishbutton" class="border rounded bg-white my-3 p-2 hidden">
+       {% csrf_token %}
+      <p> Finished screening?
+        <hr>
+        <a id="r-3" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}" class="btn btn-secondary m-1 b-maybe {% if do.relevant == 3 %} True {% endif %}">Done</a>
+      </div>
     {% else %}
     <div class="border rounded bg-white my-3 p-2">
        {% csrf_token %}
@@ -196,6 +204,7 @@
           {% if project.no_but %}
           <a id="r-4" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 4 %}" class="btn btn-secondary m-1 b-maybe {% if do.relevant == 4 %} True {% endif %}">No but (4)</a>
           {% endif %}
+        {% endif %}
         <!-- </div> -->
     </div>
     {% endif %}
@@ -255,6 +264,32 @@ $(".cat").click(function(){
         },
         success: function(data) {
           but.toggleClass("True")
+          if (but.data("nofurther")=="True") {
+            var divs = $("div").filter(function() {
+                return  $(this).attr("data-level") > but.data("level");
+            });
+            if (method=="add") {
+              divs.addClass("hidden")
+              $("#finishbutton").removeClass("hidden")
+            } else {
+              divs.removeClass("hidden")
+              $("#finishbutton").addClass("hidden")
+            }
+          } else {
+            var finished = true
+            $("div[data-level]").each(function(i, div) {
+              var l = div.attributes["data-level"].value
+              buts = $("button.True[data-level="+l+"]")
+              if (buts.length==0) {
+                finished = false
+              }
+            })
+            if (finished==true) {
+              $("#finishbutton").removeClass("hidden")
+            } else {
+              $("#finishbutton").addClass("hidden")
+            }
+          }
         }
     })
 })
@@ -284,6 +319,9 @@ $(".reviewButton").click(function(){
   }
 })
 
+{% if project.no_relevance %}
+
+{% else %}
 $(document).keydown(function(e){
 
     if ($(".reviewButton").length > 1) {
@@ -304,6 +342,7 @@ $(document).keydown(function(e){
     }
 
 });
+{% endif %}
 
 width = "100%"
 height = 20
@@ -322,9 +361,16 @@ var div = d3.select("body").append("div")
 console.log(w)
 var url = window.location.href + '/1'
 console.log(url)
+
+{% if project.no_relevance %}
+var cmap = {
+    1: "#91cf60", 2: "#91cf60", 3: "#91cf60", 0: "#F5F5F5"
+}
+{% else %}
 var cmap = {
     1: "#91cf60", 2: "#fc8d59", 3: "#ffffbf", 0: "#F5F5F5"
 }
+{% endif %}
 
 d3.json(url, function(json) {
     var urlparts = window.location.href.split("/")

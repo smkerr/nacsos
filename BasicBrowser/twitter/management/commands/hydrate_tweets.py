@@ -52,10 +52,10 @@ class Command(BaseCommand):
             dry_statuses = Status.objects.filter(
                 api_got=False,
                 #docownership__isnull=False,
-                tag__isnull=False,
+                #tag__isnull=False,
                 #text__icontains="…",
                 #searches__project=197
-                #searches=57,
+                searches=57,
                 #searches__project=224
             ).order_by('-fetched')
         print(dry_statuses.count())

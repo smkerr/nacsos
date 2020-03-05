@@ -84,6 +84,7 @@ class Project(models.Model):
     tms = models.IntegerField(default=0)
 
     rating_first = models.BooleanField(default=False)
+    no_relevance = models.BooleanField(default=False)
 
     # Project level variables
     no_but = models.BooleanField(default=False)
@@ -567,6 +568,7 @@ class Category(models.Model):
     nqs = models.IntegerField(null=True)
     group = models.TextField(null = True, verbose_name="Broad Category Name")
     parent_category = models.ForeignKey('self', related_name='child_category',on_delete=models.CASCADE, null=True,blank=True)
+    no_further = models.BooleanField(default=False)
 
     def __str__(self):
       return self.name

@@ -3335,7 +3335,10 @@ def add_doc_form(request,pid=0,authtoken=0,r=0,did=0):
 
         if did!=0:
             doc = Doc.objects.get(pk=did)
-            d = model_to_dict(doc)
+            try:
+                d = model_to_dict(doc)
+            except:
+                d = doc.__dict__
             wa = model_to_dict(doc.wosarticle)
             ndf = NewDoc(d)
 
@@ -5655,7 +5658,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
             parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))
             if cats.filter(level=l).count() > 1 and len(set(parents)) ==1:
                 try:
-                    cname = list(parents)[0].replace("<hidden>","")
+                    cname = list(parents)[0].replace("<hidden>","").replace("<nofurther>","")
                 except:
                     cname = f"level {l}"
             else:

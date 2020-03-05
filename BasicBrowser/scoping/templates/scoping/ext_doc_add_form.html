@@ -11,7 +11,7 @@
   </div>
   <div id="readme_div" style="color:#555555">
     <p>Welcome <b>{{em.initial}} {{em.sname}}!</b></p>
-    
+
     <p>Please use the form below to enter the details of any relevant papers on
         negative emissions that were not present in the email you received.</p>
     <p>The document entry process is split into 4 steps for efficiency purposes
@@ -145,10 +145,10 @@
       {% if techs %}
     <!-- Technology selection (optional) -->
       <div class="addbox">
-        <h2 style="color:black;">4.1. Technology Selection (optional)</h2>
-        <p> Please select any appropriate technologies to which your document is relevant.<p>
+        <h2 style="color:black;">4.1. Category Selection (optional)</h2>
+        <p> Please select any appropriate categories to which your document is relevant.<p>
         <form method="POST" class="post-form">{% csrf_token %}
-          <b>Technology</b><br>
+          <b>Category</b><br>
           <ul>
           {% for t in techs %}
             <li>{{t.name}} <input value="{{t.id}}" type="checkbox"
