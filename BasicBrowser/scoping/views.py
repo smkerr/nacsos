@@ -6731,10 +6731,10 @@ def download_screened_tweets(request,pid):
         annotations[c.name] = Exists(cat_refs[c.name])
 
     cols = ['tweet__id','tweet__text','user__username','tag__title','relevant'] + list(annotations.keys())
-    notes = Note.objects.filter(project=p).values('user__username','tweet__id','text')
-    note_df = pd.DataFrame.from_dict(notes).rename(columns={
-        "text": "note__text",
-    })
+    notes = Note.objects.filter(project=p).order_by('tweet_id').values('user__username','tweet__id').annotate(
+        note__text=StringAgg("text","; ")
+    )
+    note_df = pd.DataFrame.from_dict(notes)
     df = pd.DataFrame.from_dict(list(dos.annotate(**annotations).values(*cols)))[cols] * 1
     df = df.merge(note_df, how="left")
 
