@@ -1,0 +1,108 @@
+
+    <div class="col-9">
+              <div class="row">
+                  <div class="col-12">
+                      <div class="border rounded bg-white p-3 m-2 position-sticky sticky-top">
+                    {% if do.utterance_linked %}
+                        <link href="https://afeld.github.io/emoji-css/emoji.css" rel="stylesheet">
+                        <div id="docbox">
+                            Speech <a href="{% url 'parliament:utterance' doc.id %}"> {{doc.id}} </a>
+                            from <a href="{% url 'parliament:document' doc.document.id %}"> {{doc.document}} </a>
+                            with {{doc.paragraph_set.count}} paragraphs
+                        {% include "parliament/snippets/ut_info.html" with ut=doc %}
+                        </div>
+                    {% elif do.tweet %}
+                        <div id="docbox">
+                        {% include "scoping/snippets/tweet_info.html" with tweet=do.tweet %}
+                        </div>
+                    {% else %}
+                        {% include "scoping/snippets/doc_info.html" with query=dmc.query %}
+                    {% endif %}
+                      </div>
+                </div>
+
+              <div class="row">
+                    <div class="col-12">
+                        <div class="border rounded bg-white p-3 m-2 position-sticky sticky-top">
+                            <div><h4>Query criteria</h4></div>
+                            {% if "table" in criteria %}
+                              <div class="padded">
+                            {% else %}
+                              <div style="column-count: 2;">
+                            {% endif %}
+                            {{criteria |safe }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-12">
+                {% for n,l in levels %}
+
+                  {% if project.rating_first %}
+
+                    <div class="border rounded bg-white my-2 p-2 small hidden catbox " data-level={{forloop.counter}}>
+                  {% else %}
+                    <div class="border rounded bg-white my-2 p-2 small" data-level={{forloop.counter}}>
+                  {% endif %}
+                      {% if "<wholetext>" in n %}
+                        {{n |safe}}
+                      {% else %}
+                        Which {{n}} categories is this document relevant to?
+                      {% endif %}
+
+                        (hover for more info)
+                                <hr>
+                            {% for t in l %}
+                            <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-level={{forloop.parentloop.counter}} data-nofurther="{{t.1.no_further}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
+
+                            {% endfor %}
+                    </div>
+
+                {% endfor %}
+                </div>
+              </div>
+
+              <div id="finishbutton" class="border rounded bg-white my-3 p-2 hidden">
+               {% csrf_token %}
+              <p> Finished screening?
+                <hr>
+                <a id="r-3" href="{% url 'scoping:rate_doc' tag.id ctype do.id pos todo 3 %}" class="btn btn-secondary m-1 b-maybe {% if do.relevant == 3 %} True {% endif %}">Done</a>
+              </div>
+      </div>
+      <div class="col-3">
+
+                <div class="border rounded bg-white my-3 p-2">
+                    Add a note to this document
+                    <hr>
+                    <form action="{% url 'scoping:add_note' %}" method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.path }}">
+                      {% if do.utterance_linked %}
+                        <input type="hidden" name="ut_id" value="{{do.utterance.id}}"></input>
+                      {% elif do.tweet %}
+                        <input type="hidden" name="status_id" value="{{do.tweet.id}}"></input>
+                      {% else %}
+                        <input type="hidden" name="docn" value="{{do.doc.id}}"></input>
+                      {% endif %}
+
+                      <input type="hidden" name="tag" value="{{tag.id}}"></input>
+                    <textarea id="notebox" class="form-control" name="note" rows=3></textarea>
+                    <br>
+                    <p>
+                    <button type="submit" class="btn btn-primary">Add note</button>
+                    </form>
+                </div>
+                {% for note in notes %}
+                <div class="border rounded bg-white my-3 p-2 note">
+                  <p class="notedesc"><b>{{note.date}}, {{note.user.username}} wrote...</b>
+                  <hr>
+                  {{note.text}}
+                  <hr>
+                  <a href="{% url 'scoping:delete' thing='Note' thingid=note.pk %}">Delete
+                  </a>
+                </div>
+                {% endfor %}
+
+        </div>
