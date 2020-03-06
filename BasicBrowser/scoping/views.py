@@ -2311,6 +2311,7 @@ def download_effects(request, pid):
     del e_fields['effect__controls']
     del e_fields['effect__user']
     del e_fields['effect__doc']
+    del e_fields['effect__note']
 
     column_names.update(e_fields)
 
@@ -2341,8 +2342,22 @@ def download_effects(request, pid):
 
         for o, name in groups:
             notes = Note.objects.filter(effect=e,field_group=name).values_list('text',flat=True)
-            v[name] = ";".join(list(notes))
+            v[name] = "; ".join(list(notes))
             column_names[name] = f'8. Notes: {name}'
+        name = "Doc level"
+        notes = Note.objects.filter(dmc__doc=e.doc) | Note.objects.filter(doc=e.doc)
+        v[name] = "; ".join(list(notes.values_list('text',flat=True)))
+        column_names[name] = f"8. Notes: {name}"
+        name = "3. Authors"
+        aus = DocAuthInst.objects.filter(
+            doc=e.doc,
+            pk__in=Subquery(
+               DocAuthInst.objects.filter(doc=e.doc).distinct('AU').values('pk')
+            )
+        ).order_by('position')
+        v[name] = "; ".join(list(aus.values_list('AU',flat=True)))
+        column_names[name] = name
+
         for pc in e.popchar_set.all():
             if pc.value is not None:
                 v[pc.field.name] = pc.value
@@ -5484,6 +5499,8 @@ def screen_doc_id(request,doid):
 def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
 
     if do:
+        do.start = datetime.datetime.now()
+        do.save()
         tag = do.tag
         try:
             project = tag.query.project
