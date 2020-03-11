@@ -1,4 +1,4 @@
-{% extends "scoping/base_bs.html" %}
+#{% extends "scoping/base_bs.html" %}
 {% load bootstrap4 %}
 {% load static %}
 
@@ -252,6 +252,7 @@ $("div.padded td, th").each(function(t) {
 
 $(".cat").click(function(){
     id2 = $(this).val()
+    var method;
     if ($(this).hasClass("True")) {
         method = "remove"
     } else {
@@ -262,7 +263,7 @@ $(".cat").click(function(){
     {% else %}
     var did = "{{do.tweet.pk}}"
     {% endif %}
-    const but = $(this)
+    var but = $(this)
     $.ajax({
         url: "{% url 'scoping:cat_doc' %}",
         data: {
@@ -272,23 +273,23 @@ $(".cat").click(function(){
         },
         success: function(data) {
 
-
+          var level = but.data("level")
           // deal with buttons with unique parent Categories
           if (but.data("unique")=="True") {
             if (method=="add") {
               var divs = $("button.btn.cat.True").filter(function() {
-                  return  $(this).attr("data-level") == but.data("level");
+                  return  $(this).attr("data-level") == level;
               });
               divs.click()
             }
           }
-
           but.toggleClass("True")
           // deal with buttons that mean no further tagging is necessary
           if (but.data("nofurther")=="True") {
             var divs = $("div").filter(function() {
-                return  $(this).attr("data-level") > but.data("level");
+                return  $(this).attr("data-level") > level;
             });
+            console.log(divs)
             if (method=="add") {
               divs.addClass("hidden")
               $("#finishbutton").removeClass("hidden")
@@ -297,14 +298,20 @@ $(".cat").click(function(){
               $("#finishbutton").addClass("hidden")
             }
           } else {
-            var finished = true
-            $("div[data-level]").each(function(i, div) {
-              var l = div.attributes["data-level"].value
-              buts = $("button.True[data-level="+l+"]")
-              if (buts.length==0) {
-                finished = false
-              }
-            })
+            var nf = $("button.True[data-nofurther='True']").length
+            if (nf==1) {
+              var finished = true
+            } else {
+              var finished = true
+              $("div[data-level]").each(function(i, div) {
+                var l = div.attributes["data-level"].value
+                var buts = $("button.True[data-level="+l+"]")
+                if (buts.length==0) {
+                   finished = false
+                }
+              })
+            }
+            console.log(finished)
             if (finished==true) {
               $("#finishbutton").removeClass("hidden")
             } else {
