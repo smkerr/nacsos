@@ -5683,7 +5683,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
             levels.append((cname,lcats))
 
         if project.id in [177, 136, 201]:
-            cities = do.doc.cities.all()
+            cities = do.doc.cities.values('name','pk')
         else:
             cities = None
 

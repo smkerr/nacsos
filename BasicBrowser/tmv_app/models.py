@@ -536,7 +536,42 @@ class RunStats(models.Model):
     dt_threshold_scaled = models.FloatField( default = 0.01)
     dyn_win_threshold = models.FloatField(default = 0.1 )
 
+    def check_partitions(run_id):
+        sql = """
+        select relname, pg_get_expr(relpartbound, oid), substring(pg_get_expr(relpartbound, oid) from '\d+')::int AS s 
+        from pg_class 
+        WHERE relispartition and relname~'tmv_app_doctopic' 
+        AND pg_get_expr(relpartbound, oid)~'FOR VALUES' ORDER BY s DESC LIMIT 1;
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            row = cursor.fetchone()
+            pname = row[0]
+            vrange = re.findall('\d+',row[1])
+            sql = f"SELECT COUNT(id) FROM {row[0]}"
+            cursor.execute(sql)
+            row = cursor.fetchone()
+            if run_id < vrange[1]:
+                if row[0] > 10000000:
+                    # Alter current partition
+                    sql = f"""BEGIN TRANSACTION;
+                    ALTER TABLE tmv_app_doctopic DETACH PARTITION {pname};
+                    ALTER TABLE tmv_app_doctopic ATTACH PARTITION {pname} 
+                    FOR VALUES FROM ({vrange[0]}) TO ({run_id});
+                    COMMIT TRANSACTION;"""
+                    cursor.execute(sql)
+                else:
+                    return
+                # Create new partition
+                connection.schema_editor().add_range_partition(
+                    model=DocTopic,
+                    name=f"pt_{run_id}",
+                    from_values=run_id,
+                    to_values=run_id+10000
+                )
+                
     def save(self, *args, **kwargs):
+        check_partitions(self.run_id)
         if not self.parent_run_id:
             self.parent_run_id=self.run_id
         super(RunStats, self).save(*args, **kwargs)
