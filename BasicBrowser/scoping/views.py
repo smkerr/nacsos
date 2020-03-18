@@ -6722,13 +6722,13 @@ def download_screened_tweets(request,pid):
     dos = DocOwnership.objects.filter(tag__project=p, relevant__gt=0)
     cat_refs = {}
     annotations = {}
-    for c in Category.objects.filter(project=p):
+    for c in Category.objects.filter(project=p).exclude(name__icontains="<hidden>").order_by('level'):
         cat_refs[c.name] = DocUserCat.objects.filter(
             tweet = OuterRef('tweet__pk'),
             user = OuterRef('user__pk'),
             category=c
         )
-        annotations[c.name] = Exists(cat_refs[c.name])
+        annotations[f"{c.level} - {c.name}"] = Exists(cat_refs[c.name])
 
     cols = ['tweet__id','tweet__text','user__username','tag__title','relevant'] + list(annotations.keys())
     notes = Note.objects.filter(project=p).order_by('tweet_id').values('user__username','tweet__id').annotate(
