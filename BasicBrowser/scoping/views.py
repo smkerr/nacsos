@@ -2401,7 +2401,22 @@ def download_effects(request, pid):
     }
 
     exclusions = Exclusion.objects.filter(project=p)
-    ex_df = pd.DataFrame.from_dict(exclusions.values(*column_names.keys()))
+    values = exclusions.values(*column_names.keys())
+    for v in values:
+        name = "Doc level"
+        notes = Note.objects.filter(dmc__doc__id=v['doc__id']) | Note.objects.filter(doc__id=v['doc__id'])
+        v[name] = "; ".join(list(notes.values_list('text',flat=True)))
+        column_names[name] = f"8. Notes: {name}"
+        name = "3. Authors"
+        aus = DocAuthInst.objects.filter(
+            doc=e.doc,
+            pk__in=Subquery(
+               DocAuthInst.objects.filter(doc=e.doc).distinct('AU').values('pk')
+            )
+        ).order_by('position')
+        v[name] = "; ".join(list(aus.values_list('AU',flat=True)))
+        column_names[name] = name
+    ex_df = pd.DataFrame.from_dict(values)
 
     ex_df = ex_df.rename(columns=column_names)
 
