@@ -570,6 +570,8 @@ class Category(models.Model):
     parent_category = models.ForeignKey('self', related_name='child_category',on_delete=models.CASCADE, null=True,blank=True)
     no_further = models.BooleanField(default=False)
     unique_children = models.BooleanField(default=False)
+    equivalents = models.ManyToManyField('self', related_name='equivalent_category', blank=True)
+    show_equivalents = models.BooleanField(default=False)
 
     def __str__(self):
       return self.name
