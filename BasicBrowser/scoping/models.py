@@ -572,7 +572,8 @@ class Category(models.Model):
     unique_children = models.BooleanField(default=False)
     equivalents = models.ManyToManyField('self', related_name='equivalent_category', blank=True)
     show_equivalents = models.BooleanField(default=False)
-
+    filtered_equivalents = models.BooleanField(default=False)
+    
     def __str__(self):
       return self.name
 

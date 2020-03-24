@@ -130,8 +130,18 @@
 
                         (hover for more info)
                                 <hr>
-                            {% for t in l %}
-                            <button value="{{t.1.id}}" type="button" class="btn cat {{t.0}}" data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
+				{% for t in l %}
+				
+				<button value="{{t.1.id}}" type="button"
+					{% if t.1.parent_category.filtered_equivalents %}
+					class="btn cat {{t.0}} hidden"
+					{% else %}
+					class="btn cat {{t.0}}"
+					{% endif %}
+					{% if t.1.parent_category.show_equivalents %}
+					data-show="{{t.1.ecs}}"
+					{% endif %}
+					data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
 
                             {% endfor %}
                     </div>
@@ -214,6 +224,18 @@ $(".cat").click(function(){
         },
         success: function(data) {
           but.toggleClass("True")
+          
+          if (but.data("show")) {
+            for (var i = 0; i < but.data("show").length; i++) {
+		var sbut = $("button[value="+but.data("show")[i]+"]")
+                if (method=="add") {
+		   sbut.removeClass("hidden")
+		} else {
+                   sbut.addClass("hidden")
+		}
+	    }
+            console.log("showw")
+          }
           if (id2 == 390){
             if (method == "add") {
               $(".catbox.ondb2no").removeClass("hidden")

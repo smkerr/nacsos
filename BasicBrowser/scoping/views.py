@@ -1867,14 +1867,14 @@ def query(request,qid,q2id='0',sbsid='0'):
                     user_docs[c] = sum([x['n'] for x in udors if x['user']==u['user__id'] and op(x['relevant'],v) ])
                 user_docs['checked_percent'] = user_docs['checked'] / user_docs['tdocs']
                 if query.project.rating_first:
-
-                    ndb2 = len(set(
-                        DocUserCat.objects.filter(
-                            user_id=u['user__id'],
-                            doc__query=query,category=363
-                        ).values_list('doc__id',flat=True)
-                    ))
-                    user_docs['db2'] = f"{ndb2} ({ndb2/user_docs['checked']:.0%})"
+                    if Category.objects.get(pk=363).project==query.project:
+                        ndb2 = len(set(
+                            DocUserCat.objects.filter(
+                                user_id=u['user__id'],
+                                doc__query=query,category=363
+                            ).values_list('doc__id',flat=True)
+                        ))
+                        user_docs['db2'] = f"{ndb2} ({ndb2/user_docs['checked']:.0%})"
             user_list.append({
                 'username': u['user__username'],
                 'email': u['user__email'],
@@ -5661,7 +5661,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                 doc = do.doc
             )
 
-        cats = Category.objects.filter(project=project)#.order_by('name')
+        cats = Category.objects.filter(project=project,level__lte=10)#.order_by('name')
 
         levels = []
         for l in cats.exclude(name__contains="<hidden>").values_list('level',flat=True).distinct().order_by('level'):
@@ -5685,6 +5685,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                         doccat__doc=do.doc,
                         doccat__query_tagged=True
                     )
+                t.ecs = list(t.equivalents.values_list('pk',flat=True))
                 e = dcus.exists() or dcs.exists()
                 lcats.append((e,t))
             parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))
