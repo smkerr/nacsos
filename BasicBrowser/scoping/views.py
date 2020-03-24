@@ -106,7 +106,24 @@ def duc_place(request):
         place = TextPlace.objects.get(pk=p)
         duc.places.add(place)
     return HttpResponse("")
-    
+
+def duc_year(request):
+    doc = Doc.objects.get(pk=request.GET.get('doc_id', None))
+    cat = Category.objects.get(pk=request.GET.get('cat_id', None))
+    user = User.objects.get(pk=request.GET.get('user_id', None))
+    observation_year = request.GET.get('observation_year', None)
+    baseline_year = request.GET.get('baseline_year', None)
+    duc, created = DocUserCat.objects.get_or_create(
+        doc=doc,
+        category=cat,
+        user=user
+    )
+    duc.observation_year = observation_year
+    duc.baseline_year = baseline_year
+    duc.save()
+    return HttpResponse("")
+
+
 class RoBCreate(CreateView):
     '''
     '''
@@ -5713,12 +5730,14 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                     )
                 t.ecs = list(t.equivalents.values_list('pk',flat=True))
                 e = dcus.exists() or dcs.exists()
+                if t.record_years:
+                    t.form = CatYearForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
                 if t.text_place:
                     t.form = TextPlaceForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
                     placeform = t.form
                 lcats.append((e,t))
             parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))
-            if cats.filter(level=l).count() > 1 and len(set(parents)) ==1:
+            if cats.filter(level=l).count() > 0 and len(set(parents)) ==1:
                 try:
                     cname = list(parents)[0].replace("<hidden>","").replace("<nofurther>","")
                 except:

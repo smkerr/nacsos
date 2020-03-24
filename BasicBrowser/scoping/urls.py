@@ -124,6 +124,7 @@ urlpatterns = [
 
     url(r'^textplace-autocomplete/$',views.TextPlaceAutocomplete.as_view(create_field='name'),name="textplace-autocomplete"),
     path('duc_place', views.duc_place, name='duc_place'),
+    path('duc_year', views.duc_year, name='duc_year'),
     
     url(r'^add_othercat',views.add_othercat, name='add_othercat'),
     url(r'^del_othercat',views.del_othercat, name='del_othercat'),

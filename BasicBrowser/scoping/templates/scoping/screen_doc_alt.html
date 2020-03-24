@@ -143,7 +143,12 @@
 				<form id="placeform">
 				  {{t.1.form.as_p}}
 				</form>
-				<button id="submitplaceform">Save</button>
+				<button class="btn" id="submitplaceform">Save</button>
+				{% elif t.1.record_years %}
+				  <form id="yearform">
+				    {{t.1.form.as_p}}
+				  </form>
+				  <button class="btn" id="submityearform">Save</button>
 				{% else %}
 				<button value="{{t.1.id}}" type="button"
 					{% if t.1.parent_category.filtered_equivalents %}
@@ -222,6 +227,27 @@ $("div.padded td, th").each(function(t) {
   $(this).css("background-color", c)
   $(this).find("span").css("background-color","")
 })
+
+$("#submityearform").click(function(){
+    var values = {};
+    $.each($('#yearform').serializeArray(), function(i, field) {
+	values[field.name] = field.value;
+    })
+    const formbut = $(this);
+    $.ajax({
+	url: "{% url 'scoping:duc_year' %}",
+	data: {
+	    "doc_id": values["doc_id"],
+	    "baseline_year": values["baseline_year"],
+	    "observation_year": values["observation_year"],
+	    "cat_id": values["cat_id"],
+	    "user_id": values["user_id"],
+	},
+	success: function(data) {
+	    formbut.html("Update")
+	}
+    })
+})    
 
 $("#submitplaceform").click(function(){
     var values = {};
