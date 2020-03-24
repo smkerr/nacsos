@@ -558,7 +558,12 @@ class Query(models.Model):
                 pass
 
 
+class TextPlace(models.Model):
+    name = models.TextField(db_index=True)
 
+    def __str__(self):
+        return self.name
+            
 class Category(models.Model):
     name = models.TextField(null = True, verbose_name="Category Name", db_index=True)
     level = models.IntegerField(default=1)
@@ -573,6 +578,9 @@ class Category(models.Model):
     equivalents = models.ManyToManyField('self', related_name='equivalent_category', blank=True)
     show_equivalents = models.BooleanField(default=False)
     filtered_equivalents = models.BooleanField(default=False)
+    title_only = models.BooleanField(default=False)
+    text_place = models.BooleanField(default=False)
+    record_years = models.BooleanField(default=False)
     
     def __str__(self):
       return self.name
@@ -583,7 +591,10 @@ class DocUserCat(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
-
+    places = models.ManyToManyField('TextPlace')
+    baseline_year = models.IntegerField(null=True)
+    observation_year = models.IntegerField(null=True)
+    
 class Innovation(models.Model):
     name = models.TextField(null = True, verbose_name="Innovation Name")
     description = models.TextField(null=True, verbose_name="Innovation Description")

@@ -131,7 +131,20 @@
                         (hover for more info)
                                 <hr>
 				{% for t in l %}
-				
+				{% if t.1.title_only %}
+				<p>
+				{% if t.1.parent_category.filtered_equivalents %}
+				<b class="hidden" value="{{t.1.id}}">{{t.1}}</b>
+				{% else %}
+				<b>{{t.1}}</b>
+				{% endif %}
+				{% else %}
+				{% if t.1.text_place %}
+				<form id="placeform">
+				  {{t.1.form.as_p}}
+				</form>
+				<button id="submitplaceform">Save</button>
+				{% else %}
 				<button value="{{t.1.id}}" type="button"
 					{% if t.1.parent_category.filtered_equivalents %}
 					class="btn cat {{t.0}} hidden"
@@ -142,7 +155,8 @@
 					data-show="{{t.1.ecs}}"
 					{% endif %}
 					data-toggle="tooltip" data-placement="top" title="{{t.1.description}}">{{t.1}}</button>
-
+				{% endif %}
+				{% endif %}
                             {% endfor %}
                     </div>
 
@@ -195,7 +209,9 @@
 
 </div>
 
-{% endblock %}
+    {{ placeform.media }}
+    {% endblock %}
+
 
 {% block script %}
 
@@ -205,6 +221,31 @@ $("div.padded td, th").each(function(t) {
   c = $(this).find("span").css("background-color")
   $(this).css("background-color", c)
   $(this).find("span").css("background-color","")
+})
+
+$("#submitplaceform").click(function(){
+    var values = {};
+    values["places"] = []
+    $.each($('#placeform').serializeArray(), function(i, field) {
+	if (field.name=="places"){
+	    values[field.name].push(field.value);
+	} else {
+	    values[field.name] = field.value;
+	}
+    })
+    const formbut = $(this);
+    $.ajax({
+	url: "{% url 'scoping:duc_place' %}",
+	data: {
+	    "doc_id": values["doc_id"],
+	    "places": values["places"],
+	    "cat_id": values["cat_id"],
+	    "user_id": values["user_id"],
+	},
+	success: function(data) {
+	    formbut.html("Update")
+	}
+    })
 })
 
 $(".cat").click(function(){
@@ -227,7 +268,7 @@ $(".cat").click(function(){
           
           if (but.data("show")) {
             for (var i = 0; i < but.data("show").length; i++) {
-		var sbut = $("button[value="+but.data("show")[i]+"]")
+		var sbut = $("[value="+but.data("show")[i]+"]")
                 if (method=="add") {
 		   sbut.removeClass("hidden")
 		} else {

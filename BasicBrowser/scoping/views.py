@@ -23,7 +23,7 @@ from tmv_app.models import *
 import parliament.models as pms
 import twitter.models as tms
 # Create your views here.
-
+from dal import autocomplete
 from django.utils import formats
 
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
@@ -83,7 +83,30 @@ def switch_mode(request):
         request.session['appmode']='scoping'
         return HttpResponseRedirect(reverse('scoping:index'))
 
+class TextPlaceAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        qs = TextPlace.objects.all()
+        if self.q:
+            qs = qs.filter(name__istartswith=self.q)
+        return qs
 
+def duc_place(request):
+    place_ids = request.GET.getlist('places[]')
+    doc = Doc.objects.get(pk=request.GET.get('doc_id', None))
+    cat = Category.objects.get(pk=request.GET.get('cat_id', None))
+    user = User.objects.get(pk=request.GET.get('user_id', None))
+    
+    duc, created = DocUserCat.objects.get_or_create(
+        doc=doc,
+        category=cat,
+        user=user
+    )
+    duc.places.clear()
+    for p in place_ids:
+        place = TextPlace.objects.get(pk=p)
+        duc.places.add(place)
+    return HttpResponse("")
+    
 class RoBCreate(CreateView):
     '''
     '''
@@ -5625,6 +5648,8 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         pc = round(pos/todo*100)
         next = pos+1
 
+    placeform = None
+
     if do.utterance_linked:
         doc = do.utterance
         levels = None # would be categories
@@ -5664,6 +5689,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         cats = Category.objects.filter(project=project,level__lte=10)#.order_by('name')
 
         levels = []
+        placeform = None
         for l in cats.exclude(name__contains="<hidden>").values_list('level',flat=True).distinct().order_by('level'):
             lcats = []
             for t in cats.filter(level=l).exclude(name__contains="<hidden>").order_by('name'):
@@ -5687,6 +5713,9 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                     )
                 t.ecs = list(t.equivalents.values_list('pk',flat=True))
                 e = dcus.exists() or dcs.exists()
+                if t.text_place:
+                    t.form = TextPlaceForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
+                    placeform = t.form
                 lcats.append((e,t))
             parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))
             if cats.filter(level=l).count() > 1 and len(set(parents)) ==1:
@@ -5730,6 +5759,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
         'cities': cities,
         'do': do,
         'pc': pc,
+        'placeform': placeform,
         'doc': doc,
         'pos': pos,
         'todo': todo,

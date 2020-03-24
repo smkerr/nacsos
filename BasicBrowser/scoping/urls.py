@@ -122,6 +122,9 @@ urlpatterns = [
     url(r'^authorlist/(?P<tid>[0-9]+)$',views.prepare_authorlist, name='authorlist'),
     url(r'^sendauthorlist/(?P<tid>[0-9]+)$',views.send_authorlist, name='send_authorlist'),
 
+    url(r'^textplace-autocomplete/$',views.TextPlaceAutocomplete.as_view(create_field='name'),name="textplace-autocomplete"),
+    path('duc_place', views.duc_place, name='duc_place'),
+    
     url(r'^add_othercat',views.add_othercat, name='add_othercat'),
     url(r'^del_othercat',views.del_othercat, name='del_othercat'),
 
