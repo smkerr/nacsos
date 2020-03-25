@@ -113,6 +113,10 @@ def duc_year(request):
     user = User.objects.get(pk=request.GET.get('user_id', None))
     observation_year = request.GET.get('observation_year', None)
     baseline_year = request.GET.get('baseline_year', None)
+    if observation_year=="":
+        observation_year = None
+    if baseline_year=="":
+        baseline_year = None
     duc, created = DocUserCat.objects.get_or_create(
         doc=doc,
         category=cat,
