@@ -583,7 +583,9 @@ class Category(models.Model):
     record_years = models.BooleanField(default=False)
     
     def __str__(self):
-      return self.name
+        if self.title_only:
+            return self.name.split(maxsplit=1)[-1]
+        return self.name
 
 class DocUserCat(models.Model):
     doc = models.ForeignKey('Doc', null=True, on_delete=models.CASCADE)
