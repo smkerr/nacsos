@@ -13,6 +13,8 @@ from django.db.models import F
 from psqlextra.types import PostgresPartitioningMethod
 from psqlextra.models import PostgresPartitionedModel
 import architect
+from django.db import connection
+import re
 
 class MinMaxFloat(models.FloatField):
     """
@@ -536,7 +538,9 @@ class RunStats(models.Model):
     dt_threshold_scaled = models.FloatField( default = 0.01)
     dyn_win_threshold = models.FloatField(default = 0.1 )
 
-    def check_partitions(run_id):
+    def check_partitions(s):
+        
+        run_id=RunStats.objects.last().pk+1
         sql = """
         select relname, pg_get_expr(relpartbound, oid), substring(pg_get_expr(relpartbound, oid) from '\d+')::int AS s 
         from pg_class 
@@ -551,7 +555,7 @@ class RunStats(models.Model):
             sql = f"SELECT COUNT(id) FROM {row[0]}"
             cursor.execute(sql)
             row = cursor.fetchone()
-            if run_id < vrange[1]:
+            if run_id < int(vrange[1]):
                 if row[0] > 10000000:
                     # Alter current partition
                     sql = f"""BEGIN TRANSACTION;
@@ -569,9 +573,16 @@ class RunStats(models.Model):
                     from_values=run_id,
                     to_values=run_id+10000
                 )
+            else:
+                connection.schema_editor().add_range_partition(
+                    model=DocTopic,
+                    name=f"pt_{run_id}",
+                    from_values=run_id,
+                    to_values=run_id+10000
+                )
                 
     def save(self, *args, **kwargs):
-        check_partitions(self.run_id)
+        self.check_partitions()
         if not self.parent_run_id:
             self.parent_run_id=self.run_id
         super(RunStats, self).save(*args, **kwargs)
