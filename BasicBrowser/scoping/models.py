@@ -792,11 +792,16 @@ class DocCat(models.Model):
 @receiver(post_save, sender=DocUserCat)
 def handle_cat_doc(sender, instance, **kwargs):
     if instance.doc:
-        dc, created = DocCat.objects.get_or_create(
-            doc=instance.doc,
-            category=instance.category
-        )
-        dc.save()
+
+        filter = {
+            "doc": instance.doc,
+            "category": instance.category
+        }
+        try:
+            dc, created = DocCat.objects.get_or_create(**filter)
+        except MultipleObjectsReturned:
+            DocCat.objects.filter(**filter).last().delete()
+            dc, created = DocUserCat.objects.get_or_create(**filter)
         dc.docusercats.add(instance)
 
 @receiver(pre_delete,sender=DocUserCat)
