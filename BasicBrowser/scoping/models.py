@@ -598,6 +598,7 @@ class DocUserCat(models.Model):
     baseline_year_2 = models.IntegerField(null=True)
     observation_year_1 = models.IntegerField(null=True)
     observation_year_2 = models.IntegerField(null=True)
+    duration = models.FloatField(null=True)
     
 class Innovation(models.Model):
     name = models.TextField(null = True, verbose_name="Innovation Name")

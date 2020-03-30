@@ -36,6 +36,7 @@ class CatYearForm(forms.Form):
             self.fields['observation_year_2'].initial = duc.observation_year_2
             self.fields['baseline_year_1'].initial = duc.baseline_year_1
             self.fields['observation_year_1'].initial = duc.observation_year_1
+            self.fields['duration'].initial = duc.duration
         except:
             pass
     
@@ -46,7 +47,8 @@ class CatYearForm(forms.Form):
     baseline_year_2 = forms.IntegerField(label="Observation period 1 - end")
     observation_year_1 = forms.IntegerField(label="Observation period 2 - start")
     observation_year_2 = forms.IntegerField(label="Observation period 2 - end")
-        
+    duration = forms.FloatField(label="Duration (years - enter decimal for periods less than 1 year)")
+    
 class TextPlaceForm(forms.Form):
     def __init__(self,*args,**kwargs):
         doc_id = kwargs.pop('doc_id',None)

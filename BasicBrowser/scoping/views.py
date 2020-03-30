@@ -113,10 +113,13 @@ def duc_year(request):
     user = User.objects.get(pk=request.GET.get('user_id', None))
     observation_year_1 = request.GET.get('observation_year_1', None)
     baseline_year_1 = request.GET.get('baseline_year_1', None)
+    duration = request.GET.get('duration', None)
     if observation_year_1=="":
         observation_year_1 = None
     if baseline_year_1=="":
         baseline_year_1 = None
+    if duration=="":
+        duration = None
     observation_year_2 = request.GET.get('observation_year_2', None)
     baseline_year_2 = request.GET.get('baseline_year_2', None)
     if observation_year_2=="":
@@ -132,6 +135,7 @@ def duc_year(request):
     duc.baseline_year_2 = baseline_year_2
     duc.observation_year_1 = observation_year_1
     duc.baseline_year_1 = baseline_year_1
+    duc.duration = duration
     duc.save()
     return HttpResponse("")
 
