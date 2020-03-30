@@ -32,8 +32,10 @@ class CatYearForm(forms.Form):
         self.fields['user_id'].initial = user_id
         try:
             duc = DocUserCat.objects.get(doc__id=doc_id,category__id=cat_id,user__id=user_id)
-            self.fields['baseline_year'].initial = duc.baseline_year
-            self.fields['observation_year'].initial = duc.observation_year
+            self.fields['baseline_year_2'].initial = duc.baseline_year_2
+            self.fields['observation_year_2'].initial = duc.observation_year_2
+            self.fields['baseline_year_1'].initial = duc.baseline_year_1
+            self.fields['observation_year_1'].initial = duc.observation_year_1
         except:
             pass
     

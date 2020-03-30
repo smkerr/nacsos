@@ -238,8 +238,10 @@ $("#submityearform").click(function(){
 	url: "{% url 'scoping:duc_year' %}",
 	data: {
 	    "doc_id": values["doc_id"],
-	    "baseline_year": values["baseline_year"],
-	    "observation_year": values["observation_year"],
+	    "baseline_year_1": values["baseline_year_1"],
+	    "observation_year_1": values["observation_year_1"],
+	    "baseline_year_2": values["baseline_year_2"],
+	    "observation_year_2": values["observation_year_2"],
 	    "cat_id": values["cat_id"],
 	    "user_id": values["user_id"],
 	},
