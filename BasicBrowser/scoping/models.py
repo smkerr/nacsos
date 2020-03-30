@@ -594,8 +594,10 @@ class DocUserCat(models.Model):
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
     places = models.ManyToManyField('TextPlace')
-    baseline_year = models.IntegerField(null=True)
-    observation_year = models.IntegerField(null=True)
+    baseline_year_1 = models.IntegerField(null=True)
+    baseline_year_2 = models.IntegerField(null=True)
+    observation_year_1 = models.IntegerField(null=True)
+    observation_year_2 = models.IntegerField(null=True)
     
 class Innovation(models.Model):
     name = models.TextField(null = True, verbose_name="Innovation Name")

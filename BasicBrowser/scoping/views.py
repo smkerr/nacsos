@@ -111,19 +111,27 @@ def duc_year(request):
     doc = Doc.objects.get(pk=request.GET.get('doc_id', None))
     cat = Category.objects.get(pk=request.GET.get('cat_id', None))
     user = User.objects.get(pk=request.GET.get('user_id', None))
-    observation_year = request.GET.get('observation_year', None)
-    baseline_year = request.GET.get('baseline_year', None)
-    if observation_year=="":
-        observation_year = None
-    if baseline_year=="":
-        baseline_year = None
+    observation_year_1 = request.GET.get('observation_year_1', None)
+    baseline_year_1 = request.GET.get('baseline_year_1', None)
+    if observation_year_1=="":
+        observation_year_1 = None
+    if baseline_year_1=="":
+        baseline_year_1 = None
+    observation_year_2 = request.GET.get('observation_year_2', None)
+    baseline_year_2 = request.GET.get('baseline_year_2', None)
+    if observation_year_2=="":
+        observation_year_2 = None
+    if baseline_year_2=="":
+        baseline_year_2 = None
     duc, created = DocUserCat.objects.get_or_create(
         doc=doc,
         category=cat,
         user=user
     )
-    duc.observation_year = observation_year
-    duc.baseline_year = baseline_year
+    duc.observation_year_2 = observation_year_2
+    duc.baseline_year_2 = baseline_year_2
+    duc.observation_year_1 = observation_year_1
+    duc.baseline_year_1 = baseline_year_1
     duc.save()
     return HttpResponse("")
 

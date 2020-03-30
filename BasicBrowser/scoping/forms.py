@@ -40,8 +40,10 @@ class CatYearForm(forms.Form):
     doc_id = forms.IntegerField(widget=forms.HiddenInput())
     cat_id = forms.IntegerField(widget=forms.HiddenInput())
     user_id = forms.IntegerField(widget=forms.HiddenInput())
-    baseline_year = forms.IntegerField()
-    observation_year = forms.IntegerField()
+    baseline_year_1 = forms.IntegerField()
+    baseline_year_2 = forms.IntegerField()
+    observation_year_1 = forms.IntegerField()
+    observation_year_2 = forms.IntegerField()
         
 class TextPlaceForm(forms.Form):
     def __init__(self,*args,**kwargs):
