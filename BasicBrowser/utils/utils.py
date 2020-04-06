@@ -9,7 +9,7 @@ import sys
 import uuid
 import short_url
 from django.db import IntegrityError
-
+from django.core.exceptions import FieldDoesNotExist
 from scoping.models import *
 from tmv_app.models import *
 
@@ -512,22 +512,23 @@ def add_scopus_doc(r,q,update):
             did = 'NA'
             pass
 
+        if get(r,'ti') is None or len(get(r,'ti')) < 2:
+            print(f"<p>This document ({r}) has no title!! ")
+            q.upload_log+=f"<p>This document ({r}) has no title!! "
+            q.save()
+            return
+
+        tslug=scoping.models.Doc.make_tslug(get(r,'ti'))
+        
         if did=='NA':
-
-            if get(r,'ti') is None or len(get(r,'ti')) < 2:
-                print(f"<p>This document ({r}) has no title!! ")
-                q.upload_log+=f"<p>This document ({r}) has no title!! "
-                q.save()
-                return
-
             docs = scoping.models.Doc.objects.filter(
-                    tslug=scoping.models.Doc.make_tslug(get(r,'ti')),
+                    tslug=tslug,
                     PY=get(r,'py')
             )
             if not docs.exists() and get(r,'au') is not None:
                 if len(get(r,'au')) > 0:
                     docs = scoping.models.Doc.objects.filter(
-                        tslug=scoping.models.Doc.make_tslug(get(r,'ti')),
+                        tslug=tslug,
                         docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
                     ).distinct('pk')
 
@@ -539,13 +540,13 @@ def add_scopus_doc(r,q,update):
             if not docs.exists():
 
                 docs = scoping.models.Doc.objects.filter(
-                        tslug=scoping.models.Doc.make_tslug(get(r,'ti')),
+                        tslug=tslug,
                         PY=get(r,'py')
                 )
                 if not docs.exists() and get(r,'au') is not None:
                     if len(get(r,'au')) > 0:
                         docs = scoping.models.Doc.objects.filter(
-                            tslug=scoping.models.Doc.make_tslug(get(r,'ti')),
+                            tslug=tslug,
                             docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
                         ).distinct('pk')
 
@@ -564,8 +565,6 @@ def add_scopus_doc(r,q,update):
 
         elif len(docs)==0: # if there are none, try with the title and jaccard similarity
             #print("looking with jaccard similarity and so on")
-
-
             s1 = shingle(get(r,'ti'))
 
             twords = get(r,'ti').split()
@@ -606,7 +605,10 @@ def add_scopus_doc(r,q,update):
                 )
                 doc = scoping.models.Doc(UT=ut)
                 doc.save()
-                #print(doc)
+            if created:
+                doc.tslug = tslug
+                doc.save()
+            
     if doc is not None:
         if doc.query.filter(pk=q.id).exists():
             q.upload_log+=f"<p>This document ({doc.title}) is considered an internal duplicate of ({get(r,'ti')}) "
@@ -654,8 +656,8 @@ def add_scopus_doc(r,q,update):
                         if f.get_internal_type() != 'ArrayField' and type(r[field]) == list:
                             setattr(article,f.name,'; '.join(r[field]))
                         else:
-                            setattr(article,f.name,get(r,field.name))
-                except:
+                            setattr(article,f.name,get(r,f.name))
+                except FieldDoesNotExist:
                     # Field in data but not in model
                     pass
                     #print(field)
@@ -839,7 +841,11 @@ def read_ris(q, update):
             for e in entries:
                 if "py" in e:
                     if type(e["py"] is str):
-                        e["py"] = int(e["py"][:4])
+                        try:
+                            e["py"] = int(e["py"][:4])
+                        except:
+                            print(f"cannot convert {e['py']} into string")
+                            e["py"] = None
                 if "unknown_tag" in e:
                     del e["unknown_tag"]
                 try:
@@ -856,7 +862,11 @@ def read_ris(q, update):
                 for e in entries:
                     if "py" in e:
                         if type(e["py"] is str):
-                            e["py"] = int(e["py"][:4])
+                            try:
+                                e["py"] = int(e["py"][:4])
+                            except:
+                                print(f"cannot convert {e['py']} into string")
+                                e["py"] = None
                     if "tc" in e:
                         if type(e["tc"] is str):
                             digits = re.findall(r"\d+",e["tc"])
