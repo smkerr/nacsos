@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import NMF, LatentDirichletAllocation as LDA
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-from scipy.sparse import csr_matrix, find
+from scipy.sparse import csr_matrix, find, lil_matrix
 from functools import partial
 from multiprocess import Pool
 from utils.db import *
@@ -29,6 +29,7 @@ from sklearn.decomposition.nmf import _beta_divergence  # needs sklearn 0.19!!!
 from sklearn.preprocessing import RobustScaler
 from django.db import connection, transaction
 from psycopg2.extras import *
+import tmv_app.utils.warplda as wpu
 
 @shared_task
 def create_topic_assessments(run_id, uids, n_docs):
@@ -451,8 +452,7 @@ def do_nmf(run_id, no_processes=16):
     DocTopic.objects.filter(run_id=run_id).delete()
     Topic.objects.filter(run_id=run_id).delete()
 
-    for t in Term.objects.filter(run_id=run_id):
-        t.run_id.remove(run_id)
+    stat.term_set.clear()
 
     alpha = stat.alpha
     n_features = stat.max_features
@@ -612,7 +612,7 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
         pool = Pool(processes=no_processes)
         vocab_ids.append(pool.map(partial(add_features, run_id=run_id),vocab))
         pool.terminate()
-        del vocab
+        #del vocab
         vocab_ids = vocab_ids[0]
 
         ## Make some topics
@@ -642,6 +642,58 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
                 n_iter=stat.max_iter*10,
             ).fit(tfidf)
             dtm = model.doc_topic_
+            components = csr_matrix(model.components_)
+        elif stat.lda_library == RunStats.WARP:
+            # Export warp lda
+            try:
+                warp_path = settings.WARP_LDA_PATH
+                os.chdir(warp_path)
+            except:
+                print("warplda is not installed, or its path is not defined in settings, exiting....")
+                return
+            fname = wpu.export_warp_lda(ids, tfidf, vocab, run_id)
+            # preformat
+            os.system(f'./format -input {fname} -prefix {run_id} train')
+            # Run warp lda
+            runcmd = f'./warplda --prefix {run_id} --k {stat.K}'
+            if stat.alpha:
+                runcmd += f' -alpha {stat.alpha}'
+            if stat.beta:
+                runcmd += f' -beta {stat.beta}'
+            if stat.max_iter:
+                runcmd += f' --niter {stat.max_iter}'
+            runcmd += ' train.model'
+            os.system(runcmd)
+
+            warp_vocab = np.loadtxt(f'{run_id}.vocab',dtype=str)
+            warp_translate = np.argsort(warp_vocab).argsort()
+            # Import warp lda as matrices
+            with open(f'{run_id}.model', 'r') as f:
+                for i, l in enumerate(f):
+                    if i==0:
+                        M = int(l.split()[0])
+                        N = int(l.split()[1])
+                        components = lil_matrix((N,M))
+                    else:
+                        largs = l.split('\t')[1].strip().split()
+                        for la in largs:
+                            wid = warp_translate[i-1]
+                            t,n = la.split(':')
+                            components[int(t),wid] = int(n)
+
+            components = components.tocsr()
+
+            dtm = lil_matrix((len(ids),N))
+            with open(f'{run_id}.z.estimate', 'r') as f:
+                for i, l in enumerate(f):
+                    largs = l.split(' ',maxsplit=1)[1].strip().split()
+                    for la in largs:
+                        w,t = la.split(':')
+                        dtm[i,int(t)] += 1
+
+            dtm = dtm.tocsr()
+
+
         else:
             model = LDA(
                 n_components=K,
@@ -653,6 +705,7 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
             ).fit(tfidf)
 
             dtm = csr_matrix(model.transform(tfidf))
+            components = csr_matrix(model.components_)
 
     print("done in %0.3fs." % (time() - t0))
     stat.nmf_time = time() - t0
@@ -661,7 +714,7 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
         ## Add topics terms
         print("Adding topicterms to db")
         t0 = time()
-        ldalambda = find(csr_matrix(model.components_))
+        ldalambda = find(components)
         topics = range(len(ldalambda[0]))
         tts = []
         pool = Pool(processes=no_processes)
@@ -747,6 +800,8 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
             stat.error = model.loglikelihood()
             stat.errortype = "Log likelihood"
             stat.iterations = model.n_iter
+        elif stat.lda_library == RunStats.WARP:
+            pass
         else:
             stat.error = model.perplexity(tfidf)
             stat.errortype = "Perplexity"

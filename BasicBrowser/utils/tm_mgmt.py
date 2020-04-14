@@ -837,12 +837,17 @@ def update_year_topic_scores(session):
             else:
                 yts = DocTopic.objects.filter(doc__PY__gt=1989,run_id=run_id)
 
+                if yts.first().scaled_score:
+                    score = 'scaled_score'
+                else:
+                    score = 'score'
+
                 yts = yts.values('doc__PY').annotate(
-                    yeartotal=Sum('scaled_score')
+                    yeartotal=Sum(score)
                 )
 
                 ytts = yts.values().values('topic','topic__title','doc__PY').annotate(
-                    score=Sum('scaled_score')
+                    s=Sum(score)
                 )
                 TopicYear.objects.filter(run_id=run_id).delete()
                 for ytt in ytts:
@@ -856,10 +861,10 @@ def update_year_topic_scores(session):
                     topicyear, created = TopicYear.objects.get_or_create(
                         topic=topic,PY=yttyear, run_id=run_id
                     )
-                    topicyear.score = ytt['score']
+                    topicyear.score = ytt['s']
                     topicyear.count = yeartotal
                     try:
-                        topicyear.share = ytt['score'] / yeartotal
+                        topicyear.share = ytt['s'] / yeartotal
                     except:
                         pass
                     topicyear.save()

@@ -435,9 +435,11 @@ class RunStats(models.Model):
     )
     SKLEARN = "sk"
     LDA_LIB = "ld"
+    WARP = "wl"
     lda_libs = (
         (SKLEARN, "Sklearn"),
-        (LDA_LIB, "lda")
+        (LDA_LIB, "lda"),
+        (WARP, "warplda")
     )
 
     max_features = models.IntegerField(default=0, help_text = 'Maximum number of terms (0 = no limit)')
@@ -539,12 +541,12 @@ class RunStats(models.Model):
     dyn_win_threshold = models.FloatField(default = 0.1 )
 
     def check_partitions(s):
-        
+
         run_id=RunStats.objects.last().pk+1
         sql = """
-        select relname, pg_get_expr(relpartbound, oid), substring(pg_get_expr(relpartbound, oid) from '\d+')::int AS s 
-        from pg_class 
-        WHERE relispartition and relname~'tmv_app_doctopic' 
+        select relname, pg_get_expr(relpartbound, oid), substring(pg_get_expr(relpartbound, oid) from '\d+')::int AS s
+        from pg_class
+        WHERE relispartition and relname~'tmv_app_doctopic'
         AND pg_get_expr(relpartbound, oid)~'FOR VALUES' ORDER BY s DESC LIMIT 1;
         """
         with connection.cursor() as cursor:
@@ -560,7 +562,7 @@ class RunStats(models.Model):
                     # Alter current partition
                     sql = f"""BEGIN TRANSACTION;
                     ALTER TABLE tmv_app_doctopic DETACH PARTITION {pname};
-                    ALTER TABLE tmv_app_doctopic ATTACH PARTITION {pname} 
+                    ALTER TABLE tmv_app_doctopic ATTACH PARTITION {pname}
                     FOR VALUES FROM ({vrange[0]}) TO ({run_id});
                     COMMIT TRANSACTION;"""
                     cursor.execute(sql)
@@ -580,7 +582,7 @@ class RunStats(models.Model):
                     from_values=run_id,
                     to_values=run_id+10000
                 )
-                
+
     def save(self, *args, **kwargs):
         self.check_partitions()
         if not self.parent_run_id:
