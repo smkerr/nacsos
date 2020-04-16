@@ -461,11 +461,11 @@ def do_nmf(run_id, no_processes=16):
     limit = stat.limit
     ng = stat.ngram
 
-    if stat.method=="LD":
-        if stat.max_iter == 200:
-            stat.max_iter = 10
-        if stat.max_iter > 100:
-            stat.max_iter = 90
+    # if stat.method=="LD" and stat.lda_library!=RunStats.WARP:
+    #     if stat.max_iter == 200:
+    #         stat.max_iter = 10
+    #     if stat.max_iter > 100:
+    #         stat.max_iter = 90
 
     n_samples = stat.max_iter
 
@@ -681,7 +681,10 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
                             t,n = la.split(':')
                             components[int(t),wid] = int(n)
 
-            components = components.tocsr()
+            components = components.todense()
+            for k in range(components.shape[0]):
+                components[k,:] = (components[k,:] + stat.beta) / (components[k,:].sum() + stat.K*stat.beta)
+            components = csr_matrix(components)
 
             dtm = lil_matrix((len(ids),N))
             with open(f'{run_id}.z.estimate', 'r') as f:
@@ -691,7 +694,12 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
                         w,t = la.split(':')
                         dtm[i,int(t)] += 1
 
-            dtm = dtm.tocsr()
+            theta = dtm.todense()
+            for i in range(dtm.shape[0]):
+                theta[i,:] = (theta[i,:] + stat.alpha) / (theta[i,:].sum() + stat.K*stat.alpha)
+
+            dtm = csr_matrix(theta)
+
 
 
         else:
