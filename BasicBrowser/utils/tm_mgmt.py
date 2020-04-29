@@ -483,6 +483,7 @@ def update_topic_titles_hlda(session):
 
 def calculate_topic_scores(topics):
     stat = topics.first().run_id
+    run_id = stat.run_id
     topics = topics.filter(
         doctopic__score__gt=stat.dt_threshold
     )

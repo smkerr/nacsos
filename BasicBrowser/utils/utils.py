@@ -279,8 +279,12 @@ def read_wos(res, q, update, deduplicate=False):
                 # parallely add docs
                 if deduplicate:
                     print("adding as if scopus")#
-                    pool = Pool(processes=1)
-                    pool.map(partial(add_scopus_doc, q=q, update=update),records)
+                    from django.db import connection
+                    with connection.cursor() as cursor:
+                        cursor.execute('SELECT set_limit(0.8);')
+                        row = cursor.fetchone()
+                    for r in records:
+                        add_scopus_doc(r, q=q, update=update)
                 else:
                     pool = Pool(processes=p)
                     pool.map(partial(add_doc, q=q, update=update),records)
@@ -293,11 +297,13 @@ def read_wos(res, q, update, deduplicate=False):
                 # parallely add doc
                 #pool.map(update_doc, records)
                 if deduplicate:
-                    print("adding as if scopus")
+                    print("adding as if scopus")#
                     from django.db import connection
-                    connection.close()
-                    pool = Pool(processes=1)
-                    pool.map(partial(add_scopus_doc, q=q, update=update),records)
+                    with connection.cursor() as cursor:
+                        cursor.execute('SELECT set_limit(0.8);')
+                        row = cursor.fetchone()
+                    for r in records:
+                        add_scopus_doc(r, q=q, update=update)
                 else:
                     pool = Pool(processes=p)
                     pool.map(partial(add_doc, q=q, update=update),records)
@@ -603,11 +609,12 @@ def add_scopus_doc(r,q,update, find_ids = True):
             doc_created = True
             
     if doc is not None:
-        if doc.title != r['ti']:
-            if not doc.alternative_titles:
-                doc.alternative_titles = [r['ti']]
-            elif r['ti'] not in doc.alternative_titles:
-                doc.alternative_titles.append(r['ti'])
+        if get(r,'ti'):
+            if doc.title != get(r,'ti'):
+                if not doc.alternative_titles:
+                    doc.alternative_titles = [get(r,'ti')]
+                elif r['ti'] not in doc.alternative_titles:
+                    doc.alternative_titles.append(get(r,'ti'))
         if doc.query.filter(pk=q.id).exists():
             q.upload_log+=f"<p>This document ({doc.title}) is considered an internal duplicate of ({get(r,'ti')}) "
             q.save()

@@ -1,4 +1,3 @@
-
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.template import Template, Context, RequestContext, loader
 from tmv_app.models import *
@@ -654,6 +653,7 @@ def topic_detail(request, topic_id, run_id=0):
         ### Journals
         journals = JournalAbbrev.objects.filter(
             doc__doctopic__topic=topic,
+            doc__doctopic__run_id=stat.run_id,
             doc__journal__isnull=False,
             doc__doctopic__score__gt=stat.dt_threshold
         ).values('fulltext').annotate(
