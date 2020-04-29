@@ -752,7 +752,7 @@ def get_topic_docs(request,topic_id):
 
         doctopics = Doc.objects.filter(
             doctopic__run_id=run_id,
-            doctopic__topic=topic,doctopic__run_id=run_id,
+            doctopic__topic=topic,
             doctopic__score__gt=dt_threshold
         )
 
