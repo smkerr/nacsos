@@ -288,7 +288,7 @@ def read_wos(res, q, update, deduplicate=False):
                 else:
                     pool = Pool(processes=p)
                     pool.map(partial(add_doc, q=q, update=update),records)
-                pool.terminate()
+                    pool.terminate()
                 records = []
                 chunk_size = 0
             continue
@@ -307,7 +307,7 @@ def read_wos(res, q, update, deduplicate=False):
                 else:
                     pool = Pool(processes=p)
                     pool.map(partial(add_doc, q=q, update=update),records)
-                pool.terminate()
+                    pool.terminate()
             #done!
             break
         if re.match("(^[A-Z][A-Z1-9]) (.*)",line):
