@@ -9,7 +9,7 @@ import sys
 import uuid
 import short_url
 from django.db import IntegrityError
-from django.core.exceptions import FieldDoesNotExist
+from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist, MultipleObjectsReturned
 from scoping.models import *
 from tmv_app.models import *
 
@@ -324,7 +324,7 @@ def read_wos(res, q, update, deduplicate=False):
 
     return n_records
 
-def add_doc_text(r,q,update):
+def add_doc_text(r):
 
     DEBUG=False
 
@@ -446,8 +446,8 @@ def add_doc_text(r,q,update):
     except:
         print("don't want to add this record, it has no id!")
         return
-    add_scopus_doc(record,q,update)
-    return
+    #add_scopus_doc(record,q,update)
+    return record
 
 def find_with_id(r):
     import scoping.models
@@ -477,10 +477,9 @@ def find_with_url(r):
         doc = None
     return doc
 
-def add_scopus_doc(r,q,update):
-    from django.db import connection
-    connection.close()
+def add_scopus_doc(r,q,update, find_ids = True):
     doc = None
+    doc_created = False
     try:
         r['UT'] = dict(parse_qsl(urlparse(r['UT']).query))['eid'].strip()
     except:
@@ -495,7 +494,8 @@ def add_scopus_doc(r,q,update):
         r['UT'] = None
 
     if r['UT'] is not None:
-        doc = find_with_id(r)
+        if find_ids:
+            doc = find_with_id(r)
     else:
         doc = find_with_url(r)
         for f in r:
@@ -518,12 +518,26 @@ def add_scopus_doc(r,q,update):
             q.save()
             return
 
+        # make a slug of the title and find out the year and a range of year neighbours
         tslug=scoping.models.Doc.make_tslug(get(r,'ti'))
-        
-        if did=='NA':
+        if get(r,'py') is not None:
+            py = get(r,'py')
+            prange = [py-1,py,py+1]
+
+        # Try looking by doi
+        if did!='NA':
+            docs = scoping.models.Doc.objects.filter(
+                wosarticle__di=did
+            )
+        else:
+            docs = scoping.models.Doc.objects.none()
+
+        # if we don't have doi matches, try with the tslug and either PY or author
+        if not docs.exists():
+            # Try and find with tslug and py
             docs = scoping.models.Doc.objects.filter(
                     tslug=tslug,
-                    PY=get(r,'py')
+                    PY__in=prange
             )
             if not docs.exists() and get(r,'au') is not None:
                 if len(get(r,'au')) > 0:
@@ -532,29 +546,12 @@ def add_scopus_doc(r,q,update):
                         docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
                     ).distinct('pk')
 
-        else:
-            docs = scoping.models.Doc.objects.filter(
-                wosarticle__di=did
-            )
-
-            if not docs.exists():
-
-                docs = scoping.models.Doc.objects.filter(
-                        tslug=tslug,
-                        PY=get(r,'py')
-                )
-                if not docs.exists() and get(r,'au') is not None:
-                    if len(get(r,'au')) > 0:
-                        docs = scoping.models.Doc.objects.filter(
-                            tslug=tslug,
-                            docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
-                        ).distinct('pk')
-
-
+        # If we have one match, perfect!
         if len(docs)==1:
             #print("found! with doi or ti and authors")
             doc = docs.first()
-        elif len(docs)>1: # if there are two, that's bad!
+        # If we have more than one match, there are likely already duplicates :(, deal with them
+        elif len(docs)>1: 
             print("more than one doc matching!!!!!")
             wdocs = docs.filter(UT__UT__contains='WOS:')
             if wdocs.count()==1:
@@ -563,30 +560,25 @@ def add_scopus_doc(r,q,update):
             else:
                 doc = docs.first()
 
-        elif len(docs)==0: # if there are none, try with the title and jaccard similarity
-            #print("looking with jaccard similarity and so on")
-            s1 = shingle(get(r,'ti'))
-
-            twords = get(r,'ti').split()
-            if len(twords) > 1:
-                twords = ' '.join([x for x in twords[0:1]])
+        # If we have zero matches, find docs that using title trigram similarity
+        elif len(docs)==0:
+            docs = scoping.models.Doc.objects.filter(docproject__project=q.project)
+            if py is not None:
+                docs = docs.filter(
+                    PY__in=prange,
+                )
             else:
-                twords = twords[0]
+                docs = docs.filter(
+                    docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
+                )
+            try:
+                doc = docs.get(title__trigram_similar=get(r,'ti'))
+            except ObjectDoesNotExist:
+                pass
+            except MultipleObjectsReturned:
+                print(f"found multiple similar objects for {get(r,'ti')}")
 
-            py_docs = scoping.models.Doc.objects.filter(
-                PY=get(r,'py'),
-                title__iregex='\w',
-                title__icontains=twords,
-                docproject__project=q.project
-            )
-            print(py_docs.count())
-            doc = None
-            for d in py_docs.iterator():
-                j = jaccard(s1,d.shingle())
-                if j > 0.51:
-                    doc = d
-                    break
-
+        # If we still have zero matches, create a new document
         if doc is None:
             if r['UT'] is not None:
                 ut, created = scoping.models.UT.objects.get_or_create(
@@ -608,8 +600,14 @@ def add_scopus_doc(r,q,update):
             if created:
                 doc.tslug = tslug
                 doc.save()
+            doc_created = True
             
     if doc is not None:
+        if doc.title != r['ti']:
+            if not doc.alternative_titles:
+                doc.alternative_titles = [r['ti']]
+            elif r['ti'] not in doc.alternative_titles:
+                doc.alternative_titles.append(r['ti'])
         if doc.query.filter(pk=q.id).exists():
             q.upload_log+=f"<p>This document ({doc.title}) is considered an internal duplicate of ({get(r,'ti')}) "
             q.save()
@@ -643,7 +641,7 @@ def add_scopus_doc(r,q,update):
 
         #doc.projects.add(q.project)
     if doc is not None and "WOS:" not in str(doc.UT.UT):
-        if update:
+        if update or doc_created:
             doc.title=get(r,'ti')
             doc.content=get(r,'ab')
             doc.PY=get(r,'py')
@@ -704,10 +702,39 @@ def chunks(l, n):
         yield l[i:i + n]
 
 def proc_scopus_chunk(docs,q,update):
+    print("processing scopus batch")
+    docs = [add_doc_text(r) for r in docs]
+    docs = [d for d in docs if d is not None]
+    ids = [d['scopus_id'] for d in docs]
+    # Get the docs that match with secondary id
+    wos_docs = scoping.models.Doc.objects.filter(UT__sid__in=ids)
+    # Sets of database ids and doc ids 
+    wos_ids, wos_dids = [set(x) for x in (zip(*wos_docs.values_list('UT__sid','id')))]
+    # Same for primary id
+    scopus_docs = scoping.models.Doc.objects.filter(UT__UT__in=ids)
+    scopus_ids, scopus_dids = [set(x) for x in list(zip(*scopus_docs.values_list('UT__UT','id')))]
+
+    qids = set(q.doc_set.values_list('id',flat=True))
+    
+    T = scoping.models.Doc.query.through
+    dqs = [T(doc_id=d,query=q) for d in (wos_dids | scopus_dids) - qids]
     django.db.connections.close_all()
+    T.objects.bulk_create(dqs)
+
+
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT set_limit(0.8);')
+        row = cursor.fetchone()
+        
+    db_ids = wos_ids | scopus_ids
+    print(f"added {len(db_ids)} documents already in the db")
     for d in docs:
-        add_doc_text(d,q=q,update=update)
-    django.db.connections.close_all()
+        if d['scopus_id'] not in db_ids:
+            add_scopus_doc(d, q, update, find_ids=False)
+    #for d in docs:
+    #    add_doc_text(d,q=q,update=update)
+    #django.db.connections.close_all()
     return
 
 RIS_KEY_MAPPING = {
@@ -912,10 +939,12 @@ def read_scopus(res, q, update):
             if chunk_size==max_chunk_size:
                 # parallely add docs
                 #pool = Pool(processes=8)
-                r_chunks = chunks(records, 8)
+                proc_scopus_chunk(records, q=q, update=update)
+                #r_chunks = chunks(records, 8)
                 #pool.map(partial(proc_scopus_chunk,q=q,update=update), r_chunks)
-                for r in r_chunks:
-                    proc_scopus_chunk(r,q=q,update=update)
+                #for r in r_chunks:
+                #    break
+                    #proc_scopus_chunk(r,q=q,update=update)
                 #pool.terminate()
                 records = []
                 chunk_size = 0
@@ -930,9 +959,10 @@ def read_scopus(res, q, update):
     if chunk_size < max_chunk_size and chunk_size > 0:
         # parallely add docs
         #pool = Pool(processes=1)
-        r_chunks = chunks(records, 1)
-        for r in r_chunks:
-            proc_scopus_chunk(r,q=q,update=update)
+        proc_scopus_chunk(records,q=q,update=update)
+        #r_chunks = chunks(records, 1)
+        #for r in r_chunks:
+        #    proc_scopus_chunk(r,q=q,update=update)
         #pool.map(partial(proc_scopus_chunk,q=q, update=update), r_chunks)
         #pool.terminate()
 

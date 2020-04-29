@@ -28,6 +28,7 @@ import numpy as np
 import random
 from gensim.models import Doc2Vec
 import gensim
+from django.contrib.postgres.indexes import GinIndex, GistIndex
 
 import tmv_app.models as tm
 import twitter.models as tms
@@ -1057,7 +1058,10 @@ class Doc(models.Model):
         else:
             instance.tslug = Doc.make_tslug(instance.title)
 
-
+    class Meta:
+        indexes = [
+            GinIndex(name="gin_trgm_t_idx", fields=("title",), opclasses=("gin_trgm_ops",)),
+        ]
 
 post_save.connect(Doc.post_create, sender=Doc)
 

@@ -632,7 +632,8 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
             init='nndsvd', max_iter=n_samples
         ).fit(tfidf)
         dtm = csr_matrix(model.transform(tfidf))
-
+        components = csr_matrix(model.components_)
+        
     else:
         if stat.lda_library == RunStats.LDA_LIB:
             model = lda.LDA(

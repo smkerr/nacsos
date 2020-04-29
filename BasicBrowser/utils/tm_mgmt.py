@@ -496,6 +496,7 @@ def calculate_topic_scores(topics):
             t.score=0
         t.share = t.score/top_total
         t.save()
+    Topic.objects.filter(run_id=run_id,score__isnull=True).update(score=0)
 
 def update_topic_scores(run_id):
     stats = RunStats.objects.get(run_id=run_id)
