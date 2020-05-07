@@ -9,7 +9,8 @@ from nltk import pos_tag
 from nltk.corpus import stopwords as sw
 punct = set(string.punctuation)
 from nltk.corpus import wordnet as wn
-from sklearn.metrics import precision_score, recall_score, r2_score
+from sklearn.metrics import precision_score, recall_score, r2_score, f1_score
+from sklearn.metrics import roc_curve, accuracy_score, roc_auc_score, precision_recall_curve
 
 from sklearn.ensemble import IsolationForest
 
@@ -21,34 +22,68 @@ import matplotlib.animation
 import matplotlib
 
 from sklearn.metrics import coverage_error, label_ranking_average_precision_score, label_ranking_loss
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.preprocessing import LabelEncoder
+
 
 
 stopwords = set(sw.words('english'))
 
-def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None):
+def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,df=None, stratified_k=False):
 
-    kf = KFold(n_splits=10)
+    if stratified_k:
+        label_encoder = LabelEncoder()
+        kf = StratifiedKFold(n_splits=n_splits)
+        kfs = kf.split(X[seen_index],label_encoder.fit_transform(y[seen_index]))
+    else:
+        kf = KFold(n_splits=n_splits)
+        kfs = kf.split(X[seen_index],y[seen_index])
     i=0
 
+    def tpr(y_true, y_pred):
+        return roc_curve(y_true, y_pred)[1]
+    def fpr(y_true, y_pred):
+        return roc_curve(y_true, y_pred)[0]
+    def prec(y_true, y_pred):
+        return precision_recall_curve(y_true,y_pred)[0]
+    def rec(y_true, y_pred):
+        return precision_recall_curve(y_true,y_pred)[1]
+
+
+    scores = [
+        # name, function, on y when multiclas, on each y when multiclass, # proba
+        ('p',precision_score, True, True, False),
+        ('r',recall_score, True, True, False),
+        ('f1', f1_score, True, True, False),
+        ('e', accuracy_score, True, True, False),
+        ('i', None, False, False, False),
+        ('auc', roc_auc_score, True, True, True),
+        ('tpr', tpr, False, True, True),
+        ('fpr', fpr, False, True, True),
+        ('prec', prec, False, True, True),
+        ('rec', rec, False, True, True)
+    ]
+
+    if classes:
+        scores += [
+            ('cov_err', coverage_error, True, False, False),
+            ('LRAP', label_ranking_average_precision_score, True, False, False),
+            ('LRL', label_ranking_loss, True, False, False)
+        ]
 
     for model in clf_models:
-        model['p'] = []
-        model['r'] = []
-        model['e'] = []
-        model['i'] = []
+        for m in scores:
+            model[m[0]] = []
         metrics = ['e']
         if classes:
-            model['cov_err'] = []
-            model['LRAP'] = []
-            model['LRL'] = []
             for j, y_class in enumerate(classes):
-                model[f'p\n{y_class}'] = []
-                model[f'r\n{y_class}'] = []
+                for m in scores:
+                    if m[1]:
+                        model[f'{m[0]}\n{y_class}'] = []
+
                 metrics += [f'p\n{y_class}', f'r\n{y_class}']
 
-
-    for k_train, k_test in kf.split(seen_index):
+    for k_train, k_test in kfs:
         k_train = seen_index[k_train]
         k_test = seen_index[k_test]
         i+=1
@@ -59,23 +94,55 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None)
             #clf = SVC(kernel='rbf',probability=True)
             clf.fit(X[k_train],y[k_train])
             predictions = clf.predict(X[k_test])
-            model['e'].append(clf.score(X[k_test],y[k_test]))
+            predictions_proba = clf.predict_proba(X[k_test])
+
+            for j, c in enumerate(predictions_proba.argmax(axis=1)):
+                predictions[j,c] = 1
+
             if classes:
-                model['cov_err'].append(coverage_error(predictions, y[k_test,:]))
-                model['LRAP'].append(label_ranking_average_precision_score(predictions, y[k_test,:]))
-                model['LRL'].append(label_ranking_loss(predictions, y[k_test,:]))
+                for m in scores:
+                    if m[4]:
+                        y_pred = predictions_proba
+                    else:
+                        y_pred = predictions
+                    if not m[1] or not m[2]:
+                        continue
+                    try:
+                        model[m[0]].append(m[1](y[k_test],y_pred,average="weighted"))
+                    except TypeError:
+                        model[m[0]].append(m[1](y[k_test],y_pred))
                 for j, y_class in enumerate(classes):
-                    model[f'p\n{y_class}'].append(precision_score(predictions[:,j],y[k_test,j]))
-                    model[f'r\n{y_class}'].append(recall_score(predictions[:,j],y[k_test,j]))
+                    for m in scores:
+                        if not m[1]:
+                            continue
+                        if m[3]:
+                            if m[4]:
+                                y_pred = predictions_proba
+                            else:
+                                y_pred = predictions
+
+                            try:
+                                model[f'{m[0]}\n{y_class}'].append(m[1](y[k_test,j],y_pred[:,j]))
+                            except:
+                                model[f'{m[0]}\n{y_class}'].append(None)
+                    if df is not None:
+                        df.loc[k_test,f"{y_class} - k_prediction"] = predictions_proba[:,j]
+                        df.loc[k_test,f"{y_class} - k_prediction_binary"] = predictions[:,j]
             else:
-                # Precision
-                model['p'].append(precision_score(predictions,y[k_test]))
-                # Recall
-                model['r'].append(recall_score(predictions,y[k_test]))
+                for m in scores:
+                    if not m[1] or not m[2]:
+                        continue
+                    model[m[0]].append(m[1](y[k_test],predictions))
+                if df is not None:
+                    df.loc[k_test, "y_k_prediction"] = predictions_proba[:,1]
 
     if classes:
+        if df is not None:
+            return clf_models, metrics, df
         return clf_models, metrics
     else:
+        if df is not None:
+            return clf_models, df
         return clf_models
 
 def plot_model_output(models, metrics, fig, axs):
