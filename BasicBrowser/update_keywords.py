@@ -75,4 +75,4 @@ for d in docs:
                 dkw.oecd_fos_text = okw["OECD_FOS_TEXT"]
                 dkw.save()
             dkw.doc.add(d)
-            break
+            #break

@@ -27,9 +27,7 @@ class Command(BaseCommand):
         parser.add_argument('sid',type=int)
         # Named (optional) arguments
         parser.add_argument(
-            '-p',
             '--path',
-            action='store_true',
             dest='path',
             default='./',
             help='path to store the export in',
@@ -63,10 +61,10 @@ class Command(BaseCommand):
             tweet_values = tweets.prefetch_related('retweeted_by').annotate(
                 retweeted_by_user_id=ArrayAgg('retweeted_by')
             ).values(*fields)
-            with open(os.path.join(options['path'], '{search.string}_tweets.json'),'w') as f:
+            with open(os.path.join(options['path'], f'{search.string}_tweets.json'),'w') as f:
                 #f.write(serialize('json',all_objects,cls=DjangoJSONEncoder,fields=fields))
                 f.write(json.dumps(list(tweet_values),cls=DjangoJSONEncoder))
-            with open(os.path.join(options['path'], '{search.string}_users.json'),'w') as f:
+            with open(os.path.join(options['path'], f'{search.string}_users.json'),'w') as f:
                 f.write(serialize('json',users,cls=DjangoJSONEncoder))
 
         else:
@@ -75,7 +73,7 @@ class Command(BaseCommand):
             exporting = True
             i = 0
             #export_folder = f"/usr/local/apsis/slowhome/galm/exports/{search.string}"
-            export_folder = os.path.join(options['path'],"{search.string}")
+            export_folder = os.path.join(options['path'],f"{search.string}")
             try:
                 os.mkdir(export_folder)
             except:
@@ -89,14 +87,14 @@ class Command(BaseCommand):
                 uids = set(t_chunk.values_list('author__id',flat=True))
                 user_chunk = User.objects.filter(pk__in=uids)
 
-                with open(os.path.join(export_folder, '{i}_tweets.json'), 'w') as file:
+                with open(os.path.join(export_folder, f'{i}_tweets.json'), 'w') as file:
                     #json.dump(serialize('json',tweets,cls=DjangoJSONEncoder),f)
                     file.write(json.dumps(list(
                         t_chunk.annotate(
                             retweeted_by_user_id=ArrayAgg('retweeted_by')
                         ).values(*fields)
                     ),cls=DjangoJSONEncoder))
-                with open(os.path.join(export_folder, '{i}_users.json'), 'w') as file:
+                with open(os.path.join(export_folder, f'{i}_users.json'), 'w') as file:
                     file.write(serialize('json',user_chunk,cls=DjangoJSONEncoder))
 
                 l = l - timedelta(days=30)
