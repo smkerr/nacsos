@@ -613,7 +613,7 @@ def add_scopus_doc(r,q,update, find_ids = True):
             if doc.title != get(r,'ti'):
                 if not doc.alternative_titles:
                     doc.alternative_titles = [get(r,'ti')]
-                elif r['ti'] not in doc.alternative_titles:
+                elif get(r,'ti') not in doc.alternative_titles:
                     doc.alternative_titles.append(get(r,'ti'))
         if doc.query.filter(pk=q.id).exists():
             q.upload_log+=f"<p>This document ({doc.title}) is considered an internal duplicate of ({get(r,'ti')}) "
@@ -710,9 +710,11 @@ def chunks(l, n):
 
 def proc_scopus_chunk(docs,q,update):
     print("processing scopus batch")
+    print(len(docs))
     docs = [add_doc_text(r) for r in docs]
     docs = [d for d in docs if d is not None]
     ids = [d['scopus_id'] for d in docs]
+    print(len(ids))
     # Get the docs that match with secondary id
     wos_docs = scoping.models.Doc.objects.filter(UT__sid__in=ids)
     # Sets of database ids and doc ids 
