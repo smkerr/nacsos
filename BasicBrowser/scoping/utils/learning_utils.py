@@ -29,7 +29,7 @@ from sklearn.preprocessing import LabelEncoder
 
 stopwords = set(sw.words('english'))
 
-def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,df=None, stratified_k=False):
+def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,df=None, stratified_k=False, test_index=None):
 
     if stratified_k:
         label_encoder = LabelEncoder()
@@ -83,9 +83,14 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
 
                 metrics += [f'p\n{y_class}', f'r\n{y_class}']
 
+    if test_index is not None:
+        test_preds = []
+
     for k_train, k_test in kfs:
         k_train = seen_index[k_train]
         k_test = seen_index[k_test]
+        if test_index is not None:
+            k_test = test_index
         i+=1
         print(i)
         for model in clf_models:
@@ -95,11 +100,12 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
             clf.fit(X[k_train],y[k_train])
             predictions = clf.predict(X[k_test])
             predictions_proba = clf.predict_proba(X[k_test])
-
-            for j, c in enumerate(predictions_proba.argmax(axis=1)):
-                predictions[j,c] = 1
+            if test_index is not None:
+                test_preds.append(predictions_proba)
 
             if classes:
+                for j, c in enumerate(predictions_proba.argmax(axis=1)):
+                    predictions[j,c] = 1
                 for m in scores:
                     if m[4]:
                         y_pred = predictions_proba
@@ -111,6 +117,8 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
                         model[m[0]].append(m[1](y[k_test],y_pred,average="weighted"))
                     except TypeError:
                         model[m[0]].append(m[1](y[k_test],y_pred))
+                    except ValueError:
+                        pass
                 for j, y_class in enumerate(classes):
                     for m in scores:
                         if not m[1]:
@@ -130,7 +138,7 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
                         df.loc[k_test,f"{y_class} - k_prediction_binary"] = predictions[:,j]
             else:
                 for m in scores:
-                    if not m[1] or not m[2]:
+                    if not m[1]:
                         continue
                     model[m[0]].append(m[1](y[k_test],predictions))
                 if df is not None:
@@ -143,6 +151,8 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
     else:
         if df is not None:
             return clf_models, df
+        elif test_index is not None:
+            return clf_models, np.array(test_preds)
         return clf_models
 
 def plot_model_output(models, metrics, fig, axs):
@@ -158,7 +168,7 @@ def plot_model_output(models, metrics, fig, axs):
 
         ax.set_xticklabels([x for x in metrics], rotation=45, ha="right")
 
-        ax.set_title(f'{model["title"]} mean accuracy {np.mean(model["e"]):.0%}')
+        ax.set_title(f'{model["title"]} mean accuracy {np.mean(model["e"]):.1%}')
         ax.grid()
 
     fig.tight_layout()
