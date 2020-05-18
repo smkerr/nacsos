@@ -104,8 +104,8 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
                 test_preds.append(predictions_proba)
 
             if classes:
-                for j, c in enumerate(predictions_proba.argmax(axis=1)):
-                    predictions[j,c] = 1
+                #for j, c in enumerate(predictions_proba.argmax(axis=1)):
+                #    predictions[j,c] = 1
                 for m in scores:
                     if m[4]:
                         y_pred = predictions_proba
@@ -123,12 +123,11 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
                     for m in scores:
                         if not m[1]:
                             continue
-                        if m[3]:
-                            if m[4]:
+                        if m[3]: # if do this metric on each class
+                            if m[4]: # if use probabilities
                                 y_pred = predictions_proba
                             else:
                                 y_pred = predictions
-
                             try:
                                 model[f'{m[0]}\n{y_class}'].append(m[1](y[k_test,j],y_pred[:,j]))
                             except:
