@@ -598,11 +598,11 @@ class RunStats(models.Model):
         rpath = f"{path}/run_{self.pk}_s_{s_size}_r_ind.npy"
         cpath = f"{path}/run_{self.pk}_s_{s_size}_c_ind.npy"
         if os.path.exists(mpath):
-            m = np.load(mpath)[()]
+            m = np.load(mpath,allow_pickle=True)[()]
             if os.path.exists(rpath):
-                r_ind = np.load(rpath)
+                r_ind = np.load(rpath,allow_pickle=True)
                 if os.path.exists(cpath):
-                    c_ind = np.load(cpath)
+                    c_ind = np.load(cpath, allow_pickle=True)
                     if not force_overwrite:
                         print("We've already calculated the required matrices!")
                         return(m,c_ind,r_ind)
