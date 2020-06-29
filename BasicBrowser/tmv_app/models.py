@@ -666,7 +666,7 @@ class RunStats(models.Model):
         m, c_ind, r_ind = self.dt_matrix(path, s_size)
         results_path =  f"{path}/run_{self.pk}_s_{s_size}_p_{p}_results.npy"
         if os.path.exists(results_path):
-            tsne_results = np.load(results_path)
+            tsne_results = np.load(results_path, allow_pickle=True)
             if not force_overwrite:
                 print("We've already calculated the tsne positions")
                 return tsne_results, r_ind
