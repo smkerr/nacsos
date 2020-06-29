@@ -4,11 +4,11 @@
     <button class="mergebutton" data-keep="{{merge.keep}}" data-throw="{{merge.throw}}">Merge and keep this copy</button>
   {% endif %}
 <h4> {{ doc.title | safe }}</h4>
-{% if doc.id %}
-    {% if project.id %}
-      <a href="{% url 'scoping:document' project.id doc.id %}">{{doc.id}}</a>
-    {% endif %}
-{% endif %}
+
+<p style="text-align:left">
+{{ doc.content | safe }}
+</div>
+
 <p>{{ doc.wosarticle__so | safe}}
     {% if doc.wosarticle__py %}
         ({{ doc.wosarticle__py }})
@@ -40,11 +40,19 @@
     WoS Keywords Plus: {{doc.wosarticle__kwp | safe}}
 {% endif %}
 
+
+{% if doc.id %}
+    {% if project.id %}
+      <p style="text-align:left">Document id: <a href="{% url 'scoping:document' project.id doc.id %}">{{doc.id}}</a>
+      <p/>
+    {% endif %}
+{% endif %}
+
+    
 {% if doc.docfile %}
-    <p style="text-align;left">
+    <p style="text-align:left">
         PDF: <a href="{% url 'scoping:download_pdf' doc.docfile.id %}">View</a>
     </p>
 {% endif %}
-<p style="text-align:left">
-{{ doc.content | safe }}
-</div>
+
+    
