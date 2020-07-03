@@ -633,7 +633,7 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
         ).fit(tfidf)
         dtm = csr_matrix(model.transform(tfidf))
         components = csr_matrix(model.components_)
-        
+
     else:
         if stat.lda_library == RunStats.LDA_LIB:
             model = lda.LDA(
@@ -661,10 +661,15 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
                 runcmd += f' -alpha {stat.alpha}'
             if stat.beta:
                 runcmd += f' -beta {stat.beta}'
+            else:
+                stat.beta = 0.01 # default beta value
+                stat.save()
             if stat.max_iter:
                 runcmd += f' --niter {stat.max_iter}'
             runcmd += ' train.model'
+            print("Running warplda.")
             os.system(runcmd)
+            print("Finished running warplda, importing results.")
 
             warp_vocab = np.loadtxt(f'{run_id}.vocab',dtype=str)
             warp_translate = np.argsort(warp_vocab).argsort()
