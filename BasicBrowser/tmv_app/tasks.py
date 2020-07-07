@@ -484,8 +484,9 @@ def do_nmf(run_id, no_processes=16):
         docs = docs[:limit]
 
     print('\n###############################\
-    \n## Doing NMF on query {} with {} documents \
-and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
+    \n## Topic modeling (method: {}, library: {}) on query {} with {} documents \
+and {} topics (run_id: {})\n'.format(stat.method, stat.lda_library,
+                                     qid, docs.count(),K, run_id))
 
     # Get the docs into lists
     abstracts, docsizes, ids, citations = proc_docs(docs, stoplist, stat.fulltext, stat.citations)
@@ -570,7 +571,7 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
 
     #############################################
     # Use tf-idf features for NMF.
-    print("Extracting tf-idf features for NMF...")
+    print("Extracting tf-idf features ...")
     tfidf_vectorizer = TfidfVectorizer(
         max_df=stat.max_df,
         min_df=stat.min_freq,
