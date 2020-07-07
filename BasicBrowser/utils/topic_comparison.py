@@ -281,7 +281,12 @@ def bipartite_graph_from_matrix(matrix, labels1, labels2, threshold=0, match=Fal
     return g
 
 
-def draw_bipartite_topic_graph(graph, filename='bipartite_topic_graph', figsize=(12, 12)):
+def draw_bipartite_topic_graph(graph,
+                               filename='bipartite_topic_graph',
+                               tm_titles=["", ""],
+                               label_width=2,
+                               figsize=(12, 12)):
+
     top_nodes = set(n for n, d in graph.nodes(data=True) if d['bipartite'] == 0)
     bottom_nodes = set(graph) - top_nodes
     top_nodes = sorted(list(top_nodes))
@@ -327,9 +332,25 @@ def draw_bipartite_topic_graph(graph, filename='bipartite_topic_graph', figsize=
                 verticalalignment='center',
                 fontsize=12)
 
+    # plot topic model titles
+    if len(tm_titles) == 2:
+        ax.text(-0.1, 1, tm_titles[0],
+                horizontalalignment='right',
+                verticalalignment='center',
+                fontsize=14,
+                weight='bold')
+        ax.text(1.1, 1, tm_titles[1],
+                horizontalalignment='left',
+                verticalalignment='center',
+                fontsize=14,
+                weight='bold')
+        plt.ylim([(-1)*max([len(labels1), len(labels2)]), 2])
+    else:
+        print("topic model titles not drawn: wrong length (not 2)")
+
     # nx.draw_networkx_labels(g,pos, labels1,font_size=6)
     # nx.draw_networkx_labels(g,pos, labels2,font_size=6)
-    plt.xlim([-2, 3])
+    plt.xlim([(-1)*label_width, label_width+1])
     plt.axis('off')
     plt.tight_layout()
     plt.savefig(filename + ".png", dpi=150, bbox_inches='tight')  # save as png
