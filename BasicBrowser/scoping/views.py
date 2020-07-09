@@ -6511,9 +6511,13 @@ def meta_setup(request,pid):
             many = "By many"
 
         if value:
+            # Just look at those for which "coded"==True
             acs = all_codings.filter(coded=value)
-        done = len(set(acs.values_list('doc_id',flat=True)))
-        doc_counts[key][nobody] = all_docs.count()-done
+        # The IDs of the document coding assignments
+        acids = set(acs.values_list('doc_id',flat=True))
+        done = len(acids)
+        # The number of total document ids not included in this list
+        doc_counts[key][nobody] = len(doc_ids-acids)
         if doc_counts[key][nobody] < 0:
             doc_counts[key][nobody] = 0
         acds = acs.values('doc__id').annotate(
@@ -6657,8 +6661,12 @@ def assign_meta(request):
     split = request.POST.get('split', False)
     sample = float(request.POST.get('sample', 1))
     p = Project.objects.get(pk=pid)
+    all_doc_ids = set(DocOwnership.objects.filter(
+        query__project=p,
+        relevant=1
+    ).values_list('doc__id',flat=True))
     all_docs = Doc.objects.filter(
-        docproject__project=p,docproject__relevant=1
+        pk__in=all_doc_ids
     )
     all_codings = DocMetaCoding.objects.filter(
         project=p
