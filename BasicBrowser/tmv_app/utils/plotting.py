@@ -548,5 +548,6 @@ def plot_tsne(
             texts = list(flatten(texts))
             adjust_text(texts,ax=ax, arrowprops=dict(arrowstyle="->", color='None', lw=0.5))
 
-
+    if topics:
+        return texts
                     #adjust_text(texts,arrowprops=dict(arrowstyle='->', color='red'))

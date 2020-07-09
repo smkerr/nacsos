@@ -24,12 +24,15 @@ import matplotlib
 from sklearn.metrics import coverage_error, label_ranking_average_precision_score, label_ranking_loss
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
-
+from imblearn.over_sampling import SMOTE, RandomOverSampler
+from skmultilearn.problem_transform import LabelPowerset
 
 
 stopwords = set(sw.words('english'))
 
-def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,df=None, stratified_k=False, test_index=None):
+def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
+    upsample=False,roundup=False, df=None,
+    stratified_k=False, test_index=None):
 
     if stratified_k:
         label_encoder = LabelEncoder()
@@ -91,26 +94,48 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
         k_test = seen_index[k_test]
         if test_index is not None:
             k_test = test_index
+        if upsample:
+            ros = RandomOverSampler(random_state=42)
+            if classes:
+                lp = LabelPowerset()
+                yt = lp.transform(y)
+                X_train, y_resampled = ros.fit_resample(X[k_train],yt[k_train])
+                y_train = lp.inverse_transform(y_resampled).todense()
+            else:
+                X_train, y_train = ros.fit_resample(X[k_train],y[k_train].todense())
+        else:
+            X_train = X[k_train]
+            y_train = y[k_train]
         i+=1
         print(i)
         for model in clf_models:
             clf = model['model']
             model['i'].append(i)
             #clf = SVC(kernel='rbf',probability=True)
-            clf.fit(X[k_train],y[k_train])
+            clf.fit(X_train,y_train)
             predictions = clf.predict(X[k_test])
-            predictions_proba = clf.predict_proba(X[k_test])
+            try:
+                predictions_proba = clf.predict_proba(X[k_test])
+            except:
+                predictions_proba = predictions
+                print("WARNING! Can't predict probabilities with this model, just using binary predictions")
+            if hasattr(predictions_proba,"todense"):
+                predictions_proba = predictions_proba.todense()
+            if hasattr(predictions,"todense"):
+                predictions = predictions.todense()
             if test_index is not None:
                 test_preds.append(predictions_proba)
 
             if classes:
-                #for j, c in enumerate(predictions_proba.argmax(axis=1)):
-                #    predictions[j,c] = 1
+                if roundup:
+                    for j, c in enumerate(predictions_proba.argmax(axis=1)):
+                        predictions[j,c] = 1
                 for m in scores:
                     if m[4]:
                         y_pred = predictions_proba
                     else:
                         y_pred = predictions
+
                     if not m[1] or not m[2]:
                         continue
                     try:
@@ -120,6 +145,8 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
                     except ValueError:
                         pass
                 for j, y_class in enumerate(classes):
+                    # if y[k_train,i].sum() == 0:
+                    #     print("no labels for {y_class}")
                     for m in scores:
                         if not m[1]:
                             continue

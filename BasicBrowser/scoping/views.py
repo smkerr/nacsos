@@ -95,7 +95,7 @@ def duc_place(request):
     doc = Doc.objects.get(pk=request.GET.get('doc_id', None))
     cat = Category.objects.get(pk=request.GET.get('cat_id', None))
     user = User.objects.get(pk=request.GET.get('user_id', None))
-    
+
     duc, created = DocUserCat.objects.get_or_create(
         doc=doc,
         category=cat,
@@ -6485,9 +6485,17 @@ def meta_setup(request,pid):
         'codings': OrderedDict({})
     }
 
+    # all_docs = Doc.objects.filter(
+    #     docproject__project=p,docproject__relevant=1
+    # )
+    doc_ids = set(DocOwnership.objects.filter(
+        query__project=p,
+        relevant=1
+    ).values_list('doc__pk',flat=True))
     all_docs = Doc.objects.filter(
-        docproject__project=p,docproject__relevant=1
+        pk__in=doc_ids
     )
+    print(all_docs.count())
     all_codings = DocMetaCoding.objects.filter(
         project=p
     )
