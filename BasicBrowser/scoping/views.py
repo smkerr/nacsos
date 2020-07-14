@@ -6492,6 +6492,10 @@ def meta_setup(request,pid):
         query__project=p,
         relevant=1
     ).values_list('doc__pk',flat=True))
+    doc_ids = doc_ids | set(Doc.objects.filter(
+        query__project=p,
+        query__database="manual"
+    ).values_list('pk',flat=True))
     all_docs = Doc.objects.filter(
         pk__in=doc_ids
     )
