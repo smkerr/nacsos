@@ -25,7 +25,7 @@ from utils.text import *
 import os
 import gensim
 import random
-from sklearn.decomposition.nmf import _beta_divergence  # needs sklearn 0.19!!!
+from sklearn.decomposition._nmf import _beta_divergence  # needs sklearn 0.19!!!
 from sklearn.preprocessing import RobustScaler
 from django.db import connection, transaction
 from psycopg2.extras import *

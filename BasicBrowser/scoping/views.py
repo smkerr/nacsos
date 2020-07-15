@@ -2379,6 +2379,8 @@ def download_effects(request, pid):
     column_names['effect__finish_time'] = '2. finish'
     column_names['effect__editing_time_elapsed'] = '2. seconds editing'
 
+    docid = list(interventions.values_list('effect__doc__id',flat=True))
+
     values = list(interventions.values(*
         column_names.keys()
     ))
@@ -2386,29 +2388,39 @@ def download_effects(request, pid):
     groups = StudyEffect.GROUPS
     groups.sort()
 
+    field_note_df = pd.DataFrame.from_dict(Note.objects.filter(effect__project=p).values('effect','field_group','text'))
+    nq = Note.objects.filter(
+        dmc__doc__in=docid
+    ) | Note.objects.filter(
+        doc__in=docid
+    )
+    note_df = pd.DataFrame.from_dict(nq.values('doc__id','dmc__doc__id','text'))
+
     for v in values:
         for x in v['framing_units']:
             v[x] = 1
             column_names[x] = f'5. framing_unit {x}'
         del v['framing_units']
+        eid = v['effect__id']
         e = StudyEffect.objects.get(pk=v['effect__id'])
+        doc = e.doc.id
         if e.calculations_file:
             if os.path.isfile(e.calculations_file.path):
                 v['effect__calculations_file'] = f"https://apsis.mcc-berlin.net/scoping/download-calculations/{e.id}"
 
         for o, name in groups:
-            notes = Note.objects.filter(effect=e,field_group=name).values_list('text',flat=True)
+            notes = field_note_df[(field_note_df['effect']==eid) & field_note_df['field_group']==name]['text'].values
             v[name] = "; ".join(list(notes))
             column_names[name] = f'8. Notes: {name}'
         name = "Doc level"
-        notes = Note.objects.filter(dmc__doc=e.doc) | Note.objects.filter(doc=e.doc)
-        v[name] = "; ".join(list(notes.values_list('text',flat=True)))
+        notes = note_df[(note_df['doc__id']==doc) | (note_df['dmc__doc__id']==doc)]
+        v[name] = "; ".join(notes['text'].values)
         column_names[name] = f"8. Notes: {name}"
         name = "3. Authors"
         aus = DocAuthInst.objects.filter(
             doc=e.doc,
             pk__in=Subquery(
-               DocAuthInst.objects.filter(doc=e.doc).distinct('AU').values('pk')
+               DocAuthInst.objects.filter(doc=doc).distinct('AU').values('pk')
             )
         ).order_by('position')
         v[name] = "; ".join(list(aus.values_list('AU',flat=True)))
@@ -2465,9 +2477,9 @@ def download_effects(request, pid):
         column_names[name] = f"8. Notes: {name}"
         name = "3. Authors"
         aus = DocAuthInst.objects.filter(
-            doc=e.doc,
+            doc=v['doc__id'],
             pk__in=Subquery(
-               DocAuthInst.objects.filter(doc=e.doc).distinct('AU').values('pk')
+               DocAuthInst.objects.filter(doc=v['doc__id']).distinct('AU').values('pk')
             )
         ).order_by('position')
         v[name] = "; ".join(list(aus.values_list('AU',flat=True)))
