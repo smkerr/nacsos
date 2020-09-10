@@ -529,7 +529,10 @@ def add_scopus_doc(r,q,update, find_ids = True):
         if get(r,'py') is not None:
             py = get(r,'py')
             prange = [py-1,py,py+1]
-
+        else:
+            prange = None
+            py = None
+            
         # Try looking by doi
         if did!='NA':
             docs = scoping.models.Doc.objects.filter(
@@ -540,11 +543,12 @@ def add_scopus_doc(r,q,update, find_ids = True):
 
         # if we don't have doi matches, try with the tslug and either PY or author
         if not docs.exists():
-            # Try and find with tslug and py
-            docs = scoping.models.Doc.objects.filter(
-                    tslug=tslug,
-                    PY__in=prange
-            )
+            if prange is not None:
+                # Try and find with tslug and py
+                docs = scoping.models.Doc.objects.filter(
+                        tslug=tslug,
+                        PY__in=prange
+                )
             if not docs.exists() and get(r,'au') is not None:
                 if len(get(r,'au')) > 0:
                     docs = scoping.models.Doc.objects.filter(
@@ -574,9 +578,10 @@ def add_scopus_doc(r,q,update, find_ids = True):
                     PY__in=prange,
                 )
             else:
-                docs = docs.filter(
-                    docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
-                )
+                if get(r,'au') is not None:
+                    docs = docs.filter(
+                        docauthinst__AU__icontains=get(r,'au')[0].split(',')[0]
+                    )
             try:
                 doc = docs.get(title__trigram_similar=get(r,'ti'))
             except ObjectDoesNotExist:
