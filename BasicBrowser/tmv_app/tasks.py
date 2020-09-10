@@ -25,7 +25,7 @@ from utils.text import *
 import os
 import gensim
 import random
-from sklearn.decomposition.nmf import _beta_divergence  # needs sklearn 0.19!!!
+from sklearn.decomposition._nmf import _beta_divergence  # needs sklearn 0.19!!!
 from sklearn.preprocessing import RobustScaler
 from django.db import connection, transaction
 from psycopg2.extras import *
@@ -484,8 +484,9 @@ def do_nmf(run_id, no_processes=16):
         docs = docs[:limit]
 
     print('\n###############################\
-    \n## Doing NMF on query {} with {} documents \
-and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
+    \n## Topic modeling (method: {}, library: {}) on query {} with {} documents \
+and {} topics (run_id: {})\n'.format(stat.method, stat.lda_library,
+                                     qid, docs.count(),K, run_id))
 
     # Get the docs into lists
     abstracts, docsizes, ids, citations = proc_docs(docs, stoplist, stat.fulltext, stat.citations)
@@ -570,7 +571,7 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
 
     #############################################
     # Use tf-idf features for NMF.
-    print("Extracting tf-idf features for NMF...")
+    print("Extracting tf-idf features ...")
     tfidf_vectorizer = TfidfVectorizer(
         max_df=stat.max_df,
         min_df=stat.min_freq,
@@ -633,7 +634,7 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
         ).fit(tfidf)
         dtm = csr_matrix(model.transform(tfidf))
         components = csr_matrix(model.components_)
-        
+
     else:
         if stat.lda_library == RunStats.LDA_LIB:
             model = lda.LDA(
@@ -661,10 +662,15 @@ and {} topics (run_id: {})\n'.format(qid, docs.count(),K, run_id))
                 runcmd += f' -alpha {stat.alpha}'
             if stat.beta:
                 runcmd += f' -beta {stat.beta}'
+            else:
+                stat.beta = 0.01 # default beta value
+                stat.save()
             if stat.max_iter:
                 runcmd += f' --niter {stat.max_iter}'
             runcmd += ' train.model'
+            print("Running warplda.")
             os.system(runcmd)
+            print("Finished running warplda, importing results.")
 
             warp_vocab = np.loadtxt(f'{run_id}.vocab',dtype=str)
             warp_translate = np.argsort(warp_vocab).argsort()

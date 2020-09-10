@@ -95,7 +95,7 @@ def duc_place(request):
     doc = Doc.objects.get(pk=request.GET.get('doc_id', None))
     cat = Category.objects.get(pk=request.GET.get('cat_id', None))
     user = User.objects.get(pk=request.GET.get('user_id', None))
-    
+
     duc, created = DocUserCat.objects.get_or_create(
         doc=doc,
         category=cat,
@@ -2379,6 +2379,8 @@ def download_effects(request, pid):
     column_names['effect__finish_time'] = '2. finish'
     column_names['effect__editing_time_elapsed'] = '2. seconds editing'
 
+    docid = list(interventions.values_list('effect__doc__id',flat=True))
+
     values = list(interventions.values(*
         column_names.keys()
     ))
@@ -2386,29 +2388,39 @@ def download_effects(request, pid):
     groups = StudyEffect.GROUPS
     groups.sort()
 
+    field_note_df = pd.DataFrame.from_dict(Note.objects.filter(effect__project=p).values('effect','field_group','text'))
+    nq = Note.objects.filter(
+        dmc__doc__in=docid
+    ) | Note.objects.filter(
+        doc__in=docid
+    )
+    note_df = pd.DataFrame.from_dict(nq.values('doc__id','dmc__doc__id','text'))
+
     for v in values:
         for x in v['framing_units']:
             v[x] = 1
             column_names[x] = f'5. framing_unit {x}'
         del v['framing_units']
+        eid = v['effect__id']
         e = StudyEffect.objects.get(pk=v['effect__id'])
+        doc = e.doc.id
         if e.calculations_file:
             if os.path.isfile(e.calculations_file.path):
                 v['effect__calculations_file'] = f"https://apsis.mcc-berlin.net/scoping/download-calculations/{e.id}"
 
         for o, name in groups:
-            notes = Note.objects.filter(effect=e,field_group=name).values_list('text',flat=True)
+            notes = field_note_df[(field_note_df['effect']==eid) & field_note_df['field_group']==name]['text'].values
             v[name] = "; ".join(list(notes))
             column_names[name] = f'8. Notes: {name}'
         name = "Doc level"
-        notes = Note.objects.filter(dmc__doc=e.doc) | Note.objects.filter(doc=e.doc)
-        v[name] = "; ".join(list(notes.values_list('text',flat=True)))
+        notes = note_df[(note_df['doc__id']==doc) | (note_df['dmc__doc__id']==doc)]
+        v[name] = "; ".join(notes['text'].values)
         column_names[name] = f"8. Notes: {name}"
         name = "3. Authors"
         aus = DocAuthInst.objects.filter(
             doc=e.doc,
             pk__in=Subquery(
-               DocAuthInst.objects.filter(doc=e.doc).distinct('AU').values('pk')
+               DocAuthInst.objects.filter(doc=doc).distinct('AU').values('pk')
             )
         ).order_by('position')
         v[name] = "; ".join(list(aus.values_list('AU',flat=True)))
@@ -2465,9 +2477,9 @@ def download_effects(request, pid):
         column_names[name] = f"8. Notes: {name}"
         name = "3. Authors"
         aus = DocAuthInst.objects.filter(
-            doc=e.doc,
+            doc=v['doc__id'],
             pk__in=Subquery(
-               DocAuthInst.objects.filter(doc=e.doc).distinct('AU').values('pk')
+               DocAuthInst.objects.filter(doc=v['doc__id']).distinct('AU').values('pk')
             )
         ).order_by('position')
         v[name] = "; ".join(list(aus.values_list('AU',flat=True)))
@@ -6485,9 +6497,21 @@ def meta_setup(request,pid):
         'codings': OrderedDict({})
     }
 
+    # all_docs = Doc.objects.filter(
+    #     docproject__project=p,docproject__relevant=1
+    # )
+    doc_ids = set(DocOwnership.objects.filter(
+        query__project=p,
+        relevant=1
+    ).values_list('doc__pk',flat=True))
+    doc_ids = doc_ids | set(Doc.objects.filter(
+        query__project=p,
+        query__database="manual"
+    ).values_list('pk',flat=True))
     all_docs = Doc.objects.filter(
-        docproject__project=p,docproject__relevant=1
+        pk__in=doc_ids
     )
+    print(all_docs.count())
     all_codings = DocMetaCoding.objects.filter(
         project=p
     )
@@ -6503,9 +6527,13 @@ def meta_setup(request,pid):
             many = "By many"
 
         if value:
+            # Just look at those for which "coded"==True
             acs = all_codings.filter(coded=value)
-        done = len(set(acs.values_list('doc_id',flat=True)))
-        doc_counts[key][nobody] = all_docs.count()-done
+        # The IDs of the document coding assignments
+        acids = set(acs.values_list('doc_id',flat=True))
+        done = len(acids)
+        # The number of total document ids not included in this list
+        doc_counts[key][nobody] = len(doc_ids-acids)
         if doc_counts[key][nobody] < 0:
             doc_counts[key][nobody] = 0
         acds = acs.values('doc__id').annotate(
@@ -6649,8 +6677,12 @@ def assign_meta(request):
     split = request.POST.get('split', False)
     sample = float(request.POST.get('sample', 1))
     p = Project.objects.get(pk=pid)
+    all_doc_ids = set(DocOwnership.objects.filter(
+        query__project=p,
+        relevant=1
+    ).values_list('doc__id',flat=True))
     all_docs = Doc.objects.filter(
-        docproject__project=p,docproject__relevant=1
+        pk__in=all_doc_ids
     )
     all_codings = DocMetaCoding.objects.filter(
         project=p
