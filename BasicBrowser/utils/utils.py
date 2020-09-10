@@ -518,6 +518,7 @@ def add_scopus_doc(r,q,update, find_ids = True):
             did = 'NA'
             pass
 
+
         if get(r,'ti') is None or len(get(r,'ti')) < 2:
             print(f"<p>This document ({r}) has no title!! ")
             q.upload_log+=f"<p>This document ({r}) has no title!! "
@@ -532,14 +533,14 @@ def add_scopus_doc(r,q,update, find_ids = True):
         else:
             prange = None
             py = None
-            
+
+        docs = scoping.models.Doc.objects.none()
         # Try looking by doi
-        if did!='NA':
-            docs = scoping.models.Doc.objects.filter(
-                wosarticle__di=did
-            )
-        else:
-            docs = scoping.models.Doc.objects.none()
+        # if did!='NA':
+        #     docs = scoping.models.Doc.objects.filter(
+        #         wosarticle__di=did
+        #     )
+
 
         # if we don't have doi matches, try with the tslug and either PY or author
         if not docs.exists():
@@ -561,7 +562,7 @@ def add_scopus_doc(r,q,update, find_ids = True):
             #print("found! with doi or ti and authors")
             doc = docs.first()
         # If we have more than one match, there are likely already duplicates :(, deal with them
-        elif len(docs)>1: 
+        elif len(docs)>1:
             print("more than one doc matching!!!!!")
             wdocs = docs.filter(UT__UT__contains='WOS:')
             if wdocs.count()==1:
@@ -612,7 +613,7 @@ def add_scopus_doc(r,q,update, find_ids = True):
                 doc.tslug = tslug
                 doc.save()
             doc_created = True
-            
+
     if doc is not None:
         if get(r,'ti'):
             if doc.title != get(r,'ti'):
@@ -722,14 +723,14 @@ def proc_scopus_chunk(docs,q,update):
     print(len(ids))
     # Get the docs that match with secondary id
     wos_docs = scoping.models.Doc.objects.filter(UT__sid__in=ids)
-    # Sets of database ids and doc ids 
+    # Sets of database ids and doc ids
     wos_ids, wos_dids = [set(x) for x in (zip(*wos_docs.values_list('UT__sid','id')))]
     # Same for primary id
     scopus_docs = scoping.models.Doc.objects.filter(UT__UT__in=ids)
     scopus_ids, scopus_dids = [set(x) for x in list(zip(*scopus_docs.values_list('UT__UT','id')))]
 
     qids = set(q.doc_set.values_list('id',flat=True))
-    
+
     T = scoping.models.Doc.query.through
     dqs = [T(doc_id=d,query=q) for d in (wos_dids | scopus_dids) - qids]
     django.db.connections.close_all()
@@ -740,7 +741,7 @@ def proc_scopus_chunk(docs,q,update):
     with connection.cursor() as cursor:
         cursor.execute('SELECT set_limit(0.8);')
         row = cursor.fetchone()
-        
+
     db_ids = wos_ids | scopus_ids
     print(f"added {len(db_ids)} documents already in the db")
     for d in docs:
