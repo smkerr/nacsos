@@ -318,7 +318,7 @@ def plot_tsne(
     dot_legend=True,
     nocat_colour='#F0F0F026',
     nocat_alpha=0.4, raster=False,
-    extension="png",
+    extension="png", slinewidth=0.1
     ):
     cs = []
     sizes = []
@@ -341,7 +341,7 @@ def plot_tsne(
         c=nocat_colour,
         s=psize,
         alpha=nocat_alpha,
-        linewidth=0.1,
+        linewidth=slinewidth,
         edgecolor='#a39c9c66',
         rasterized=raster
     )
@@ -379,7 +379,7 @@ def plot_tsne(
                 c=c['color'],
                 s=psize,
                 alpha=a,
-                linewidth=0.1,
+                linewidth=slinewidth,
                 edgecolor='#a39c9c66',
                 rasterized=raster
             )
@@ -419,7 +419,8 @@ def plot_tsne(
                 if prop>0.001:
                     draw_leg=True
                     ax.scatter(
-                        [],[],c=c['color'],label=label
+                        [],[],c=c['color'],label=label,linewidth=slinewidth,
+                        edgecolor='#a39c9c66',
                     )
             else:
                 if c['color'] == "#000000":

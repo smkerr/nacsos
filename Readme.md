@@ -44,6 +44,12 @@ Connect to the database and create a postgis extension
 CREATE EXTENSION postgis;
 ```
 
+Create a trigram extension
+
+```
+CREATE EXTENSION pg_trgm;
+```
+
 Quit PostgreSQL and log out of the postgres user role
 
 ```
