@@ -25,7 +25,7 @@ from sklearn.metrics import coverage_error, label_ranking_average_precision_scor
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 from imblearn.over_sampling import SMOTE, RandomOverSampler
-from skmultilearn.problem_transform import LabelPowerset
+#from skmultilearn.problem_transform import LabelPowerset
 
 
 stopwords = set(sw.words('english'))
