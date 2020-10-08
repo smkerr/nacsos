@@ -125,6 +125,19 @@ def upload_docs(qid, update):
         print("Scopus")
         if q.query_file.name is '':
             fname = fname.replace('results','s_results')
+        if not os.path.exists(fname):
+            d = settings.QUERY_DIR+title
+            with open(d + '/s_results.txt', 'w',encoding='utf-8') as res:
+                for f in os.listdir(d):
+                    if "scopus" in str(f):
+                        with open(d + "/" + f, 'r',encoding='utf-8') as recs:
+                            for line in recs:
+                                try:
+                                    r = line # utf8
+                                    res.write(str(line))
+                                except:
+                                    pass
+                        #os.remove(d + "/" + f)
         with open(fname, encoding="utf-8") as res:
             r_count = read_scopus(res, q, update)
 

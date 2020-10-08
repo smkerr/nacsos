@@ -564,7 +564,7 @@ class TextPlace(models.Model):
 
     def __str__(self):
         return self.name
-            
+
 class Category(models.Model):
     name = models.TextField(null = True, verbose_name="Category Name", db_index=True)
     level = models.IntegerField(default=1)
@@ -573,7 +573,7 @@ class Category(models.Model):
     ndocs = models.IntegerField(null=True)
     nqs = models.IntegerField(null=True)
     group = models.TextField(null = True, verbose_name="Broad Category Name")
-    parent_category = models.ForeignKey('self', related_name='child_category',on_delete=models.CASCADE, null=True,blank=True)
+    parent_category = models.ForeignKey('self', related_name='child_category',on_delete=models.SET_NULL, null=True,blank=True)
     no_further = models.BooleanField(default=False)
     unique_children = models.BooleanField(default=False)
     equivalents = models.ManyToManyField('self', related_name='equivalent_category', blank=True)
@@ -582,7 +582,7 @@ class Category(models.Model):
     title_only = models.BooleanField(default=False)
     text_place = models.BooleanField(default=False)
     record_years = models.BooleanField(default=False)
-    
+
     def __str__(self):
         if self.title_only:
             return self.name.split(maxsplit=1)[-1]
@@ -592,7 +592,7 @@ class DocUserCat(models.Model):
     doc = models.ForeignKey('Doc', null=True, on_delete=models.CASCADE)
     tweet = models.ForeignKey(tms.Status, null=True, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey('Category', on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.SET_NULL)
     time = models.DateTimeField(auto_now_add=True)
     places = models.ManyToManyField('TextPlace')
     baseline_year_1 = models.IntegerField(null=True)
@@ -600,7 +600,7 @@ class DocUserCat(models.Model):
     observation_year_1 = models.IntegerField(null=True)
     observation_year_2 = models.IntegerField(null=True)
     duration = models.FloatField(null=True)
-    
+
 class Innovation(models.Model):
     name = models.TextField(null = True, verbose_name="Innovation Name")
     description = models.TextField(null=True, verbose_name="Innovation Description")

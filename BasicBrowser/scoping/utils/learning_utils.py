@@ -32,7 +32,7 @@ stopwords = set(sw.words('english'))
 
 def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
     upsample=False,roundup=False, df=None,
-    stratified_k=False, test_index=None):
+    stratified_k=False, test_index=None, p_threshold=None):
 
     if stratified_k:
         label_encoder = LabelEncoder()
@@ -116,6 +116,8 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
             predictions = clf.predict(X[k_test])
             try:
                 predictions_proba = clf.predict_proba(X[k_test])
+                if p_threshold is not None:
+                    predictions = np.where(predictions_proba>=p_threshold,1,0)[:,]
             except:
                 predictions_proba = predictions
                 print("WARNING! Can't predict probabilities with this model, just using binary predictions")
