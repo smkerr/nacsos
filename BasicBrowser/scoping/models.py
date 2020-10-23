@@ -592,7 +592,7 @@ class DocUserCat(models.Model):
     doc = models.ForeignKey('Doc', null=True, on_delete=models.CASCADE)
     tweet = models.ForeignKey(tms.Status, null=True, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey('Category', on_delete=models.SET_NULL)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
     places = models.ManyToManyField('TextPlace')
     baseline_year_1 = models.IntegerField(null=True)

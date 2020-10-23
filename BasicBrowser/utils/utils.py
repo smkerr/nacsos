@@ -727,7 +727,12 @@ def proc_scopus_chunk(docs,q,update):
     wos_ids, wos_dids = [set(x) for x in (zip(*wos_docs.values_list('UT__sid','id')))]
     # Same for primary id
     scopus_docs = scoping.models.Doc.objects.filter(UT__UT__in=ids)
-    scopus_ids, scopus_dids = [set(x) for x in list(zip(*scopus_docs.values_list('UT__UT','id')))]
+
+    if not scopus_docs.exists():
+        scopus_ids = set([])
+        scopus_dids = set([])
+    else:
+        scopus_ids, scopus_dids = [set(x) for x in list(zip(*scopus_docs.values_list('UT__UT','id')))]
 
     qids = set(q.doc_set.values_list('id',flat=True))
 
