@@ -1,0 +1,4 @@
+adjustText==0.7.3
+aiohttp==3.4.4
+https://files.pythonhosted.org/packages/30/27/5358f5897196269353318ac4fbcb187b0b9cf37c16af408cecfe22dfc67e/aiohttp_socks-0.2-py3-none-any.whl
+chromedriver-installer==0.0.6 --install-option="--chromedriver-version=2.38"
