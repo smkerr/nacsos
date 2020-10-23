@@ -109,11 +109,31 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
         i+=1
         print(i)
         for model in clf_models:
-            clf = model['model']
+            if callable(model['model']):
+                clf = model['model'](X.shape[1],y.shape[1])
+            else:
+                clf = model['model']
             model['i'].append(i)
-            #clf = SVC(kernel='rbf',probability=True)
-            clf.fit(X_train,y_train)
+
+            if hasattr(clf, "epochs"):
+                weights=None
+                if clf.custom_weights:
+                    weights = clf.custom_weights
+                    # weights = {}
+                    # for i,c in enumerate(classes):
+                    #     weights[i] =  round((1-y[seen_index,i].sum()/len(seen_index))*50)
+                    # print(weights)
+                clf.fit(
+                    X_train, y_train,
+                    epochs=clf.epochs, class_weight=weights.values(),
+                    verbose=clf.verbose,
+                    batch_size=20
+                )
+            else:
+                clf.fit(X_train,y_train)
             predictions = clf.predict(X[k_test])
+            if np.ravel(predictions)[0] not in [1,0]:
+                predictions = predictions.round()
             try:
                 predictions_proba = clf.predict_proba(X[k_test])
                 if p_threshold is not None:
@@ -130,8 +150,15 @@ def cross_validate_models(X,y,clf_models, seen_index, n_splits=10, classes=None,
 
             if classes:
                 if roundup:
-                    for j, c in enumerate(predictions_proba.argmax(axis=1)):
-                        predictions[j,c] = 1
+                    # for j, c in enumerate(predictions_proba.argmax(axis=1)):
+                    #     predictions[j,c] = 1
+                    y_pred_arr = predictions_proba
+                    ai = np.expand_dims(np.argmax(y_pred_arr, axis=1), axis=1)
+                    maximums = np.maximum(y_pred_arr.max(1),0.51)
+                    np.put_along_axis(y_pred_arr, ai, maximums.reshape(ai.shape), axis=1)
+
+                    predictions = np.round(predictions_proba)
+
                 for m in scores:
                     if m[4]:
                         y_pred = predictions_proba
