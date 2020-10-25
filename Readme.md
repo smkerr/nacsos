@@ -1,5 +1,7 @@
 # NACSOS: NLP Assisted Classification, Synthesis and Online Screening
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4121525.svg)](https://doi.org/10.5281/zenodo.4121525)
+
 Authors: Max Callaghan, Jérôme Hilaire, Finn Müller-Hansen, Yuan Ting Lee
 
 ## Summary
@@ -15,6 +17,12 @@ The part that deals with topic modelling is a fork of Allison J.B Chaney's **tmv
 NACSOS is research software produced by the APSIS working group at the Mercator Research Institute on Global Commons and Climate Change ([MCC](https://www.mcc-berlin.net/)), and some parts of the repository are instution specific. We are in an ongoing process of generalising, and documenting.
 
 Refer to the [documentation](https://github.com/mcallaghan/tmv/wiki/Scoping-Documentation) for a (partial) guide to using the app.
+
+## Citation
+
+If you use NACSOS in academic work, you can cite it as
+
+Max Callaghan, Finn Müller-Hansen, Jérôme Hilaire, & Yuan Ting Lee. (2020). NACSOS: NLP Assisted Classification, Synthesis and Online Screening. Zenodo. http://doi.org/10.5281/zenodo.4121525
 
 
 ## A general guide to installation
