@@ -107,6 +107,46 @@ def duc_place(request):
         duc.places.add(place)
     return HttpResponse("")
 
+class CountryAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        qs = Country.objects.all()
+        if self.q:
+            qs = qs.filter(name__istartswith=self.q)
+        return qs
+
+def duc_country(request):
+    place_ids = request.GET.getlist('places[]')
+    doc = Doc.objects.get(pk=request.GET.get('doc_id', None))
+    cat = Category.objects.get(pk=request.GET.get('cat_id', None))
+    user = User.objects.get(pk=request.GET.get('user_id', None))
+
+    duc, created = DocUserCat.objects.get_or_create(
+        doc=doc,
+        category=cat,
+        user=user
+    )
+    duc.countries.clear()
+    for p in place_ids:
+        country = Country.objects.get(pk=p)
+        duc.countries.add(country)
+    return HttpResponse("")
+
+def duc_number(request):
+    doc = Doc.objects.get(pk=request.GET.get('doc_id', None))
+    cat = Category.objects.get(pk=request.GET.get('cat_id', None))
+    user = User.objects.get(pk=request.GET.get('user_id', None))
+    number = request.GET.get('number', None)
+    if number=="":
+        number = None
+    duc, created = DocUserCat.objects.get_or_create(
+        doc=doc,
+        category=cat,
+        user=user
+    )
+    duc.number = number
+    duc.save()
+    return HttpResponse("")
+
 def duc_year(request):
     doc = Doc.objects.get(pk=request.GET.get('doc_id', None))
     cat = Category.objects.get(pk=request.GET.get('cat_id', None))
@@ -5758,10 +5798,15 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                     )
                 t.ecs = list(t.equivalents.values_list('pk',flat=True))
                 e = dcus.exists() or dcs.exists()
+                if t.number_entry:
+                    t.form = CatIntForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
                 if t.record_years:
                     t.form = CatYearForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
                 if t.text_place:
                     t.form = TextPlaceForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
+                    placeform = t.form
+                if t.country_select:
+                    t.form = CountryForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
                     placeform = t.form
                 lcats.append((e,t))
             parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))

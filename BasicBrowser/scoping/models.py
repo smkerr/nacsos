@@ -581,7 +581,9 @@ class Category(models.Model):
     filtered_equivalents = models.BooleanField(default=False)
     title_only = models.BooleanField(default=False)
     text_place = models.BooleanField(default=False)
+    country_select = models.BooleanField(default=False)
     record_years = models.BooleanField(default=False)
+    number_entry = models.BooleanField(default=False)
 
     def __str__(self):
         if self.title_only:
@@ -595,11 +597,13 @@ class DocUserCat(models.Model):
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
     places = models.ManyToManyField('TextPlace')
+    countries = models.ManyToManyField('cities.Country')
     baseline_year_1 = models.IntegerField(null=True)
     baseline_year_2 = models.IntegerField(null=True)
     observation_year_1 = models.IntegerField(null=True)
     observation_year_2 = models.IntegerField(null=True)
     duration = models.FloatField(null=True)
+    number = models.IntegerField(null=True)
 
 class Innovation(models.Model):
     name = models.TextField(null = True, verbose_name="Innovation Name")

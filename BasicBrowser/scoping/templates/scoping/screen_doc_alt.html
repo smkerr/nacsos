@@ -126,10 +126,10 @@
                         {{n |safe}}
                       {% else %}
                         Which {{n}} categories is this document relevant to?
-			
+
                         (hover for more info)
                       {% endif %}
-			
+
                                 <hr>
 				{% for t in l %}
 				{% if t.1.title_only %}
@@ -145,11 +145,21 @@
 				  {{t.1.form.as_p}}
 				</form>
 				<button class="btn" id="submitplaceform">Save</button>
+        {% elif t.1.country_select %}
+        <form id="countryform">
+				  {{t.1.form.as_p}}
+				</form>
+				<button class="btn" id="submitcountryform">Save</button>
 				{% elif t.1.record_years %}
 				  <form id="yearform">
 				    {{t.1.form.as_p}}
 				  </form>
 				  <button class="btn" id="submityearform">Save</button>
+        {% elif t.1.number_entry %}
+          <form id="numberForm">
+            {{t.1.form.as_p}}
+          </form>
+          <button class="btn" id="submitNumberForm">Save</button>
 				{% else %}
 				<button value="{{t.1.id}}" type="button"
 					{% if t.1.parent_category.filtered_equivalents %}
@@ -251,7 +261,27 @@ $("#submityearform").click(function(){
 	    formbut.html("Update")
 	}
     })
-})    
+})
+
+$("#submitNumberForm").click(function(){
+    var values = {};
+    $.each($('#numberForm').serializeArray(), function(i, field) {
+	values[field.name] = field.value;
+    })
+    const formbut = $(this);
+    $.ajax({
+	url: "{% url 'scoping:duc_number' %}",
+	data: {
+	    "doc_id": values["doc_id"],
+	    "number": values["number"],
+	    "cat_id": values["cat_id"],
+	    "user_id": values["user_id"],
+	},
+	success: function(data) {
+	    formbut.html("Update")
+	}
+    })
+})
 
 $("#submitplaceform").click(function(){
     var values = {};
@@ -266,6 +296,31 @@ $("#submitplaceform").click(function(){
     const formbut = $(this);
     $.ajax({
 	url: "{% url 'scoping:duc_place' %}",
+	data: {
+	    "doc_id": values["doc_id"],
+	    "places": values["places"],
+	    "cat_id": values["cat_id"],
+	    "user_id": values["user_id"],
+	},
+	success: function(data) {
+	    formbut.html("Update")
+	}
+    })
+})
+
+$("#submitcountryform").click(function(){
+    var values = {};
+    values["places"] = []
+    $.each($('#countryform').serializeArray(), function(i, field) {
+	if (field.name=="places"){
+	    values[field.name].push(field.value);
+	} else {
+	    values[field.name] = field.value;
+	}
+    })
+    const formbut = $(this);
+    $.ajax({
+	url: "{% url 'scoping:duc_country' %}",
 	data: {
 	    "doc_id": values["doc_id"],
 	    "places": values["places"],
@@ -295,7 +350,7 @@ $(".cat").click(function(){
         },
         success: function(data) {
           but.toggleClass("True")
-          
+
           if (but.data("show")) {
             for (var i = 0; i < but.data("show").length; i++) {
 		var sbut = $("[value="+but.data("show")[i]+"]")

@@ -123,9 +123,13 @@ urlpatterns = [
     url(r'^sendauthorlist/(?P<tid>[0-9]+)$',views.send_authorlist, name='send_authorlist'),
 
     url(r'^textplace-autocomplete/$',views.TextPlaceAutocomplete.as_view(create_field='name'),name="textplace-autocomplete"),
+    url(r'^country-autocomplete/$',views.CountryAutocomplete.as_view(create_field='name'),name="country-autocomplete"),
+
+    path('duc_country', views.duc_country, name='duc_country'),
     path('duc_place', views.duc_place, name='duc_place'),
     path('duc_year', views.duc_year, name='duc_year'),
-    
+    path('duc_number', views.duc_number, name='duc_number'),
+
     url(r'^add_othercat',views.add_othercat, name='add_othercat'),
     url(r'^del_othercat',views.del_othercat, name='del_othercat'),
 

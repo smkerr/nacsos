@@ -2,6 +2,7 @@ from django import forms
 from .models import *
 from dal import autocomplete
 from tmv_app.models import *
+import cities
 
 
 class ProjectForm(forms.ModelForm):
@@ -20,7 +21,27 @@ class QueryForm(forms.ModelForm):
         help_texts = {
             'query_file': 'Accepted formats are WoS/Scopus text files or RIS files',
         }
-        
+
+class CatIntForm(forms.Form):
+    def __init__(self,*args,**kwargs):
+        doc_id = kwargs.pop('doc_id',None)
+        cat_id = kwargs.pop('cat_id', None)
+        user_id = kwargs.pop('user_id', None)
+        super(CatIntForm, self).__init__(*args, **kwargs)
+        self.fields['doc_id'].initial = doc_id
+        self.fields['cat_id'].initial = cat_id
+        self.fields['user_id'].initial = user_id
+        try:
+            duc = DocUserCat.objects.get(doc__id=doc_id,category__id=cat_id,user__id=user_id)
+            self.fields['number'].initial = duc.number
+        except:
+            pass
+
+    doc_id = forms.IntegerField(widget=forms.HiddenInput())
+    cat_id = forms.IntegerField(widget=forms.HiddenInput())
+    user_id = forms.IntegerField(widget=forms.HiddenInput())
+    number = forms.IntegerField(label="Number")
+
 class CatYearForm(forms.Form):
     def __init__(self,*args,**kwargs):
         doc_id = kwargs.pop('doc_id',None)
@@ -39,7 +60,7 @@ class CatYearForm(forms.Form):
             self.fields['duration'].initial = duc.duration
         except:
             pass
-    
+
     doc_id = forms.IntegerField(widget=forms.HiddenInput())
     cat_id = forms.IntegerField(widget=forms.HiddenInput())
     user_id = forms.IntegerField(widget=forms.HiddenInput())
@@ -48,7 +69,7 @@ class CatYearForm(forms.Form):
     observation_year_1 = forms.IntegerField(label="Observation period 2 - start")
     observation_year_2 = forms.IntegerField(label="Observation period 2 - end")
     duration = forms.FloatField(label="Duration (years - enter decimal for periods less than 1 year)")
-    
+
 class TextPlaceForm(forms.Form):
     def __init__(self,*args,**kwargs):
         doc_id = kwargs.pop('doc_id',None)
@@ -63,7 +84,7 @@ class TextPlaceForm(forms.Form):
             self.fields['places'].initial = list(duc.places.all().values_list('id',flat=True))
         except:
             pass
-    
+
     doc_id = forms.IntegerField(widget=forms.HiddenInput())
     cat_id = forms.IntegerField(widget=forms.HiddenInput())
     user_id = forms.IntegerField(widget=forms.HiddenInput())
@@ -71,6 +92,34 @@ class TextPlaceForm(forms.Form):
         queryset=TextPlace.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(
             url="scoping:textplace-autocomplete",
+            attrs={
+                'data-minimum-input-length': 2
+            }
+        )
+    )
+
+class CountryForm(forms.Form):
+    def __init__(self,*args,**kwargs):
+        doc_id = kwargs.pop('doc_id',None)
+        cat_id = kwargs.pop('cat_id', None)
+        user_id = kwargs.pop('user_id', None)
+        super(CountryForm, self).__init__(*args, **kwargs)
+        self.fields['doc_id'].initial = doc_id
+        self.fields['cat_id'].initial = cat_id
+        self.fields['user_id'].initial = user_id
+        try:
+            duc = DocUserCat.objects.get(doc__id=doc_id,category__id=cat_id,user__id=user_id)
+            self.fields['places'].initial = list(duc.countries.all().values_list('id',flat=True))
+        except:
+            pass
+
+    doc_id = forms.IntegerField(widget=forms.HiddenInput())
+    cat_id = forms.IntegerField(widget=forms.HiddenInput())
+    user_id = forms.IntegerField(widget=forms.HiddenInput())
+    places = forms.ModelChoiceField(
+        queryset=cities.models.Country.objects.all(),
+        widget=autocomplete.ModelSelect2Multiple(
+            url="scoping:country-autocomplete",
             attrs={
                 'data-minimum-input-length': 2
             }
