@@ -3115,7 +3115,7 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
     relevance_fields.append({"path": "note__text", "name": "Notes"})
     relevance_fields.append({"path": "relevance_time", "name": "Time of Rating"})
 
-
+    category_fields = []
 
     for f in WoSArticle._meta.get_fields():
         path = "wosarticle__"+f.name
@@ -3130,6 +3130,17 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
         path = "docownership__"+u.username
         fields.append({"path": path, "name": u.username})
         relevance_fields.append({"path": path, "name": u.username})
+
+    cats = Category.objects.filter(
+        project=query.project
+    ).exclude(name__icontains='<hidden>').order_by('level','name')
+
+    for cat in cats:
+        for u in User.objects.filter(project=p):
+            category_fields.append({
+                "path": f"usercat__{u.username}__{cat.id}",
+                "name": f"{cat.name} - {u.username}"
+            })
 
     for f in DocAuthInst._meta.get_fields():
         path = "docauthinst__"+f.name
@@ -3146,6 +3157,8 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
         request,qid,basic_fields
     ).content.decode('utf-8')
 
+
+
     context = {
         'doctable': doctable,
         'query': query,
@@ -3159,7 +3172,8 @@ def doclist(request, pid, qid, q2id='0',sbsid='0'):
         'wos_fields': wos_fields,
         'ndocs': ndocs,
         'sbsid': sbsid,
-        'basic_field_names': basic_field_names
+        'basic_field_names': basic_field_names,
+        'category_fields': category_fields
     }
     return HttpResponse(template.render(context, request))
 
@@ -3894,10 +3908,13 @@ def sortdocs(request):
     mult_fields = []
     users = []
     rfields = []
+    ucfields = []
     for f in fields:
         if "docauthinst" in f or "tag__" in f or "note__text" in f:
             mult_fields.append(f)
             #single_fields.append(f)
+        elif "usercat" in f:
+            ucfields.append(f)
         elif "docownership" in f:
             users.append(f)
             #single_fields.append(f)
@@ -3928,10 +3945,6 @@ def sortdocs(request):
             category__name=StringAgg('category__name','; ',distinct=True),
         )
 
-
-
-    #if
-    #x = y
     for i in range(len(f_fields)):
         if "tag__title" in f_fields[i]:
             tag_filter = f_text[i]
@@ -4029,7 +4042,16 @@ def sortdocs(request):
                 )
             )
 
-
+    for ucf in ucfields:
+        uname, cid = ucf.split("__")[1:3]
+        duc = DocUserCat.objects.filter(
+            category__id=cid,
+            user__username=uname,
+            doc__id=OuterRef('pk')
+        )
+        filt_docs = filt_docs.annotate(**{
+            ucf: Exists(duc)
+        })
 
     all_docs = filt_docs
 
@@ -4094,6 +4116,7 @@ def sortdocs(request):
 
             else:
                 kwargs = {}
+
                 if "docownership__" in f_fields[i]:
                     kwargs["docownership__user__username"] = f_fields[i].split('__')[-1]
                     kwargs["docownership__query"] = query
@@ -4242,6 +4265,29 @@ def sortdocs(request):
         # Get the user relevance rating for each doc (if asked)
 
         #x = y
+
+
+        if len(ucfields) > 0 and download==False:
+            for ucf in ucfields:
+                uname, cid = ucf.split("__")[1:3]
+                duc = DocUserCat.objects.filter(
+                    category__id=cid,
+                    user__username=uname,
+                    doc__id=d['pk']
+                )
+                do = DocOwnership.objects.filter(
+                    user__username=uname,
+                    doc__id=d['pk']
+                )
+                if do.exists():
+                    if duc.exists():
+                        d[ucf] = 1
+                    else:
+                        d[ucf] = 0
+                else:
+                    d[ucf] = "Not rated"
+
+
 
         if len(users) > 0 and download==False:
             for u in users:

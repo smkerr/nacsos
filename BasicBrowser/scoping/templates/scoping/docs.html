@@ -35,6 +35,13 @@
           {% for f in relevance_fields %}
               <span class="field_name" data-active="false" name="{{f.path}}">{{ f.name }}</span>,
           {% endfor %}
+          <a href="#collapseCats" data-toggle="collapse">View categories</a>
+          <div class="collapse", id="collapseCats">
+            <p class="field_container">
+            {% for f in category_fields %}
+                <span class="field_name" data-active="false" name="{{f.path}}">{{ f.name }}</span>,
+            {% endfor %}
+            </div>
         </p>
 
         <p style="text-align:left">
