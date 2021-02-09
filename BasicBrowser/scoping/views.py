@@ -55,7 +55,6 @@ from .tables import *
 from .tasks import *
 from tmv_app.tasks import *
 from django.utils.timezone import make_aware
-
 import time
 
 def super_check(user):
@@ -3906,11 +3905,14 @@ def sortdocs(request):
 
     single_fields = ['pk']
     mult_fields = []
+    tag_fields = []
     users = []
     rfields = []
     ucfields = []
     for f in fields:
-        if "docauthinst" in f or "tag__" in f or "note__text" in f:
+        if "tag__" in f:
+            tag_fields.append(f)
+        elif "docauthinst" in f or "note__text" in f:
             mult_fields.append(f)
             #single_fields.append(f)
         elif "usercat" in f:
@@ -4072,7 +4074,8 @@ def sortdocs(request):
             if "tag__title" in f_fields[i]:
                 tag_queries.append(f_text[i])
 
-    print(f_fields)
+    print("filter fields", f_fields)
+    print(f"about to start filtering after {time.time()-t0} seconds")
 
     # filter the docs according to the currently active filter
     for i in range(len(f_fields)):
@@ -4100,6 +4103,10 @@ def sortdocs(request):
                     filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i]) | filt_docs.filter(tag__query__id=q2id,tag__title__icontains=f_text[i])
                 else:
                     if joiner=="AND":
+                        tagdocs = Tag.objects.filter(
+                            query__id=qid,
+                            title__icontains=f_text[i]
+                        )
                         filt_docs = filt_docs.filter(
                             tag__query__id=qid,
                             tag__title__icontains=f_text[i]
@@ -4182,12 +4189,14 @@ def sortdocs(request):
     if sortdir=="+":
         sortdir=""
 
+    print("sort_dirs", sort_dirs)
 
     if sort_dirs is not None:
         order_by = ('-PY','pk')
         if len(sort_dirs) > 0:
             order_by = []
         for s in range(len(sort_dirs)):
+            print(s)
             sortdir = sort_dirs[s]
             field = sort_fields[s]
             if field=="wosarticle__doc":
@@ -4198,19 +4207,34 @@ def sortdocs(request):
             order_by.append(sortdir+field)
             filt_docs = filt_docs.filter(**{null_filter:False})
 
-        docs = filt_docs.order_by(*order_by).values(*single_fields)
-        n_docs = len(docs)
+        docs = filt_docs#.order_by(*order_by).values(*single_fields)
+        n_docs = docs.count()
 
     else:
-        n_docs = len(filt_docs)
+        n_docs = filt_docs.count()
 
     if not download:
-        docs = docs[:100]
+        docs = docs.order_by(*order_by).values(*single_fields)[:100]
+    else:
+        docs = docs.order_by(*order_by).values(*single_fields)
+
+    if request.user.profile.type == "default":
+        max = 4
+        min = 0
+    else:
+        max = 8
+        min = 5
+
+    for t in tag_fields:
+        filt_docs = filt_docs.filter(tag__query=query).annotate(
+            tag__title=StringAgg('tag__title','; '),
+        )
 
 
-    if len(mult_fields) > 0:
+    print(f"about to loop through docs after {time.time()-t0} seconds")
 
-        for d in docs:
+    for d in docs:
+        if len(mult_fields) > 0:
             for m in range(len(mult_fields)):
                 f = (mult_fields_tuple[m],)
                 if "tag__" in mult_fields_tuple[m]:
@@ -4230,16 +4254,8 @@ def sortdocs(request):
                 if "note__" in mult_fields_tuple[m]:
                     d[mult_fields[m]] = "; <br>".join(x.strip() for x in  adoc)
 
-    if request.user.profile.type == "default":
-        max = 4
-        min = 0
-    else:
-        max = 8
-        min = 5
 
-    print(f"about to loop through docs after {time.time()-t0} seconds")
 
-    for d in docs:
         # work out total relevance
         if "docproject__relevant" in fields:
             dp = DocProject.objects.get(
@@ -4292,17 +4308,12 @@ def sortdocs(request):
         if len(users) > 0 and download==False:
             for u in users:
                 uname = u.split("__")[1]
-                doc = Doc.objects.get(pk=d['pk'])
+                #doc = Doc.objects.get(pk=d['pk'])
                 if q2id!='0':
                     do = DocOwnership.objects.filter(doc_id=d['pk'],query__id=qid,user__username=uname) | DocOwnership.objects.filter(doc_id=d['pk'],query__id=q2id,user__username=uname)
                 else:
                     pass
-                    #do = DocOwnership.objects.filter(doc_id=d['pk'],query__id=qid,user__username=uname)
-                #if "tag__title" in f_fields:
-                    #do = do.filter(tag__title__icontains=tag_filter)
-                #if do.count() > 0:
                 if u in d:
-                    #d[u] = do.first().get_relevant_display()
                     num = d[u]
                     text = DocOwnership.Status[d[u]]
                     if f"{u}__tag" in d:
@@ -4310,23 +4321,21 @@ def sortdocs(request):
                     else:
                         tag = "0"
                     user = str(User.objects.get(username=uname).id)
-                    if not download:
-                        d[u] = '<select class="relevant_cycle" data-user=' \
-                        +user+' data-tag='+tag+' data-id='+str(d['pk'])+' \
-                        onchange="cyclescore(this)"\
-                        >'
+                    d[u] = '<select class="relevant_cycle" data-user=' \
+                    +user+' data-tag='+tag+' data-id='+str(d['pk'])+' \
+                    onchange="cyclescore(this)"\
+                    >'
 
-                        for r in range(min,max+1):
-                            dis = DocOwnership(
-                                relevant=r
-                            ).get_relevant_display()
-                            sel = ""
-                            if r == num:
-                                sel = "selected"
-                            d[u]+='<option {} value={}>{}</option>'.format(sel, r, dis)
+                    for r in range(min,max+1):
+                        dis = DocOwnership(
+                            relevant=r
+                        ).get_relevant_display()
+                        sel = ""
+                        if r == num:
+                            sel = "selected"
+                        d[u]+='<option {} value={}>{}</option>'.format(sel, r, dis)
                 else:
                     d[u] = "not assigned"
-
 
 
                         #' data-value='+str(d[u])+'\
@@ -4338,6 +4347,8 @@ def sortdocs(request):
                 d['wosarticle__di'] = '<a target="_blank" href="http://dx.doi.org/'+d['wosarticle__di']+'">'+d['wosarticle__di']+'</a>'
         except:
             pass
+
+    print(f"Looping finished after {time.time()-t0} seconds")
 
     if download:
         if ris=="true":
