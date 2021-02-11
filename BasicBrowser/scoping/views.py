@@ -4295,7 +4295,7 @@ def sortdocs(request):
                     user__username=uname,
                     doc__id=d['pk']
                 )
-                if do.exists():
+                if do.exists() or uname=="Auto":
                     if duc.exists():
                         d[ucf] = 1
                     else:
