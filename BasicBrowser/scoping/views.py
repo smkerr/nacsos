@@ -5843,10 +5843,10 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                     )
                     dcs = cats.none()
                 else:
-                    dcus = cats.filter(
-                        pk=t.pk,
-                        docusercat__user=request.user,
-                        docusercat__doc=do.doc
+                    dcus = DocUserCat.objects.filter(
+                        category=t,
+                        doc=do.doc,
+                        user=request.user
                     )
                     dcs = cats.filter(
                         doccat__category=t,
@@ -5854,7 +5854,12 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                         doccat__query_tagged=True
                     )
                 t.ecs = list(t.equivalents.values_list('pk',flat=True))
-                e = dcus.exists() or dcs.exists()
+                if dcus.exists() or dcs.exists():
+                    e = "selection1"
+                    if dcus.exists():
+                        e = f"selection{dcus.first().selection_tier}"
+                else:
+                    e = ""
                 if t.number_entry:
                     t.form = CatIntForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
                 if t.record_years:
@@ -5865,6 +5870,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                 if t.country_select:
                     t.form = CountryForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
                     placeform = t.form
+
                 lcats.append((e,t))
             parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))
             if cats.filter(level=l).count() > 0 and len(set(parents)) ==1:
@@ -5973,9 +5979,27 @@ def cat_doc(request):
         dc, created = DocUserCat.objects.get_or_create(**filter)
         created = False
     if not created:
-        dc.delete()
+        removeTag=f"selection{dc.selection_tier}"
+        if dc.category.selection_tiers > 1:
+            if dc.selection_tier < dc.category.selection_tiers:
+                dc.selection_tier+=1
+                addTag=f"selection{dc.selection_tier}"
+                dc.save()
+            else:
+                dc.delete()
+                addTag=""
+        else:
+            dc.delete()
+            addTag=""
+    else:
+        removeTag = ""
+        addTag = "selection1"
 
-    return HttpResponse()
+    response = {
+        "addTag": addTag,
+        "removeTag": removeTag
+    }
+    return JsonResponse(response)
 
 ## Universal screening function, ctype = type of documents to show
 @login_required

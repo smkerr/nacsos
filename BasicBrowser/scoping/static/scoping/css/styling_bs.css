@@ -375,6 +375,18 @@ button.True {
     background-color: #ccebc5;
 }
 
+button.selection1 {
+    background-color: #ccebc5;
+}
+
+button.selection2 {
+	background-color: #b3cde3;
+}
+
+button.selection3 {
+	background-color: #ccebc5;
+}
+
 a.True.b-yes {
     border-color: #91cf60;
     border-width: 5px;

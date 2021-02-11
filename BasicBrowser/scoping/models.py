@@ -584,6 +584,7 @@ class Category(models.Model):
     country_select = models.BooleanField(default=False)
     record_years = models.BooleanField(default=False)
     number_entry = models.BooleanField(default=False)
+    selection_tiers = models.IntegerField(default=1)
 
     def __str__(self):
         if self.title_only:
@@ -604,6 +605,7 @@ class DocUserCat(models.Model):
     observation_year_2 = models.IntegerField(null=True)
     duration = models.FloatField(null=True)
     number = models.IntegerField(null=True)
+    selection_tier = models.IntegerField(default=1)
 
 class Innovation(models.Model):
     name = models.TextField(null = True, verbose_name="Innovation Name")
