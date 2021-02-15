@@ -5853,7 +5853,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                         doccat__doc=do.doc,
                         doccat__query_tagged=True
                     )
-                t.ecs = list(t.equivalents.values_list('pk',flat=True))
+                t.ecs = list(t.equivalents.filter(level__gt=t.level).values_list('pk',flat=True))
                 if dcus.exists() or dcs.exists():
                     e = "selection1"
                     if dcus.exists():

@@ -587,6 +587,8 @@ class Category(models.Model):
     selection_tiers = models.IntegerField(default=1)
 
     def __str__(self):
+        if self.name is None:
+            return ""
         if self.title_only:
             return self.name.split(maxsplit=1)[-1]
         return self.name
