@@ -41,6 +41,7 @@ class Command(BaseCommand):
                         id=tweet['id']
                     )
                     status.fetched = timezone.now()
+                    status.scrape_got=True
                     status.save()
                     status.searches.add(tsearch)
                     if created:
