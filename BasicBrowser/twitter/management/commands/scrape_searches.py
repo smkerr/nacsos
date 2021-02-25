@@ -54,7 +54,8 @@ class Command(BaseCommand):
                         status.created_at=t
                         status.favorites_count = tweet['likes_count']
                         status.retweets_count = tweet['retweets_count']
-                        status.place = tweet['location']
+                        if "location" in tweet:
+                            status.place = tweet['location']
                         status.text = tweet['tweet']
                         try:
                             status.save()
