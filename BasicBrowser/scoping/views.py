@@ -552,12 +552,16 @@ Todos:
     models = [
         StudyEffect,DocMetaCoding,DocProject,
         Exclusion, DocUserCat, DocCat,
-        DocPar
+        DocPar, DocOwnership
         ## Need to filter by projectt!!!
     ]
+
     for x in models:
         if hasattr(x,'project'):
-            insts = x.objects.filter(doc=throw,project=p)
+            if hasattr(x, 'query'):
+                insts = x.objects.filter(doc=throw, query__project=p) | x.objects.filter(doc=throw, project=p)
+            else:
+                insts = x.objects.filter(doc=throw,project=p)
         elif hasattr(x,'category'):
             insts = x.objects.filter(doc=throw,category__project=p)
         else:
@@ -5820,8 +5824,11 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
             elif do.full_text:
                 doc =  do.doc.highlight_fields(tag.query,["title","id","wosarticle__so","wosarticle__py","wosarticle__di","docfile"])
             else:
-                doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
-
+                if request.user.profile.highlight:
+                    doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
+                else:
+                    doc = do.doc
+                    
             notes = Note.objects.filter(
                 project=tag.query.project,
                 user = do.user,
@@ -5974,6 +5981,7 @@ def cat_doc(request):
     }
     try:
         dc, created = DocUserCat.objects.get_or_create(**filter)
+        print(dc,created)
     except MultipleObjectsReturned:
         DocUserCat.objects.filter(**filter).delete()
         dc, created = DocUserCat.objects.get_or_create(**filter)

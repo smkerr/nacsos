@@ -770,6 +770,7 @@ class Profile(models.Model):
     type = models.TextField(null=True,default="default")
     institution = models.ForeignKey('Institution', on_delete=models.CASCADE, null=True)
     unlimited = models.BooleanField(default=False)
+    highlight = models.BooleanField(default=True)
     cred_org = models.TextField(null=True)
     cred_uname = models.TextField(null=True)
     cred_pwd = models.TextField(null=True)

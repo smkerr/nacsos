@@ -73,7 +73,7 @@ def update_techs(pid):
     return
 
 @shared_task
-def upload_docs(qid, update):
+def upload_docs(qid, update, merge=False):
     print("Uploading docs for query {}".format(qid))
     print(upload_docs.request.id)
     from celery.task.control import  inspect
