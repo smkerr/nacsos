@@ -5827,8 +5827,9 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                 if request.user.profile.highlight:
                     doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
                 else:
-                    doc = do.doc
+                    doc = do.doc.highlight_fields(None,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
                     
+
             notes = Note.objects.filter(
                 project=tag.query.project,
                 user = do.user,
