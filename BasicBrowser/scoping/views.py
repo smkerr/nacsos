@@ -5844,7 +5844,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
             lcats = []
             for t in cats.filter(level=l).exclude(name__contains="<hidden>").order_by('name'):
                 if do.tweet:
-                    DocUserCat.objects.filter(
+                    dcus = DocUserCat.objects.filter(
                         category__id=t.pk,
                         user=request.user,
                         tweet=do.tweet
