@@ -145,6 +145,11 @@
 				  {{t.1.form.as_p}}
 				</form>
 				<button class="btn" id="submitplaceform">Save</button>
+        {% elif t.1.text_free %}
+        <form id="textform">
+				  {{t.1.form.as_p}}
+				</form>
+				<button class="btn" id="submittextform">Save</button>
         {% elif t.1.country_select %}
         <form id="countryform">
 				  {{t.1.form.as_p}}
@@ -299,6 +304,31 @@ $("#submitplaceform").click(function(){
 	data: {
 	    "doc_id": values["doc_id"],
 	    "places": values["places"],
+	    "cat_id": values["cat_id"],
+	    "user_id": values["user_id"],
+	},
+	success: function(data) {
+	    formbut.html("Update")
+	}
+    })
+})
+
+$("#submittextform").click(function(){
+    var values = {};
+    values["texts"] = []
+    $.each($('#textform').serializeArray(), function(i, field) {
+	if (field.name=="texts"){
+	    values[field.name].push(field.value);
+	} else {
+	    values[field.name] = field.value;
+	}
+    })
+    const formbut = $(this);
+    $.ajax({
+	url: "{% url 'scoping:duc_text' %}",
+	data: {
+	    "doc_id": values["doc_id"],
+	    "texts": values["texts"],
 	    "cat_id": values["cat_id"],
 	    "user_id": values["user_id"],
 	},

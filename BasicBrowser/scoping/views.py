@@ -89,6 +89,35 @@ class TextPlaceAutocomplete(autocomplete.Select2QuerySetView):
             qs = qs.filter(name__istartswith=self.q)
         return qs
 
+def duc_text(request):
+    place_ids = request.GET.getlist('texts[]')
+    doc = Doc.objects.get(pk=request.GET.get('doc_id', None))
+    cat = Category.objects.get(pk=request.GET.get('cat_id', None))
+    user = User.objects.get(pk=request.GET.get('user_id', None))
+
+    duc, created = DocUserCat.objects.get_or_create(
+        doc=doc,
+        category=cat,
+        user=user
+    )
+    duc.texts.clear()
+    for p in place_ids:
+        text = TextFree.objects.get(pk=p)
+        duc.texts.add(text)
+    return HttpResponse("")
+
+class TextFreeAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        print(self.forwarded.get('cat_id', None))
+        cat = Category.objects.get(pk=self.forwarded.get('cat_id', None))
+        cats = Category.objects.filter(project=cat.project, text_free=True)
+        dcus = DocUserCat.objects.filter(category__in=cats)
+        tfids = set(TextFree.objects.filter(docusercat__in=dcus).values_list('pk',flat=True))
+        qs = TextFree.objects.filter(pk__in=tfids)
+        if self.q:
+            qs = qs.filter(name__istartswith=self.q)
+        return qs
+
 def duc_place(request):
     place_ids = request.GET.getlist('places[]')
     doc = Doc.objects.get(pk=request.GET.get('doc_id', None))
@@ -5879,6 +5908,9 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                     t.form = CatYearForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
                 if t.text_place:
                     t.form = TextPlaceForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
+                    placeform = t.form
+                if t.text_free:
+                    t.form = TextFreeForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)
                     placeform = t.form
                 if t.country_select:
                     t.form = CountryForm(doc_id=do.doc_id,cat_id=t.id,user_id=request.user.id)

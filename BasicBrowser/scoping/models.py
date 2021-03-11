@@ -565,6 +565,12 @@ class TextPlace(models.Model):
     def __str__(self):
         return self.name
 
+class TextFree(models.Model):
+    name = models.TextField(db_index=True)
+
+    def __str__(self):
+        return self.name
+
 class Category(models.Model):
     name = models.TextField(null = True, verbose_name="Category Name", db_index=True)
     level = models.IntegerField(default=1)
@@ -581,6 +587,7 @@ class Category(models.Model):
     filtered_equivalents = models.BooleanField(default=False)
     title_only = models.BooleanField(default=False)
     text_place = models.BooleanField(default=False)
+    text_free = models.BooleanField(default=False)
     country_select = models.BooleanField(default=False)
     record_years = models.BooleanField(default=False)
     number_entry = models.BooleanField(default=False)
@@ -600,6 +607,7 @@ class DocUserCat(models.Model):
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
     places = models.ManyToManyField('TextPlace')
+    texts = models.ManyToManyField('TextFree')
     countries = models.ManyToManyField('cities.Country')
     baseline_year_1 = models.IntegerField(null=True)
     baseline_year_2 = models.IntegerField(null=True)

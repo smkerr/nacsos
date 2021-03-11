@@ -89,12 +89,43 @@ class TextPlaceForm(forms.Form):
     cat_id = forms.IntegerField(widget=forms.HiddenInput())
     user_id = forms.IntegerField(widget=forms.HiddenInput())
     places = forms.ModelChoiceField(
-        queryset=TextPlace.objects.all(),
+        queryset=TextPlace.objects.filter(name__icontains="foo"),
         widget=autocomplete.ModelSelect2Multiple(
             url="scoping:textplace-autocomplete",
             attrs={
                 'data-minimum-input-length': 2
             }
+        )
+    )
+
+class TextFreeForm(forms.Form):
+    def __init__(self,*args,**kwargs):
+        doc_id = kwargs.pop('doc_id',None)
+        cat_id = kwargs.pop('cat_id', None)
+        user_id = kwargs.pop('user_id', None)
+        super(TextFreeForm, self).__init__(*args, **kwargs)
+        self.fields['doc_id'].initial = doc_id
+        self.fields['cat_id'].initial = cat_id
+        print(cat_id)
+        self.fields['user_id'].initial = user_id
+        try:
+            duc = DocUserCat.objects.get(doc__id=doc_id,category__id=cat_id,user__id=user_id)
+            self.fields['texts'].initial = list(duc.texts.all().values_list('id',flat=True))
+        except:
+            pass
+
+
+    doc_id = forms.IntegerField(widget=forms.HiddenInput())
+    cat_id = forms.IntegerField(widget=forms.HiddenInput())
+    user_id = forms.IntegerField(widget=forms.HiddenInput())
+    texts = forms.ModelChoiceField(
+        queryset=TextFree.objects.all(),
+        widget=autocomplete.ModelSelect2Multiple(
+            url="scoping:textfree-autocomplete",
+            attrs={
+                'data-minimum-input-length': 2
+            },
+            forward = ['cat_id'],
         )
     )
 
