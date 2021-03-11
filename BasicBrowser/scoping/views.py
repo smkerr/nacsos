@@ -5828,7 +5828,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                     doc = do.doc.highlight_fields(tag.query,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
                 else:
                     doc = do.doc.highlight_fields(None,["title","content","id","wosarticle__so","wosarticle__dt","wosarticle__bp","wosarticle__ep","wosarticle__py","wosarticle__di","wosarticle__kwp","wosarticle__de"])
-                    
+
 
             notes = Note.objects.filter(
                 project=tag.query.project,
@@ -5844,11 +5844,16 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
             lcats = []
             for t in cats.filter(level=l).exclude(name__contains="<hidden>").order_by('name'):
                 if do.tweet:
-                    dcus = cats.filter(
-                        pk=t.pk,
-                        docusercat__user=request.user,
-                        docusercat__tweet=do.tweet
+                    DocUserCat.objects.filter(
+                        category__id=t.pk,
+                        user=request.user,
+                        tweet=do.tweet
                     )
+                    # dcus = cats.filter(
+                    #     pk=t.pk,
+                    #     docusercat__user=request.user,
+                    #     docusercat__tweet=do.tweet
+                    # )
                     dcs = cats.none()
                 else:
                     dcus = DocUserCat.objects.filter(
