@@ -9,7 +9,7 @@ class Command(BaseCommand):
         pid = os.getpid()
 
         for p in psutil.process_iter():
-            if "refresh_api" in p.cmdline() and p.pid != pid:
+            if "refresh_apis" in p.cmdline() and p.pid != pid:
                 print("api getting is already running... skipping for today")
                 return
 

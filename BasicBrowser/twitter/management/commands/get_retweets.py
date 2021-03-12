@@ -14,6 +14,14 @@ class Command(BaseCommand):
     help = 'redoes searches with api'
 
     def handle(self, *args, **options):
+
+        pid = os.getpid()
+
+        for p in psutil.process_iter():
+            if "get_retweets" in p.cmdline() and p.pid != pid:
+                print("api getting is already running... skipping for today")
+                return
+
         tweets = Status.objects.filter(
             retweets_count__gt=0,
             retweeted_by__isnull=True
