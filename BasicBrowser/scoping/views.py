@@ -108,7 +108,6 @@ def duc_text(request):
 
 class TextFreeAutocomplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):
-        print(self.forwarded.get('cat_id', None))
         cat = Category.objects.get(pk=self.forwarded.get('cat_id', None))
         cats = Category.objects.filter(project=cat.project, text_free=True)
         dcus = DocUserCat.objects.filter(category__in=cats)
@@ -6019,7 +6018,6 @@ def cat_doc(request):
     }
     try:
         dc, created = DocUserCat.objects.get_or_create(**filter)
-        print(dc,created)
     except MultipleObjectsReturned:
         DocUserCat.objects.filter(**filter).delete()
         dc, created = DocUserCat.objects.get_or_create(**filter)
@@ -6032,9 +6030,19 @@ def cat_doc(request):
                 addTag=f"selection{dc.selection_tier}"
                 dc.save()
             else:
+                DocUserCat.objects.filter(
+                    doc=dc.doc,user=dc.user,
+                    category__equivalents=dc.category,
+                    category__level__gt=dc.category.level
+                ).delete()
                 dc.delete()
                 addTag=""
         else:
+            DocUserCat.objects.filter(
+                doc=dc.doc,user=dc.user,
+                category__equivalents=dc.category,
+                category__level__gt=dc.category.level
+            ).delete()
             dc.delete()
             addTag=""
     else:
