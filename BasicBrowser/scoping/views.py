@@ -5864,7 +5864,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                 doc = do.doc
             )
 
-        cats = Category.objects.filter(project=project,level__lte=11)#.order_by('name')
+        cats = Category.objects.filter(project=project,level__lte=15)#.order_by('name')
 
         levels = []
         placeform = None
