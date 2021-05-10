@@ -71,6 +71,7 @@ urlpatterns = [
 
 
     path('db1-db2-report/<int:tagid>', views.db1_db2_report, name="db1_db2_report"),
+    path('tag-comparison/<int:tagid>', views.tag_comparison, name="tag_comparison"),
 
     path('risk-of-bias/<int:dmcid>', login_required(views.RoBCreate.as_view()),name="rob_create"),
     path('edit-risk-of-bias/<int:dmcid>', login_required(views.RoBEdit.as_view()),name="rob_edit"),

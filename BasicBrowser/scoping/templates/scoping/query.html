@@ -32,9 +32,7 @@
       <td>Cohen's Kappa
       <a href="http://dx.doi.org/10.1177/001316446002000104"</a></td>
       <td>Delete</td>
-      {% if project.id == 193 %}
       <td>Generate report</td>
-      {% endif %}
     </tr>
     {% for tag in tags %}
       <tr class="tagdatarow" name="{{ tag.id }}">
@@ -55,6 +53,8 @@
           <td><a href="/scoping/delete/Tag/{{tag.id}}">Delete</a></td>
           {% if project.id == 193 %}
           <td><a href="{% url 'scoping:db1_db2_report' tag.id %}">Generate report</a></td>
+          {% else %}
+          <td><a href="{% url 'scoping:tag_comparison' tag.id %}">Generate report</a></td>
           {% endif %}
       </tr>
     {% endfor %}
