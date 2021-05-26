@@ -834,8 +834,8 @@ def handle_uncat_doc(sender, instance, **kwargs):
         )
         if created:
             dc.delete()
-        if dc.docusercats.count() > 1:
-            dc.docusercats.remove(instance)
+#        if dc.docusercats.count() > 1:
+#            dc.docusercats.remove(instance)
         else:
             print("bla")
             if not dc.user_inherited:

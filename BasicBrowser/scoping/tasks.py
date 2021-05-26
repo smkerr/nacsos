@@ -265,5 +265,6 @@ def do_query(qid, background=True, dis=False, resume=False, execute=True):
                 subprocess.Popen(args)
             else:
                 subprocess.call(args)
-
+        else:
+            return args
     return qid
