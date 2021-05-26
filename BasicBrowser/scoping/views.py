@@ -108,7 +108,6 @@ def duc_text(request):
 
 class TextFreeAutocomplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):
-        print(self.forwarded.get('cat_id', None))
         cat = Category.objects.get(pk=self.forwarded.get('cat_id', None))
         cats = Category.objects.filter(project=cat.project, text_free=True)
         dcus = DocUserCat.objects.filter(category__in=cats)
@@ -206,7 +205,6 @@ def duc_year(request):
     duc.duration = duration
     duc.save()
     return HttpResponse("")
-
 
 class RoBCreate(CreateView):
     '''
@@ -320,6 +318,188 @@ class QueryCreate(CreateView):
 
 
         return super().form_valid(form)
+
+@login_required
+def tag_comparison(request, tagid):
+    '''Tag comparison
+
+    Compares the screening and category decisions for the documents included in the tag
+    '''
+    output = BytesIO()
+    tag = Tag.objects.get(pk=tagid)
+    p = tag.query.project
+
+    dos = DocOwnership.objects.filter(tag=tag, relevant__gt=0)
+
+    doc_ids = set(dos.values_list('doc__id',flat=True))
+
+    do_df = pd.DataFrame.from_dict(
+        dos.values('doc__id','doc__title','doc__content','user__username','relevant')
+    )
+    do_df.loc[do_df['relevant']==0,'val'] = np.NaN
+    do_df.loc[do_df['relevant']==1,'val'] = 1
+    do_df.loc[do_df['relevant']==2,'val'] = 0
+    do_df.loc[do_df['relevant']==3,'val'] = -1
+    do_df.head()
+
+    cats = Category.objects.filter(project=p).exclude(name__icontains="hidden>")
+    df = pd.DataFrame.from_dict(
+        DocUserCat.objects.filter(
+            category__in=cats,
+            doc__in=doc_ids
+        ).values(
+            'doc__id',
+            'doc__title',
+            'doc__content',
+            'category__name',
+            'category__level',
+            'user__username',
+            'countries__name',
+            'texts__name',
+            'selection_tier'
+        )
+    )
+    df = df[
+        (df[['doc__id','user__username']].apply(tuple, axis=1).isin(do_df[['doc__id','user__username']].apply(tuple, axis=1))) |
+        (df['user__username']=="Auto")
+    ]
+    df['category__level'] = df['category__level'].astype(str)
+    df['cat'] = df[['category__level','category__name','user__username']].apply(lambda x: ' - '.join(x), axis=1)
+    df['val'] = df['selection_tier']
+    df.loc[~pd.isna(df['countries__name']),'val'] = df.loc[~pd.isna(df['countries__name']),'countries__name']
+    df.loc[~pd.isna(df['texts__name']),'val'] = df.loc[~pd.isna(df['texts__name']),'texts__name']
+
+    df['Category Name'] = df[['category__level','category__name']].apply(lambda x: ' - '.join(x), axis=1)
+
+    cats = df['Category Name'].unique()
+
+    do_df['Category Name'] = "0 - relevant"
+
+    merged_df = pd.concat([
+        df[['doc__id','doc__title','doc__content','user__username','Category Name','val']],
+        do_df[['doc__id','doc__title','doc__content','user__username','Category Name','val']]
+    ])
+
+    # fill tag values with 0s where they have been rated
+    def concat(x):
+        return ", ".join(x)
+    dudf_wide = (merged_df[['doc__id','doc__title','doc__content','user__username','Category Name','val']]
+                 .pivot_table(index=['doc__id','doc__title','doc__content','user__username'],columns="Category Name", values="val", aggfunc=np.sum)
+                 #.fillna(0)
+                ).reset_index()
+
+    cats = [x for x in cats if x in dudf_wide.columns]
+
+    dudf_wide[cats] = dudf_wide[cats].fillna(0)
+
+    policy_columns=[x for x in dudf_wide.columns if re.match("^3",x)]
+    post_policy_columns=[x for x in dudf_wide.columns if re.match("^[4-9]",x) or re.match("^[0-9]{2}",x)]
+    #dudf_wide.loc[dudf_wide['3 - 0. Not policy related']==1,post_policy_columns] = np.NaN
+    dudf_wide.loc[dudf_wide[policy_columns].sum(axis=1,min_count=1)==0,post_policy_columns] = np.NaN
+
+    xdf = dudf_wide.melt(id_vars=['doc__id','doc__title','doc__content','user__username'])
+    dudf_wide = (xdf[['doc__id','doc__title','doc__content','user__username','Category Name','value']]
+                 .pivot_table(index=['doc__id','doc__title','doc__content','Category Name'],columns="user__username", values="value", aggfunc=lambda x: x.sum(min_count=1))
+                 #.fillna(0)
+                ).reset_index()
+
+    import pandas.io.formats.excel
+    from nltk.metrics.agreement import AnnotationTask
+
+    pandas.io.formats.excel.ExcelFormatter.header_style = None
+
+    dudf_wide = (xdf[['doc__id','doc__title','doc__content','user__username','Category Name','value']]
+                 .pivot_table(index=['doc__id','doc__title','doc__content','Category Name'],columns="user__username", values="value", aggfunc=lambda x: x.sum(min_count=1))
+                 #.fillna(0)
+                )
+
+    def multi_kappa(group):
+
+        annotations = []
+        for coder in group.columns:
+            annotations += [(coder,i, v) for i,v in enumerate(group.dropna()[coder].values)]
+
+        t = AnnotationTask(annotations)
+        cols = ["Fleiss Kappa"]
+        try:
+            vals = [t.multi_kappa()]
+        except:
+            vals = [np.NaN]
+
+        for comb in itertools.combinations(group.columns,2):
+            annotations = []
+            for coder in comb:
+                annotations += [(coder,i, v) for i,v in enumerate(group[list(comb)].dropna()[coder].values)]
+            t = AnnotationTask(annotations)
+            cols.append(" - ".join([x.split("@")[0] for x in comb]))
+            try:
+                vals.append(round(t.weighted_kappa(),2))
+            except:
+                vals.append(np.NaN)
+
+        return pandas.Series({cols[i]: vals[i] for i in range(len(vals))})
+
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+
+    kappa_data = dudf_wide.groupby('Category Name').apply(multi_kappa)
+
+    kappa_data.to_excel(writer, sheet_name='Agreement')
+
+    dudf_wide['agreement'] = np.where(dudf_wide.nunique(axis=1)>1,0,1)
+    #dudf_wide=dudf_wide[dudf_wide['agreement']==0]
+
+    dudf_wide.reset_index().to_excel(writer, sheet_name='comparison', index=False)
+
+    workbook = writer.book
+    worksheet = writer.sheets['comparison']
+    wrap_format = workbook.add_format({'text_wrap': True})
+    worksheet.set_column('D:ZZ', 20)
+    worksheet.set_column('C:C', 90, wrap_format)
+    worksheet.set_column('B:B', 30, wrap_format)
+    worksheet.set_column('D:D', 30, wrap_format)
+
+    rh = 18
+    for i,row in dudf_wide.reset_index().iterrows():
+        try:
+            worksheet.set_row(i+1,rh+rh*len(row['Category Name'])//40)
+        except:
+            worksheet.set_row(i+1,rh)
+
+    worksheet.freeze_panes(1,1)
+
+    colors = ['#d53e4f','#fc8d59','#fee08b','#e6f598','#99d594','#3288bd']
+    thresholds = [-1.0, 0.0, 0.2, 0.4, 0.6, 0.8]
+    colors.reverse()
+    thresholds.reverse()
+    worksheet = writer.sheets['Agreement']
+
+    ncols = kappa_data.shape[1]
+    if ncols//26>0:
+        lcolumn = chr(65+ncols//26)+chr(65+ncols%26)
+    else:
+        lcolumn = chr(65+ncols)
+
+    for c, t in zip(colors, thresholds):
+        nformat = workbook.add_format({'bg_color': c})
+
+        worksheet.conditional_format(f'B2:{lcolumn}{kappa_data.shape[0]+1}', {
+            'type': 'cell',
+            'criteria': '>',
+            'value': f"{t:.2f}",
+            'format': nformat
+        })
+
+    worksheet.set_column('A:A', 60, wrap_format)
+    worksheet.set_column(f'B:{lcolumn}',20)
+    worksheet.freeze_panes(1,1)
+
+    writer.save()
+    output.seek(0)
+    workbook = output.getvalue()
+
+    response = HttpResponse(workbook, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response['Content-Disposition'] = f'attachment; filename={tagid}.xlsx'
+    return response
 
 @login_required
 def index(request):
@@ -5865,7 +6045,7 @@ def screen_doc(request,tid,ctype,pos,todo, js=0, do=None):
                 doc = do.doc
             )
 
-        cats = Category.objects.filter(project=project,level__lte=11)#.order_by('name')
+        cats = Category.objects.filter(project=project,level__lte=15)#.order_by('name')
 
         levels = []
         placeform = None
@@ -6019,7 +6199,6 @@ def cat_doc(request):
     }
     try:
         dc, created = DocUserCat.objects.get_or_create(**filter)
-        print(dc,created)
     except MultipleObjectsReturned:
         DocUserCat.objects.filter(**filter).delete()
         dc, created = DocUserCat.objects.get_or_create(**filter)
@@ -6032,9 +6211,19 @@ def cat_doc(request):
                 addTag=f"selection{dc.selection_tier}"
                 dc.save()
             else:
+                DocUserCat.objects.filter(
+                    doc=dc.doc,user=dc.user,
+                    category__equivalents=dc.category,
+                    category__level__gt=dc.category.level
+                ).delete()
                 dc.delete()
                 addTag=""
         else:
+            DocUserCat.objects.filter(
+                doc=dc.doc,user=dc.user,
+                category__equivalents=dc.category,
+                category__level__gt=dc.category.level
+            ).delete()
             dc.delete()
             addTag=""
     else:
