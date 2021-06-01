@@ -4426,6 +4426,12 @@ def sortdocs(request):
     else:
         n_docs = filt_docs.count()
 
+    for t in tag_fields:
+        docs = docs.filter(tag__query=query).annotate(
+            tag__title=StringAgg('tag__title','; '),
+        )
+        single_fields += (t,)
+
     if not download:
         docs = docs.order_by(*order_by).values(*single_fields)[:100]
     else:
@@ -4438,10 +4444,7 @@ def sortdocs(request):
         max = 8
         min = 5
 
-    for t in tag_fields:
-        docs = docs.filter(tag__query=query).annotate(
-            tag__title=StringAgg('tag__title','; '),
-        )
+
 
 
     print(f"about to loop through docs after {time.time()-t0} seconds")
