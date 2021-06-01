@@ -4439,7 +4439,7 @@ def sortdocs(request):
         min = 5
 
     for t in tag_fields:
-        filt_docs = filt_docs.filter(tag__query=query).annotate(
+        docs = docs.filter(tag__query=query).annotate(
             tag__title=StringAgg('tag__title','; '),
         )
 
