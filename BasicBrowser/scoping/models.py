@@ -26,8 +26,11 @@ import base64
 from django.conf import settings
 import numpy as np
 import random
-from gensim.models import Doc2Vec
-import gensim
+try:
+    import gensim
+except:
+    print("Gensim not installed, you will need this for running Doc2Vec models")
+
 from django.contrib.postgres.indexes import GinIndex, GistIndex
 
 import tmv_app.models as tm

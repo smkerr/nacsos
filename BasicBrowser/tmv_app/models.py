@@ -5,14 +5,16 @@ from django.contrib.auth.models import User
 import numpy as np
 import random
 from scipy.sparse import csr_matrix, coo_matrix
-from MulticoreTSNE import MulticoreTSNE as mTSNE
+try:
+    from MulticoreTSNE import MulticoreTSNE as mTSNE
+except:
+    print("Multicore TSNE not installed, tsne maps will not be able to be calculated")
 import os
 from datetime import timedelta
 from django.db.models.functions import Ln
 from django.db.models import F
 from psqlextra.types import PostgresPartitioningMethod
 from psqlextra.models import PostgresPartitionedModel
-import architect
 from django.db import connection
 import re
 
