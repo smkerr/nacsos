@@ -1,3 +1,4 @@
+BasicBrowser/twitter/management/commands/*.yaml
 *#*
 exports/*
 */.dir-locals.el

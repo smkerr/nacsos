@@ -125,6 +125,8 @@ class TwitterSearch(models.Model):
     until = models.DateTimeField(null=True)
     since = models.DateTimeField(null=True)
     search_since = models.DateTimeField(null=True)
+    search_until = models.DateTimeField(null=True)
+    search_fullapi = models.BooleanField(default=False)
     project = models.ForeignKey('scoping.Project', on_delete=models.CASCADE, null=True, related_name = 'TwitterSearches')
     project_list = models.ManyToManyField('scoping.Project', related_name = 'plist_TwitterSearches')
 
