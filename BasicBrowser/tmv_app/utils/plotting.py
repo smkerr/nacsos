@@ -318,7 +318,8 @@ def plot_tsne(
     dot_legend=True,
     nocat_colour='#F0F0F026',
     nocat_alpha=0.4, raster=False,
-    extension="png", slinewidth=0.1
+    extension="png", slinewidth=0.1,
+    scatter_displayonly=False
     ):
     cs = []
     sizes = []
@@ -363,7 +364,10 @@ def plot_tsne(
     splits = 10
     for i in range(splits):
         for c in cats:
-            ids = np.array_split(c["dis"],splits)[i]
+            if scatter_displayonly:
+                ids = np.array_split(c["display_dis"],splits)[i]
+            else:
+                ids = np.array_split(c["dis"],splits)[i]
             if hdoc is not False:
                 hdocs = ids[np.isin(ids,hdoc)]
                 ids = ids[np.isin(ids,hdoc,invert=True)]
@@ -483,6 +487,7 @@ def plot_tsne(
                     doctopic__topic=t,
                     doctopic__score__gt=thresh
                 ).order_by('-doctopic__score').values_list('id',flat=True)
+
             highlight_docs = np.argwhere(np.isin(r_ind,tdocs))[:,0]
 
             if len(highlight_docs) == 0:
