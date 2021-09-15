@@ -250,7 +250,7 @@ def do_query(qid, background=True, dis=False, resume=False, execute=True):
 
         if q.wos_collection:
             args += [
-                "-wos_collection", q.wos_collection
+                "-wos_collection", q.wos_collections
             ]
 
         args+=[fname]
