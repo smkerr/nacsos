@@ -1312,8 +1312,8 @@ def create_query(request, pid):
         date = timezone.now(),
         database = qdb,
         credentials = cred,
-        collections = collections,
-        wos_db = wos_db
+        editions = collections,
+        wos_collections = wos_db
     )
     q.save()
 
