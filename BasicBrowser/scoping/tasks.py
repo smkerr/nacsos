@@ -248,7 +248,7 @@ def do_query(qid, background=True, dis=False, resume=False, execute=True):
                 "-editions", q.editions
             ]
 
-        if q.wos_collection:
+        if q.wos_collections:
             args += [
                 "-wos_collection", q.wos_collections
             ]
