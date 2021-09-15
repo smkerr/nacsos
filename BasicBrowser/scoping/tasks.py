@@ -243,14 +243,14 @@ def do_query(qid, background=True, dis=False, resume=False, execute=True):
                 "-credentials", "True"
             ]
 
-        if q.collections:
+        if q.editions:
             args += [
-                "-collections", q.collections
+                "-editions", q.editions
             ]
 
-        if q.wos_db:
+        if q.wos_collection:
             args += [
-                "-wos_db", q.wos_db
+                "-wos_collection", q.wos_collection
             ]
 
         args+=[fname]
