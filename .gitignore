@@ -6,6 +6,7 @@ __pycache__
 logs/*
 settings_local.py
 *~
+.idea/*
 .Rproj.user
 BasicBrowser/queries/*
 BasicBrowser/static/*
