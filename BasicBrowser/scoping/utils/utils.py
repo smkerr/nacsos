@@ -4,6 +4,7 @@ from django.conf import settings
 from utils.utils import *
 from itertools import product
 import scoping.models
+import json
 #from utils.utils import *
 
 XML_TRANS_TABLE = {
@@ -18,6 +19,31 @@ XML_TRANS_TABLE = {
     'fpage': 'bp',
     'lpage': 'ep',
     'abstract': 'AB'
+}
+
+JSTOR_TRANS_TABLE = {
+    'id': 'UT',
+    'doi': 'di',
+    'docType': 'dt',
+    'tdmCategory': 'sc',
+    'sourceCategory': 'sc',
+    'language': 'la',
+    'datePublished': 'pd',
+    'pageCount': 'pg',
+    'url': 'url',
+    'isPartOf': 'so',
+    'collection': 'so',
+    'publisher': 'pu',
+    'title': 'ti',
+    'creator': 'au',
+    'pageStart': 'bp',
+    'pageEnd': 'ep',
+    'publisher': 'pu',
+    'publicationYear': 'py',
+    'volumeNumber': 'vl',
+    'issueNumber': 'iss',
+    'abstract': 'AB',
+    'fullText': 'ft'
 }
 
 def make_nears(q, nearness):
@@ -70,6 +96,40 @@ ABSTRACKR_CSV_TABLE = {
     "keywords": "wosarticle__de",
     "abstract": "AB"
 }
+
+def parse_jstor_content(obj_parsed_from_json, file_db_mapping=JSTOR_TRANS_TABLE):
+    '''parse the content of a JSTOR document'''
+    doc_dict = {}
+    for key_in_file, key_in_db in file_db_mapping.items():
+        value_from_file = obj_parsed_from_json.get(key_in_file)
+        doc_dict[key_in_db] = value_from_file
+        if key_in_db == 'UT':
+            doc_dict[key_in_db] = f"JSTOR_ID:{value_from_file}"
+        if key_in_db == 'af':
+            doc_dict[key_in_db] = value_from_file[0]
+    return doc_dict
+
+def get_jstor_json_content(jsonl_file):
+    for line in jsonl_file:
+        yield json.loads(line)
+
+def read_jsonl(q, update):
+    '''parse a JSTOR json file'''
+    with open(f'{settings.MEDIA_ROOT}/{q.query_file.name}') as f:
+        if '.jsonl' in q.query_file.name:
+            json_objects = get_jstor_json_content(f)
+
+        r_count = 0
+        for doc_from_file in json_objects:
+            doc_for_db = (parse_jstor_content(obj_parsed_from_json=doc_from_file))
+
+            try:
+                add_scopus_doc(doc_for_db,q,update)
+                r_count+=1
+            except:
+                print(f"couldn't add {doc_for_db}")
+
+        return r_count
 
 def read_csv(q):
     '''parse an abstrackr generated csv'''

@@ -664,7 +664,7 @@ def add_scopus_doc(r,q,update, find_ids = True):
             for field in r:
                 try:
                     f = article._meta.get_field(field.lower())
-                    if f.max_length is None or f.max_length > len(r[field]):
+                    if (f.max_length is None) or ( r[field] is not None and f.max_length > len(r[field]) ):
                         if f.get_internal_type() != 'ArrayField' and type(r[field]) == list:
                             setattr(article,f.name,'; '.join(r[field]))
                         else:

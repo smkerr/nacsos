@@ -4475,9 +4475,9 @@ def sortdocs(request):
         # work out total relevance
         if "docproject__relevant" in fields:
             dp = DocProject.objects.get(
-                project=query.project,doc=d['pk']
+                project=query.project, doc=d['pk']
             )
-            d['docproject__relevant'] = dp.get_relevant_display() + " ({}) ".format(dp.relevant)
+            d['docproject__relevant'] = f"{dp.get_relevant_display()} ({dp.relevant})"
         if "docfile__id" in fields:
             if d['docfile__id']:
                 d['docfile__id'] = '<a href="/scoping/download_pdf/'+str(d['docfile__id'])+'"">PDF'
