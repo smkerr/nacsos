@@ -34,7 +34,7 @@ else:
         #path('accounts/', include('django.contrib.auth.urls')),
         path('accounts/password_reset', auth_views.PasswordResetView.as_view(success_url="/"), name="password_reset"),
         path('accounts/password_change', auth_views.PasswordChangeView.as_view(success_url="/scoping"), name="password_change"),
-        path('accounts/login/', auth_views.LoginView.as_view(), {'template_name': 'scoping/login.html'}),
+        path('accounts/login/', auth_views.LoginView.as_view(success_url="/"), {'template_name': 'scoping/login.html'}),
         url(r'^accounts/logout/$', views.logout_view, name='logout_view'),
 ]
 

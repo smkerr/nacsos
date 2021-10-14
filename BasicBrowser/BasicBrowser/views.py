@@ -8,6 +8,7 @@ from django.utils.module_loading import import_module
 def index(request):
     template = loader.get_template('scoping/base_index.html')
     apps = [
+        {'name': 'lotto','app_url': '/lotto'},
         {'name': 'scoping','app_url': '/scoping'},
         {'name': 'tmv_app','app_url': '/tmv_app/runs'}
         # {'name': 'parliament', 'app_url': '/parliament'}
@@ -19,7 +20,7 @@ def index(request):
     return HttpResponse(template.render(context, request))
 
 from django.contrib.auth import login, authenticate
-from django.contrib.auth.forms import UserCreationForm
+from BasicBrowser.forms import UserCreationForm
 from django.shortcuts import render, redirect
 
 def signup(request):
@@ -31,7 +32,7 @@ def signup(request):
             raw_password = form.cleaned_data.get('password1')
             user = authenticate(username=username, password=raw_password)
             login(request, user)
-            return redirect('home')
+            return redirect('/')
     else:
         form = UserCreationForm()
-    return render(request, 'lotto/signup.html', {'form': form})
+    return render(request, 'scoping/signup.html', {'form': form})
