@@ -30,6 +30,8 @@ MAINTENANCE = False
 
 ALLOWED_HOSTS = ['*']
 
+LOGIN_REDIRECT_URL = '/'
+
 
 # Application definition
 

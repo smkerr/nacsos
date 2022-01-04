@@ -566,7 +566,7 @@ def add_scopus_doc(r,q,update, find_ids = True):
             print("more than one doc matching!!!!!")
             wdocs = docs.filter(UT__UT__contains='WOS:')
             if wdocs.count()==1:
-                docs.exclude(UT__UT__contains='WOS:').delete()
+                #docs.exclude(UT__UT__contains='WOS:').delete()
                 doc = wdocs.first()
             else:
                 doc = docs.first()
@@ -589,6 +589,7 @@ def add_scopus_doc(r,q,update, find_ids = True):
                 pass
             except MultipleObjectsReturned:
                 print(f"found multiple similar objects for {get(r,'ti')}")
+                # Handle this case..
 
         # If we still have zero matches, create a new document
         if doc is None:
@@ -663,7 +664,7 @@ def add_scopus_doc(r,q,update, find_ids = True):
             for field in r:
                 try:
                     f = article._meta.get_field(field.lower())
-                    if f.max_length is None or f.max_length > len(r[field]):
+                    if (f.max_length is None) or ( r[field] is not None and f.max_length > len(r[field]) ):
                         if f.get_internal_type() != 'ArrayField' and type(r[field]) == list:
                             setattr(article,f.name,'; '.join(r[field]))
                         else:
