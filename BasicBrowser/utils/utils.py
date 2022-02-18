@@ -725,7 +725,11 @@ def proc_scopus_chunk(docs,q,update):
     # Get the docs that match with secondary id
     wos_docs = scoping.models.Doc.objects.filter(UT__sid__in=ids)
     # Sets of database ids and doc ids
-    wos_ids, wos_dids = [set(x) for x in (zip(*wos_docs.values_list('UT__sid','id')))]
+    try:
+        wos_ids, wos_dids = [set(x) for x in (zip(*wos_docs.values_list('UT__sid','id')))]
+    except ValueError:
+        wos_ids = []
+        wos_dids = []
     # Same for primary id
     scopus_docs = scoping.models.Doc.objects.filter(UT__UT__in=ids)
 
