@@ -131,7 +131,16 @@ def read_jsonl(q, update):
 
         return r_count
 
+csv_field_dict = {
+
+}
+
 def read_csv(q):
+    df = pd.read_csv(f'{settings.MEDIA_ROOT}/{q.query_file.name}')
+    for i, row in df.iterrows():
+        add_scopus_doc(row, q, False, find_ids=False)
+
+def read_abstrackr_csv(q):
     '''parse an abstrackr generated csv'''
     import csv
     i = 0
