@@ -688,10 +688,12 @@ def add_scopus_doc(r,q,update, find_ids = True):
             #try:
             dais = []
             if get(r,'au') is not None:
+                if type(r['au']) is str:
+                    r['au'] = r['au'].split('; ')
                 doc.docauthinst_set.clear()
                 for a in range(len(get(r,'au'))):
                     #af = r['AF'][a]
-                    au = get(r,'au')[a]
+                    au = get(r,'au')[a].strip()
                     dai = scoping.models.DocAuthInst(doc=doc)
                     dai.AU = au
                     dai.position = a+1
