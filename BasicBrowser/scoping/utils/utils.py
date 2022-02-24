@@ -138,6 +138,7 @@ csv_field_dict = {
 def read_csv(q):
     df = pd.read_csv(f'{settings.MEDIA_ROOT}/{q.query_file.name}')
     for i, row in df.iterrows():
+        row = {k: row[k] for k in df.columns if not pd.isna(row[k])}
         add_scopus_doc(row, q, False, find_ids=False)
 
 def read_abstrackr_csv(q):

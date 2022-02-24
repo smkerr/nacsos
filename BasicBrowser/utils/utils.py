@@ -12,7 +12,7 @@ from django.db import IntegrityError
 from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist, MultipleObjectsReturned
 from scoping.models import *
 from tmv_app.models import *
-
+import pandas as pd
 import scoping.models
 
 ##################################
@@ -104,6 +104,8 @@ def get(r, k):
             x = int(x)
         except:
             x = "".join(re.findall("[0-9]",x))
+    if x is np.NaN:
+        x = None
     return(x)
 
 def jaccard(s1,s2):
@@ -662,6 +664,8 @@ def add_scopus_doc(r,q,update, find_ids = True):
             doc.save()
 
             for field in r:
+                if field is None or field is np.NaN:
+                    continue
                 try:
                     f = article._meta.get_field(field.lower())
                     if (f.max_length is None) or ( r[field] is not None and f.max_length > len(r[field]) ):

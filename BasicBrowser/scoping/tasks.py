@@ -257,7 +257,7 @@ def do_query(qid, background=True, dis=False, resume=False, execute=True):
 
         print(args)
 
-        print(" ".join(args))
+        print(" ".join([x.replace(' ','\ ') for x in args]))
 
         # run "scrapeQuery.py" on the text file in the background
         if execute:
