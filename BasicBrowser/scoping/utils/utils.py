@@ -140,6 +140,7 @@ def read_csv(q):
     for i, row in df.iterrows():
         row = {k: row[k] for k in df.columns if not pd.isna(row[k])}
         add_scopus_doc(row, q, False, find_ids=False)
+    return q.doc_set.count()
 
 def read_abstrackr_csv(q):
     '''parse an abstrackr generated csv'''
