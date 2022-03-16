@@ -327,7 +327,10 @@ def tag_comparison(request, tagid):
     '''
     output = BytesIO()
     tag = Tag.objects.get(pk=tagid)
-    p = tag.query.project
+    if tag.query is not None:
+        p = tag.query.project
+    else:
+        p = tag.project
 
     dos = DocOwnership.objects.filter(tag=tag, relevant__gt=0)
     if not dos.exists():
@@ -472,7 +475,7 @@ def tag_comparison(request, tagid):
     dudf_wide = dudf_wide.reset_index()
     if "tweet__created_at" in dudf_wide.columns:
         dudf_wide["tweet__created_at"] = dudf_wide["tweet__created_at"].dt.tz_convert(None)
-        
+
     dudf_wide.to_excel(writer, sheet_name='comparison', index=False)
 
 
