@@ -29,6 +29,7 @@
               <th>Sample
               <th>Docs Assigned
               <th>Docs Screened
+              <th>Generate Report</th>
             </tr>
           {% for s in samples %}
           <tr>
@@ -37,6 +38,7 @@
             {% endif %}
             <td>{{s.a_docs}}
             <td>{{s.seen_docs}}
+            <td><a href="{% url 'scoping:tag_comparison' s.id %}">Generate report</a>
               </tr>
           {% endfor %}
 

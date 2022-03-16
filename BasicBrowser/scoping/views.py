@@ -330,11 +330,21 @@ def tag_comparison(request, tagid):
     p = tag.query.project
 
     dos = DocOwnership.objects.filter(tag=tag, relevant__gt=0)
+    if not dos.exists():
+        return
 
-    doc_ids = set(dos.values_list('doc__id',flat=True))
+    if dos.first().tweet_id is not None:
+        doc__id = "tweet__id"
+        doc__columns = ["tweet__id","tweet__text","tweet__created_at"]
+    elif dos.first().doc_id is not None:
+        doc__id = "doc__id"
+        doc__columns = ['doc__id','doc__title','doc__content']
+
+
+    doc_ids = set(dos.values_list(doc__id,flat=True))
 
     do_df = pd.DataFrame.from_dict(
-        dos.values('doc__id','doc__title','doc__content','user__username','relevant')
+        dos.values(*doc__columns + ['user__username','relevant'])
     )
     do_df.loc[do_df['relevant']==0,'val'] = np.NaN
     do_df.loc[do_df['relevant']==1,'val'] = 1
@@ -343,24 +353,31 @@ def tag_comparison(request, tagid):
     do_df.head()
 
     cats = Category.objects.filter(project=p).exclude(name__icontains="hidden>")
-    df = pd.DataFrame.from_dict(
-        DocUserCat.objects.filter(
+
+    if doc__id=="doc__id":
+        ducs = DocUserCat.objects.filter(
             category__in=cats,
             doc__in=doc_ids
-        ).values(
-            'doc__id',
-            'doc__title',
-            'doc__content',
-            'category__name',
-            'category__level',
-            'user__username',
-            'countries__name',
-            'texts__name',
-            'selection_tier'
         )
-    )
+    else:
+        ducs = DocUserCat.objects.filter(
+            category__in=cats,
+            tweet__id__in=doc_ids
+        )
+
+    df = pd.DataFrame.from_dict(
+        ducs.values(*
+            doc__columns + [
+                'category__name',
+                'category__level',
+                'user__username',
+                'countries__name',
+                'texts__name',
+                'selection_tier']
+        )
+    ).drop_duplicates([doc__id,"category__name","user__username","countries__name","texts__name"])
     df = df[
-        (df[['doc__id','user__username']].apply(tuple, axis=1).isin(do_df[['doc__id','user__username']].apply(tuple, axis=1))) |
+        (df[[doc__id,'user__username']].apply(tuple, axis=1).isin(do_df[[doc__id,'user__username']].apply(tuple, axis=1))) |
         (df['user__username']=="Auto")
     ]
     df['category__level'] = df['category__level'].astype(str)
@@ -376,15 +393,15 @@ def tag_comparison(request, tagid):
     do_df['Category Name'] = "0 - relevant"
 
     merged_df = pd.concat([
-        df[['doc__id','doc__title','doc__content','user__username','Category Name','val']],
-        do_df[['doc__id','doc__title','doc__content','user__username','Category Name','val']]
+        df[doc__columns + ['user__username','Category Name','val']],
+        do_df[doc__columns + ['user__username','Category Name','val']]
     ])
 
     # fill tag values with 0s where they have been rated
     def concat(x):
         return ", ".join(x)
-    dudf_wide = (merged_df[['doc__id','doc__title','doc__content','user__username','Category Name','val']]
-                 .pivot_table(index=['doc__id','doc__title','doc__content','user__username'],columns="Category Name", values="val", aggfunc=np.sum)
+    dudf_wide = (merged_df[doc__columns + ['user__username','Category Name','val']]
+                 .pivot_table(index=doc__columns + ['user__username'],columns="Category Name", values="val", aggfunc=np.sum)
                  #.fillna(0)
                 ).reset_index()
 
@@ -392,14 +409,15 @@ def tag_comparison(request, tagid):
 
     dudf_wide[cats] = dudf_wide[cats].fillna(0)
 
-    policy_columns=[x for x in dudf_wide.columns if re.match("^3",x)]
-    post_policy_columns=[x for x in dudf_wide.columns if re.match("^[4-9]",x) or re.match("^[0-9]{2}",x)]
-    #dudf_wide.loc[dudf_wide['3 - 0. Not policy related']==1,post_policy_columns] = np.NaN
-    dudf_wide.loc[dudf_wide[policy_columns].sum(axis=1,min_count=1)==0,post_policy_columns] = np.NaN
+    if p.id==260:
+        policy_columns=[x for x in dudf_wide.columns if re.match("^3",x)]
+        post_policy_columns=[x for x in dudf_wide.columns if re.match("^[4-9]",x) or re.match("^[0-9]{2}",x)]
+        #dudf_wide.loc[dudf_wide['3 - 0. Not policy related']==1,post_policy_columns] = np.NaN
+        dudf_wide.loc[dudf_wide[policy_columns].sum(axis=1,min_count=1)==0,post_policy_columns] = np.NaN
 
-    xdf = dudf_wide.melt(id_vars=['doc__id','doc__title','doc__content','user__username'])
-    dudf_wide = (xdf[['doc__id','doc__title','doc__content','user__username','Category Name','value']]
-                 .pivot_table(index=['doc__id','doc__title','doc__content','Category Name'],columns="user__username", values="value", aggfunc=lambda x: x.sum(min_count=1))
+    xdf = dudf_wide.melt(id_vars=doc__columns+['user__username'])
+    dudf_wide = (xdf[doc__columns+['user__username','Category Name','value']]
+                 .pivot_table(index=doc__columns+['Category Name'],columns="user__username", values="value", aggfunc=lambda x: x.sum(min_count=1))
                  #.fillna(0)
                 ).reset_index()
 
@@ -408,8 +426,11 @@ def tag_comparison(request, tagid):
 
     pandas.io.formats.excel.ExcelFormatter.header_style = None
 
-    dudf_wide = (xdf[['doc__id','doc__title','doc__content','user__username','Category Name','value']]
-                 .pivot_table(index=['doc__id','doc__title','doc__content','Category Name'],columns="user__username", values="value", aggfunc=lambda x: x.sum(min_count=1))
+    dudf_wide = (xdf[doc__columns + ['user__username','Category Name','value']]
+                 .pivot_table(
+                    index=doc__columns + ['Category Name'],
+                    columns="user__username", values="value",
+                    aggfunc=lambda x: x.sum(min_count=1))
                  #.fillna(0)
                 )
 
@@ -448,7 +469,12 @@ def tag_comparison(request, tagid):
     dudf_wide['agreement'] = np.where(dudf_wide.nunique(axis=1)>1,0,1)
     #dudf_wide=dudf_wide[dudf_wide['agreement']==0]
 
-    dudf_wide.reset_index().to_excel(writer, sheet_name='comparison', index=False)
+    dudf_wide = dudf_wide.reset_index()
+    if "tweet__created_at" in dudf_wide.columns:
+        dudf_wide["tweet__created_at"] = dudf_wide["tweet__created_at"].dt.tz_convert(None)
+        
+    dudf_wide.to_excel(writer, sheet_name='comparison', index=False)
+
 
     workbook = writer.book
     worksheet = writer.sheets['comparison']
