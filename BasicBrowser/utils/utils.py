@@ -692,8 +692,9 @@ def add_scopus_doc(r,q,update, find_ids = True):
             #try:
             dais = []
             if get(r,'au') is not None:
-                if type(r['au']) is str:
-                    r['au'] = r['au'].split('; ')
+                if 'au' in r:
+                    if type(r['au']) is str:
+                        r['au'] = r['au'].split('; ')
                 doc.docauthinst_set.clear()
                 for a in range(len(get(r,'au'))):
                     #af = r['AF'][a]
