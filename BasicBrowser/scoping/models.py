@@ -445,21 +445,24 @@ def unexclude_doc(sender,instance,**kwargs):
         dmc.save()
     except:
         pass
-    dp = DocProject.objects.get(
-        doc=instance.doc,
-        project=instance.project
-    )
-    dp.relevant=0
-    dos = DocOwnership.objects.filter(
-        query__project=instance.project,
-        doc=instance.doc
-    )
-    for do in dos:
-        if dp.relevant == 0:
-            dp.relevant=do.relevant
-        elif dp.relevant != do.relevant:
-            dp.relevant = 3
-    dp.save()
+    try:
+        dp = DocProject.objects.get(
+            doc=instance.doc,
+            project=instance.project
+        )
+        dp.relevant=0
+        dos = DocOwnership.objects.filter(
+            query__project=instance.project,
+            doc=instance.doc
+        )
+        for do in dos:
+            if dp.relevant == 0:
+                dp.relevant=do.relevant
+            elif dp.relevant != do.relevant:
+                dp.relevant = 3
+        dp.save()
+    except:
+        pass
 
 
 class Query(models.Model):
