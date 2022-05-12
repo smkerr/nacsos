@@ -435,13 +435,16 @@ class Exclusion(models.Model):
 
 @receiver(pre_delete, sender=Exclusion)
 def unexclude_doc(sender,instance,**kwargs):
-    dmc = DocMetaCoding.objects.get(
-        doc=instance.doc,
-        project=instance.project,
-        user=instance.user
-    )
-    dmc.excluded=False
-    dmc.save()
+    try:
+        dmc = DocMetaCoding.objects.get(
+            doc=instance.doc,
+            project=instance.project,
+            user=instance.user
+        )
+        dmc.excluded=False
+        dmc.save()
+    except:
+        pass
     dp = DocProject.objects.get(
         doc=instance.doc,
         project=instance.project
