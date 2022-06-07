@@ -612,6 +612,7 @@ class Category(models.Model):
 class DocUserCat(models.Model):
     doc = models.ForeignKey('Doc', null=True, on_delete=models.CASCADE)
     tweet = models.ForeignKey(tms.Status, null=True, on_delete=models.CASCADE)
+    statement = models.ForeignKey('DocStatement', null=True, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
