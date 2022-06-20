@@ -115,6 +115,9 @@ def get_jstor_json_content(jsonl_file):
 
 def read_jsonl(q, update):
     '''parse a JSTOR json file'''
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT set_limit(0.8);')
+        row = cursor.fetchone()
     with open(f'{settings.MEDIA_ROOT}/{q.query_file.name}') as f:
         if '.jsonl' in q.query_file.name:
             json_objects = get_jstor_json_content(f)
@@ -136,6 +139,9 @@ csv_field_dict = {
 }
 
 def read_csv(q):
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT set_limit(0.8);')
+        row = cursor.fetchone()
     df = pd.read_csv(f'{settings.MEDIA_ROOT}/{q.query_file.name}')
     for i, row in df.iterrows():
         row = {k: row[k] for k in df.columns if not pd.isna(row[k])}
@@ -166,6 +172,9 @@ def read_abstrackr_csv(q):
 
 def read_xml(q, update):
     '''parse a jstor like xml'''
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT set_limit(0.8);')
+        row = cursor.fetchone()
     r_count = 0
     import xml.etree.ElementTree as ET
     tree = ET.parse("{}/{}".format(settings.MEDIA_ROOT,q.query_file.name))
