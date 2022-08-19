@@ -603,7 +603,7 @@ def add_scopus_doc(r,q,update, find_ids = True):
                     UT=r['UT'],
                     sid=r['UT']
                 )
-                doc = scoping.models.Doc(UT=ut)
+                doc, created = scoping.models.Doc.objects.get_or_create(UT=ut)
                 doc.save()
             else:
                 url, created = scoping.models.URLs.objects.get_or_create(
