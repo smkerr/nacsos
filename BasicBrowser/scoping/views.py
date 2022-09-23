@@ -4344,23 +4344,28 @@ def sortdocs(request):
                 if q2id != '0':
                     filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i]) | filt_docs.filter(tag__query__id=q2id,tag__title__icontains=f_text[i])
                 else:
+                    tag_kwargs = {
+                        "query__id": qid,
+                        f"title__{op}": f_text[i]
+                    }
+                    doc_kwargs = {
+                        "tag__query__id": qid,
+                        f"tag__title__{op}": f_text[i]
+                    }
                     if joiner=="AND":
-                        tagdocs = Tag.objects.filter(
-                            query__id=qid,
-                            title__icontains=f_text[i]
-                        )
-                        filt_docs = filt_docs.filter(
-                            tag__query__id=qid,
-                            tag__title__icontains=f_text[i]
-                        )
+                        tagdocs = Tag.objects.filter(**tag_kwargs)
+                        if exclude:
+                            filt_docs = filt_docs.exclude(**doc_kwargs)
+                        else:
+                            filt_docs = filt_docs.filter(**doc_kwargs)
                     else:
                         fids = []
                         fids = fids + list(filt_docs.values_list('id',flat=True))
-                        fids = fids + list(all_docs.filter(
-                            tag__query__id=qid,
-                            tag__title__icontains=f_text[i]
-                        ).values_list('id',flat=True))
-                        filt_docs = all_docs.filter(id__in=set(fids))
+                        fids = fids + list(all_docs.filter(**doc_kwargs).values_list('id',flat=True))
+                        if exclude:
+                            filt_docs = all_docs.exclude(id__in=set(fids))
+                        else:
+                            filt_docs = all_docs.filter(id__in=set(fids))
                 tag_filter = f_text[i]
 
             else:
