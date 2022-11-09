@@ -994,10 +994,9 @@ class Doc(models.Model):
 
     def highlight_fields(self,q,fields):
         if q is not None:
+            qs = None
             if q.__class__ == scoping.models.Project:
                 qs = q.query_set.exclude(database="intern").exclude(text__isnull=True)
-            elif "GENERATED" in q.text:
-                qs = q.project.query_set.exclude(database="intern")
             elif q.queries.exists():
                 qs = []
                 for q1 in q.queries.all():
@@ -1010,7 +1009,10 @@ class Doc(models.Model):
                                 qs.append(q2)
                     else:
                         qs.append(q1)
-            else:
+            elif q.text is not None:
+                if "GENERATED" in q.text:
+                    qs = q.project.query_set.exclude(database="intern")
+            if qs is None:
                 qs = [q]
             qs = [q for q in qs if q.text is not None]
             words = utils.get_query_words(qs)
