@@ -463,7 +463,10 @@ def tag_comparison(request, tagid):
 
         return pandas.Series({cols[i]: vals[i] for i in range(len(vals))})
 
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    options = {}
+    options['strings_to_formulas'] = False
+    options['strings_to_urls'] = False
+    writer = pd.ExcelWriter(output, engine='xlsxwriter', options=options)
 
     kappa_data = dudf_wide.groupby('Category Name').apply(multi_kappa)
 
