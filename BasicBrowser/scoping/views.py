@@ -527,7 +527,7 @@ def tag_comparison(request, tagid):
 
     writer.save()
     output.seek(0)
-    workbook = output.getvalue()
+    workbook = output.read()
 
     response = HttpResponse(workbook, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response['Content-Disposition'] = f'attachment; filename={tagid}.xlsx'
