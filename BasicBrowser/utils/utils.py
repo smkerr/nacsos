@@ -255,6 +255,9 @@ def read_wos(res, q, update, deduplicate=False):
     connection.close()
     if deduplicate:
         print("nonstandard WoS, searching for duplicates")
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT set_limit(0.8);')
+        row = cursor.fetchone()
     i=0
     n_records = 0
     records=[]
@@ -600,7 +603,7 @@ def add_scopus_doc(r,q,update, find_ids = True):
                     UT=r['UT'],
                     sid=r['UT']
                 )
-                doc = scoping.models.Doc(UT=ut)
+                doc, created = scoping.models.Doc.objects.get_or_create(UT=ut)
                 doc.save()
             else:
                 url, created = scoping.models.URLs.objects.get_or_create(
@@ -868,6 +871,9 @@ def read_ris(q, update):
     r_count = 0
     changed = False
     encoding = None
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT set_limit(0.8);')
+        row = cursor.fetchone()
     with open(
         "{}/{}".format(settings.MEDIA_ROOT,q.query_file.name
     ),'r') as f:

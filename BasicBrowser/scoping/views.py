@@ -4347,23 +4347,28 @@ def sortdocs(request):
                 if q2id != '0':
                     filt_docs = filt_docs.filter(tag__query__id=qid,tag__title__icontains=f_text[i]) | filt_docs.filter(tag__query__id=q2id,tag__title__icontains=f_text[i])
                 else:
+                    tag_kwargs = {
+                        "query__id": qid,
+                        f"title__{op}": f_text[i]
+                    }
+                    doc_kwargs = {
+                        "tag__query__id": qid,
+                        f"tag__title__{op}": f_text[i]
+                    }
                     if joiner=="AND":
-                        tagdocs = Tag.objects.filter(
-                            query__id=qid,
-                            title__icontains=f_text[i]
-                        )
-                        filt_docs = filt_docs.filter(
-                            tag__query__id=qid,
-                            tag__title__icontains=f_text[i]
-                        )
+                        tagdocs = Tag.objects.filter(**tag_kwargs)
+                        if exclude:
+                            filt_docs = filt_docs.exclude(**doc_kwargs)
+                        else:
+                            filt_docs = filt_docs.filter(**doc_kwargs)
                     else:
                         fids = []
                         fids = fids + list(filt_docs.values_list('id',flat=True))
-                        fids = fids + list(all_docs.filter(
-                            tag__query__id=qid,
-                            tag__title__icontains=f_text[i]
-                        ).values_list('id',flat=True))
-                        filt_docs = all_docs.filter(id__in=set(fids))
+                        fids = fids + list(all_docs.filter(**doc_kwargs).values_list('id',flat=True))
+                        if exclude:
+                            filt_docs = all_docs.exclude(id__in=set(fids))
+                        else:
+                            filt_docs = all_docs.filter(id__in=set(fids))
                 tag_filter = f_text[i]
 
             else:
@@ -5454,6 +5459,7 @@ def del_statement(request):
 
 @login_required
 def add_statement(request):
+
     idpar = request.POST.get('idpar', None)
     text  = request.POST.get('text', None)
     #partext   = request.POST.get('par', None)
@@ -5462,70 +5468,86 @@ def add_statement(request):
     tid   = request.POST.get('tid', None)
     doid  = request.POST.get('doid', None)
     userid  = request.POST.get('userid', None)
-
-    start = int(start)
-    end   = int(end)
+    statid = request.POST.get('statid', None)
 
     # Get associated paragraph and tag
-    par  = DocPar.objects.get(pk=idpar)
-    tag  = Tag.objects.get(pk=tid)
-    user = User.objects.get(pk=userid)
+
+    tag = Tag.objects.get(pk=tid)
 
     DEBUG=False
-    if DEBUG:
-        print(par.text)
 
-    try:
-        start = par.text.index(text)
-        end   = par.text.index(text)+len(text)
+    if statid is not None:
+        docStat = DocStatement.objects.get(pk=statid)
+        newpar_html = ""
+    else:
+        user = User.objects.get(pk=userid)
+        par  = DocPar.objects.get(pk=idpar)
+
         if DEBUG:
-            print("py: "+str(par.text.index(text))+", "+str(par.text.index(text)+len(text)))
-            print(par.text[start:end])
-            print("js: "+str(start)+", "+str(end))
-            print(text)
-    except:
-        if DEBUG:
-            print("Warning: Python failed to find statement in paragraph. Using javascript indices instead")
-            print("js: "+str(start)+", "+str(end))
-            print(text)
-            end=end+1
-        #start = 0
-        #end   = len(par.text)
+            print(par.text)
+
+        try:
+            start = par.text.index(text)
+            end   = par.text.index(text)+len(text)
+            if DEBUG:
+                print("py: "+str(par.text.index(text))+", "+str(par.text.index(text)+len(text)))
+                print(par.text[start:end])
+                print("js: "+str(start)+", "+str(end))
+                print(text)
+        except:
+            if DEBUG:
+                print("Warning: Python failed to find statement in paragraph. Using javascript indices instead")
+                print("js: "+str(start)+", "+str(end))
+                print(text)
+                end=end+1
+            #start = 0
+            #end   = len(par.text)
 
 
 
-    # Save new statement
-    docStat = DocStatement(
-        par   = par,
-        text  = text,
-        start = start,
-        end   = end,
-        user  = user,
-        #category = ,
-        text_length = len(text))
-    docStat.save()
+        # Save new statement
+        docStat = DocStatement(
+            par   = par,
+            text  = text,
+            start = start,
+            end   = end,
+            user  = user,
+            #category = ,
+            text_length = len(text))
+        docStat.save()
+        newpar_html = "<p class='text-selected' id='"+idpar+"'>"+highlight_words_new(highlight_statement(idpar, debug=False), tag, debug=False)+"</p>"
 
-    #print("-----------------------")
-    #print(highlight_statement(idpar))
-    #print("-----------------------")
-    #print(highlight_words_new(highlight_statement(idpar), tag))
+    cats = Category.objects.filter(project=tag.query.project)
 
-    # Add highlighted words
-    newpar_html = "<p class='text-selected' id='"+idpar+"'>"+highlight_words_new(highlight_statement(idpar, debug=False), tag, debug=False)+"</p>"
+    levels = []
+    for l in cats.exclude(name__contains="<hidden>").values_list('level',flat=True).distinct().order_by('level'):
+        lcats = []
+        for c in cats.filter(level=l).exclude(name__contains="<hidden>").order_by('name'):
+            dcus = DocUserCat.objects.filter(
+                category__id=c.pk,
+                user=request.user,
+                statement=docStat
+            )
 
-    # Generate tool box
-    toolbox_html = generate_toolbox(doid, tag, docStat)
+            if dcus.exists():
+                e = f"selection{dcus.first().selection_tier}"
+            else:
+                e = ""
 
-    # do    = DocOwnership.objects.get(pk=doid)
-    # techs = Category.objects.filter(project=tag.query.project)
-    # for t in techs:
-    #     if do.docpar.category.all().filter(pk=t.pk).exists():
-    #         t.active="btn-success"
-    #     else:
-    #         t.active=""
-    #
-    # levels = [[(docStat.category.all().filter(pk=t.pk).exists(),t) for t in techs.filter(level=l)] for l in techs.values_list('level',flat=True).distinct()]
-    #
+            lcats.append({
+                "name": c.name,
+                "id": c.id,
+                "selection": e,
+            })
+        parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))
+        if cats.filter(level=l).count() > 0 and len(set(parents)) ==1:
+            try:
+                cname = list(parents)[0].replace("<hidden>","").replace("<nofurther>","")
+            except:
+                cname = f"level {l}"
+        else:
+            cname= f"level {l}"
+        levels.append({"name": cname, "cats": lcats})
     # toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
     # toolbox_html += '<div class="tools_statement2"><button class="btntool btn_del_stat" id="btndel{{s.0.0.0}}"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button></div>'
     #
@@ -5537,9 +5559,16 @@ def add_statement(request):
     # toolbox_html += '</div>'
 
     # Append html objects
-    html_response = newpar_html + "_!SEP!_"+ toolbox_html
+    #html_response = newpar_html + "_!SEP!_"+ toolbox_html
 
-    return HttpResponse(html_response)
+
+    return JsonResponse({
+        "html": newpar_html,
+        "docStat": docStat.id,
+        "cats": levels
+    }, safe=False)
+
+    #return HttpResponse(html_response)
 
 def generate_toolbox(doid, tag, docStat):
     do    = DocOwnership.objects.get(pk=doid)
@@ -5551,80 +5580,107 @@ def generate_toolbox(doid, tag, docStat):
         else:
             t.active=""
 
-    levels = [[(docStat.category.all().filter(pk=t.pk).exists(),t, docStat.category.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')]
+    levels = []
+    for l in cats.exclude(name__contains="<hidden>").values_list('level',flat=True).distinct().order_by('level'):
+        lcats = []
+        for c in cats.filter(level=l).exclude(name__contains="<hidden>").order_by('name'):
+            dcus = DocUserCat.objects.filter(
+                category__id=t.pk,
+                user=request.user,
+                statement=docStat
+            )
 
-    # Old implementation
-    # toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
-    # toolbox_html += '<div class="tools_statement2"><button class="btntool btn_del_stat" id="btndel'+str(docStat.id)+'"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button></div>'
-    #
-    # for l in levels:
-    #     toolbox_html += '<div class="tagtools">'+l[0][1].group
-    #     for t in l:
-    #             toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntag cat '+str(t[0])+'" data-toggle="tooltip" data-placement="top" title="'+t[1].description+'">'+t[1].name+'</button>'
-    #     toolbox_html += '</div>'
-    # toolbox_html += '</div>'
-
-    toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
-    toolbox_html += '<div class="tools_statement2">'
-    toolbox_html += '<i style="color:#333">Click here to remove</i>'
-    toolbox_html += '<button class="btntool btn_del_stat" id="btndel'+str(docStat.id)+'"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button>'
-    toolbox_html += '</div>'
-    toolbox_html += '<br>'
-
-    toolbox_html += '<table>'
-    toolbox_html += '<tr>'
-    toolbox_html += '<td width="160px" style="padding: 0px 5px 0px 5px; border-right:1pt solid black; text-align: center;" valign="center" rowspan="2"><strong>Boundaries / Assumptions</strong></td>'
-    toolbox_html += '<td width="780px" style="padding: 0px 5px 0px 5px; border-bottom:1pt solid black; text-align: left;" colspan="2"><strong><i>Statements</i></strong></td>'
-    toolbox_html += '</tr>'
-
-    toolbox_html += '<tr>'
-    toolbox_html += '<td width="350px" style="padding: 0px 5px 0px 5px;"><strong>Categories</strong></td>'
-    toolbox_html += '<td width="400px"><strong>Common statements</strong></td>'
-    toolbox_html += '</tr>'
-
-    toolbox_html += '<tr><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black; border-right:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><</tr>'
-    toolbox_html += '<tr><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black; border-right:1pt solid black;"></td><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black;"></td><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black;"></td></tr>'
-
-    toolbox_html += '<tr class="tagtools">'
-    toolbox_html += '<td class="tagtools" width="160px" rowspan="6" style="padding: 0px 5px 0px 5px; border-right:1pt solid black;">'
-
-    for t in levels[0]:
-        toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg2 cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
-        if t[0]:
-            toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'_true.png" width="80%" height="80%"/>'
-        else:
-            toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'.png" width="80%" height="80%"/>'
-        toolbox_html += '</button>'
-    toolbox_html += '</td>'
-    toolbox_html += '<td class="tagtools"></td>'
-    toolbox_html += '<td class="tagtools"></td>'
-    toolbox_html += '</tr>'
-
-    t2 = levels[6]
-
-    for l in levels[1:6]:
-        toolbox_html += '<tr class="tagtools">'
-
-        toolbox_html += '<td class="tagtools">'
-        idx=[t[1].group == l[0][1].group for t in levels[6]].index(True)
-        toolbox_html += '<button value="'+str(t2[idx][1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t2[idx][1].description)+'">'
-        if t2[idx][0]:
-            toolbox_html += '<img id="myImg'+str(t2[idx][1].id)+'" src="/static/scoping/img/'+str(t2[idx][1].name)+'_true.png" width="80%" height="80%"/>'
-        else:
-            toolbox_html += '<img id="myImg'+str(t2[idx][1].id)+'" src="/static/scoping/img/'+str(t2[idx][1].name)+'.png" width="80%" height="80%"/>'
-        toolbox_html += '</button>'
-
-        toolbox_html += l[0][1].group+'</td>'
-        toolbox_html += '<td class="tagtools">'
-        for t in l:
-            toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
-            if t[0]:
-                toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'_true.png" width="80%" height="80%"/>'
+            if dcus.exists():
+                e = f"selection{dcus.first().selection_tier}"
             else:
-                toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'.png" width="80%" height="80%"/>'
-            toolbox_html += '</button>'
-        toolbox_html += '</td>'
-    toolbox_html += '</tr>'
+                e = ""
+
+            lcats.append({
+                "name": c.name,
+                "id": c.id,
+                "selection": e
+            })
+        parents = set( cats.filter(level=l).values_list('parent_category__name',flat=True))
+        if cats.filter(level=l).count() > 0 and len(set(parents)) ==1:
+            try:
+                cname = list(parents)[0].replace("<hidden>","").replace("<nofurther>","")
+            except:
+                cname = f"level {l}"
+        else:
+            cname= f"level {l}"
+        levels.append({"name": cname, "cats": lcats})
+    # Old implementation
+    toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
+    toolbox_html += '<div class="tools_statement2"><button class="btntool btn_del_stat" id="btndel'+str(docStat.id)+'"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button></div>'
+
+    for l in levels:
+        toolbox_html += '<div class="tagtools">'+l[0][1].group
+        for t in l:
+                toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntag cat '+str(t[0])+'" data-toggle="tooltip" data-placement="top" title="'+t[1].description+'">'+t[1].name+'</button>'
+        toolbox_html += '</div>'
+    toolbox_html += '</div>'
+
+    # toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
+    # toolbox_html += '<div class="tools_statement2">'
+    # toolbox_html += '<i style="color:#333">Click here to remove</i>'
+    # toolbox_html += '<button class="btntool btn_del_stat" id="btndel'+str(docStat.id)+'"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button>'
+    # toolbox_html += '</div>'
+    # toolbox_html += '<br>'
+    #
+    # toolbox_html += '<table>'
+    # toolbox_html += '<tr>'
+    # toolbox_html += '<td width="160px" style="padding: 0px 5px 0px 5px; border-right:1pt solid black; text-align: center;" valign="center" rowspan="2"><strong>Boundaries / Assumptions</strong></td>'
+    # toolbox_html += '<td width="780px" style="padding: 0px 5px 0px 5px; border-bottom:1pt solid black; text-align: left;" colspan="2"><strong><i>Statements</i></strong></td>'
+    # toolbox_html += '</tr>'
+    #
+    # toolbox_html += '<tr>'
+    # toolbox_html += '<td width="350px" style="padding: 0px 5px 0px 5px;"><strong>Categories</strong></td>'
+    # toolbox_html += '<td width="400px"><strong>Common statements</strong></td>'
+    # toolbox_html += '</tr>'
+    #
+    # toolbox_html += '<tr><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black; border-right:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><</tr>'
+    # toolbox_html += '<tr><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black; border-right:1pt solid black;"></td><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black;"></td><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black;"></td></tr>'
+    #
+    # toolbox_html += '<tr class="tagtools">'
+    # toolbox_html += '<td class="tagtools" width="160px" rowspan="6" style="padding: 0px 5px 0px 5px; border-right:1pt solid black;">'
+    #
+    # for t in levels[0]:
+    #     toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg2 cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
+    #     if t[0]:
+    #         toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'_true.png" width="80%" height="80%"/>'
+    #     else:
+    #         toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'.png" width="80%" height="80%"/>'
+    #     toolbox_html += '</button>'
+    # toolbox_html += '</td>'
+    # toolbox_html += '<td class="tagtools"></td>'
+    # toolbox_html += '<td class="tagtools"></td>'
+    # toolbox_html += '</tr>'
+    #
+    # t2 = levels[6]
+    #
+    # for l in levels[1:6]:
+    #     toolbox_html += '<tr class="tagtools">'
+    #
+    #     toolbox_html += '<td class="tagtools">'
+    #     idx=[t[1].group == l[0][1].group for t in levels[6]].index(True)
+    #     toolbox_html += '<button value="'+str(t2[idx][1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t2[idx][1].description)+'">'
+    #     if t2[idx][0]:
+    #         toolbox_html += '<img id="myImg'+str(t2[idx][1].id)+'" src="/static/scoping/img/'+str(t2[idx][1].name)+'_true.png" width="80%" height="80%"/>'
+    #     else:
+    #         toolbox_html += '<img id="myImg'+str(t2[idx][1].id)+'" src="/static/scoping/img/'+str(t2[idx][1].name)+'.png" width="80%" height="80%"/>'
+    #     toolbox_html += '</button>'
+    #
+    #     toolbox_html += l[0][1].group+'</td>'
+    #     toolbox_html += '<td class="tagtools">'
+    #     for t in l:
+    #         toolbox_html += '<button value="'+str(t[1].id)+'" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="'+str(t[1].description)+'">'
+    #         if t[0]:
+    #             toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'_true.png" width="80%" height="80%"/>'
+    #         else:
+    #             toolbox_html += '<img id="myImg'+str(t[1].id)+'" src="/static/scoping/img/'+str(t[1].name)+'.png" width="80%" height="80%"/>'
+    #         toolbox_html += '</button>'
+    #     toolbox_html += '</td>'
+    # toolbox_html += '</tr>'
 
     # toolbox_html += '<tr class="tagtools">'
     # toolbox_html += '<td class="tagtools">Other</td>'
@@ -5810,7 +5866,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
     #stats_ids = []
     #stats_cats = []
 
-    stats_cats = [[[(s.id, s.category.all().filter(pk=t.pk).exists(), t, s.category.all().filter(level=6).exists()) for t in techs.filter(level=l).order_by('name')] for l in techs.values_list('level',flat=True).distinct().order_by('level')] for s in DocStatement.objects.all().filter(par=do.docpar.id)]
+    stats = DocStatement.objects.filter(par=do.docpar.id)
 
     #print(stats_cats)
 
@@ -5860,7 +5916,7 @@ def screen_par(request,tid,ctype,doid,todo,done,last_doid):
         'authors': authors,
         'pars': pars,
         'levels': levels,
-        'stats_cats': stats_cats,
+        'stats': list(stats.values_list('id',flat=True)),
         'notes': notes
     }
     return render(request, 'scoping/screen_par.html',context)
@@ -6223,8 +6279,11 @@ def rate_doc(request,tid,ctype,doid,pos,todo,rel):
 @login_required
 def cat_doc(request):
     tweet = request.GET.get('tweet',False)
+    statement = request.GET.get('statement',False)
     if tweet and tweet != "None":
         doc_field = "tweet_id"
+    elif statement and statement !="None":
+        doc_field = "statement_id"
     else:
         doc_field = "doc_id"
     filter = {

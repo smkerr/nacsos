@@ -183,174 +183,6 @@
   <!-- <li><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></li> -->
 </div>
 
-{% for s in stats_cats %}
-  <div class="tools" id="statool{{s.0.0.0}}">
-    <div class="tools_statement2">
-      <i style="color:#333">Click here to remove</i>
-      <button class="btntool btn_del_stat" id="btndel{{s.0.0.0}}"type="button" title="Remove statement from the database" value="remove"><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></button>
-    </div>
-
-    <br>
-
-    <table>
-      <tr>
-        <td width="160px" style="padding: 0px 5px 0px 5px; border-right:1pt solid black; text-align: center;" rowspan="2" valign="center"><strong>Boundaries / Assumptions</strong></td>
-        <td width="780px" style="padding: 0px 5px 0px 5px; border-bottom:1pt solid black; text-align: left;" colspan="2"><strong><i>Statements</i></strong></td>
-      </tr>
-      <tr>
-
-        <td width="350px" style="padding: 0px 5px 0px 5px;"><strong>Categories</strong></td>
-        <td width="400px"><strong>Common statements</strong></td>
-      </tr>
-
-      <tr><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black; border-right:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid black;"></td><</tr>
-      <tr><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black; border-right:1pt solid black;"></td><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black;"></td><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid black;"></td></tr>
-
-      {% for l in s %}
-      {% if l.0.2.level == 1 %}
-      <tr class="tagtools">
-        <td class="tagtools" width="160px" rowspan="6" style="padding: 0px 5px 0px 5px; border-right:1pt solid black;">
-          {% for t in l %}
-            <!-- <button value="{{t.2.id}}" type="button" class="btntag cat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2}}</button> -->
-            <button value="{{t.2.id}}" type="button" class="btntagimg2 cat" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">
-              {% if t.1 %}
-                {% with 'scoping/img/'|add:t.2.name|add:'_true.png' as image_static %}
-                  <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
-                {% endwith %}
-              {% else %}
-                {% with 'scoping/img/'|add:t.2.name|add:'.png' as image_static %}
-                  <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
-                {% endwith %}
-                <!-- <img id="myImg{{t.2.id}}" src="{% static 'scoping/img/H1_Important.png' %}"/> -->
-              {% endif %}
-            </button>
-          {% endfor %}
-        </td>
-        <td class="tagtools"></td>
-        <td class="tagtools"></td>
-      </tr>
-      {% endif %}
-      {% endfor %}
-
-      {% for l in s %}
-      {% if l.0.2.level > 1 and l.0.2.level < 7 %}
-      <tr class="tagtools">
-        <td class="tagtools">
-          {% for l2 in s %}
-          {% if l2.0.2.level == 7 %}
-          {% for t2 in l2 %}
-          {% if t2.2.group == l.0.2.group %}
-          <button value="{{t2.2.id}}" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="{{t2.2.description}}">
-            {% if t.1 %}
-              {% with 'scoping/img/'|add:t2.2.name|add:'_true.png' as image_static %}
-                <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
-              {% endwith %}
-            {% else %}
-              {% with 'scoping/img/'|add:t2.2.name|add:'.png' as image_static %}
-                <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
-              {% endwith %}
-            {% endif %}
-          {% endif %}
-          {% endfor %}
-          {% endif %}
-          {% endfor %}
-          </button>
-          {{l.0.2.group}}
-        </td>
-        <td class="tagtools">
-          {% for t in l %}
-            <button value="{{t.2.id}}" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">
-              {% if t.1 %}
-                {% with 'scoping/img/'|add:t.2.name|add:'_true.png' as image_static %}
-                  <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
-                {% endwith %}
-              {% else %}
-                {% with 'scoping/img/'|add:t.2.name|add:'.png' as image_static %}
-                  <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
-                {% endwith %}
-              {% endif %}
-            </button>
-          {% endfor %}
-        </td>
-      </tr>
-      {% endif %}
-      {% endfor %}
-
-      <!-- <tr><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid #ccc;"></td><td style="padding: 10px 0px 0px 0px; border-bottom:1pt solid #ccc;"></td><td></td></tr> -->
-      <!-- <tr><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid #888;"></td><td style="padding: 0px 0px 10px 0px; border-bottom:0pt solid #888;"></td><td></td></tr> -->
-<!--
-      {% for l in s %}
-      {% if l.0.2.level == 6 %}
-      <tr class="tagtools">
-        <td class="tagtools">Other</td>
-        <td class="tagtools">
-          {% for t in l %}
-
-            <button value="{{t.2.id}}" type="button" class="btntagimg cat" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">
-              {% if t.1 %}
-                {% with 'scoping/img/'|add:t.2.name|add:'_true.png' as image_static %}
-                  <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
-                {% endwith %}
-              {% else %}
-                {% with 'scoping/img/'|add:t.2.name|add:'.png' as image_static %}
-                  <img id="myImg{{t.2.id}}" src="{% static image_static %}" width="80%" height="80%"/>
-                {% endwith %}
-
-              {% endif %}
-            </button>
-          {% endfor %}
-        </td>
-      </tr>
-      {% endif %}
-      {% endfor %}
-    -->
-<!--
-    {% for l in s %}
-    <div class="tagtools">
-        {{l.0.2.group}}
-        {% for t in l %}
-            <button value="{{t.2.id}}" type="button" class="btntag cat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2}}</button>
-        {% endfor %}
-    </div>
-    {% endfor %}
--->
-<!--
-      <tr><td style="padding: 10px 10px 0px 0px; border-bottom:1pt solid black;"></td><td style="padding: 10px 10px 0px 0px; border-bottom:1pt solid black;"></td></tr>
-      <tr class="tagtools">
-        <td valign="top" style="padding: 10px 0px 0px 0px;">Other</td>
-        <td style="padding: 10px 0px 0px 0px;">
-          <form id="newcomstat{{s.0.0.0}}" class="newcomstat" action="" method="">
-            {% if s.0.0.3 %}
-              {% for l in s %}
-              {% for t in l %}
-              {% if t.2.level == 6 %}
-              {% if t.1 %}
-              <button id="del_othercat{{s.0.0.0}}" name="remove" value="{{t.2.id}}" type="button" class="btn del_othercat {{t.1}}" data-toggle="tooltip" data-placement="top" title="{{t.2.description}}">{{t.2.group}}</button>
-              {% endif %}
-              {% endif %}
-              {% endfor %}
-              {% endfor %}
-            {% else %}
-              <select id="add_othercat{{s.0.0.0}}" name="other_categories" class="add_othercat">
-                <option value="0" selected="selected">-- Select an option --</option>
-                {% for l in s %}
-                {% for t in l %}
-                {% if t.2.level == 6 %}
-                  <option value="{{t.2.id}}">{{t.2.group}}</option>
-                {% endif %}
-                {% endfor %}
-                {% endfor %}
-              </select>
-            {% endif %}
-          </form>
-        </td>
-      </tr>
--->
-
-    </table>
-  </div>
-{% endfor %}
-
 {% endblock %}
 
 {% block script %}
@@ -425,9 +257,67 @@ $.ajaxSetup({
     }
 });
 
+function cat_box(data) {
+  var id = data["docStat"]
+  $("#main").append(`<div class="tools" id='statool_${id}'>`);
+  $(`#statool_${data["docStat"]}`).html(`
+    <div class="tools_statement2">
+      <i style="color:#333">Click here to remove</i>
+      <button class="btntool btn_del_stat" id="btndel${id}"type="button" title="Remove statement from the database" value="remove"><img src="{% static 'scoping/img/icon_del.png' %}" width="20px" height="20px"/></button>
+    </div><br>
+  `)
+
+  var html = ''
+    data["cats"].forEach(function (item, i) {
+      html += `
+        <div class="border rounded bg-white my-2 p-2 small">Which ${item["name"]}
+        categories apply to this statement?
+        <hr>
+      `
+      item["cats"].forEach(function (cat, j) {
+        html += `
+        <button value="${cat.id}" data-sid="${id}" type="button" class="btn cat {cat.selection}">${cat.name}</button>
+
+        `
+      })
+      html += "</div>"
+    })
+    box = $(`#statool_${data["docStat"]}`).append(html)
+}
+
 // Event handlers to be attached once the DOM is ready
 $(function () {
     $('[data-toggle="tooltip"]').tooltip()
+
+    var stat_ids = {{stats | safe}}
+
+    console.log(stat_ids)
+
+    stat_ids.forEach(function (item, i) {
+      var data = {
+            "tid" : "{{tag.pk}}",
+            "statid" : item,
+            "userid": "{{user.pk}}"
+          }
+
+      $.ajax({
+          url: "{% url 'scoping:add_statement' %}",
+          data: data,
+          method: "POST",
+          success: function(data) {
+            var data = $.parseJSON(data)
+            console.log(data)
+            if (data["html"] != "" ) {
+              $("p#{{do.docpar.pk}}").replaceWith(data["html"]);
+            }
+
+            cat_box(data)
+
+            // need to add a new tools div
+          },
+          dataType: 'html'
+      });
+    })
 
     $(document).bind("mouseup", function() {
         var selectedText = x.Selector.getSelected();
@@ -469,7 +359,7 @@ $(function () {
       statementid = $(this).attr("id");
 
       // Tag DocStatement
-      $('#statool'+statementid).css({
+      $('#statool_'+statementid).css({
           'left': pageX + 5,
           'top' : pageY + 10
       }).fadeIn(200);
@@ -491,7 +381,7 @@ $(function () {
           data: data,
           success: function(data) {
               $("p#{{do.docpar.pk}}").replaceWith(data);
-              $('#statool'+statementid).remove();
+              $('#statool_'+statementid).remove();
           },
           dataType: 'html'
       })
@@ -531,11 +421,16 @@ $(function () {
           data: data,
           method: "POST",
           success: function(data) {
-            sep = data.indexOf("_!SEP!_");
-            html_par = data.substring(0, sep)
-            html_div = data.substring(sep+7, data.length)
-            $("p#{{do.docpar.pk}}").replaceWith(html_par);
-            $("#main").append(html_div);
+            var data = $.parseJSON(data)
+            console.log(data)
+
+            //sep = data['html'].indexOf("_!SEP!_");
+            //html_par = data['html'].substring(0, sep)
+            //html_div = data['html'].substring(sep+7, data.length)
+            $("p#{{do.docpar.pk}}").replaceWith(data["html"]);
+
+            cat_box(data)
+
             // need to add a new tools div
           },
           dataType: 'html'
@@ -549,38 +444,40 @@ $(function () {
 
     // Update statement's categories
     $(document).on("click", ".cat", function(){
-         // Get tag ID
-         id2 = $(this).val();
-         imgsrc = $(this).children("img")[0].src
-         console.log(imgsrc.substring(imgsrc.length-8, imgsrc.length-4));
-         condition = imgsrc.substring(imgsrc.length-8, imgsrc.length-4);
-
-         // Check button status
-         if (condition == "true") {
-             method = "remove";
-             $(this).children("img")[0].src = imgsrc.substring(0, imgsrc.length-9)+".png"
-         } else {
-             method = "add";
-             $(this).children("img")[0].src = imgsrc.substring(0, imgsrc.length-4)+"_true.png"
-         };
-
-         // Toggle button status
-         //$(this).toggleClass("True");
-
-         // Send info to server
-         $.ajax({
-             url: "{% url 'scoping:update_thing' %}",
-             data: {
-               "thing1": "DocStatement",
-               "id1": statementid,
-               'thing2': 'Technology',
-               'id2': id2,
-               "method": method
-             },
-             success: function(data) {
-                // Do nothing
-             }
-         });
+      var id2 = $(this).val()
+      const but = $(this)
+      console.log(id2)
+      $.ajax({
+          url: "{% url 'scoping:cat_doc' %}",
+          data: {
+            "did": but.data("sid"),
+            "cid": id2,
+            "statement": true,
+          },
+          success: function(data) {
+            console.log(data)
+            but.removeClass(data["removeTag"])
+            but.addClass(data["addTag"])
+            if (data['addTag'].includes("selection")) {
+              method = "add"
+            } else {
+              method = "remove"
+            }
+            if (but.data("show")) {
+              for (var i = 0; i < but.data("show").length; i++) {
+  		            var sbut = $("[value="+but.data("show")[i]+"]")
+                  if (method=="add") {
+  		                sbut.removeClass("hidden")
+  		            } else {
+                     sbut.addClass("hidden")
+                     sbut.removeClass("selection1")
+                     sbut.removeClass("selection2")
+                     sbut.removeClass("selection3")
+  		            }
+  	          }
+            }
+          }
+      })
      });
 
     $(document).on("click", ".del_othercat", function(e){
