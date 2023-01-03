@@ -531,6 +531,7 @@ def tag_comparison(request, tagid):
 
     response = HttpResponse(workbook, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response['Content-Disposition'] = f'attachment; filename={tagid}.xlsx'
+    output.close()
     return response
 
 @login_required
