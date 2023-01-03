@@ -427,7 +427,7 @@ def tag_comparison(request, tagid):
     import pandas.io.formats.excel
     from nltk.metrics.agreement import AnnotationTask
 
-    pandas.io.formats.excel.ExcelFormatter.header_style = None
+    #pandas.io.formats.excel.ExcelFormatter.header_style = None
 
     dudf_wide = (xdf[doc__columns + ['user__username','Category Name','value']]
                  .pivot_table(
@@ -526,12 +526,13 @@ def tag_comparison(request, tagid):
     worksheet.freeze_panes(1,1)
 
     writer.save()
+    writer.close()
     output.seek(0)
     workbook = output.read()
-
-    response = HttpResponse(workbook, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    
+    response = HttpResponse(workbook, content_type='application/vnd.ms-excel')
     response['Content-Disposition'] = f'attachment; filename={tagid}.xlsx'
-    output.close()
+    
     return response
 
 @login_required
