@@ -379,26 +379,33 @@ def tag_comparison(request, tagid):
                 'selection_tier']
         )
     ).drop_duplicates([doc__id,"category__name","user__username","countries__name","texts__name"])
-    df = df[
-        (df[[doc__id,'user__username']].apply(tuple, axis=1).isin(do_df[[doc__id,'user__username']].apply(tuple, axis=1))) |
-        (df['user__username']=="Auto")
-    ]
-    df['category__level'] = df['category__level'].astype(str)
-    df['cat'] = df[['category__level','category__name','user__username']].apply(lambda x: ' - '.join(x), axis=1)
-    df['val'] = df['selection_tier']
-    df.loc[~pd.isna(df['countries__name']),'val'] = df.loc[~pd.isna(df['countries__name']),'countries__name']
-    df.loc[~pd.isna(df['texts__name']),'val'] = df.loc[~pd.isna(df['texts__name']),'texts__name']
 
-    df['Category Name'] = df[['category__level','category__name']].apply(lambda x: ' - '.join(x), axis=1)
+    if not df.empty:
 
-    cats = df['Category Name'].unique()
+        df = df[
+            (df[[doc__id,'user__username']].apply(tuple, axis=1).isin(do_df[[doc__id,'user__username']].apply(tuple, axis=1))) |
+            (df['user__username']=="Auto")
+        ]
+        df['category__level'] = df['category__level'].astype(str)
+        df['cat'] = df[['category__level','category__name','user__username']].apply(lambda x: ' - '.join(x), axis=1)
+        df['val'] = df['selection_tier']
+        df.loc[~pd.isna(df['countries__name']),'val'] = df.loc[~pd.isna(df['countries__name']),'countries__name']
+        df.loc[~pd.isna(df['texts__name']),'val'] = df.loc[~pd.isna(df['texts__name']),'texts__name']
 
-    do_df['Category Name'] = "0 - relevant"
+        df['Category Name'] = df[['category__level','category__name']].apply(lambda x: ' - '.join(x), axis=1)
 
-    merged_df = pd.concat([
-        df[doc__columns + ['user__username','Category Name','val']],
-        do_df[doc__columns + ['user__username','Category Name','val']]
-    ])
+        cats = df['Category Name'].unique()
+
+        do_df['Category Name'] = "0 - relevant"
+
+        merged_df = pd.concat([
+            df[doc__columns + ['user__username','Category Name','val']],
+            do_df[doc__columns + ['user__username','Category Name','val']]
+        ])
+
+    else:
+        do_df['Category Name'] = "0 - relevant"
+        merged_df = do_df
 
     # fill tag values with 0s where they have been rated
     def concat(x):
