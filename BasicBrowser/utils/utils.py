@@ -671,6 +671,8 @@ def add_scopus_doc(r,q,update, find_ids = True):
                     continue
                 try:
                     f = article._meta.get_field(field.lower())
+                    if type(f) == django.db.models.fields.CharField:
+                        r[field] = str(r[field])
                     if (f.max_length is None) or ( r[field] is not None and f.max_length > len(r[field]) ):
                         if f.get_internal_type() != 'ArrayField' and type(r[field]) == list:
                             setattr(article,f.name,'; '.join(r[field]))
