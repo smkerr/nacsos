@@ -95,20 +95,20 @@ class SearchParTable(tables.Table):
     text = tables.Column(verbose_name='Paragraph Text')
 
     speaker = tables.LinkColumn(
-        'parliament:person',args=[A('utterance.speaker.id')],
-        accessor='utterance.speaker.clean_name',
+        'parliament:person',args=[A('utterance__speaker__id')],
+        accessor='utterance__speaker__clean_name',
         verbose_name='Speaker',
         attrs={'td': {'valign': 'top'}}
     )
     party = tables.LinkColumn(
-        'parliament:party',args=[A('utterance.speaker.party.id')],
-        accessor='utterance.speaker.party',
+        'parliament:party',args=[A('utterance__speaker__party__id')],
+        accessor='utterance__speaker__party',
         attrs={'td': {'valign': 'top'}}
     )
 
     utterance = tables.LinkColumn(
-        'parliament:utterance', args=[A('utterance.id')],
-        accessor='utterance.id',
+        'parliament:utterance', args=[A('utterance__id')],
+        accessor='utterance__id',
         verbose_name='From Speech',
         attrs={'td': {'valign':'top'}}
     )
@@ -121,8 +121,8 @@ class SearchParTable(tables.Table):
     )
 
     document = tables.LinkColumn(
-        'parliament:document', args=[A('utterance.document.id')],
-        accessor='utterance.document',
+        'parliament:document', args=[A('utterance__document__id')],
+        accessor='utterance__document',
         verbose_name='Document',
         attrs={'td': {'valign':'top'}}
     )
@@ -185,21 +185,21 @@ class SearchSpeechTable(tables.Table):
                                   )
 
     document = tables.LinkColumn('parliament:document',
-        args=[A('document.id')],
+        args=[A('document__id')],
         accessor='document',
         verbose_name='Document',
         attrs={'td': {'valign':'top'}}
     )
 
     speaker = tables.LinkColumn(
-        'parliament:person',args=[A('speaker.id')],
-        accessor='speaker.clean_name',
+        'parliament:person',args=[A('speaker__id')],
+        accessor='speaker__clean_name',
         verbose_name='Speaker',
         attrs={'td': {'valign': 'top'}}
     )
     party = tables.LinkColumn(
-        'parliament:party',args=[A('speaker.party.id')],
-        accessor='speaker.party',
+        'parliament:party',args=[A('speaker__party__id')],
+        accessor='speakerparty',
         attrs={'td': {'valign': 'top'}}
     )
 

@@ -148,15 +148,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = '/var/www/tmv/BasicBrowser/static/'
+STATIC_URL = '/nacsos-legacy/static/'
+STATIC_ROOT = '/var/www/nacsos1/tmv/BasicBrowser/static/'
 
 #MEDIA_URL = '/pdfs/'
 #MEDIA_ROOT = '/queries/pdfs/' #os.path.join(BASE_DIR, 'media')
 
-MEDIA_URL = '/media/'
+MEDIA_URL = '/nacsos-legacy/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_ROOT = '/var/www/tmv/BasicBrowser/media'
+MEDIA_ROOT = '/var/www/nacsos1/tmv/BasicBrowser/media'
 QUERY_DIR = '/usr/local/apsis/queries/'
 
 CACHES = {
@@ -175,5 +175,10 @@ BROKER_URL = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+
+#FORCE_SCRIPT_NAME='/nacsos-legacy'
+#SCRIPT_NAME='/nacsos-legacy/'
+
+DEFAULT_AUTO_FIELD='django.db.models.AutoField'
 
 from .settings_local import *

@@ -16,7 +16,7 @@ class DocTable(tables.Table):
 class CodingTable(tables.Table):
     doc = tables.LinkColumn(
         'scoping:code_document', args=[A('pk'),1],
-        accessor='doc.title'
+        accessor='doc__title'
     ) # link column
     finish_time = tables.Column()
     coded = tables.Column()
@@ -76,20 +76,20 @@ class TopicTable(tables.Table):
 class DocParTable(tables.Table):
 
     document = tables.Column(
-        accessor='doc.title',
+        accessor='doc__title',
         verbose_name='Document'
     )
     authors = tables.Column(
-        accessor='doc.authors',
+        accessor='doc__authors',
         verbose_name='Authors'
     )
     py = tables.Column(
-        accessor='doc.PY',
+        accessor='doc__PY',
         verbose_name='Publication Year'
     )
     file = tables.LinkColumn(
-        'scoping:download_pdf',args=[A('doc.docfile.id')],
-        accessor='doc.docfile.file',
+        'scoping:download_pdf',args=[A('doc__docfile__id')],
+        accessor='doc__docfile__file',
         verbose_name="File"
     )
 

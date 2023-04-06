@@ -32,3 +32,4 @@ BasicBrowser/tweets/*
 *nohup.out
 docs/*
 tweets/*
+.*swp

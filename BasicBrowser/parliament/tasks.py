@@ -294,12 +294,12 @@ def run_tm(s_id, K, language="german", verbosity=1, method='NM', max_features=0,
     else:
         n_features = stat.max_features
 
-    if stat.language is "german":
+    if stat.language == "german":
         stemmer = SnowballStemmer("german")
         tokenizer = german_stemmer()
         stopword_list = [stemmer.stem(t) for t in stopwords.words("german")]
 
-    elif stat.language is "english":
+    elif stat.language == "english":
         stemmer = SnowballStemmer("english")
         stopword_list = [stemmer.stem(t) for t in stopwords.words("english")]
         tokenizer = snowball_stemmer()
