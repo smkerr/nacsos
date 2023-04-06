@@ -22,9 +22,9 @@
             </span>
         {% endfor %}            -
         <i class="em {{ ij.emoji }}"></i>
-        {% ifequal ij.type 2 %}
+        {% if ij.type == 2 %}
             {{ij.text}}
-        {% endifequal %}
+        {% endif %}
     {% endfor %}
 {% endfor %}
 </div>

@@ -19,11 +19,11 @@
     <div class="col-sm bg-white border rounded m-2 p-2">
         <h3> Screened samples</h3>
         {% if samples %}
-          {% ifequal admin "true" %}
+          {% if admin == "true" %}
           <p>
           <a href="{% url 'scoping:download_screened_tweets' project.id %}">Download</a> screened data
           <p>
-          {% endifequal %}
+          {% endif %}
           <table class="table">
             <tr>
               <th>Sample
@@ -47,7 +47,7 @@
         There are no samples associated with this project
         {% endif %}
     </div>
-    {% ifequal admin "true" %}
+    {% if admin == "true" %}
     <div class="col-sm bg-white border rounded m-2 p-2">
         <h3>Set up new sample</h3>
         <form method="POST" class="form">{% csrf_token %}
@@ -55,7 +55,7 @@
         {% bootstrap_button 'Create sample' %}
         </form>
     </div>
-    {% endifequal %}
+    {% endif %}
 </div>
 
 {% endblock %}

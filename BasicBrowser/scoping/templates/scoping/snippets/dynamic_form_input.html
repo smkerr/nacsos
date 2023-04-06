@@ -68,9 +68,9 @@
 
         {% for o in f.options %}
         <option value="{{o.name}}"
-        {% ifequal f.value o.name %}
+        {% if f.value == o.name %}
         selected
-        {% endifequal %}
+        {% endif %}
         {% if o.name in f.value %}
         selected
         {% endif %}
@@ -79,9 +79,9 @@
 
         {% for o in f.choices %}
         <option
-        {% ifequal o.0 f.value %}
+        {% if o.0 == f.value %}
         selected
-        {% endifequal %}
+        {% endif %}
         {% if o.0 in f.value %}
         selected
         {% endif %}

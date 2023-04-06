@@ -146,11 +146,11 @@
           {% for w in intr.intrusion %}
             <tr>
               <td><a href="{% url 'tmv_app:topics' w.run_id %}">{{w.run_id}}</a></td>
-              {% ifequal intr.title "Word-Topic intrusions" %}
+              {% if intr.title "Word-Topic intrusions" %}
                 <td><a href="{% url 'scoping:word_intrusion' w.run_id %}">{{w.tr}}</a>
               {% else %}
                 <td><a href="{% url 'scoping:topic_intrusion' w.run_id %}">{{w.tr}}</a>
-              {% endifequal %}
+              {% endif %}
               <td>{{w.reviewed}}</td>
             </tr>
         {% endfor %}

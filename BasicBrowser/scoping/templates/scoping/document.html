@@ -62,12 +62,12 @@
     <p><b>PDF:<p></b>
         <form method="POST" class="post-form" enctype="multipart/form-data">{% csrf_token %}
           {{ uf.as_p }}
-          {% ifequal uf.action "Delete" %}
+          {% if uf.action == "Delete" %}
           <a href="{% url 'scoping:download_pdf' doc.docfile.id %}">
           {{uf.filename}}</a>
           {% else %}
           {{ uf.filename }}
-          {% endifequal %}
+          {% endif %}
           <button type="submit" class="save btn btn-default"  style="border:solid orange 3px; border-radius: 20px; background:orange; color: white; font-weight: bolder;">{{uf.action}}</button>
         </form>
     <p>Show: </p>

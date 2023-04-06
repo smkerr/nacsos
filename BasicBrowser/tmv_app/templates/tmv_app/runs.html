@@ -49,11 +49,11 @@
       <td>None</td>
       {% endif %}
 			<td>{{ stat.start }}</td>
-            {% ifequal stat.get_method_display "dtm" %}
+            {% if stat.get_method_display == "dtm" %}
                 <td>{{ stat.dtopics }} / {{ stat.max_topics }}</td>
             {% else %}
                 <td>{{ stat.K }}</td>
-            {% endifequal %}
+            {% endif %}
 			<td>{{ stat.docs_seen }}</td>
 			<td>{{ stat.term_count }}</td>
 			<td>{{ stat.error|floatformat:3 }}</td>
