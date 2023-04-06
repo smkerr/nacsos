@@ -49,9 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres',
     'django.contrib.gis',
-    'django_extensions',
     'psqlextra',
-    'rest_framework',
     'debug_toolbar',
     'cities',
     'twitter',
@@ -59,8 +57,7 @@ INSTALLED_APPS = [
     'django_tables2',
     'lotto',
     'django_filters',
-    'bootstrap4',
-    'crispy_forms',
+    'bootstrap4'
 ]
 
 REST_FRAMEWORK = {

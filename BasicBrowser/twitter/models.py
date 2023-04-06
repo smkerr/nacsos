@@ -1,7 +1,5 @@
 from django.db import models
 import parliament.models as pmodels
-from django.contrib.postgres.fields import JSONField
-
 #import scoping.models as smodels
 #rom scoping.models import Project
 import scoping
@@ -15,7 +13,7 @@ class TwitterBaseModel(models.Model):
     id = models.BigIntegerField(primary_key=True)
     created_at = models.DateTimeField(null=True, db_index=True)
     lang = models.CharField(max_length=10, null=True, db_index=True)
-    entities = JSONField(null=True)
+    entities = models.JSONField(null=True)
 
     fetched = models.DateTimeField(u'Fetched', null=True, blank=True)
 
@@ -106,11 +104,11 @@ class Status(TwitterBaseModel):
 
     retweeted_by = models.ManyToManyField('User')
 
-    place = JSONField(null=True)
+    place = models.JSONField(null=True)
     # format the next fields doesn't clear
-    contributors = JSONField(null=True)
-    coordinates = JSONField(null=True)
-    geo = JSONField(null=True)
+    contributors = models.JSONField(null=True)
+    coordinates = models.JSONField(null=True)
+    geo = models.JSONField(null=True)
 
     searches = models.ManyToManyField('TwitterSearch')
     tag = models.ManyToManyField('scoping.Tag')

@@ -8,7 +8,7 @@ from celery import *
 from django.db.models import Q, Count, Func, F, Sum, Avg, Subquery, OuterRef, Value as V
 from celery import group
 import pandas as pd
-from multiprocess import Pool
+from multiprocessing import Pool
 
 
 def tagify_topic(tid, threshold=None, n=None):

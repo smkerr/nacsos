@@ -484,7 +484,7 @@ class Query(models.Model):
         ('ovid', 'OVID'),
     )
 
-    credentials = models.NullBooleanField()
+    credentials = models.BooleanField(null=True)
     editions = models.TextField(null=True)
     wos_collections = models.TextField(null=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)

@@ -481,9 +481,9 @@ class RunStats(models.Model):
     start = models.DateTimeField(auto_now_add=True)
     batch_count = models.IntegerField(default=0)
     last_update = models.DateTimeField(auto_now_add=True)
-    topic_titles_current = models.NullBooleanField(default=False)
-    topic_scores_current = models.NullBooleanField(default=False)
-    topic_year_scores_current = models.NullBooleanField(default=False)
+    topic_titles_current = models.BooleanField(default=False, null=True)
+    topic_scores_current = models.BooleanField(default=False, null=True)
+    topic_year_scores_current = models.BooleanField(default=False, null=True)
 
     ## Time spent
     runtime = models.DurationField(null=True)

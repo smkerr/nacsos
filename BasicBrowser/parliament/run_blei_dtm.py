@@ -2,7 +2,7 @@ import sys, resource, os, shutil, re, string, gc, subprocess
 import django
 from django.core.exceptions import MultipleObjectsReturned
 import nltk
-from multiprocess import Pool
+from multiprocessing import Pool
 from nltk.stem import SnowballStemmer
 from nltk import word_tokenize
 from time import time, sleep

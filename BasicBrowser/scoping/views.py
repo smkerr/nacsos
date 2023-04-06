@@ -1,5 +1,5 @@
 
-from django.shortcuts import render, render_to_response
+from django.shortcuts import render
 import os, time, math, itertools, csv, random
 from itertools import chain
 from django.db.models import Max, Subquery, OuterRef, Exists

@@ -2,7 +2,7 @@ import django, re, gc
 from django.conf import settings
 
 from RISparser import readris
-from multiprocess import Pool
+from multiprocessing import Pool
 from functools import partial
 from urllib.parse import urlparse, parse_qsl
 import sys

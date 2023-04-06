@@ -62,7 +62,7 @@ class DocumentTable(tables.Table):
 
     class Meta:
         model = Document
-        exclude = ('parlperiod')
+        exclude = ('parlperiod',)
 
 
 class SearchTable(tables.Table):

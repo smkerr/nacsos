@@ -267,7 +267,7 @@ class Constituency(models.Model):
     number = models.IntegerField(null=True)
     region = models.ForeignKey(cities.models.Region, on_delete=models.SET_NULL, null=True)
     parliament = models.ForeignKey(Parl, on_delete=models.CASCADE)
-    has_coal = models.NullBooleanField(null=True)
+    has_coal = models.BooleanField(null=True)
     def __str__(self):
         return "Wahlkreis {}: {} ({})".format(self.number, self.name, self.region)
 

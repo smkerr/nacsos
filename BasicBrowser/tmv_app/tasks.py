@@ -11,7 +11,7 @@ from sklearn.decomposition import NMF, LatentDirichletAllocation as LDA
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from scipy.sparse import csr_matrix, find, lil_matrix
 from functools import partial
-from multiprocess import Pool
+from multiprocessing import Pool
 from utils.db import *
 from utils.utils import *
 from scoping.models import *

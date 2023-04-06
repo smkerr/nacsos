@@ -12,7 +12,7 @@ from scipy.sparse import csr_matrix, find
 from sklearn.decomposition import NMF, LatentDirichletAllocation as LDA
 import random
 import utils.db as db
-from multiprocess import Pool
+from multiprocessing import Pool
 from functools import partial
 from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
