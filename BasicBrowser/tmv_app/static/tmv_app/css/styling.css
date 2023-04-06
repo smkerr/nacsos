@@ -573,7 +573,7 @@ canvas {
 }
 
 #navigation td.searchbar input {
-    background-image: url('/static/img/search.png');
+    background-image: url('/nacsos-legacy/static/img/search.png');
     background-repeat: no-repeat;
     padding-right:15px;
     background-position: right center;

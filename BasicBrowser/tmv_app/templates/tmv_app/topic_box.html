@@ -6,8 +6,8 @@
     <tr class="title"><td><a href="topic/{{topic.topic}}">{{topic.title}}</a></td></tr>
     {% if docs %}
         {% for doc in docs %}
-        <tr id="{{ doc.title }}" class="list doc_box" onclick="window.location.href='/tmv_app/doc/{{ doc.UT }}'">
-            <td><a href="/tmv_app/doc/{{ doc.UT }}">{{ doc.title }}</a> ({{doc.PY}})</td>
+        <tr id="{{ doc.title }}" class="list doc_box" onclick="window.location.href='/nacsos-legacy/tmv_app/doc/{{ doc.UT }}'">
+            <td><a href="/nacsos-legacy/tmv_app/doc/{{ doc.UT }}">{{ doc.title }}</a> ({{doc.PY}})</td>
         <tr>
         {% endfor %}
     {% endif %}

@@ -176,7 +176,7 @@ $('#addNote').click(function(e){
          $('#noteForm').attr('action'),
          form_array,
          function(data, status, xhr){
-           l =  '/scoping/delete/Note/'+data.id
+           l =  '/nacsos-legacy/scoping/delete/Note/'+data.id
            b.removeClass("em-writing_hand")
            b.addClass("em-spiral_note_pad")
            b.attr('data-target', "#dnote-modal")

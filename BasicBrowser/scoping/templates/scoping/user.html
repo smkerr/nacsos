@@ -23,7 +23,7 @@
         </tr>
         {% for sbs in sbsessions %}
            <tr class="sbsheader expand">
-              <td><a href="/scoping/docssbs/{{ sbs.id }}">{{ sbs.id }}</a></td>
+              <td><a href="/nacsos-legacy/scoping/docssbs/{{ sbs.id }}">{{ sbs.id }}</a></td>
               <td>{{ sbs.name }}</td>
               <td>{{ sbs.ns }}</td>
               <td>{{ sbs.ndtot }}</td>
@@ -43,7 +43,7 @@
           {% for q in sbs.q_info %}
             <tr class="sbsquery">
               <td></td>
-              <td><a href="/scoping/docs/{{ q.id }}">{{ q.id }}</td>
+              <td><a href="/nacsos-legacy/scoping/docs/{{ q.id }}">{{ q.id }}</td>
               <td>{{ q.type }}</td>
               <td>{{ q.nbdoctot }}</td>
               <td>{{ q.nbdocsel }}</td>
@@ -106,15 +106,15 @@
         {% for q in queries %}
           {% if q.type == "default" or q.type == "step_summary" %}
             <tr>
-              <td><a href="/scoping/query/{{q.id}}">{{q.id}}</td>
+              <td><a href="/nacsos-legacy/scoping/query/{{q.id}}">{{q.id}}</td>
               <td>{{q.title}}</td>
               <td>{{q.tag.title}}</td>
               {% if q.docstats.revdocs > 0 %}
                 <td class="review{{q.unreviewed_docs}} review">
-                  <a href="/scoping/screen/{{q.tag.id}}/0/0">
+                  <a href="/nacsos-legacy/scoping/screen/{{q.tag.id}}/0/0">
                     {{q.docstats.unreviewed_docs}}</a></td>
                 <td class="review{{q.revieweddocs}} review">
-                  <a href="/scoping/screen/{{q.tag.id}}/99/0">
+                  <a href="/nacsos-legacy/scoping/screen/{{q.tag.id}}/99/0">
                     {{q.docstats.reviewed_docs}}</a>
                     ({{q.docstats.relevance}}% relevant)</td>
 
@@ -212,7 +212,7 @@
       {% endif %}
 
     {% endif %}
-      <p><a href='/accounts/logout'>Log out</button>
+      <p><a href='/nacsos-legacy/accounts/logout'>Log out</button>
       <p><a href="{% url 'password_change' %}">Change password</button>
 
     </div>

@@ -3,7 +3,7 @@
 {% load static %}
     <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
     <script language="JavaScript" src="{% static 'tmv_app/js/pie.js' %}"></script>
-    <script language="JavaScript" src="/static/js/search.js"></script>
+    <script language="JavaScript" src="/nacsos-legacy/static/js/search.js"></script>
 
 
     <script type="text/JavaScript">
@@ -75,7 +75,7 @@
 				</tr>
 				{% if docs %}
 					{% for doc in docs %}
-					<tr class="list" onclick="window.location.href='/tmv_app/doc/{{ doc.UT }}'">
+					<tr class="list" onclick="window.location.href='/nacsos-legacy/tmv_app/doc/{{ doc.UT }}'">
                         <td >{{ doc.PY }}</td>
                         <td id="{{ doc.title }}" >{{ doc.title }}</td><tr>
 					{% endfor %}

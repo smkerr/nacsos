@@ -45,7 +45,7 @@
 {% for topic, topic_score, width in topic_tuples %}
 <tr><td><table width="{{ width|floatformat:1 }}%" >
   <tr><td class="high-contrast" title="{{ topic_score|floatformat:0 }}"
-    onclick="window.location.href='/tmv_app/topic/{{ topic.pk }}'">
+    onclick="window.location.href='/nacsos-legacy/tmv_app/topic/{{ topic.pk }}'">
     {{ topic.title }}</td></tr></table></td></tr>
 {% endfor %}
 </table>
@@ -264,7 +264,7 @@ var gnodes = svg.selectAll('g.gnode')
       function fade(opacity) {
           return function(d) {
               gtext = '<h3>Topic Selected:</h3>'
-              gtext += '<a href="/tmv_app/topic/'+d.id+'"><h2>'+d.title+'</h2></a>'
+              gtext += '<a href="/nacsos-legacy/tmv_app/topic/'+d.id+'"><h2>'+d.title+'</h2></a>'
               gtext += '<input type="hidden" id="topic_selected" value="'+d.id+'"'
               node.style("stroke-opacity", function(o) {
                   thisOpacity = isConnected(d, o) ? 1 : opacity;

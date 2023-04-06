@@ -27,7 +27,7 @@
 
         <!-- Query manager -->
         {% if request.session.appmode != "snowballing" %}
-          <h2> Document list associated with query no. <a href="/scoping/query/{{query.id}}">{{query.id}}</a> ({{query.title}}).</h2>
+          <h2> Document list associated with query no. <a href="/nacsos-legacy/scoping/query/{{query.id}}">{{query.id}}</a> ({{query.title}}).</h2>
         {% else %}
           <h2> Document list associated with {{query.type}} query no. {{query.id}} and {{query2.type}} query no. {{query2.id}}</a>.</h2>
         {% endif %}
@@ -94,8 +94,8 @@
 
       {% if request.session.appmode == "snowballing" %}
         <div id="sidebar">
-          <a href="/scoping/do_snowballing/{{ query.id }}/{{ query2.id }}"><button type="button">Snowball the selected documents</button></a><br/>
-          <a href="/scoping/sbs_setAllQDocsToIrrelevant/{{ query.id }}/{{ query2.id }}/{{ sbsid }}"><button type="button">Discard all documents</button></a><br/>
+          <a href="/nacsos-legacy/scoping/do_snowballing/{{ query.id }}/{{ query2.id }}"><button type="button">Snowball the selected documents</button></a><br/>
+          <a href="/nacsos-legacy/scoping/sbs_setAllQDocsToIrrelevant/{{ query.id }}/{{ query2.id }}/{{ sbsid }}"><button type="button">Discard all documents</button></a><br/>
           <a href=""><button type="button">Allocate documents to other user(s)</button></a><br/>
         </div>
       {% endif %}
@@ -140,7 +140,7 @@
       </table>
 
       {% if request.session.appmode == "snowballing" %}
-        <div><a href="/scoping/do_snowballing/{{ query.id }}/{{ query2.id }}"><button type="button">Snowball the selected documents</button></a></div>
+        <div><a href="/nacsos-legacy/scoping/do_snowballing/{{ query.id }}/{{ query2.id }}"><button type="button">Snowball the selected documents</button></a></div>
       {% endif %}
 
       <br/><hr/><br/>
@@ -216,7 +216,7 @@ function savetag() {
         joins.push($(this).val())
     })
     $.ajax({
-        url: '/scoping/sort_docs',
+        url: '/nacsos-legacy/scoping/sort_docs',
         data: {
             'qid': qid,
             'q2id': q2id,
@@ -294,7 +294,7 @@ function update_fields(download="false") {
         active_field_names.push($(this).contents().get(0).nodeValue);
     });
     if (download=="true") {
-        url = '/scoping/sort_docs?'
+        url = '/nacsos-legacy/scoping/sort_docs?'
         url += 'qid='+qid
         url += '&q2id='+q2id
         for (i =0 ; i<active_field_paths.length; i++) {
@@ -322,7 +322,7 @@ function update_fields(download="false") {
     } else {
 
         $.ajax({
-            url: '/scoping/sort_docs',
+            url: '/nacsos-legacy/scoping/sort_docs',
             data: {
                 'qid': qid,
                 'q2id': q2id,
@@ -413,7 +413,7 @@ function cyclescore(el) {
 
     $('body').toggleClass('waiting');
     $.ajax({
-        url: '/scoping/cycle_score',
+        url: '/nacsos-legacy/scoping/cycle_score',
 	data: data    /*,
 	success: function() {
 	    update_fields()

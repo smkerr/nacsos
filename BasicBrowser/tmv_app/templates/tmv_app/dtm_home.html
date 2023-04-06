@@ -66,7 +66,7 @@ $(".dtopic").on("click", function(){
     dtopic = $(this)
     run_id = $(this).attr("data-run")
     $.ajax({
-      url: '/tmv_app/highlight_dtm_w',
+      url: '/nacsos-legacy/tmv_app/highlight_dtm_w',
       data: {
         'run_id': run_id,
         'dtid': dtid,
@@ -244,7 +244,7 @@ topics.forEach(function(d) {
             $("#"+d.values[0].dtopic__id).click()
         })
         .on("click", function() {
-            link = "/tmv_app/dynamic_topic/"+d.values[0].dtopic__id
+            link = "/nacsos-legacy/tmv_app/dynamic_topic/"+d.values[0].dtopic__id
             window.location.assign(link)
         })
         .attr('fill', 'none');

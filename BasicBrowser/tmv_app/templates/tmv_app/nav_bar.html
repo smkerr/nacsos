@@ -4,16 +4,16 @@
     {% if run_id %}
     <td class="navtext">Run: {{run_id}}</td>
     <td class="navtext">Browse&nbsp;&#x25B8;</td>
-    <td class="linked"><a href="/tmv_app/topic_presence/{{run_id}}">Topics</a>
-    <td class="linked"><a href="/tmv_app/network/{{run_id}}">Network</a></td>
+    <td class="linked"><a href="/nacsos-legacy/tmv_app/topic_presence/{{run_id}}">Topics</a>
+    <td class="linked"><a href="/nacsos-legacy/tmv_app/network/{{run_id}}">Network</a></td>
     <td class="linked"><a href="{% url 'tmv_app:network_wg' run_id %}">WG network</a></td>
     <td class="linked"><a href="{% url 'tmv_app:growth_heatmap' run_id %}">Growth Heatmap</a></td>
-    <td class="linked"><a href="/tmv_app/doc/random/{{run_id}}">Random Doc</a></td>
-    <td class="linked"><a href="/tmv_app/stats/{{run_id}}">Stats</a></td>
+    <td class="linked"><a href="/nacsos-legacy/tmv_app/doc/random/{{run_id}}">Random Doc</a></td>
+    <td class="linked"><a href="/nacsos-legacy/tmv_app/stats/{{run_id}}">Stats</a></td>
     {% if stat.query.project %}
     <td class="linked"><a href="{% url 'tmv_app:runs' stat.query.project.id %}">Manage</a>
     {% endif %}
-    <td class="linked"><a href="/accounts/logout">Logout</a></td>
+    <td class="linked"><a href="/nacsos-legacy/accounts/logout">Logout</a></td>
     <td></td>
     <td></td>
     {% else %}

@@ -105,7 +105,7 @@ $(".param").change(function(){
 
 function getgraph(cor, force, ar) {
   $.ajax({
-    url: '/tmv_app/return_corrs',
+    url: '/nacsos-legacy/tmv_app/return_corrs',
     data: {
       'cor': cor,
       'run_id': {{run_id | safe}},
@@ -269,7 +269,7 @@ function drawgraph(graph,force) {
               } else {
                   var method = "topic"
               }
-              gtext += '<a href="/tmv_app/'+method+'/'+d.id+'"><h2>'+d.title+'</h2></a>'
+              gtext += '<a href="/nacsos-legacy/tmv_app/'+method+'/'+d.id+'"><h2>'+d.title+'</h2></a>'
               gtext += '<input type="hidden" id="topic_selected" value="'+d.id+'"'
               node.style("stroke-opacity", function(o) {
                   thisOpacity = isConnected(d, o) ? 1 : opacity;

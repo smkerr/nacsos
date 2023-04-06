@@ -1174,9 +1174,9 @@ def doc_detail(request, doc_id, run_id):
         for tt in terms:
             topicwords[ntopic].append(tt.title)
         if not dt_thresh_scaled:
-            pie_array.append([dt.score, '/tmv_app/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
+            pie_array.append([dt.score, '/nacsos-legacy/tmv_app/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
         else:
-            pie_array.append([dt.scaled_score, '/tmv_app/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
+            pie_array.append([dt.scaled_score, '/nacsos-legacy/tmv_app/topic/' + str(topic.pk), 'topic_' + str(topic.pk)])
 
 
     words = []
@@ -1652,7 +1652,7 @@ def delete_run(request,new_run_id):
 
 
 def topic_random(request):
-    return HttpResponseRedirect('/tmv_app/topic/' + str(random.randint(1, Topic.objects.count())))
+    return HttpResponseRedirect('/nacsos-legacy/tmv_app/topic/' + str(random.randint(1, Topic.objects.count())))
 
 def doc_random(request,run_id):
     doc = random_doc(RunStats.objects.get(pk=run_id).query)
@@ -1661,4 +1661,4 @@ def doc_random(request,run_id):
     )
 
 def term_random(request):
-    return HttpResponseRedirect('/tmv_app/term/' + str(random.randint(1, Term.objects.count())))
+    return HttpResponseRedirect('/nacsos-legacy/tmv_app/term/' + str(random.randint(1, Term.objects.count())))

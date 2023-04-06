@@ -1,12 +1,12 @@
 <html>
 <head>
     <script language="JavaScript" src="https://code.jquery.com/jquery-1.4.4.js"></script>
-    <script language="JavaScript" src="/static/js/jquery.rightClick.js"></script>
+    <script language="JavaScript" src="/nacsos-legacy/static/js/jquery.rightClick.js"></script>
     <script language="JavaScript" src="../js/bottom_bar_chart.js"></script> 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
 <title>Wikipedia Topics</title>
-<link href="/static/css/styling.css" rel="stylesheet" type="text/css">
+<link href="/nacsos-legacy/static/css/styling.css" rel="stylesheet" type="text/css">
 
 </head>
   <body>
@@ -23,7 +23,7 @@
 	<tr>
 	{% for term, count, percent in row %}
 		{% if term %}
-			<td title="{{ count }}" onclick="window.location.href='/term/{{ term.id }}'" onmouseover="count_adjust({{ percent }})">{{ term.title }}</td>
+			<td title="{{ count }}" onclick="window.location.href='/nacsos-legacy/term/{{ term.id }}'" onmouseover="count_adjust({{ percent }})">{{ term.title }}</td>
 		{% else %}
 			<td class="blank"></td>
 		{% endif %}

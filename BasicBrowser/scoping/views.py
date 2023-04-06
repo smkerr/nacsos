@@ -1425,7 +1425,7 @@ def start_snowballing(request):
     # run "scrapeQuery.py" on the text file in the background
     if request.session['DEBUG']:
         print("start_snowballing: starting scraping process on "+q.database+" (backward query).")
-    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
+    subprocess.Popen(["python3", "/var/www/nacsos1/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
 
     #####
     ## This bit starts up the forward snowballing
@@ -1455,7 +1455,7 @@ def start_snowballing(request):
     # run "scrapeQuery.py" on the text file in the background
     if request.session['DEBUG']:
         print("start_snowballing: starting scraping process on "+q2.database+" (forward query).")
-    subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/snowball_fast.py", "-s", qdb, fname])
+    subprocess.Popen(["python3", "/var/www/nacsos1/scrapewos/bin/snowball_fast.py", "-s", qdb, fname])
 
     return HttpResponseRedirect(reverse('scoping:snowball_progress', kwargs={'sbs': sbs.id}))
 
@@ -1517,7 +1517,7 @@ def do_snowballing(request,qid,q2id):
         time.sleep(1)
 
         # run "scrapeQuery.py" on the text file in the background
-        p_b = subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
+        p_b = subprocess.Popen(["python3", "/var/www/nacsos1/scrapewos/bin/scrapeQuery.py","-s", qdb, fname])
 
         #return HttpResponseRedirect(reverse('scoping:querying', kwargs={'qid': q.id, 'substep': 1, 'docadded': 0, 'q2id': 0}))
 
@@ -1896,7 +1896,7 @@ def snowball_progress(request,sbs):
                     fname = query_b2.txtfile()
                     with open(fname,encoding='utf-8',mode='w') as qfile:
                         qfile.write(query_b2.text)
-                        subprocess.Popen(["python3", "/home/galm/software/scrapewos/bin/scrapeQuery.py", "-s", query_b2.database, fname])
+                        subprocess.Popen(["python3", "/var/www/nacsos1/scrapewos/bin/scrapeQuery.py", "-s", query_b2.database, fname])
 
     if not do_backward_query or not do_forward_query:
         if request.session['DEBUG']:
@@ -4431,7 +4431,7 @@ def sortdocs(request):
         print(download)
         if not download:
             filt_docs = filt_docs.annotate(
-                wosarticle__doc=Concat(V('<a href="/scoping/document/'+str(p.id)+'/'),'pk',V('">'),'pk',V('</a>'))
+                wosarticle__doc=Concat(V('<a href="/nacsos-legacy/scoping/document/'+str(p.id)+'/'),'pk',V('">'),'pk',V('</a>'))
             )
 
     if tag_title is not None:
@@ -4511,7 +4511,7 @@ def sortdocs(request):
                         project=query.project
                     )]
                 if "docfile__" in mult_fields_tuple[m]:
-                    adoc = "/scoping/download_pdf/"+str(d['pk'])
+                    adoc = "/nacsos-legacy/scoping/download_pdf/"+str(d['pk'])
                 d[mult_fields[m]] = "; <br>".join(str(x) for x in (list(itertools.chain(*adoc))))
                 if "note__" in mult_fields_tuple[m]:
                     d[mult_fields[m]] = "; <br>".join(x.strip() for x in  adoc)
@@ -4526,7 +4526,7 @@ def sortdocs(request):
             d['docproject__relevant'] = f"{dp.get_relevant_display()} ({dp.relevant})"
         if "docfile__id" in fields:
             if d['docfile__id']:
-                d['docfile__id'] = '<a href="/scoping/download_pdf/'+str(d['docfile__id'])+'"">PDF'
+                d['docfile__id'] = '<a href="/nacsos-legacy/scoping/download_pdf/'+str(d['docfile__id'])+'"">PDF'
 
         if "wosarticle__cr" in fields:
             try:
@@ -5132,7 +5132,7 @@ def city_docs(request,qid):
 
     pie_array = []
     for t in topics:
-        pie_array.append([t['tprop'], '/tmv_app/topic/' + str(t['topic']), 'topic_' + str(t['topic'])])
+        pie_array.append([t['tprop'], '/nacsos-legacy/tmv_app/topic/' + str(t['topic']), 'topic_' + str(t['topic'])])
 
     #y = x
 
@@ -5620,7 +5620,7 @@ def generate_toolbox(doid, tag, docStat):
         levels.append({"name": cname, "cats": lcats})
     # Old implementation
     toolbox_html  = '<div class="tools" id="statool'+str(docStat.id)+'">'
-    toolbox_html += '<div class="tools_statement2"><button class="btntool btn_del_stat" id="btndel'+str(docStat.id)+'"type="button" title="Delete statement" value="remove"><img src="/static/scoping/img/icon_del.png" width="20px" height="20px"/></button></div>'
+    toolbox_html += '<div class="tools_statement2"><button class="btntool btn_del_stat" id="btndel'+str(docStat.id)+'"type="button" title="Delete statement" value="remove"><img src="/nacsos-legacy/static/scoping/img/icon_del.png" width="20px" height="20px"/></button></div>'
 
     for l in levels:
         toolbox_html += '<div class="tagtools">'+l[0][1].group
@@ -6407,7 +6407,7 @@ def screen(request,tid,ctype,d=0):
 def download_pdf(request,id):
     f = DocFile.objects.get(pk=id)
     filename= f.file.name
-    with open("/var/www/tmv/BasicBrowser/media/{}".format(filename),'rb') as pdf:
+    with open("/var/www/nacsos1/tmv/BasicBrowser/media/{}".format(filename),'rb') as pdf:
         response = HttpResponse(pdf.read(), content_type='application/pdf')
         response['Content-Disposition'] = 'inline;filename={}.pdf'.format(filename)
         return response

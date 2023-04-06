@@ -230,7 +230,7 @@ function heatmap_display(url, heatmapId, paletteName) {
             })
             .on('click', function(d, i, j) {
                 tid = col_ids[j]
-                url = "/tmv_app/topic/"+ tid
+                url = "/nacsos-legacy/tmv_app/topic/"+ tid
                 window.open(url, '_blank');
                 console.log(url)
             });

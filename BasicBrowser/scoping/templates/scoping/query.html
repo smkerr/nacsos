@@ -50,7 +50,7 @@
         <td>{{tag.users}}</td>
         <td>{{tag.ratio}}</td>
         <td>{{tag.cohens_kappa}}</td>
-          <td><a href="/scoping/delete/Tag/{{tag.id}}">Delete</a></td>
+          <td><a href="/nacsos-legacy/scoping/delete/Tag/{{tag.id}}">Delete</a></td>
           {% if project.id == 193 %}
           <td><a href="{% url 'scoping:db1_db2_report' tag.id %}">Generate report</a></td>
           {% else %}
@@ -71,7 +71,7 @@
 
   <h2>Criteria</h2>
 
-  <form action='/scoping/update_criteria?qid={{query.id}}' method="post">
+  <form action='/nacsos-legacy/scoping/update_criteria?qid={{query.id}}' method="post">
     {% csrf_token %}
     <h4> Enter/edit criteria below </h4>
     <textarea rows=3 cols=50 name="criteria">{{ query.criteria }}</textarea>
@@ -209,7 +209,7 @@
   <br/>
 
   <!-- Query manager -->
-  <h2> SBS Step #{{ sbs.step }} - Backward query #{{query.id}} / Forward query #{{ query2.id }}Overview - <a href="/scoping/docs/{{query.id}}/{{query2.id}}/{{sbs.id}}">View Docs</a></h2>
+  <h2> SBS Step #{{ sbs.step }} - Backward query #{{query.id}} / Forward query #{{ query2.id }}Overview - <a href="/nacsos-legacy/scoping/docs/{{query.id}}/{{query2.id}}/{{sbs.id}}">View Docs</a></h2>
   <br/>
 
   <table class="light" style="width:100%">
@@ -236,7 +236,7 @@
           <td class="data-ndocs">{{tag.docs}} [Assign <output id="out_{{tag.id}}" class="tag_assignment" data-tagid="{{ tag.id }}">{{tag.docs}}</output> documents for review?]</td>
 
         {% endif %}
-          <td><a href="/scoping/delete/Tag/{{tag.id}}">Delete</a></td>
+          <td><a href="/nacsos-legacy/scoping/delete/Tag/{{tag.id}}">Delete</a></td>
       </tr>
     {% endfor %}
   </table>
@@ -247,7 +247,7 @@
 
   <h2>Criteria</h2>
 
-  <form action='/scoping/update_criteria?qid={{query.id}}' method="post">
+  <form action='/nacsos-legacy/scoping/update_criteria?qid={{query.id}}' method="post">
     {% csrf_token %}
     <h4> Enter/edit criteria below </h4>
     <textarea rows=3 cols=50 name="criteria">{{ query.criteria }}</textarea>
@@ -397,7 +397,7 @@ function activate_user(element) {
     user = element.dataset.user
     console.log(user)
     $.ajax({
-        url: '/scoping/activate_user',
+        url: '/nacsos-legacy/scoping/activate_user',
         data: {
             'qid': qid,
             'user': user,
@@ -443,7 +443,7 @@ function do_assignment() {
     var title_only = $("#title_only").is(':checked')
     var title_ab_full = $("input[name='title_ab_full']:checked").val()
     $.ajax({
-        url: '/scoping/assign_docs',
+        url: '/nacsos-legacy/scoping/assign_docs',
         data : {
             'qid': qid,
             'users': active_users,
@@ -460,7 +460,7 @@ function do_assignment() {
 
 function remove_assignments(qid) {
 	$.ajax({
-		url: '/scoping/remove_assignments',
+		url: '/nacsos-legacy/scoping/remove_assignments',
 		data: {'qid':qid},
 		success: function() {
 			location.reload()

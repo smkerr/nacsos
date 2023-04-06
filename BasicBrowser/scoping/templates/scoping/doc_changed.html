@@ -23,11 +23,11 @@
           <h1> Snowballing Document Review Helper</h1>
         {% endif %}
         <br/>
-        <h2> Query Sampler (<a href="/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}}, your progress: </h2>
+        <h2> Query Sampler (<a href="/nacsos-legacy/scoping/query/{{query.id}}">Query no. {{query.id}}</a>) - Welcome, {{user.username}}, your progress: </h2>
         <div id="progress"></div>
         <!-- Query manager -->
 
-        <p><a href="/scoping/back_review/{{query.id}}">Back</a>
+        <p><a href="/nacsos-legacy/scoping/back_review/{{query.id}}">Back</a>
 
         <p>Is the document below (one of {{ ndocs }} remaining) relevant?
 
@@ -114,7 +114,7 @@ function review(d) {
 	console.log(qid)
 	console.log(docid)
 	$.ajax({
-		url: '/scoping/do_review',
+		url: '/nacsos-legacy/scoping/do_review',
 		data: {
 			'query': qid,
 			'doc': docid,

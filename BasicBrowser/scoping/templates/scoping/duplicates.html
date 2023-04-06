@@ -51,7 +51,7 @@ function inputUpdate(x,t) {
 
 function do_merge(k,t) {
   console.log(k)
-  axios.get('/scoping/doc_merge/{{project.id}}/'+k+'/'+t)
+  axios.get('/nacsos-legacy/scoping/doc_merge/{{project.id}}/'+k+'/'+t)
   .then(function( response ) {
     console.log(response)
   });
@@ -61,7 +61,7 @@ function do_merge(k,t) {
 //const axios = require('axios');
 function find_duplicates(did) {
   function fill_div(div1,div2,doc,doc2) {
-    axios.get('/scoping/doc_info/'+doc.id+'/'+doc2.id)
+    axios.get('/nacsos-legacy/scoping/doc_info/'+doc.id+'/'+doc2.id)
     .then(function(response) {
       div.html(response.data)
     })
@@ -69,7 +69,7 @@ function find_duplicates(did) {
   $("#d1").html("")
   $("#d2").html("")
   $("body").css("cursor", "wait");
-  axios.get('/scoping/find_duplicates/'+{{project.id}}, {
+  axios.get('/nacsos-legacy/scoping/find_duplicates/'+{{project.id}}, {
       params: {
         did: did,
         jaccard: $("#jaccard").val()
@@ -83,11 +83,11 @@ function find_duplicates(did) {
         next_button = '<button class="btn" onclick="find_duplicates(' + data.next + ')">Keep searching</button>'
         $("#results").html("Found a match with a jaccard similarity score of " + response.data.j + " " + next_button)
         // fill in the boxes with doc data
-        axios.get('/scoping/doc_info/'+data.d1.id+'/'+data.d2.id)
+        axios.get('/nacsos-legacy/scoping/doc_info/'+data.d1.id+'/'+data.d2.id)
         .then(function(response) {
           $("#d1").html(response.data);
           $("#d1").attr('data-doc', data.d1.id);
-          axios.get('/scoping/doc_info/'+data.d2.id+'/'+ data.d1.id)
+          axios.get('/nacsos-legacy/scoping/doc_info/'+data.d2.id+'/'+ data.d1.id)
           .then(function(response) {
             $("#d2").html(response.data)
             $("#d2").attr('data-doc', data.d2.id)

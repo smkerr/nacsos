@@ -943,7 +943,7 @@ class Doc(models.Model):
 
     def file_url(self):
         if hasattr(self,'docfile'):
-            return f'<a href="/scoping/download_pdf/{self.docfile.id}">{self.docfile.file}</a>'
+            return f'<a href="/nacsos-legacy/scoping/download_pdf/{self.docfile.id}">{self.docfile.file}</a>'
         else:
             return "No pdf uploaded"
 
