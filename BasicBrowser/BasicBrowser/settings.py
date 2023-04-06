@@ -176,7 +176,7 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
-#FORCE_SCRIPT_NAME='/nacsos-legacy'
+FORCE_SCRIPT_NAME='/nacsos-legacy'
 #SCRIPT_NAME='/nacsos-legacy/'
 
 DEFAULT_AUTO_FIELD='django.db.models.AutoField'

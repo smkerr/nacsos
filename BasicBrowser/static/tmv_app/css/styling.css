@@ -189,11 +189,14 @@ width: 100%
 #main table.dark td {
     text-align: center;
     background-color: #799FF2;
+		/* border: 1px solid none;  */
 }
 
 #main table.dark tr.list td:hover {
     cursor: pointer;
-    background-color: #628AE3;
+    /* background-color: #628AE3; */
+		outline: 1px solid black;
+		/* border: 1px solid black; */
 }
 
 #main table.dark tr.list td:active {
@@ -326,6 +329,10 @@ border-spacing: 2px 2px;*/
     text-align: center;
 }
 
+#graph table td {
+    text-align: center;
+}
+
 #graph table table {
     margin-left: auto;
     margin-right: auto;
@@ -440,6 +447,10 @@ border-spacing: 2px 2px;*/
 }
 
 td.high-contrast a {
+    color:black;
+}
+
+#graph td a {
     color:black;
 }
 

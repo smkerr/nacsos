@@ -765,6 +765,25 @@ tr.active_run {
     font-family: "Courier New";
 }
 
+#logbox_sb {
+    background-color: black;
+    color: white;
+        margin-left: auto;
+        margin-right: auto;
+    padding: 10px;
+    text-align: left;
+    font-family: "Courier New";
+}
+
+.logbox {
+width: 100%;
+    background: #000;
+    color: white;
+    font-size: larger;
+    text-align: center;
+    align-content: center;
+}
+
 #field_container {
     line-height: 200%;
 }
@@ -1058,23 +1077,4 @@ div.explanation {
     border-radius: 5px;
     background-color: white;
     padding: 10px;
-}
-
-
-ul.tools {
-    display: none;
-    list-style: none;
-    box-shadow: 0px 0px 4px rgba(0,0,0,.5);
-    border: solid 1px #000;
-    position: absolute;
-    background: #fff;
-}
-ul.tools li {
-    display: inline-block;
-    width: 10px;
-    height: 20px;
-    border: solid 1px #000;
-    margin: 5px;
-    padding: 5px 10px;
-    cursor: pointer;
 }
