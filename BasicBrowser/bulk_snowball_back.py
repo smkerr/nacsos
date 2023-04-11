@@ -80,7 +80,7 @@ def main():
     ]).wait()
 
     subprocess.Popen(["python3",
-        "/var/www/nacsos1/BasicBrowser/proc_docrefs_scopus.py",
+        "/var/www/nacsos1/tmv/BasicBrowser/proc_docrefs_scopus.py",
         str(q.id), str(query_b2.id), '0'
     ]).wait()
 
