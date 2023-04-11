@@ -222,8 +222,8 @@ def do_query(qid, background=True, dis=False, resume=False, execute=True):
         time.sleep(1)
 
         args = [
-            "/home/galm/software/django/tmv/venv/bin/python3",
-            "/home/galm/software/scrapewos/bin/scrapeQuery.py",
+            "/var/www/nacsos1/venv/bin/python3",
+            "/var/www/nacsos1/scrapewos/bin/scrapeQuery.py",
             "-s",
             q.database
         ]

@@ -31,7 +31,7 @@ import django
 sys.stdout.flush()
 
 # import file for easy access to browser database
-sys.path.append('/home/galm/software/tmv/BasicBrowser/')
+sys.path.append('/var/www/nacsos1/tmv/BasicBrowser/')
 
 # sys.path.append('/home/max/Desktop/django/BasicBrowser/')
 import db3 as db

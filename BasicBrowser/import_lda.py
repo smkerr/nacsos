@@ -16,7 +16,7 @@ from functools import partial
 sys.stdout.flush()
 
 # import file for easy access to browser database
-sys.path.append('/home/galm/software/tmv_dtm/BasicBrowser/')
+sys.path.append('/var/www/nacsos1/tmv/BasicBrowser/')
 
 # sys.path.append('/home/max/Desktop/django/BasicBrowser/')
 import db5 as db

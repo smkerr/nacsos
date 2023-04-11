@@ -158,7 +158,7 @@ STATIC_ROOT = '/var/www/nacsos1/tmv/BasicBrowser/static/'
 MEDIA_URL = '/nacsos-legacy/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_ROOT = '/var/www/nacsos1/tmv/BasicBrowser/media'
-QUERY_DIR = '/usr/local/apsis/queries/'
+QUERY_DIR = '/usr/local/apsis/nacsos1/queries/'
 
 CACHES = {
     'default': {

@@ -47,7 +47,7 @@ def main():
         qfile.write(qtext)
 
     subprocess.Popen(["python3",
-        "/home/galm/software/scrapewos/bin/scrapeQuery.py",
+        "/var/www/nacsos1/scrapewos/bin/scrapeQuery.py",
         "-s", "scopus", fname
     ]).wait()
 
@@ -64,7 +64,7 @@ def main():
     query_b2.save()
 
     subprocess.Popen(["python3",
-        "/home/galm/software/tmv/BasicBrowser/proc_docrefs_scopus.py",
+        "/var/www/nacsos1/tmv/BasicBrowser/proc_docrefs_scopus.py",
         str(q.id), str(query_b2.id), '0', '0'
     ]).wait()
 
@@ -75,12 +75,12 @@ def main():
         qfile.write(query_b2.text)
 
     subprocess.Popen(["python3",
-        "/home/galm/software/scrapewos/bin/scrapeQuery.py",
+        "/var/www/nacsos1/scrapewos/bin/scrapeQuery.py",
         "-s", "scopus", fname
     ]).wait()
 
     subprocess.Popen(["python3",
-        "/home/galm/software/tmv/BasicBrowser/proc_docrefs_scopus.py",
+        "/var/www/nacsos1/BasicBrowser/proc_docrefs_scopus.py",
         str(q.id), str(query_b2.id), '0'
     ]).wait()
 

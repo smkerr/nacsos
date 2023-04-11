@@ -30,7 +30,7 @@ from parliament.utils import merge_utterance_paragraphs
 
 # run the dynamic topic model with the algorithm by Blei
 def run_blei_dtm(stat, call_to_blei_algorithm=True,
-                 dtm_path="/home/galm/software/dtm/dtm/main", archiving=True):
+                 dtm_path="/var/www/nacsos1/dtm/dtm/main", archiving=True):
     """
     Run dynamic NMF model on utterances (speeches) or paragraphs from the parliament data
 
