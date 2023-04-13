@@ -190,6 +190,10 @@ LOGGING = {
         #     'class': 'django.utils.log.AdminEmailHandler'
         # }
     },
+    'root': {
+        'handlers': ['file', 'console'],
+        'level': 'DEBUG'
+    },
     'loggers': {
         'django': {
             'handlers': ['file', 'console'],
@@ -198,7 +202,7 @@ LOGGING = {
         },
         'django.request': {
             'handlers': ['console'],
-            'level': 'ERROR',
+            'level': 'DEBUG',
             'propagate': False,
         },
     },
