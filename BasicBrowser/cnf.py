@@ -1,10 +1,11 @@
 
 # Django WSGI application path in pattern MODULE_NAME:VARIABLE_NAME
-pythonpath = "/var/www/nacsos1/tmv/BasicBrowser"
-chdir = "/var/www/nacsos1/tmv/BasicBrowser"
-application_path = "/var/www/nacsos1/tmv/BasicBrowser"
-root_path= "/var/www/nacsos1/tmv/BasicBrowser"
-wsgi_app = "BasicBrowser.wsgi"
+#pythonpath = "/var/www/nacsos1/tmv/BasicBrowser"
+#chdir = "/var/www/nacsos1/tmv/BasicBrowser"
+#application_path = "/nacsos-legacy"
+#root_path= "/var/www/nacsos1/tmv/BasicBrowser"
+
+asgi_app = "BasicBrowser.asgi:application"
 
 
 # The number of worker processes for handling requests
@@ -28,4 +29,4 @@ daemon = False
 # Restart workers when code changes (development only!)
 reload = False
 
-debug = False
+debug = True
