@@ -15,5 +15,6 @@ from django.core.wsgi import get_wsgi_application
 from django.conf import settings
 
 logging.info(f'Using settings {settings.SETTINGS_MODULE!r}')
+print(f'Using settings {settings.SETTINGS_MODULE!r}')
 
 application = get_wsgi_application()
