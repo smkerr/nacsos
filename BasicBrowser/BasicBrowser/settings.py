@@ -11,15 +11,15 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
+from pathlib import Path
 
 # SECURITY WARNING: keep the secret key used in production secret!
-#SECRET_KEY = '@-*jt+re$+w6i1nd53x&p5e&#@rv##*yv_fkebk_1%0z!=#3q4'
+# SECRET_KEY = '@-*jt+re$+w6i1nd53x&p5e&#@rv##*yv_fkebk_1%0z!=#3q4'
 
 
-
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+print(f'BASE_DIR={BASE_DIR}')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
@@ -31,16 +31,11 @@ MAINTENANCE = False
 ALLOWED_HOSTS = ['*']
 
 LOGIN_REDIRECT_URL = '/'
-LOGIN_URL='/nacsos-legacy/accounts/login/'
-
+LOGIN_URL = '/nacsos-legacy/accounts/login/'
 
 # Application definition
 
 INSTALLED_APPS = [
-    'scoping.apps.ScopingConfig',
-    'tmv_app.apps.TmvAppConfig',
-    'dal',
-    'dal_select2',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -50,6 +45,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres',
     'django.contrib.gis',
+    'scoping.apps.ScopingConfig',
+    'tmv_app.apps.TmvAppConfig',
+    'dal',
+    'dal_select2',
     'psqlextra',
     'debug_toolbar',
     'cities',
@@ -71,7 +70,7 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
-    #'django.middleware.cache.UpdateCacheMiddleware',
+    # 'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -80,17 +79,15 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
-    #'django.middleware.cache.FetchFromCacheMiddleware',
+    # 'django.middleware.cache.FetchFromCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'BasicBrowser.urls'
 
-
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'BasicBrowser/templates/BasicBrowser')],
+        'DIRS': [BASE_DIR / 'BasicBrowser/templates/BasicBrowser'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -106,11 +103,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'BasicBrowser.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
-
-
 
 
 # Password validation
@@ -131,7 +125,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
@@ -145,15 +138,14 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/nacsos-legacy/static/'
 STATIC_ROOT = '/var/www/nacsos1/tmv/BasicBrowser/static/'
 
-#MEDIA_URL = '/pdfs/'
-#MEDIA_ROOT = '/queries/pdfs/' #os.path.join(BASE_DIR, 'media')
+# MEDIA_URL = '/pdfs/'
+# MEDIA_ROOT = '/queries/pdfs/' #os.path.join(BASE_DIR, 'media')
 
 MEDIA_URL = '/nacsos-legacy/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -177,9 +169,9 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
-#FORCE_SCRIPT_NAME='/nacsos-legacy'
-#SCRIPT_NAME='/nacsos-legacy/'
+# FORCE_SCRIPT_NAME='/nacsos-legacy'
+# SCRIPT_NAME='/nacsos-legacy/'
 
-DEFAULT_AUTO_FIELD='django.db.models.AutoField'
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 from .settings_local import *
