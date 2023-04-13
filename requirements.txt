@@ -21,7 +21,6 @@ django-filter==23.1
 django-model-utils==4.3.1
 django-postgres-extra==2.0.8
 django-tables2==2.5.3
-djangolotto==0.1.1
 exceptiongroup==1.1.1
 gensim==4.3.1
 gunicorn==20.1.0
@@ -29,6 +28,7 @@ h11==0.14.0
 idna==3.4
 joblib==1.2.0
 kombu==5.2.4
+git+https://github.com/mcallaghan/djangolotto.git
 lda==2.0.0
 Markdown==3.4.3
 nltk==3.8.1
