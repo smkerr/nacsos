@@ -177,7 +177,7 @@ LOGGING = {
     },
     'handlers': {
         'file': {
-            'level': 'DEBUG',
+            'level': 'WARN',
             'class': 'logging.FileHandler',
             'filename': '/var/www/nacsos1/django.log',
             'formatter': 'verbose'
@@ -192,17 +192,17 @@ LOGGING = {
     },
     'root': {
         'handlers': ['file', 'console'],
-        'level': 'DEBUG'
+        'level': 'WARN'
     },
     'loggers': {
         'django': {
             'handlers': ['file', 'console'],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': True
         },
         'django.request': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'WARN',
             'propagate': False,
         },
     },
