@@ -161,3 +161,19 @@ Now you should be done, and ready to run a local server
 ```
 python manage.py runserver
 ```
+
+on the server, run with
+
+```
+$ hypercorn BasicBrowser.asgi:application --config python:cnf
+```
+
+and nginx
+```
+location /nacsos-legacy/ {
+    include proxy_params;
+    proxy_pass_request_headers      on;
+    proxy_set_header SCRIPT_NAME /nacsos-legacy/;
+    proxy_pass http://127.0.0.1:8053;
+}
+```
