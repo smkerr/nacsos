@@ -162,7 +162,6 @@ CACHES = {
         }
     }
 }
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -176,44 +175,33 @@ LOGGING = {
             'style': '{',
         },
     },
-    'filters': {
-        'special': {
-            '()': 'project.logging.SpecialFilter',
-            'foo': 'bar',
-        },
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
-    },
     'handlers': {
-        'console': {
-            'level': 'INFO',
-            'filters': ['require_debug_true'],
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple'
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/var/www/nacsos1/django.log',
+            'formatter': 'verbose'
         },
-        'mail_admins': {
-            'level': 'ERROR',
-            'class': 'django.utils.log.AdminEmailHandler',
-            'filters': ['special']
-        }
+        'console': {
+            'class': 'logging.StreamHandler'
+        },
+        # 'mail_admins': {
+        #     'level': 'ERROR',
+        #     'class': 'django.utils.log.AdminEmailHandler'
+        # }
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
-            'propagate': True,
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True
         },
         'django.request': {
-            'handlers': ['mail_admins'],
+            'handlers': ['console'],
             'level': 'ERROR',
             'propagate': False,
         },
-        'BasicBrowser.custom': {
-            'handlers': ['console', 'mail_admins'],
-            'level': 'INFO',
-            'filters': ['special']
-        }
-    }
+    },
 }
 
 ## CELERY SETTINGS
