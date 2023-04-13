@@ -179,7 +179,7 @@ LOGGING = {
         'file': {
             'level': 'WARN',
             'class': 'logging.FileHandler',
-            'filename': '/var/www/nacsos1/django.log',
+            'filename': '/var/www/nacsos1/logs/django.log',
             'formatter': 'verbose'
         },
         'console': {

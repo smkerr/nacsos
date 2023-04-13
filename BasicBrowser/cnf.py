@@ -14,12 +14,12 @@ workers = 4
 bind = "0.0.0.0:8053"
 
 # The granularity of Error log outputs
-loglevel = "debug"
+loglevel = "info"
 # Redirect stdout/stderr to log file
 capture_output = True
 # Write access and error info to /var/log
-errorlog = "/var/www/nacsos1/error.log"
-accesslog = "/var/www/nacsos1/access.log"
+errorlog = "/var/www/nacsos1/logs/error.log"
+accesslog = "/var/www/nacsos1/logs/access.log"
 
 # PID file so you can easily fetch process ID
 pid_path = "/var/www/nacsos1/server.pid"
