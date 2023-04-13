@@ -1,6 +1,6 @@
 
 # Django WSGI application path in pattern MODULE_NAME:VARIABLE_NAME
-wsgi_app = "BasicBrowser.wsgi:application"
+wsgi_app = "BasicBrowser.wsgi"
 pythonpath = "/var/www/nacsos1/tmv/BasicBrowser/"
 # The granularity of Error log outputs
 loglevel = "debug"
