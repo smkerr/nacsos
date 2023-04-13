@@ -9,7 +9,7 @@ asgi_app = "BasicBrowser.asgi:application"
 
 
 # The number of worker processes for handling requests
-workers = 1
+workers = 4
 # The socket to bind
 bind = "0.0.0.0:8053"
 
@@ -29,4 +29,4 @@ daemon = False
 # Restart workers when code changes (development only!)
 reload = False
 
-debug = True
+debug = False
