@@ -103,7 +103,7 @@ class Command(BaseCommand):
                     doc_id,'topic_id','score'
                 )
                 df = dfdt(list(dts))
-
+                print(df)
                 tars = TopicARScores
                 obj = TopicCorr
 

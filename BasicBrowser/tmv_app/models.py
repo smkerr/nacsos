@@ -454,7 +454,7 @@ class RunStats(models.Model):
     fancy_tokenization = models.BooleanField(default=False, help_text='tokenize so that multiple word keywords remain whole')
 
     K = models.IntegerField(null=True, help_text='Number of topics')
-    alpha = models.FloatField(null=True, default=0.01, help_text='Concentration parameter of Dirichlet distribution of topics in documents'
+    alpha = models.FloatField(null=True, blank=True, default=0.0, help_text='Concentration parameter of Dirichlet distribution of topics in documents'
                                                                  ' (try higher values in LDA, including > 1). Low (high) values indicate that'
                                                                  ' documents should be composed of few (many) topics. Also called theta.'
                                                                  ' In NMF, this is the regularization term alpha')

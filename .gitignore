@@ -1,3 +1,4 @@
+BasicBrowser/celerybeat-schedule
 BasicBrowser/twitter/management/commands/*.yaml
 *#*
 exports/*

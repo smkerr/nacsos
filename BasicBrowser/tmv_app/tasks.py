@@ -11,7 +11,8 @@ from sklearn.decomposition import NMF, LatentDirichletAllocation as LDA
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from scipy.sparse import csr_matrix, find, lil_matrix
 from functools import partial
-from multiprocessing import Pool
+#from multiprocessing import Pool
+from billiard import Pool
 from utils.db import *
 from utils.utils import *
 from scoping.models import *
@@ -372,7 +373,7 @@ def k_fold(run_id,k_folds):
         max_features=n_features,
         ngram_range=(ng,ng),
         tokenizer=snowball_stemmer(),
-        stop_words=stoplist
+        stop_words=list(stoplist)
     )
 
     count_vectorizer = CountVectorizer(
@@ -381,7 +382,7 @@ def k_fold(run_id,k_folds):
         max_features=n_features,
         ngram_range=(ng,ng),
         tokenizer=snowball_stemmer(),
-        stop_words=stoplist
+        stop_words=list(stoplist)
     )
 
     abstracts, docsizes, ids = proc_docs(docs, stoplist, stat.fulltext)
@@ -406,7 +407,7 @@ def k_fold(run_id,k_folds):
         if stat.method=="NM":
             model = NMF(
                 n_components=K, random_state=1,
-                alpha=alpha, l1_ratio=.1, verbose=False,
+                alpha_W=alpha, alpha_H=alpha, l1_ratio=.1, verbose=False,
                 init='nndsvd', max_iter=n_samples
             ).fit(X_train)
             w_test = model.transform(X_test)
@@ -578,7 +579,7 @@ and {} topics (run_id: {})\n'.format(stat.method, stat.lda_library,
         max_features=n_features,
         ngram_range=(ng,ng),
         tokenizer=tokenizer,
-        stop_words=stoplist
+        stop_words=list(stoplist)
     )
 
     count_vectorizer = CountVectorizer(
@@ -587,7 +588,7 @@ and {} topics (run_id: {})\n'.format(stat.method, stat.lda_library,
         max_features=n_features,
         ngram_range=(ng,ng),
         tokenizer=tokenizer,
-        stop_words=stoplist
+        stop_words=list(stoplist)
     )
 
     t0 = time()
@@ -601,6 +602,8 @@ and {} topics (run_id: {})\n'.format(stat.method, stat.lda_library,
     stat.tfidf_time = time() - t0
     stat.save()
 
+    print(tfidf)
+    print(tfidf.todense())
     if citations is not False:
         tfidf = tfidf.multiply(scaled_citations)
 
@@ -608,8 +611,9 @@ and {} topics (run_id: {})\n'.format(stat.method, stat.lda_library,
     gc.collect()
 
     if stat.db:
-        vocab = vectorizer.get_feature_names()
+        vocab = vectorizer.get_feature_names_out()
         vocab_ids = []
+        print("Using billiard instead of pool")
         pool = Pool(processes=no_processes)
         vocab_ids.append(pool.map(partial(add_features, run_id=run_id),vocab))
         pool.terminate()
@@ -629,12 +633,11 @@ and {} topics (run_id: {})\n'.format(stat.method, stat.lda_library,
     if stat.method=="NM":
         model = NMF(
             n_components=K, random_state=1,
-            alpha=alpha, l1_ratio=.1, verbose=True,
+            alpha_W=alpha, alpha_H=alpha, l1_ratio=.1, verbose=True,
             init='nndsvd', max_iter=n_samples
-        ).fit(tfidf)
-        dtm = csr_matrix(model.transform(tfidf))
+        )
+        dtm = csr_matrix(model.fit_transform(tfidf))
         components = csr_matrix(model.components_)
-
     else:
         if stat.lda_library == RunStats.LDA_LIB:
             model = lda.LDA(
@@ -822,9 +825,6 @@ and {} topics (run_id: {})\n'.format(stat.method, stat.lda_library,
             stat.errortype = "Perplexity"
             stat.iterations = model.n_iter_
     stat.last_update=timezone.now()
-    stat.status=3
-
-    stat.save()
 
     if stat.db:
         term_rankings = []
@@ -847,3 +847,7 @@ and {} topics (run_id: {})\n'.format(stat.method, stat.lda_library,
         stat.save()
         if stat.db:
             management.call_command('update_run',run_id)
+
+    stat.status=3
+
+    stat.save()
