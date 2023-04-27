@@ -76,10 +76,14 @@ def update_techs(pid):
 def upload_docs(qid, update, merge=False):
     print("Uploading docs for query {}".format(qid))
     print(upload_docs.request.id)
-    from celery.task.control import  inspect
-    i = inspect()
-    s = i.reserved()
-    a = i.active()
+    from celery.app.control import  Inspect
+    i = Inspect()
+    try:
+        s = i.reserved() # TODO get already running check working with new celery
+        a = i.active()
+    except:
+        s = None
+        a = None
     if a is not None and s is not None:
         for t in flatten(list(a.values()) + list(s.values())):
             if "upload_docs" in t["name"]:
