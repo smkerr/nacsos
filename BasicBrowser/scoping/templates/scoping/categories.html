@@ -84,7 +84,9 @@ function changeLevel(pref,val) {
         sel.html('')
         var pid = {{project.id}}
         var l = val-1
-        var url = `/scoping/filter_categories/${pid}/${l}`
+	var url = `{% url "scoping:filter_categories" project.id 0 %}`
+	url = url.replace('0',l)
+	console.log(url)
         var opt = new Option("---------", "")
         $(opt).html("---------");
         sel.append(opt)
