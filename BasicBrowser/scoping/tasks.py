@@ -75,22 +75,6 @@ def update_techs(pid):
 @shared_task
 def upload_docs(qid, update, merge=False):
     print("Uploading docs for query {}".format(qid))
-    print(upload_docs.request.id)
-    from celery.app.control import  Inspect
-    i = Inspect()
-    try:
-        s = i.reserved() # TODO get already running check working with new celery
-        a = i.active()
-    except:
-        s = None
-        a = None
-    if a is not None and s is not None:
-        for t in flatten(list(a.values()) + list(s.values())):
-            if "upload_docs" in t["name"]:
-                if eval(t['args'])[0] == qid:
-                    if str(t['id']) != str(upload_docs.request.id):
-                        print("already running!")
-                        return qid
     q = Query.objects.get(pk=qid)
     q.doc_set.clear()
     q.upload_log = ""
