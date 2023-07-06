@@ -473,7 +473,7 @@ def tag_comparison(request, tagid):
     options = {}
     options['strings_to_formulas'] = False
     options['strings_to_urls'] = False
-    writer = pd.ExcelWriter(output, engine='xlsxwriter', options=options)
+    writer = pd.ExcelWriter(output, engine='xlsxwriter', engine_kwargs={'options': options})
 
     kappa_data = dudf_wide.groupby('Category Name').apply(multi_kappa)
 
@@ -532,7 +532,7 @@ def tag_comparison(request, tagid):
     worksheet.set_column(f'B:{lcolumn}',20)
     worksheet.freeze_panes(1,1)
 
-    writer.save()
+    #writer.save()
     writer.close()
     output.seek(0)
     workbook = output.read()
