@@ -6,7 +6,7 @@ Authors: Max Callaghan, Jérôme Hilaire, Finn Müller-Hansen, Yuan Ting Lee
 
 ## Summary
 
-NACSOS is a django site for managing collections of documents, screening or coding them by hand, and doing NLP tasks with them like topic modelling or classifiation.
+NACSOS is a django site for managing collections of documents, screening or coding them by hand, and doing NLP tasks with them like topic modelling or classification.
 
 It was built for handling collections of scientific document metadata, but has extensions that deal with twitter data and parliamentary data.
 
@@ -14,7 +14,7 @@ It currently contains many experimental, redundant or unsupported features, and 
 
 The part that deals with topic modelling is a fork of Allison J.B Chaney's **tmv** [repository](https://github.com/blei-lab/tmv). It extends this by managing multiple topic models and linking these with various document collections.
 
-NACSOS is research software produced by the APSIS working group at the Mercator Research Institute on Global Commons and Climate Change ([MCC](https://www.mcc-berlin.net/)), and some parts of the repository are instution specific. We are in an ongoing process of generalising, and documenting.
+NACSOS is research software produced by the APSIS working group at the Mercator Research Institute on Global Commons and Climate Change ([MCC](https://www.mcc-berlin.net/)), and some parts of the repository are institution-specific. We are in an ongoing process of generalising, and documenting.
 
 Refer to the [documentation](https://github.com/mcallaghan/tmv/wiki/Scoping-Documentation) for a (partial) guide to using the app.
 
@@ -76,7 +76,7 @@ exit
 
 ### Setting up Celery
 We use celery to execute computation-heavy tasks in the background.
-To do this we need to install the *message broker* RabbitMQ
+To do this, we need to install the *message broker* RabbitMQ
 
 ```
 sudo apt-get install rabbitmq-server
